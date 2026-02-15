@@ -1,5 +1,6 @@
 import { PaymentType } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
+import type { OpenAiCategorizationSuggestion } from "../categorization/openai-suggestions";
 import type { CategoryRuleCandidate } from "../categorization/rule-engine";
 import {
   AccountNotFoundError,
@@ -11,6 +12,11 @@ const HEADER =
 
 function createDbMock(options?: {
   accountExists?: boolean;
+  categories?: Array<{
+    id: string;
+    name: string;
+    kind: "EXPENSE" | "INCOME" | "TRANSFER";
+  }>;
   existingTransactions?: Array<{
     bookingDate: Date;
     amountNok: number;
@@ -26,6 +32,9 @@ function createDbMock(options?: {
     },
     categoryRule: {
       findMany: vi.fn<() => Promise<CategoryRuleCandidate[]>>(async () => []),
+    },
+    category: {
+      findMany: vi.fn(async () => options?.categories ?? []),
     },
     transaction: {
       findMany: vi.fn(async () => options?.existingTransactions ?? []),
@@ -149,7 +158,9 @@ describe("importTransactionsFromCsv", () => {
   });
 
   it("creates rule-based suggestions for matched imported transactions", async () => {
-    const db = createDbMock();
+    const db = createDbMock({
+      categories: [{ id: "cat-groceries", name: "Groceries", kind: "EXPENSE" }],
+    });
     db.categoryRule.findMany.mockResolvedValueOnce([
       {
         id: "rule-1",
@@ -185,7 +196,9 @@ describe("importTransactionsFromCsv", () => {
   });
 
   it("does not create suggestions when no rules match", async () => {
-    const db = createDbMock();
+    const db = createDbMock({
+      categories: [{ id: "cat-rent", name: "Rent", kind: "EXPENSE" }],
+    });
     db.categoryRule.findMany.mockResolvedValueOnce([
       {
         id: "rule-1",
@@ -202,5 +215,117 @@ describe("importTransactionsFromCsv", () => {
     });
 
     expect(db.categorizationSuggestion.createMany).not.toHaveBeenCalled();
+  });
+
+  it("skips OpenAI suggestions when API key is not configured", async () => {
+    const db = createDbMock({
+      categories: [{ id: "cat-food", name: "Food", kind: "EXPENSE" }],
+    });
+    const openAiBuilder = vi.fn<
+      (params: {
+        apiKey: string | null | undefined;
+        categories: Array<{
+          id: string;
+          name: string;
+          kind: "EXPENSE" | "INCOME" | "TRANSFER";
+        }>;
+        transactions: Array<{
+          id: string;
+          normalizedMerchant: string;
+          paymentType: PaymentType;
+        }>;
+      }) => Promise<OpenAiCategorizationSuggestion[]>
+    >(async () => []);
+
+    await importTransactionsFromCsv(
+      db,
+      {
+        accountId: "account-1",
+        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      },
+      {
+        openAiApiKey: null,
+        buildOpenAiSuggestions: openAiBuilder,
+      },
+    );
+
+    expect(openAiBuilder).toHaveBeenCalledWith({
+      apiKey: null,
+      categories: [{ id: "cat-food", name: "Food", kind: "EXPENSE" }],
+      transactions: [
+        {
+          id: "tx-created-1",
+          normalizedMerchant: "shop a alice groceries friday",
+          paymentType: PaymentType.CARD,
+        },
+      ],
+    });
+    expect(db.categorizationSuggestion.createMany).not.toHaveBeenCalled();
+  });
+
+  it("continues import when OpenAI suggestion generation throws", async () => {
+    const db = createDbMock({
+      categories: [{ id: "cat-food", name: "Food", kind: "EXPENSE" }],
+    });
+
+    const result = await importTransactionsFromCsv(
+      db,
+      {
+        accountId: "account-1",
+        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      },
+      {
+        openAiApiKey: "test-key",
+        buildOpenAiSuggestions: vi.fn(async () => {
+          throw new Error("provider unavailable");
+        }),
+      },
+    );
+
+    expect(result.summary.imported).toBe(1);
+    expect(db.categorizationSuggestion.createMany).not.toHaveBeenCalled();
+  });
+
+  it("persists OpenAI suggestions for unresolved imported transactions", async () => {
+    const db = createDbMock({
+      categories: [
+        { id: "cat-food", name: "Food", kind: "EXPENSE" },
+        { id: "cat-rent", name: "Rent", kind: "EXPENSE" },
+      ],
+    });
+    const openAiBuilder = vi.fn(async () => [
+      {
+        transactionId: "tx-created-1",
+        suggestedCategoryId: "cat-food",
+        source: "OPENAI" as const,
+        confidence: 0.72,
+        reasoning: "Merchant resembles grocery spending.",
+      },
+    ]);
+
+    await importTransactionsFromCsv(
+      db,
+      {
+        accountId: "account-1",
+        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      },
+      {
+        openAiApiKey: "test-key",
+        buildOpenAiSuggestions: openAiBuilder,
+      },
+    );
+
+    expect(openAiBuilder).toHaveBeenCalledOnce();
+    expect(db.categorizationSuggestion.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          transactionId: "tx-created-1",
+          suggestedCategoryId: "cat-food",
+          source: "OPENAI",
+          confidence: 0.72,
+          reasoning: "Merchant resembles grocery spending.",
+        },
+      ],
+    });
   });
 });

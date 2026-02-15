@@ -18,6 +18,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Dedupe convention: build fingerprints from `accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, and `paymentType`, and keep that aligned with the Prisma unique constraint on `Transaction`.
 - Import pipeline convention: normalize bank CSV payment-type labels (for example `Kort`) to Prisma `PaymentType` enum values before fingerprint dedupe and persistence so duplicate detection stays deterministic across uploads.
 - Categorization convention: apply category rules deterministically (priority first, then specificity) and persist suggestions with source/confidence/reasoning while leaving unmatched transactions uncategorized for review.
+- OpenAI suggestion convention: keep AI categorization optional behind `OPENAI_API_KEY`; unresolved transactions may receive `OPENAI` suggestions, and provider/network failures must not fail the import pipeline.
 - Task artifacts/specs: `tasks/`, `ralph/`, `prompt.md`
 - Tooling: `biome.json`, `tsconfig.json`, `next.config.ts`
 

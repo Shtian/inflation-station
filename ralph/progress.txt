@@ -9,6 +9,7 @@
 - Keep import dedupe logic in a shared helper and align its fingerprint fields with the Prisma `Transaction` uniqueness constraint.
 - Canonicalize parsed payment-type labels to Prisma `PaymentType` enum values before dedupe and insert so fingerprints align with stored transactions.
 - Apply category rules deterministically (priority first, then merchant-keyword specificity) so suggestion outcomes stay stable across runs.
+- Treat OpenAI categorization as optional: guard by `OPENAI_API_KEY`, run only for unresolved transactions, and swallow provider failures so imports continue.
 - Treat unit tests as part of done criteria for testable behavior changes; only skip with an explicit documented blocker.
 
 ## 2026-02-15 15:38 CET - US-001
@@ -185,4 +186,26 @@
   - Patterns discovered: Keep rule matching as a pure module and feed it only persisted transaction facts (`id`, `normalizedMerchant`, `paymentType`) to keep suggestion generation deterministic and testable.
   - Gotchas encountered: Prisma enum member access is not available as a type namespace; use concrete literal types (for example `"RULE"`) in DTO shapes.
   - Useful context: Import flow now supports account-scoped and global category rules by querying both `accountId = selectedAccount` and `accountId = null`.
+---
+
+## 2026-02-15 18:41 CET - US-009
+- Implemented optional OpenAI categorization support for unresolved imported transactions via a dedicated `openai-suggestions` module.
+- Wired AI suggestions into the import pipeline behind API-key configuration and made provider/network failures non-fatal so imports still succeed.
+- Added unit tests for key-missing behavior, provider failure fallback, and successful `OPENAI` suggestion persistence.
+- Files changed
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+  - `src/lib/categorization/openai-suggestions.ts`
+  - `src/lib/import/import-transactions.ts`
+  - `src/lib/import/import-transactions.test.ts`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep OpenAI integration in an isolated module and inject the builder into import orchestration for deterministic tests without network calls.
+  - Gotchas encountered: Preserve explicit `null` for optional API-key overrides instead of using `??`, or test overrides can be lost to env fallback.
+  - Useful context: `categorizationSuggestion.createMany` now accepts both `RULE` and `OPENAI` sources from one merged suggestion payload.
 ---
