@@ -2,6 +2,7 @@
 - Keep cross-route navigation in `src/app/layout.tsx` so route-level pages can be introduced incrementally without duplicating nav markup.
 - During route-split migrations, keep `/` as a temporary legacy workspace and document transitional routing behavior in `README.md`.
 - Keep overview analytics filter state and `/api/dashboard/analytics` fetching logic scoped to the `/overview` route UI instead of the legacy `/` workspace.
+- Keep account CRUD interactions and success/error notices inside `src/app/accounts/*`, and let other routes only consume `/api/accounts` for account selection needs.
 
 ## 2026-02-15 21:20:39 CET - US-001
 - Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
@@ -20,5 +21,17 @@
 - Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-014-dashboard-ui.e2e.ts` (failed: Next dev lock at `.next/dev/lock` prevented Playwright web server start on port 3100).
 - **Learnings for future iterations**
   - Keep route-specific client state/effects in the destination route component during route-split stories to avoid duplicated behavior between `/` and target routes.
-  - Playwright may fail to boot its managed Next dev server if another dev instance already holds `.next/dev/lock`; resolve lock contention before rerunning e2e.
+- Playwright may fail to boot its managed Next dev server if another dev instance already holds `.next/dev/lock`; resolve lock contention before rerunning e2e.
+---
+
+## 2026-02-15 21:31:49 CET - US-003
+- Implemented dedicated account management on `/accounts` via a new client component that handles list/create/update/delete using existing `/api/accounts` handlers.
+- Removed account CRUD UI from the legacy `/` workspace so imports/review remain there while account setup is separated to `/accounts`.
+- Added explicit success notices (`Account added/updated/removed`) and preserved clear error feedback for account operations.
+- Updated Playwright coverage to validate account CRUD from `/accounts`, including both success and duplicate-name error feedback.
+- Files changed: `src/app/accounts/accounts-manager.tsx`, `src/app/accounts/page.tsx`, `src/app/page.tsx`, `tests/e2e/us-011-account-import-ui.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-011-account-import-ui.e2e.ts` (pass).
+- **Learnings for future iterations**
+  - Keep route-split changes decoupled by moving feature-specific client state and mutation handlers into route-local components (for example `src/app/accounts/accounts-manager.tsx`) while preserving shared API contracts.
+  - For UI stories, targeted Playwright specs can validate route-specific behavior independently of legacy `/` workspace transitions.
 ---
