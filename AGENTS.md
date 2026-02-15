@@ -12,6 +12,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 ## Repository Snapshot (Only What Matters)
 - App: Next.js + TypeScript (`src/`)
 - Database: Prisma (`prisma/`, `prisma.config.ts`)
+- API backend: App Router route handlers (`src/app/api/**`) use a shared server-only Prisma client (`src/lib/prisma.ts`)
 - Data modeling convention: `Transaction` stores `normalizedMerchant` + `paymentType` for deterministic dedupe and category-rule workflows.
 - Task artifacts/specs: `tasks/`, `ralph/`, `prompt.md`
 - Tooling: `biome.json`, `tsconfig.json`, `next.config.ts`
@@ -21,6 +22,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Make the smallest safe change that satisfies the request.
 - Do not refactor unrelated code.
 - Preserve existing style and architecture unless asked otherwise.
+- After Prisma schema changes, run `pnpm exec prisma generate` before TypeScript/build checks.
 - If assumptions are required, state them briefly.
 
 ## Validation Strategy
