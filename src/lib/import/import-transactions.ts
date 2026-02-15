@@ -181,7 +181,11 @@ function normalizePaymentType(value: string): PaymentType {
 function parseBookingDate(value: string): Date | null {
   const trimmed = value.trim();
 
-  const buildUtcDate = (year: string, month: string, day: string): Date | null => {
+  const buildUtcDate = (
+    year: string,
+    month: string,
+    day: string,
+  ): Date | null => {
     const yearNumber = Number.parseInt(year, 10);
     const monthNumber = Number.parseInt(month, 10);
     const dayNumber = Number.parseInt(day, 10);

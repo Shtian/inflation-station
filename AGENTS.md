@@ -22,6 +22,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - OpenAI suggestion convention: keep AI categorization optional behind `OPENAI_API_KEY`; unresolved transactions may receive `OPENAI` suggestions, and provider/network failures must not fail the import pipeline.
 - Dashboard analytics convention: keep aggregate query logic in `src/lib/dashboard/*` with stable date-bucketed numeric series, and keep `/api/dashboard/*` routes focused on filter parsing and validation.
 - Dashboard UI convention: keep chart/filter state client-side in the page component and fetch `/api/dashboard/analytics` on every account/date filter change so visuals stay in sync with backend aggregates.
+- Route split convention: keep primary app navigation in `src/app/layout.tsx` and treat `/` as a temporary legacy workspace while feature modules are moved to dedicated top-level routes.
 - E2E testing convention: keep Playwright specs under `tests/e2e/*.e2e.ts` and run them via Playwright CLI so Vitest (`pnpm test`) does not pick up browser tests.
 - Task artifacts/specs: `tasks/`, `ralph/`, `prompt.md`
 - Tooling: `biome.json`, `tsconfig.json`, `next.config.ts`

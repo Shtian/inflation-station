@@ -97,3 +97,8 @@ OpenAI-based categorization suggestions are optional.
 - `pnpm test`
 - `pnpm test:e2e`
 - `pnpm build`
+
+## Routing
+
+- `/` remains the legacy combined workspace while route-splitting is in progress.
+- Top-level navigation links are available for `/overview`, `/import`, `/accounts`, and `/categories`.
