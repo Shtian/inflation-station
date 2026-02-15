@@ -1,5 +1,9 @@
 import { PaymentType } from "@prisma/client";
 import {
+  buildRuleBasedSuggestions,
+  type CategoryRuleCandidate,
+} from "../categorization/rule-engine";
+import {
   type CsvValidationError,
   type ParsedCsvRow,
   parseNorwegianBankCsv,
@@ -39,6 +43,28 @@ type ImportTransactionsDbClient = {
       select: { id: true };
     }): Promise<{ id: string } | null>;
   };
+  categoryRule: {
+    findMany(args: {
+      where: {
+        OR: Array<
+          | {
+              accountId: string;
+            }
+          | {
+              accountId: null;
+            }
+        >;
+      };
+      select: {
+        id: true;
+        categoryId: true;
+        merchantContains: true;
+        paymentType: true;
+        priority: true;
+      };
+      orderBy: [{ priority: "asc" }, { id: "asc" }];
+    }): Promise<CategoryRuleCandidate[]>;
+  };
   transaction: {
     findMany(args: {
       where: { accountId: string };
@@ -57,6 +83,36 @@ type ImportTransactionsDbClient = {
         currency: "NOK";
         normalizedMerchant: string;
         paymentType: PaymentType;
+      }>;
+    }): Promise<{ count: number }>;
+    create(args: {
+      data: {
+        accountId: string;
+        bookingDate: Date;
+        amountNok: number;
+        currency: "NOK";
+        normalizedMerchant: string;
+        paymentType: PaymentType;
+      };
+      select: {
+        id: true;
+        normalizedMerchant: true;
+        paymentType: true;
+      };
+    }): Promise<{
+      id: string;
+      normalizedMerchant: string;
+      paymentType: PaymentType;
+    }>;
+  };
+  categorizationSuggestion: {
+    createMany(args: {
+      data: Array<{
+        transactionId: string;
+        suggestedCategoryId: string;
+        source: "RULE";
+        confidence: number;
+        reasoning: string;
       }>;
     }): Promise<{ count: number }>;
   };
@@ -226,6 +282,19 @@ export async function importTransactionsFromCsv(
     validRows,
     existingFingerprints,
   );
+  const categoryRules = await db.categoryRule.findMany({
+    where: {
+      OR: [{ accountId: params.accountId }, { accountId: null }],
+    },
+    select: {
+      id: true,
+      categoryId: true,
+      merchantContains: true,
+      paymentType: true,
+      priority: true,
+    },
+    orderBy: [{ priority: "asc" }, { id: "asc" }],
+  });
 
   if (dedupeResult.uniqueRows.length === 0) {
     return {
@@ -239,21 +308,40 @@ export async function importTransactionsFromCsv(
     };
   }
 
-  const insertResult = await db.transaction.createMany({
-    data: dedupeResult.uniqueRows.map(({ row, normalizedMerchant }) => ({
-      accountId: params.accountId,
-      bookingDate: new Date(`${row.bookingDate}T00:00:00.000Z`),
-      amountNok: row.amountNok,
-      currency: row.currency,
-      normalizedMerchant,
-      paymentType: normalizePaymentType(row.paymentType),
-    })),
-  });
+  const insertedTransactions = await Promise.all(
+    dedupeResult.uniqueRows.map(({ row, normalizedMerchant }) =>
+      db.transaction.create({
+        data: {
+          accountId: params.accountId,
+          bookingDate: new Date(`${row.bookingDate}T00:00:00.000Z`),
+          amountNok: row.amountNok,
+          currency: row.currency,
+          normalizedMerchant,
+          paymentType: normalizePaymentType(row.paymentType),
+        },
+        select: {
+          id: true,
+          normalizedMerchant: true,
+          paymentType: true,
+        },
+      }),
+    ),
+  );
+
+  const suggestions = buildRuleBasedSuggestions(
+    insertedTransactions,
+    categoryRules,
+  );
+  if (suggestions.length > 0) {
+    await db.categorizationSuggestion.createMany({
+      data: suggestions,
+    });
+  }
 
   return {
     summary: mergeSummary(
       parsed.summary,
-      insertResult.count,
+      insertedTransactions.length,
       dedupeResult.duplicateCount,
       invalidRows.length,
     ),

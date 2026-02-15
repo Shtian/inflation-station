@@ -8,6 +8,7 @@
 - Keep import diagnostics as stable count fields (`imported`, `duplicates`, `ignoredReserved`, `invalid`) so parser and endpoint layers can compose without response-shape drift.
 - Keep import dedupe logic in a shared helper and align its fingerprint fields with the Prisma `Transaction` uniqueness constraint.
 - Canonicalize parsed payment-type labels to Prisma `PaymentType` enum values before dedupe and insert so fingerprints align with stored transactions.
+- Apply category rules deterministically (priority first, then merchant-keyword specificity) so suggestion outcomes stay stable across runs.
 - Treat unit tests as part of done criteria for testable behavior changes; only skip with an explicit documented blocker.
 
 ## 2026-02-15 15:38 CET - US-001
@@ -161,4 +162,27 @@
   - Patterns discovered: Keep import orchestration in `src/lib/import/*` modules and keep API routes thin wrappers for request validation + HTTP mapping.
   - Gotchas encountered: Dedupe fingerprints must use canonical `PaymentType` enum values, not raw CSV labels, or duplicates against persisted rows can be missed.
   - Useful context: `importTransactionsFromCsv` returns a stable `{ summary, errors }` shape that can be forwarded directly from route handlers.
+---
+
+## 2026-02-15 18:37 CET - US-008
+- Implemented a reusable rule-based categorization engine that matches transaction `normalizedMerchant` text and optional `paymentType` constraints, with deterministic rule precedence.
+- Wired rule suggestions into the CSV import pipeline so newly imported transactions receive persisted `RULE` suggestions with confidence and reasoning metadata.
+- Added unit tests for rule matching precedence, unmatched behavior, and import-level suggestion persistence.
+- Files changed
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+  - `src/lib/categorization/rule-engine.ts`
+  - `src/lib/categorization/rule-engine.test.ts`
+  - `src/lib/import/import-transactions.ts`
+  - `src/lib/import/import-transactions.test.ts`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep rule matching as a pure module and feed it only persisted transaction facts (`id`, `normalizedMerchant`, `paymentType`) to keep suggestion generation deterministic and testable.
+  - Gotchas encountered: Prisma enum member access is not available as a type namespace; use concrete literal types (for example `"RULE"`) in DTO shapes.
+  - Useful context: Import flow now supports account-scoped and global category rules by querying both `accountId = selectedAccount` and `accountId = null`.
 ---

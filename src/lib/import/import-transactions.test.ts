@@ -1,5 +1,6 @@
 import { PaymentType } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
+import type { CategoryRuleCandidate } from "../categorization/rule-engine";
 import {
   AccountNotFoundError,
   importTransactionsFromCsv,
@@ -16,7 +17,6 @@ function createDbMock(options?: {
     normalizedMerchant: string;
     paymentType: PaymentType;
   }>;
-  createManyCount?: number;
 }) {
   return {
     account: {
@@ -24,9 +24,20 @@ function createDbMock(options?: {
         options?.accountExists === false ? null : { id: "account-1" },
       ),
     },
+    categoryRule: {
+      findMany: vi.fn<() => Promise<CategoryRuleCandidate[]>>(async () => []),
+    },
     transaction: {
       findMany: vi.fn(async () => options?.existingTransactions ?? []),
-      createMany: vi.fn(async () => ({ count: options?.createManyCount ?? 0 })),
+      createMany: vi.fn(async () => ({ count: 0 })),
+      create: vi.fn(async ({ data }) => ({
+        id: "tx-created-1",
+        normalizedMerchant: data.normalizedMerchant,
+        paymentType: data.paymentType,
+      })),
+    },
+    categorizationSuggestion: {
+      createMany: vi.fn(async () => ({ count: 0 })),
     },
   };
 }
@@ -43,7 +54,7 @@ describe("importTransactionsFromCsv", () => {
     ).rejects.toBeInstanceOf(AccountNotFoundError);
 
     expect(db.transaction.findMany).not.toHaveBeenCalled();
-    expect(db.transaction.createMany).not.toHaveBeenCalled();
+    expect(db.transaction.create).not.toHaveBeenCalled();
   });
 
   it("returns parser diagnostics and skips DB writes when all rows are invalid", async () => {
@@ -62,7 +73,7 @@ describe("importTransactionsFromCsv", () => {
     });
     expect(result.errors).toHaveLength(1);
     expect(db.transaction.findMany).not.toHaveBeenCalled();
-    expect(db.transaction.createMany).not.toHaveBeenCalled();
+    expect(db.transaction.create).not.toHaveBeenCalled();
   });
 
   it("deduplicates batch and existing rows before insert and returns stable summary", async () => {
@@ -75,7 +86,6 @@ describe("importTransactionsFromCsv", () => {
           paymentType: PaymentType.CARD,
         },
       ],
-      createManyCount: 1,
     });
 
     const csv = [
@@ -97,23 +107,26 @@ describe("importTransactionsFromCsv", () => {
       invalid: 0,
     });
 
-    expect(db.transaction.createMany).toHaveBeenCalledOnce();
-    expect(db.transaction.createMany).toHaveBeenCalledWith({
-      data: [
-        {
-          accountId: "account-1",
-          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
-          amountNok: 100,
-          currency: "NOK",
-          normalizedMerchant: "shop a alice groceries friday",
-          paymentType: PaymentType.CARD,
-        },
-      ],
+    expect(db.transaction.create).toHaveBeenCalledOnce();
+    expect(db.transaction.create).toHaveBeenCalledWith({
+      data: {
+        accountId: "account-1",
+        bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+        amountNok: 100,
+        currency: "NOK",
+        normalizedMerchant: "shop a alice groceries friday",
+        paymentType: PaymentType.CARD,
+      },
+      select: {
+        id: true,
+        normalizedMerchant: true,
+        paymentType: true,
+      },
     });
   });
 
   it("preserves ignored and invalid counts from parser while importing valid rows", async () => {
-    const db = createDbMock({ createManyCount: 1 });
+    const db = createDbMock();
 
     const csv = [
       HEADER,
@@ -133,5 +146,61 @@ describe("importTransactionsFromCsv", () => {
       ignoredReserved: 1,
       invalid: 1,
     });
+  });
+
+  it("creates rule-based suggestions for matched imported transactions", async () => {
+    const db = createDbMock();
+    db.categoryRule.findMany.mockResolvedValueOnce([
+      {
+        id: "rule-1",
+        categoryId: "cat-groceries",
+        merchantContains: "shop a",
+        paymentType: PaymentType.CARD,
+        priority: 10,
+      },
+    ]);
+    db.transaction.create.mockResolvedValueOnce({
+      id: "tx-1",
+      normalizedMerchant: "shop a alice groceries friday",
+      paymentType: PaymentType.CARD,
+    });
+
+    const result = await importTransactionsFromCsv(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+    });
+
+    expect(result.summary.imported).toBe(1);
+    expect(db.categorizationSuggestion.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          transactionId: "tx-1",
+          suggestedCategoryId: "cat-groceries",
+          source: "RULE",
+          confidence: 0.95,
+          reasoning: 'Matched merchant "shop a" and payment type "CARD".',
+        },
+      ],
+    });
+  });
+
+  it("does not create suggestions when no rules match", async () => {
+    const db = createDbMock();
+    db.categoryRule.findMany.mockResolvedValueOnce([
+      {
+        id: "rule-1",
+        categoryId: "cat-rent",
+        merchantContains: "rent",
+        paymentType: PaymentType.TRANSFER,
+        priority: 10,
+      },
+    ]);
+
+    await importTransactionsFromCsv(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+    });
+
+    expect(db.categorizationSuggestion.createMany).not.toHaveBeenCalled();
   });
 });
