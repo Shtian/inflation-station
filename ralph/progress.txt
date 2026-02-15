@@ -4,6 +4,7 @@
 - Keep local SQLite database files ignored (`prisma/dev.db`) and commit schema + migrations only.
 - Store normalized merchant text and explicit payment type on transactions to keep import dedupe and category-rule matching deterministic.
 - For destructive account operations, guard in API handlers and return explicit conflict errors (e.g. `409 ACCOUNT_HAS_TRANSACTIONS`) instead of relying on implicit DB failures.
+- Keep CSV import parsing in dedicated `src/lib/import/*` modules that return `rows` and structured row-level `errors` so import diagnostics stay stable as pipeline steps are added.
 
 ## 2026-02-15 15:38 CET - US-001
 - Implemented Prisma 7 baseline persistence with `Account` and `Category` models, including relations and unique constraints.
@@ -71,4 +72,23 @@
   - Patterns discovered: Keep backend persistence access in shared `server-only` modules and reuse from App Router handlers.
   - Gotchas encountered: After schema evolution, stale Prisma client types can surface until `pnpm exec prisma generate` is rerun.
   - Useful context: Next.js dynamic App Router handler params are async and should be typed as `params: Promise<{...}>` in route signatures.
+---
+
+## 2026-02-15 15:57 CET - US-004
+- Implemented a CSV parser for Norwegian bank exports with semicolon-delimited parsing, quoted-field handling, and required-header validation.
+- Added amount normalization for Norwegian decimal formats (comma decimals, optional thousand separators) and explicit non-NOK row validation errors.
+- Files changed
+  - `AGENTS.md`
+  - `src/lib/import/csv-parser.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (skipped: no `test` script in `package.json`)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep parser output shape stable (`rows` + row-level `errors` with code/message/rowNumber) to support later import summary APIs.
+  - Gotchas encountered: Headers can include Norwegian characters, so alias matching should normalize diacritics before validation.
+  - Useful context: Required CSV headers currently map to `Bokføringsdato`, `Beløp`, `Avsender`, `Mottaker`, `Navn`, `Tittel`, `Valuta`, `Betalingstype` (with English aliases supported).
 ---
