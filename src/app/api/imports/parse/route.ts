@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { parseNorwegianBankCsv } from "@/lib/import/csv-parser";
+import { stageParsedImportRows } from "@/lib/import/review-stage";
 import { prisma } from "@/lib/prisma";
 
 type ParseImportPayload = {
@@ -99,9 +99,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = parseNorwegianBankCsv(csvContent);
+  const staged = await stageParsedImportRows(prisma, {
+    accountId,
+    csvContent,
+  });
+
   return NextResponse.json({
-    summary: parsed.summary,
-    errors: parsed.errors,
+    summary: staged.summary,
+    errors: staged.errors,
+    review: staged.review,
   });
 }

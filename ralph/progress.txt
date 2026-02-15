@@ -4,7 +4,8 @@
 - Keep overview analytics filter state and `/api/dashboard/analytics` fetching logic scoped to the `/overview` route UI instead of the legacy `/` workspace.
 - Keep account CRUD interactions and success/error notices inside `src/app/accounts/*`, and let other routes only consume `/api/accounts` for account selection needs.
 - Keep category and category-rule CRUD UI/state scoped to `src/app/categories/*`, with dedicated `/api/categories` and `/api/category-rules` handlers for deterministic rule management.
-- Keep the `/import` route wired to parse-only validation (`/api/imports/parse`) so CSV feedback is shown before any persistence/review submit step.
+- Keep the `/import` route wired to `/api/imports/parse` for parse feedback and staging, with transaction persistence deferred to explicit review submit.
+- Keep import review staging in dedicated Prisma models (`ImportReviewSession`, `ImportReviewRow`) and return staged row ids in parse responses so later review edits stay decoupled from persisted `Transaction` rows.
 
 ## 2026-02-15 21:20:39 CET - US-001
 - Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
@@ -58,5 +59,16 @@
 - **Learnings for future iterations**
   - Route-split management stories work best with route-local client components (for example `src/app/categories/categories-manager.tsx`) that own fetch/mutation UX and keep legacy `/` scope unchanged.
   - Category-rule APIs should return joined category labels (`rule.category.name`) so rule tables can render deterministically without extra client joins.
-  - Targeted Playwright tests with API route mocking provide stable UI verification for CRUD stories without coupling to seed data.
+- Targeted Playwright tests with API route mocking provide stable UI verification for CRUD stories without coupling to seed data.
+---
+
+## 2026-02-15 22:27:50 CET - US-006
+- Implemented import review staging with new Prisma models (`ImportReviewSession`, `ImportReviewRow`) and migration-backed storage for parse-valid rows before persistence.
+- Added `stageParsedImportRows` flow to parse, validate booking dates, normalize merchants/payment types, persist staged rows, and return review payload with row identifiers plus nullable `categoryId`.
+- Updated `/api/imports/parse` to return staged review data (`review.sessionId`, `review.rows`) alongside summary/errors while keeping transaction persistence out of the parse step.
+- Files changed: `prisma/schema.prisma`, `prisma/migrations/20260215231500_add_import_review_staging_tables/migration.sql`, `src/lib/import/review-stage.ts`, `src/lib/import/review-stage.test.ts`, `src/app/api/imports/parse/route.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Stage parse-valid rows with immutable row metadata (`rowNumber`, normalized merchant/payment type) so review edits can be tracked without mutating `Transaction` entities before submit.
+  - Keep parse endpoint responses additive (`summary`/`errors` + `review`) to avoid breaking existing importer UI while enabling incremental review-flow rollout.
 ---
