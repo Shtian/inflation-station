@@ -44,6 +44,12 @@ export type CsvValidationError = {
 export type CsvParserResult = {
   rows: ParsedCsvRow[];
   errors: CsvValidationError[];
+  summary: {
+    imported: number;
+    duplicates: number;
+    ignoredReserved: number;
+    invalid: number;
+  };
 };
 
 function normalizeHeader(value: string): string {
@@ -102,6 +108,10 @@ function parseNokAmount(value: string): number | null {
   return numeric;
 }
 
+function isReservedBookingDate(value: string): boolean {
+  return value.trim().toLowerCase() === "reservert";
+}
+
 type HeaderMap = Record<(typeof REQUIRED_HEADERS)[number], number>;
 
 function buildHeaderMap(headerLine: string): HeaderMap | null {
@@ -145,6 +155,12 @@ export function parseNorwegianBankCsv(csvContent: string): CsvParserResult {
             "CSV is empty. Expected headers include Bokføringsdato, Beløp, Valuta and Betalingstype.",
         },
       ],
+      summary: {
+        imported: 0,
+        duplicates: 0,
+        ignoredReserved: 0,
+        invalid: 1,
+      },
     };
   }
 
@@ -161,11 +177,18 @@ export function parseNorwegianBankCsv(csvContent: string): CsvParserResult {
             "Missing required CSV headers. Expected Bokføringsdato, Beløp, Avsender, Mottaker, Navn, Tittel, Valuta, Betalingstype.",
         },
       ],
+      summary: {
+        imported: 0,
+        duplicates: 0,
+        ignoredReserved: 0,
+        invalid: 1,
+      },
     };
   }
 
   const rows: ParsedCsvRow[] = [];
   const errors: CsvValidationError[] = [];
+  let ignoredReserved = 0;
 
   for (let index = 1; index < lines.length; index += 1) {
     const rowNumber = index + 1;
@@ -177,6 +200,12 @@ export function parseNorwegianBankCsv(csvContent: string): CsvParserResult {
         code: "INVALID_COLUMN_COUNT",
         message: `Row ${rowNumber} has too few columns for the expected semicolon format.`,
       });
+      continue;
+    }
+
+    const bookingDate = cells[headerMap.bookingDate];
+    if (isReservedBookingDate(bookingDate)) {
+      ignoredReserved += 1;
       continue;
     }
 
@@ -203,7 +232,7 @@ export function parseNorwegianBankCsv(csvContent: string): CsvParserResult {
     }
 
     rows.push({
-      bookingDate: cells[headerMap.bookingDate],
+      bookingDate,
       amountNok,
       currency: "NOK",
       sender: cells[headerMap.sender],
@@ -214,5 +243,14 @@ export function parseNorwegianBankCsv(csvContent: string): CsvParserResult {
     });
   }
 
-  return { rows, errors };
+  return {
+    rows,
+    errors,
+    summary: {
+      imported: rows.length,
+      duplicates: 0,
+      ignoredReserved,
+      invalid: errors.length,
+    },
+  };
 }

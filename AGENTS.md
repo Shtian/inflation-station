@@ -13,7 +13,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - App: Next.js + TypeScript (`src/`)
 - Database: Prisma (`prisma/`, `prisma.config.ts`)
 - API backend: App Router route handlers (`src/app/api/**`) use a shared server-only Prisma client (`src/lib/prisma.ts`)
-- Import parsing convention: parser modules should return typed valid rows plus structured row-level validation errors for import diagnostics.
+- Import parsing convention: parser modules should return typed valid rows, structured row-level validation errors, and a stable `summary` shape (`imported`, `duplicates`, `ignoredReserved`, `invalid`) for importer diagnostics.
 - Data modeling convention: `Transaction` stores `normalizedMerchant` + `paymentType` for deterministic dedupe and category-rule workflows.
 - Task artifacts/specs: `tasks/`, `ralph/`, `prompt.md`
 - Tooling: `biome.json`, `tsconfig.json`, `next.config.ts`
