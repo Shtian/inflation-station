@@ -141,6 +141,24 @@ test("manages accounts and displays import summary", async ({ page }) => {
     });
   });
 
+  await page.route("**/api/dashboard/analytics**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        filters: {
+          accountId: null,
+          startDate: "2026-01-01",
+          endDate: "2026-01-31",
+        },
+        netCashflow: [],
+        inflowOutflow: [],
+        categoryBreakdown: [],
+        accountTrend: [],
+      }),
+    });
+  });
+
   await page.goto("/");
 
   await expect(

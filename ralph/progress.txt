@@ -14,6 +14,7 @@
 - Treat unit tests as part of done criteria for testable behavior changes; only skip with an explicit documented blocker.
 - Keep browser E2E specs in `tests/e2e/*.e2e.ts` and configure Playwright `testMatch` so Vitest (`pnpm test`) runs only unit/integration suites.
 - Keep dashboard analytics aggregation in `src/lib/dashboard/*` with deterministic day buckets and a stable response shape; keep API routes thin and focused on query validation.
+- Keep dashboard filter state as explicit `accountId` + `startDate` + `endDate` inputs and fetch `/api/dashboard/analytics` whenever any of those values change.
 
 ## 2026-02-15 15:38 CET - US-001
 - Implemented Prisma 7 baseline persistence with `Account` and `Category` models, including relations and unique constraints.
@@ -310,4 +311,28 @@
   - Patterns discovered: Keep dashboard query calculations in pure library modules fed from a single DB fetch, then expose them via thin API handlers.
   - Gotchas encountered: `amountNok` from Prisma can be Decimal-like at runtime, so analytics aggregation should normalize with `.toString()` before numeric math.
   - Useful context: API route now returns a stable payload containing `filters`, `netCashflow`, `inflowOutflow`, `categoryBreakdown`, and `accountTrend`.
+---
+
+## 2026-02-15 20:47 CET - US-014
+- Implemented a dashboard UI section on the home page with account filtering plus date-range controls (`30d`, `90d`, `year-to-date`, and custom start/end dates) backed by live `/api/dashboard/analytics` requests.
+- Added four chart panels for net cashflow, inflow vs outflow, category spend breakdown, and account state trend with immediate refresh on account/date changes.
+- Added dedicated Playwright coverage for dashboard filter behavior and updated existing E2E mocks so prior account/import and review specs remain stable with the new analytics fetch.
+- Files changed
+  - `AGENTS.md`
+  - `src/app/page.tsx`
+  - `tests/e2e/us-011-account-import-ui.e2e.ts`
+  - `tests/e2e/us-012-category-review-ui.e2e.ts`
+  - `tests/e2e/us-014-dashboard-ui.e2e.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm test:e2e` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep dashboard date presets as deterministic start/end date setters and keep analytics requests parameterized by those concrete dates.
+  - Gotchas encountered: Playwright server startup still requires elevated permissions in this sandbox to bind dev server port `3100`.
+  - Useful context: Existing E2E specs that open `/` should mock `/api/dashboard/analytics` now that dashboard data loads on initial page render.
 ---
