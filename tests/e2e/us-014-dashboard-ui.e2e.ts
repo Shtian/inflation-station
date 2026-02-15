@@ -26,22 +26,6 @@ test("updates dashboard charts when account and date filters change", async ({
     });
   });
 
-  await page.route("**/api/categories", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ categories: [] }),
-    });
-  });
-
-  await page.route("**/api/categorization/review", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ items: [], count: 0 }),
-    });
-  });
-
   await page.route("**/api/dashboard/analytics**", async (route, request) => {
     const url = new URL(request.url());
     const accountId = url.searchParams.get("accountId");
@@ -144,7 +128,7 @@ test("updates dashboard charts when account and date filters change", async ({
     });
   });
 
-  await page.goto("/");
+  await page.goto("/overview");
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   await expect(
