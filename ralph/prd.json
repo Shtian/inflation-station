@@ -1,228 +1,172 @@
 {
   "project": "Inflation Station",
-  "branchName": "ralph/personal-economy-dashboard",
-  "description": "Local-first personal economy dashboard for importing bank CSVs, deduplicating overlaps, categorizing transactions with optional OpenAI assistance, and visualizing cashflow across accounts.",
+  "branchName": "ralph/route-split-import-review-soft-duplicates",
+  "description": "Split the app into dedicated routes and add a pre-import review flow with category edits and soft duplicate warnings before database persistence.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create base Prisma schema for accounts and categories",
-      "description": "As a developer, I want core account and category tables so transaction and review features can build on stable entities.",
+      "title": "Create top-level route shell and navigation",
+      "description": "As a user, I want clear top-level navigation so I can move between overview, import, accounts, and categories.",
       "acceptanceCriteria": [
-        "Add Prisma models for Account and Category with required fields and relations",
-        "Generate and apply initial migration successfully",
-        "Seed four default account records for first run",
-        "Typecheck passes"
+        "Add navigation links for /overview, /import, /accounts, and /categories",
+        "Define route pages for all four paths",
+        "Document and implement / behavior (redirect or landing with links)",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Add transaction and categorization support tables",
-      "description": "As a developer, I want transaction, category rule, and suggestion tables so imports and category workflows can persist data.",
+      "title": "Move overview experience to /overview",
+      "description": "As a user, I want analytics and graphs available at /overview so the dashboard is isolated from other workflows.",
       "acceptanceCriteria": [
-        "Add Prisma models for Transaction, CategoryRule, and CategorizationSuggestion",
-        "Transaction model includes account relation, booking date, amount in NOK, currency, normalized merchant text, and payment type",
-        "Generate and apply migration successfully",
-        "Typecheck passes"
+        "Overview charts and filters render from /overview",
+        "Existing overview API calls still execute with same filter behavior",
+        "Old overview UI path no longer required for access",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Implement account management backend",
-      "description": "As a user, I want to rename, add, and remove monitored accounts so the app matches my real bank setup.",
+      "title": "Move account management to /accounts",
+      "description": "As a user, I want account CRUD available at /accounts so account setup is separated from import and analytics.",
       "acceptanceCriteria": [
-        "Create server actions or route handlers for list/create/update/delete account operations",
-        "Prevent deletion when account has transactions unless explicit reassignment or guard is handled",
-        "Persist account changes in SQLite",
+        "List/create/update/delete account UI is reachable from /accounts",
+        "Account actions continue to use existing API handlers",
+        "Account page shows clear success and error feedback for CRUD operations",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Build CSV parser for Norwegian bank exports",
-      "description": "As a user, I want semicolon-delimited CSV imports parsed correctly so transaction data is normalized and usable.",
+      "title": "Move category management to /categories",
+      "description": "As a user, I want category and rule management at /categories so categorization setup has a dedicated workspace.",
       "acceptanceCriteria": [
-        "Parse CSV with ';' delimiter and expected header names including Norwegian fields",
-        "Convert amount strings with comma decimals into numeric NOK values",
-        "Reject rows where currency is not NOK with explicit validation errors",
+        "Category management UI is reachable from /categories",
+        "Any category rule controls currently available remain functional on /categories",
+        "No category management controls are orphaned after route split",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Ignore reserved rows and report import diagnostics",
-      "description": "As a user, I want reserved transactions excluded so analytics only reflect posted transactions.",
+      "title": "Move CSV upload entry point to /import",
+      "description": "As a user, I want CSV upload started from /import so ingestion has a dedicated route.",
       "acceptanceCriteria": [
-        "Treat rows with booking date value 'Reservert' as ignored during import",
-        "Return import summary counts for imported, duplicates, ignored reserved, and invalid rows",
-        "Expose summary in importer response payload",
+        "CSV upload form and account selector are reachable from /import",
+        "Upload action starts parsing flow from /import without direct DB insert",
+        "Import route displays parser validation feedback before review",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Add deterministic transaction deduplication",
-      "description": "As a user, I want overlapping uploads deduplicated so totals and history remain accurate.",
+      "title": "Add import review staging model",
+      "description": "As a user, I want parsed rows staged for review so nothing is written before I confirm.",
       "acceptanceCriteria": [
-        "Create deterministic fingerprint from account id, booking date, amount, normalized counterpart text, and payment type",
-        "Enforce deduplication with database uniqueness or equivalent conflict-safe insert logic",
-        "Duplicate rows are skipped and counted in import summary",
+        "Parsed valid rows are stored in a review-stage model (session or equivalent) before persistence",
+        "No Transaction rows are inserted during parse/stage step",
+        "Review payload includes row identifier, parsed transaction fields, and category field",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 6,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Implement CSV upload import endpoint",
-      "description": "As a user, I want to upload CSV files for a selected account so transaction history is stored in the app.",
+      "title": "Prefill review rows with category suggestions",
+      "description": "As a user, I want suggested categories prefilled in review so I only edit exceptions.",
       "acceptanceCriteria": [
-        "Create import action or API endpoint that requires account selection",
-        "Wire parser, reserved-row filtering, validation, deduplication, and database insert into one import pipeline",
-        "Return structured import summary to client",
+        "Review-stage rows include suggested category from existing deterministic suggestion pipeline when available",
+        "Rows without suggestions remain uncategorized and editable",
+        "Suggestion generation failure does not block review-stage creation",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 7,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Add rule-based categorization engine",
-      "description": "As a user, I want automatic category guesses from merchant keywords so manual categorization effort is reduced.",
+      "title": "Flag potential duplicates as warnings in review data",
+      "description": "As a user, I want potential duplicates flagged instead of blocked so I can keep legitimate identical same-day transactions.",
       "acceptanceCriteria": [
-        "Implement rule matching against normalized merchant text and payment type",
-        "Assign suggested category and confidence or reason metadata for matched transactions",
-        "Leave unmatched transactions uncategorized for review",
+        "Compute duplicate warning flag from existing fingerprint fields (accountId, bookingDate, amountNok, normalizedMerchant, paymentType)",
+        "Potential duplicates are returned as warnings in review data and not auto-dropped",
+        "Review summary includes potential duplicate count",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 8,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-009",
-      "title": "Add optional OpenAI category suggestion service",
-      "description": "As a user, I want optional AI suggestions for unresolved transactions so category coverage improves.",
+      "title": "Build import review UI with category editing and duplicate warnings",
+      "description": "As a user, I want a review table that lets me edit categories and inspect duplicate warnings before submit.",
       "acceptanceCriteria": [
-        "Integrate OpenAI suggestion step behind API key presence check",
-        "If OpenAI is unavailable or key is missing, pipeline continues without failure",
-        "Persist AI suggestion output and confidence or reasoning text",
+        "Review UI lists staged rows with editable category control per row",
+        "Rows flagged as potential duplicates show a visible warning indicator",
+        "Rows without category suggestion are clearly shown as uncategorized",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-010",
-      "title": "Implement category review and approval backend",
-      "description": "As a user, I want a review queue backend so I can approve or edit categories before final submit.",
+      "title": "Persist reviewed rows only on explicit submit",
+      "description": "As a user, I want only explicitly submitted review rows persisted so import results reflect my final decisions.",
       "acceptanceCriteria": [
-        "Provide query endpoint for pending category suggestions",
-        "Provide submit endpoint to apply approved category assignments in batch",
-        "Unsubmitted edits are not permanently persisted as finalized categories",
+        "Submit endpoint writes Transaction rows from final reviewed state only",
+        "Edited categories from review are the values persisted",
+        "Cancel or leaving review without submit does not persist staged rows",
+        "Import result summary includes imported, potentialDuplicates, invalid, and skipped counts",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 10,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-011",
-      "title": "Build account management and import UI with shadcn",
-      "description": "As a user, I want shadcn-based screens for account setup and CSV upload so data import is straightforward.",
+      "title": "Finalize import review flow integration on /import",
+      "description": "As a user, I want the import route to transition parse -> review -> submit so the end-to-end flow is consistent.",
       "acceptanceCriteria": [
-        "Create UI for listing, renaming, adding, and removing accounts",
-        "Create upload form with account selector and file input",
-        "Show structured import summary after submission",
+        "Uploading a CSV from /import transitions to review state before persistence",
+        "Submitting from review returns to /import with clear import summary feedback",
+        "End-to-end flow handles uncategorized and potential duplicate rows without hard blocking",
         "Typecheck passes",
-        "Verify in browser using Playwright CLI"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 11,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-012",
-      "title": "Build category review UI with inline edits",
-      "description": "As a user, I want to review, bulk-accept, and edit suggested categories before finalizing.",
-      "acceptanceCriteria": [
-        "Create review table showing transaction, suggested category, and editable final category",
-        "Support bulk accept action and per-row edits",
-        "Submit applies final categories and removes items from pending review",
-        "Typecheck passes",
-        "Verify in browser using Playwright CLI"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-013",
-      "title": "Implement dashboard analytics query layer",
-      "description": "As a user, I want aggregate data endpoints so charts can show cashflow, account state, and category spending.",
-      "acceptanceCriteria": [
-        "Add server-side queries for net cashflow over time, inflow vs outflow series, category breakdown, and account trend",
-        "Queries support filtering by account and date range",
-        "Values are formatted or returned in consistent NOK-safe numeric form",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-014",
-      "title": "Build dashboard charts and filter UI with shadcn",
-      "description": "As a user, I want interactive charts and filters so I can understand my financial overview quickly.",
-      "acceptanceCriteria": [
-        "Add date-range controls (30d, 90d, year-to-date, custom)",
-        "Render charts for net cashflow, inflow vs outflow, category spend breakdown, and account state trend",
-        "Charts update immediately when account or date filters change",
-        "Typecheck passes",
-        "Verify in browser using Playwright CLI"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-015",
-      "title": "Document local setup for macOS and Raspberry Pi Linux",
-      "description": "As a user, I want clear setup instructions so I can run the app locally on both supported environments.",
-      "acceptanceCriteria": [
-        "README includes installation and run steps for macOS and Raspberry Pi Linux",
-        "Document Prisma migration and seeding workflow for local SQLite",
-        "Document optional OpenAI API key configuration and behavior when unset",
-        "Typecheck passes"
-      ],
-      "priority": 15,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]

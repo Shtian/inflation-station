@@ -157,6 +157,38 @@ describe("importTransactionsFromCsv", () => {
     });
   });
 
+  it("accepts booking dates in YYYY/MM/DD format", async () => {
+    const db = createDbMock();
+
+    const result = await importTransactionsFromCsv(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n2026/02/13;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+    });
+
+    expect(result.summary).toEqual({
+      imported: 1,
+      duplicates: 0,
+      ignoredReserved: 0,
+      invalid: 0,
+    });
+    expect(result.errors).toHaveLength(0);
+    expect(db.transaction.create).toHaveBeenCalledWith({
+      data: {
+        accountId: "account-1",
+        bookingDate: new Date("2026-02-13T00:00:00.000Z"),
+        amountNok: 100,
+        currency: "NOK",
+        normalizedMerchant: "shop a alice groceries friday",
+        paymentType: PaymentType.CARD,
+      },
+      select: {
+        id: true,
+        normalizedMerchant: true,
+        paymentType: true,
+      },
+    });
+  });
+
   it("creates rule-based suggestions for matched imported transactions", async () => {
     const db = createDbMock({
       categories: [{ id: "cat-groceries", name: "Groceries", kind: "EXPENSE" }],

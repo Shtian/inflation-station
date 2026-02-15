@@ -181,19 +181,42 @@ function normalizePaymentType(value: string): PaymentType {
 function parseBookingDate(value: string): Date | null {
   const trimmed = value.trim();
 
+  const buildUtcDate = (year: string, month: string, day: string): Date | null => {
+    const yearNumber = Number.parseInt(year, 10);
+    const monthNumber = Number.parseInt(month, 10);
+    const dayNumber = Number.parseInt(day, 10);
+    const parsed = new Date(
+      Date.UTC(yearNumber, monthNumber - 1, dayNumber, 0, 0, 0, 0),
+    );
+
+    if (
+      Number.isNaN(parsed.getTime()) ||
+      parsed.getUTCFullYear() !== yearNumber ||
+      parsed.getUTCMonth() !== monthNumber - 1 ||
+      parsed.getUTCDate() !== dayNumber
+    ) {
+      return null;
+    }
+
+    return parsed;
+  };
+
   const norwegianDate = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(trimmed);
   if (norwegianDate) {
     const [, day, month, year] = norwegianDate;
-    const isoDate = `${year}-${month}-${day}`;
-    const parsed = new Date(`${isoDate}T00:00:00.000Z`);
-
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
+    return buildUtcDate(year, month, day);
   }
 
   const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
   if (isoDate) {
-    const parsed = new Date(`${trimmed}T00:00:00.000Z`);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
+    const [, year, month, day] = isoDate;
+    return buildUtcDate(year, month, day);
+  }
+
+  const slashIsoDate = /^(\d{4})\/(\d{2})\/(\d{2})$/.exec(trimmed);
+  if (slashIsoDate) {
+    const [, year, month, day] = slashIsoDate;
+    return buildUtcDate(year, month, day);
   }
 
   return null;
@@ -247,7 +270,7 @@ function splitValidAndInvalidRows(rows: ParsedCsvRow[]): {
       invalidRows.push({
         rowNumber: index + 2,
         code: "INVALID_BOOKING_DATE",
-        message: `Row ${index + 2} has unsupported booking date "${row.bookingDate}". Expected format DD.MM.YYYY.`,
+        message: `Row ${index + 2} has unsupported booking date "${row.bookingDate}". Expected formats DD.MM.YYYY, YYYY-MM-DD, or YYYY/MM/DD.`,
       });
       continue;
     }
