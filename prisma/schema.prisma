@@ -69,6 +69,7 @@ model Transaction {
 
   @@index([accountId, bookingDate])
   @@index([categoryId])
+  @@unique([accountId, bookingDate, amountNok, normalizedMerchant, paymentType], map: "transaction_dedupe_fields_key")
 }
 
 model CategoryRule {

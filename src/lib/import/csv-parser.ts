@@ -20,7 +20,7 @@ const HEADER_ALIASES: Record<(typeof REQUIRED_HEADERS)[number], string[]> = {
   paymentType: ["Betalingstype", "PaymentType"],
 };
 
-type ParsedCsvRow = {
+export type ParsedCsvRow = {
   bookingDate: string;
   amountNok: number;
   currency: "NOK";

@@ -6,6 +6,7 @@
 - For destructive account operations, guard in API handlers and return explicit conflict errors (e.g. `409 ACCOUNT_HAS_TRANSACTIONS`) instead of relying on implicit DB failures.
 - Keep CSV import parsing in dedicated `src/lib/import/*` modules that return `rows` and structured row-level `errors` so import diagnostics stay stable as pipeline steps are added.
 - Keep import diagnostics as stable count fields (`imported`, `duplicates`, `ignoredReserved`, `invalid`) so parser and endpoint layers can compose without response-shape drift.
+- Keep import dedupe logic in a shared helper and align its fingerprint fields with the Prisma `Transaction` uniqueness constraint.
 - Treat unit tests as part of done criteria for testable behavior changes; only skip with an explicit documented blocker.
 
 ## 2026-02-15 15:38 CET - US-001
@@ -112,4 +113,28 @@
   - Patterns discovered: Reserved transactions should be filtered as non-errors during parse so downstream import totals stay analytically correct.
   - Gotchas encountered: Diagnostics should always include a `duplicates` count even before dedupe is implemented, to keep response contracts stable.
   - Useful context: Parser now exposes a `summary` object directly in `CsvParserResult`; import endpoint can forward it without remapping.
+---
+
+## 2026-02-15 16:07 CET - US-006
+- Implemented deterministic transaction fingerprinting from `accountId`, `bookingDate`, `amountNok`, normalized counterpart text, and `paymentType`.
+- Added reusable import dedupe helper that skips duplicate rows (within a batch and against existing fingerprints) and returns duplicate counts for import summaries.
+- Enforced conflict-safe deduplication at the database layer with a Prisma unique constraint on the same dedupe fields in `Transaction`.
+- Files changed
+  - `AGENTS.md`
+  - `prisma/schema.prisma`
+  - `prisma/migrations/20260215160618_add_transaction_dedupe_uniqueness/migration.sql`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+  - `src/lib/import/csv-parser.ts`
+  - `src/lib/import/transaction-dedupe.ts`
+  - `src/lib/import/transaction-dedupe.test.ts`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep dedupe fingerprint composition centralized in a helper so import pipelines and DB constraints stay in sync.
+  - Gotchas encountered: `pnpm exec prisma migrate dev` is non-interactive in this environment; create SQL migration files manually and apply with `pnpm exec prisma migrate deploy`.
+  - Useful context: `dedupeParsedTransactions` returns `uniqueRows` plus `duplicateCount`, which can be merged directly into endpoint summary fields.
 ---
