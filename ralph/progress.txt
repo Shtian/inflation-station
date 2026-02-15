@@ -15,6 +15,7 @@
 - Keep browser E2E specs in `tests/e2e/*.e2e.ts` and configure Playwright `testMatch` so Vitest (`pnpm test`) runs only unit/integration suites.
 - Keep dashboard analytics aggregation in `src/lib/dashboard/*` with deterministic day buckets and a stable response shape; keep API routes thin and focused on query validation.
 - Keep dashboard filter state as explicit `accountId` + `startDate` + `endDate` inputs and fetch `/api/dashboard/analytics` whenever any of those values change.
+- Keep `README.md` aligned with supported local environments (macOS and Raspberry Pi Linux), including Prisma migrate/seed workflow and optional OpenAI key behavior.
 
 ## 2026-02-15 15:38 CET - US-001
 - Implemented Prisma 7 baseline persistence with `Account` and `Category` models, including relations and unique constraints.
@@ -335,4 +336,22 @@
   - Patterns discovered: Keep dashboard date presets as deterministic start/end date setters and keep analytics requests parameterized by those concrete dates.
   - Gotchas encountered: Playwright server startup still requires elevated permissions in this sandbox to bind dev server port `3100`.
   - Useful context: Existing E2E specs that open `/` should mock `/api/dashboard/analytics` now that dashboard data loads on initial page render.
+---
+## 2026-02-15 20:50 CET - US-015
+- Implemented repository documentation updates for local setup on macOS and Raspberry Pi Linux, including prerequisites and run instructions.
+- Added explicit Prisma migration/client-generation/seed workflow commands for both development and clean-environment execution.
+- Documented optional `OPENAI_API_KEY` configuration and non-blocking behavior when the key is unset or provider calls fail.
+- Files changed
+  - `README.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (skipped: documentation-only change; no runtime/build-impacting code changes)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep onboarding docs synchronized with current scripts (`pnpm db:migrate`, `pnpm db:seed`, `pnpm exec prisma migrate deploy`) to avoid setup drift.
+  - Gotchas encountered: None.
+  - Useful context: Import pipeline behavior with missing `OPENAI_API_KEY` is intentionally resilient and should be documented as optional, not required.
 ---
