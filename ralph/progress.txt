@@ -6,6 +6,7 @@
 - For destructive account operations, guard in API handlers and return explicit conflict errors (e.g. `409 ACCOUNT_HAS_TRANSACTIONS`) instead of relying on implicit DB failures.
 - Keep CSV import parsing in dedicated `src/lib/import/*` modules that return `rows` and structured row-level `errors` so import diagnostics stay stable as pipeline steps are added.
 - Keep import diagnostics as stable count fields (`imported`, `duplicates`, `ignoredReserved`, `invalid`) so parser and endpoint layers can compose without response-shape drift.
+- Treat unit tests as part of done criteria for testable behavior changes; only skip with an explicit documented blocker.
 
 ## 2026-02-15 15:38 CET - US-001
 - Implemented Prisma 7 baseline persistence with `Account` and `Category` models, including relations and unique constraints.

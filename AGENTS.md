@@ -23,6 +23,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Make the smallest safe change that satisfies the request.
 - Do not refactor unrelated code.
 - Preserve existing style and architecture unless asked otherwise.
+- Add or update unit tests for behavior changes whenever the code under change is testable.
 - After Prisma schema changes, run `pnpm exec prisma generate` before TypeScript/build checks.
 - If assumptions are required, state them briefly.
 
@@ -30,7 +31,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 Run only what matches the change scope:
 - Formatting/linting: `pnpm lint` (or targeted checks when possible)
 - Build/type safety: `pnpm build`
-- Tests: `pnpm test` (or targeted tests)
+- Tests: `pnpm test` (or targeted tests). For behavior changes, tests are required unless there is a documented blocker.
 
 If validation is skipped, explicitly state what was not run and why.
 
