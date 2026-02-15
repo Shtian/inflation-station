@@ -24,6 +24,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Dashboard UI convention: keep chart/filter state client-side in the page component and fetch `/api/dashboard/analytics` on every account/date filter change so visuals stay in sync with backend aggregates.
 - Route split convention: keep primary app navigation in `src/app/layout.tsx` and treat `/` as a temporary legacy workspace while feature modules are moved to dedicated top-level routes.
 - Account route convention: keep account CRUD interactions and user-facing success/error feedback in `src/app/accounts/*`, while other routes consume `/api/accounts` only for selection/filtering.
+- Categories route convention: keep category/category-rule CRUD interactions and user-facing success/error feedback in `src/app/categories/*`, backed by `/api/categories` and `/api/category-rules` handlers.
 - E2E testing convention: keep Playwright specs under `tests/e2e/*.e2e.ts` and run them via Playwright CLI so Vitest (`pnpm test`) does not pick up browser tests.
 - Task artifacts/specs: `tasks/`, `ralph/`, `prompt.md`
 - Tooling: `biome.json`, `tsconfig.json`, `next.config.ts`

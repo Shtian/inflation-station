@@ -3,6 +3,7 @@
 - During route-split migrations, keep `/` as a temporary legacy workspace and document transitional routing behavior in `README.md`.
 - Keep overview analytics filter state and `/api/dashboard/analytics` fetching logic scoped to the `/overview` route UI instead of the legacy `/` workspace.
 - Keep account CRUD interactions and success/error notices inside `src/app/accounts/*`, and let other routes only consume `/api/accounts` for account selection needs.
+- Keep category and category-rule CRUD UI/state scoped to `src/app/categories/*`, with dedicated `/api/categories` and `/api/category-rules` handlers for deterministic rule management.
 
 ## 2026-02-15 21:20:39 CET - US-001
 - Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
@@ -34,4 +35,16 @@
 - **Learnings for future iterations**
   - Keep route-split changes decoupled by moving feature-specific client state and mutation handlers into route-local components (for example `src/app/accounts/accounts-manager.tsx`) while preserving shared API contracts.
   - For UI stories, targeted Playwright specs can validate route-specific behavior independently of legacy `/` workspace transitions.
+---
+
+## 2026-02-15 21:38:03 CET - US-004
+- Implemented dedicated category management at `/categories` with route-local CRUD UI for categories and category rules, including clear success/error notices.
+- Added new API handlers for category and category-rule create/list/delete flows while preserving deterministic rule fields (`merchantContains`, `paymentType`, `priority`, optional account scope).
+- Added Playwright E2E coverage for `/categories` to verify category creation, rule creation, and delete flows via user-facing controls.
+- Files changed: `src/app/categories/page.tsx`, `src/app/categories/categories-manager.tsx`, `src/app/api/categories/route.ts`, `src/app/api/categories/[categoryId]/route.ts`, `src/app/api/category-rules/route.ts`, `src/app/api/category-rules/[ruleId]/route.ts`, `tests/e2e/us-015-categories-route-management.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-015-categories-route-management.e2e.ts` (pass).
+- **Learnings for future iterations**
+  - Route-split management stories work best with route-local client components (for example `src/app/categories/categories-manager.tsx`) that own fetch/mutation UX and keep legacy `/` scope unchanged.
+  - Category-rule APIs should return joined category labels (`rule.category.name`) so rule tables can render deterministically without extra client joins.
+  - Targeted Playwright tests with API route mocking provide stable UI verification for CRUD stories without coupling to seed data.
 ---
