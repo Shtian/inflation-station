@@ -37,7 +37,8 @@ export type CsvValidationError = {
     | "MISSING_REQUIRED_HEADERS"
     | "INVALID_COLUMN_COUNT"
     | "INVALID_AMOUNT"
-    | "INVALID_CURRENCY";
+    | "INVALID_CURRENCY"
+    | "INVALID_BOOKING_DATE";
   message: string;
 };
 

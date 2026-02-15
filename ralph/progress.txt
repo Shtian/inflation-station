@@ -7,6 +7,7 @@
 - Keep CSV import parsing in dedicated `src/lib/import/*` modules that return `rows` and structured row-level `errors` so import diagnostics stay stable as pipeline steps are added.
 - Keep import diagnostics as stable count fields (`imported`, `duplicates`, `ignoredReserved`, `invalid`) so parser and endpoint layers can compose without response-shape drift.
 - Keep import dedupe logic in a shared helper and align its fingerprint fields with the Prisma `Transaction` uniqueness constraint.
+- Canonicalize parsed payment-type labels to Prisma `PaymentType` enum values before dedupe and insert so fingerprints align with stored transactions.
 - Treat unit tests as part of done criteria for testable behavior changes; only skip with an explicit documented blocker.
 
 ## 2026-02-15 15:38 CET - US-001
@@ -137,4 +138,27 @@
   - Patterns discovered: Keep dedupe fingerprint composition centralized in a helper so import pipelines and DB constraints stay in sync.
   - Gotchas encountered: `pnpm exec prisma migrate dev` is non-interactive in this environment; create SQL migration files manually and apply with `pnpm exec prisma migrate deploy`.
   - Useful context: `dedupeParsedTransactions` returns `uniqueRows` plus `duplicateCount`, which can be merged directly into endpoint summary fields.
+---
+
+## 2026-02-15 16:14 CET - US-007
+- Implemented CSV import API endpoint at `POST /api/imports` with required account selection and CSV payload validation (supports multipart `file` and JSON `csvContent`).
+- Added end-to-end import pipeline module that composes parser diagnostics, deterministic dedupe against existing transactions, payment-type normalization, and transaction persistence.
+- Added unit test coverage for account-not-found guard, invalid-only payload handling, dedupe behavior across batch + existing data, and mixed reserved/invalid/valid import summaries.
+- Files changed
+  - `AGENTS.md`
+  - `src/app/api/imports/route.ts`
+  - `src/lib/import/csv-parser.ts`
+  - `src/lib/import/import-transactions.ts`
+  - `src/lib/import/import-transactions.test.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep import orchestration in `src/lib/import/*` modules and keep API routes thin wrappers for request validation + HTTP mapping.
+  - Gotchas encountered: Dedupe fingerprints must use canonical `PaymentType` enum values, not raw CSV labels, or duplicates against persisted rows can be missed.
+  - Useful context: `importTransactionsFromCsv` returns a stable `{ summary, errors }` shape that can be forwarded directly from route handlers.
 ---

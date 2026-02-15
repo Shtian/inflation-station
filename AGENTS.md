@@ -16,6 +16,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Import parsing convention: parser modules should return typed valid rows, structured row-level validation errors, and a stable `summary` shape (`imported`, `duplicates`, `ignoredReserved`, `invalid`) for importer diagnostics.
 - Data modeling convention: `Transaction` stores `normalizedMerchant` + `paymentType` for deterministic dedupe and category-rule workflows.
 - Dedupe convention: build fingerprints from `accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, and `paymentType`, and keep that aligned with the Prisma unique constraint on `Transaction`.
+- Import pipeline convention: normalize bank CSV payment-type labels (for example `Kort`) to Prisma `PaymentType` enum values before fingerprint dedupe and persistence so duplicate detection stays deterministic across uploads.
 - Task artifacts/specs: `tasks/`, `ralph/`, `prompt.md`
 - Tooling: `biome.json`, `tsconfig.json`, `next.config.ts`
 
