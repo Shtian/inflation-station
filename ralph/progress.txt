@@ -10,6 +10,7 @@
 - Canonicalize parsed payment-type labels to Prisma `PaymentType` enum values before dedupe and insert so fingerprints align with stored transactions.
 - Apply category rules deterministically (priority first, then merchant-keyword specificity) so suggestion outcomes stay stable across runs.
 - Treat OpenAI categorization as optional: guard by `OPENAI_API_KEY`, run only for unresolved transactions, and swallow provider failures so imports continue.
+- For category review submission, update `Transaction.categoryId` and delete related `CategorizationSuggestion` rows in one DB transaction so the pending queue cannot drift.
 - Treat unit tests as part of done criteria for testable behavior changes; only skip with an explicit documented blocker.
 
 ## 2026-02-15 15:38 CET - US-001
@@ -208,4 +209,26 @@
   - Patterns discovered: Keep OpenAI integration in an isolated module and inject the builder into import orchestration for deterministic tests without network calls.
   - Gotchas encountered: Preserve explicit `null` for optional API-key overrides instead of using `??`, or test overrides can be lost to env fallback.
   - Useful context: `categorizationSuggestion.createMany` now accepts both `RULE` and `OPENAI` sources from one merged suggestion payload.
+---
+
+## 2026-02-15 18:50 CET - US-010
+- Implemented category review backend with `GET /api/categorization/review` for pending suggestions and `POST /api/categorization/review` for batch approval submission.
+- Added deterministic pending-item selection (one suggestion per uncategorized transaction) and batch finalization that only applies submitted decisions.
+- Persisted approved categories by updating `Transaction.categoryId` and clearing related review suggestions atomically.
+- Files changed
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+  - `src/app/api/categorization/review/route.ts`
+  - `src/lib/categorization/review-queue.ts`
+  - `src/lib/categorization/review-queue.test.ts`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep review queue logic in a dedicated library module and keep route handlers thin (payload validation + error mapping).
+  - Gotchas encountered: Pending review queries should explicitly filter `transaction.categoryId = null` to avoid showing already-finalized transactions.
+  - Useful context: Submission endpoint currently accepts `{ decisions: [{ transactionId, categoryId }] }` and returns `{ updated, skipped }` for batch UX feedback.
 ---
