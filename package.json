@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "biome check",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "test:watch": "vitest",
     "format": "biome format --write",
     "db:migrate": "prisma migrate dev",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

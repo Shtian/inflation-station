@@ -12,6 +12,7 @@
 - Treat OpenAI categorization as optional: guard by `OPENAI_API_KEY`, run only for unresolved transactions, and swallow provider failures so imports continue.
 - For category review submission, update `Transaction.categoryId` and delete related `CategorizationSuggestion` rows in one DB transaction so the pending queue cannot drift.
 - Treat unit tests as part of done criteria for testable behavior changes; only skip with an explicit documented blocker.
+- Keep browser E2E specs in `tests/e2e/*.e2e.ts` and configure Playwright `testMatch` so Vitest (`pnpm test`) runs only unit/integration suites.
 
 ## 2026-02-15 15:38 CET - US-001
 - Implemented Prisma 7 baseline persistence with `Account` and `Category` models, including relations and unique constraints.
@@ -231,4 +232,38 @@
   - Patterns discovered: Keep review queue logic in a dedicated library module and keep route handlers thin (payload validation + error mapping).
   - Gotchas encountered: Pending review queries should explicitly filter `transaction.categoryId = null` to avoid showing already-finalized transactions.
   - Useful context: Submission endpoint currently accepts `{ decisions: [{ transactionId, categoryId }] }` and returns `{ updated, skipped }` for batch UX feedback.
+---
+
+## 2026-02-15 18:59 CET - US-011
+- Implemented the account management and CSV import home screen with shadcn-style UI components for listing, adding, renaming, and removing accounts.
+- Wired the upload form to `POST /api/imports` with account selection + file input and rendered the structured import summary (`imported`, `duplicates`, `ignoredReserved`, `invalid`) plus validation errors.
+- Added Playwright E2E setup and coverage for the full UI flow (account CRUD + import summary) using mocked API routes.
+- Files changed
+  - `AGENTS.md`
+  - `.gitignore`
+  - `package.json`
+  - `pnpm-lock.yaml`
+  - `playwright.config.ts`
+  - `src/app/globals.css`
+  - `src/app/layout.tsx`
+  - `src/app/page.tsx`
+  - `src/components/ui/button.tsx`
+  - `src/components/ui/card.tsx`
+  - `src/components/ui/input.tsx`
+  - `src/components/ui/select.tsx`
+  - `src/components/ui/table.tsx`
+  - `src/lib/utils.ts`
+  - `tests/e2e/us-011-account-import-ui.e2e.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+  - `pnpm exec playwright test` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep UI API integration in client components and reuse existing route contracts (`/api/accounts`, `/api/imports`) instead of duplicating backend logic.
+  - Gotchas encountered: Vitest will collect `*.spec.ts` under `tests/`; keep Playwright specs on `*.e2e.ts` and set Playwright `testMatch` to avoid cross-runner collisions.
+  - Useful context: Playwright verification is deterministic here by routing API calls in-test, so E2E checks do not depend on seeded database state.
 ---
