@@ -1,0 +1,30 @@
+## Codebase Patterns
+- Use `prisma.config.ts` for Prisma 7 datasource and migration settings; do not set datasource `url` inside `schema.prisma`.
+- Prisma 7 SQLite runtime access requires a driver adapter (`@prisma/adapter-better-sqlite3`) passed into `new PrismaClient({ adapter })`.
+- Keep local SQLite database files ignored (`prisma/dev.db`) and commit schema + migrations only.
+
+## 2026-02-15 15:38 CET - US-001
+- Implemented Prisma 7 baseline persistence with `Account` and `Category` models, including relations and unique constraints.
+- Generated and applied initial SQLite migration, then added deterministic seeding for four default accounts.
+- Files changed
+  - `.gitignore`
+  - `package.json`
+  - `pnpm-lock.yaml`
+  - `pnpm-workspace.yaml`
+  - `prisma.config.ts`
+  - `prisma/schema.prisma`
+  - `prisma/seed.mjs`
+  - `prisma/migrations/20260215143514_init_accounts_categories/migration.sql`
+  - `prisma/migrations/migration_lock.toml`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (skipped: no test script/config present)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Prisma 7 requires `prisma.config.ts` datasource config and adapter-backed `PrismaClient` usage for SQLite.
+  - Gotchas encountered: `pnpm approve-builds` must include `better-sqlite3`, `prisma`, and `@prisma/engines` so native/binary dependencies are usable.
+  - Useful context: `pnpm-workspace.yaml` now pins approved built dependencies, which should remain committed for reproducible installs.
+---
