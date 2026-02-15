@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum CategoryKind {
+  EXPENSE
+  INCOME
+  TRANSFER
+}
+
+enum PaymentType {
+  CARD
+  TRANSFER
+  EFT
+  CASH
+  OTHER
+}
+
+enum SuggestionSource {
+  RULE
+  OPENAI
+}
+
+model Account {
+  id          String         @id @default(cuid())
+  name        String         @unique
+  institution String?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  categories  Category[]
+  transactions Transaction[]
+  categoryRules CategoryRule[]
+}
+
+model Category {
+  id                      String                   @id @default(cuid())
+  name                    String
+  kind                    CategoryKind             @default(EXPENSE)
+  accountId               String?
+  account                 Account?                 @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  transactions            Transaction[]
+  categoryRules           CategoryRule[]
+  categorizationSuggestions CategorizationSuggestion[]
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  @@unique([name, accountId])
+}
+
+model Transaction {
+  id               String                     @id @default(cuid())
+  accountId        String
+  account          Account                    @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  categoryId       String?
+  category         Category?                  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  bookingDate      DateTime
+  amountNok        Decimal
+  currency         String
+  normalizedMerchant String
+  paymentType      PaymentType                @default(OTHER)
+  suggestions      CategorizationSuggestion[]
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
+
+  @@index([accountId, bookingDate])
+  @@index([categoryId])
+  @@unique([accountId, bookingDate, amountNok, normalizedMerchant, paymentType], map: "transaction_dedupe_fields_key")
+}
+
+model CategoryRule {
+  id               String       @id @default(cuid())
+  accountId        String?
+  account          Account?     @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  categoryId       String
+  category         Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  merchantContains String
+  paymentType      PaymentType?
+  priority         Int          @default(100)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([accountId, priority])
+  @@index([categoryId])
+}
+
+model CategorizationSuggestion {
+  id                  String           @id @default(cuid())
+  transactionId       String
+  transaction         Transaction      @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  suggestedCategoryId String
+  suggestedCategory   Category         @relation(fields: [suggestedCategoryId], references: [id], onDelete: Cascade)
+  source              SuggestionSource
+  confidence          Float?
+  reasoning           String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([transactionId, source])
+  @@index([suggestedCategoryId])
+}

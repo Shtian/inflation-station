@@ -1,0 +1,2 @@
+## Codebase Patterns
+- (Capture stable implementation patterns discovered during this Ralph run.)

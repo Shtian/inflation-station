@@ -1,0 +1,357 @@
+## Codebase Patterns
+- Use `prisma.config.ts` for Prisma 7 datasource and migration settings; do not set datasource `url` inside `schema.prisma`.
+- Prisma 7 SQLite runtime access requires a driver adapter (`@prisma/adapter-better-sqlite3`) passed into `new PrismaClient({ adapter })`.
+- Keep local SQLite database files ignored (`prisma/dev.db`) and commit schema + migrations only.
+- Store normalized merchant text and explicit payment type on transactions to keep import dedupe and category-rule matching deterministic.
+- For destructive account operations, guard in API handlers and return explicit conflict errors (e.g. `409 ACCOUNT_HAS_TRANSACTIONS`) instead of relying on implicit DB failures.
+- Keep CSV import parsing in dedicated `src/lib/import/*` modules that return `rows` and structured row-level `errors` so import diagnostics stay stable as pipeline steps are added.
+- Keep import diagnostics as stable count fields (`imported`, `duplicates`, `ignoredReserved`, `invalid`) so parser and endpoint layers can compose without response-shape drift.
+- Keep import dedupe logic in a shared helper and align its fingerprint fields with the Prisma `Transaction` uniqueness constraint.
+- Canonicalize parsed payment-type labels to Prisma `PaymentType` enum values before dedupe and insert so fingerprints align with stored transactions.
+- Apply category rules deterministically (priority first, then merchant-keyword specificity) so suggestion outcomes stay stable across runs.
+- Treat OpenAI categorization as optional: guard by `OPENAI_API_KEY`, run only for unresolved transactions, and swallow provider failures so imports continue.
+- For category review submission, update `Transaction.categoryId` and delete related `CategorizationSuggestion` rows in one DB transaction so the pending queue cannot drift.
+- Treat unit tests as part of done criteria for testable behavior changes; only skip with an explicit documented blocker.
+- Keep browser E2E specs in `tests/e2e/*.e2e.ts` and configure Playwright `testMatch` so Vitest (`pnpm test`) runs only unit/integration suites.
+- Keep dashboard analytics aggregation in `src/lib/dashboard/*` with deterministic day buckets and a stable response shape; keep API routes thin and focused on query validation.
+- Keep dashboard filter state as explicit `accountId` + `startDate` + `endDate` inputs and fetch `/api/dashboard/analytics` whenever any of those values change.
+- Keep `README.md` aligned with supported local environments (macOS and Raspberry Pi Linux), including Prisma migrate/seed workflow and optional OpenAI key behavior.
+
+## 2026-02-15 15:38 CET - US-001
+- Implemented Prisma 7 baseline persistence with `Account` and `Category` models, including relations and unique constraints.
+- Generated and applied initial SQLite migration, then added deterministic seeding for four default accounts.
+- Files changed
+  - `.gitignore`
+  - `package.json`
+  - `pnpm-lock.yaml`
+  - `pnpm-workspace.yaml`
+  - `prisma.config.ts`
+  - `prisma/schema.prisma`
+  - `prisma/seed.mjs`
+  - `prisma/migrations/20260215143514_init_accounts_categories/migration.sql`
+  - `prisma/migrations/migration_lock.toml`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (skipped: no test script/config present)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Prisma 7 requires `prisma.config.ts` datasource config and adapter-backed `PrismaClient` usage for SQLite.
+  - Gotchas encountered: `pnpm approve-builds` must include `better-sqlite3`, `prisma`, and `@prisma/engines` so native/binary dependencies are usable.
+  - Useful context: `pnpm-workspace.yaml` now pins approved built dependencies, which should remain committed for reproducible installs.
+---
+
+## 2026-02-15 15:43 CET - US-002
+- Implemented Prisma support tables for import and categorization workflows by adding `Transaction`, `CategoryRule`, and `CategorizationSuggestion` models with enums and relations.
+- Added required transaction fields for account relation, booking date, NOK amount, currency, normalized merchant text, and payment type.
+- Generated and applied migration `20260215144315_add_transaction_and_categorization_tables` to SQLite.
+- Files changed
+  - `prisma/schema.prisma`
+  - `prisma/migrations/20260215144315_add_transaction_and_categorization_tables/migration.sql`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (skipped: no `test` script and no `tests/` directory present)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep transaction classification metadata (`normalizedMerchant`, `paymentType`) in the core `Transaction` model so later dedupe and rule engines stay deterministic.
+  - Gotchas encountered: `pnpm prisma migrate dev` will create/apply migrations and also create local `prisma/dev.db`, so `.gitignore` must continue excluding local DB files.
+  - Useful context: Suggestion persistence is now normalized through `CategorizationSuggestion` with source metadata (`RULE`/`OPENAI`) for downstream review queue features.
+---
+
+## 2026-02-15 15:47 CET - US-003
+- Implemented account management backend with App Router API handlers for list/create/update/delete operations.
+- Added payload validation and conflict handling (duplicate account names and guarded deletes for accounts with linked transactions).
+- Added a shared server-only Prisma client module for route handlers.
+- Files changed
+  - `AGENTS.md`
+  - `src/lib/prisma.ts`
+  - `src/app/api/accounts/route.ts`
+  - `src/app/api/accounts/[accountId]/route.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (skipped: no `test` script in `package.json`)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep backend persistence access in shared `server-only` modules and reuse from App Router handlers.
+  - Gotchas encountered: After schema evolution, stale Prisma client types can surface until `pnpm exec prisma generate` is rerun.
+  - Useful context: Next.js dynamic App Router handler params are async and should be typed as `params: Promise<{...}>` in route signatures.
+---
+
+## 2026-02-15 15:57 CET - US-004
+- Implemented a CSV parser for Norwegian bank exports with semicolon-delimited parsing, quoted-field handling, and required-header validation.
+- Added amount normalization for Norwegian decimal formats (comma decimals, optional thousand separators) and explicit non-NOK row validation errors.
+- Files changed
+  - `AGENTS.md`
+  - `src/lib/import/csv-parser.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (skipped: no `test` script in `package.json`)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep parser output shape stable (`rows` + row-level `errors` with code/message/rowNumber) to support later import summary APIs.
+  - Gotchas encountered: Headers can include Norwegian characters, so alias matching should normalize diacritics before validation.
+  - Useful context: Required CSV headers currently map to `Bokføringsdato`, `Beløp`, `Avsender`, `Mottaker`, `Navn`, `Tittel`, `Valuta`, `Betalingstype` (with English aliases supported).
+---
+
+## 2026-02-15 15:59 CET - US-005
+- Implemented reserved-row handling in CSV parsing by ignoring rows where `bookingDate` equals `Reservert`.
+- Added parser-level import diagnostics summary with stable counts for `imported`, `duplicates`, `ignoredReserved`, and `invalid`.
+- Files changed
+  - `AGENTS.md`
+  - `src/lib/import/csv-parser.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (skipped: no `test` script in `package.json`)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Reserved transactions should be filtered as non-errors during parse so downstream import totals stay analytically correct.
+  - Gotchas encountered: Diagnostics should always include a `duplicates` count even before dedupe is implemented, to keep response contracts stable.
+  - Useful context: Parser now exposes a `summary` object directly in `CsvParserResult`; import endpoint can forward it without remapping.
+---
+
+## 2026-02-15 16:07 CET - US-006
+- Implemented deterministic transaction fingerprinting from `accountId`, `bookingDate`, `amountNok`, normalized counterpart text, and `paymentType`.
+- Added reusable import dedupe helper that skips duplicate rows (within a batch and against existing fingerprints) and returns duplicate counts for import summaries.
+- Enforced conflict-safe deduplication at the database layer with a Prisma unique constraint on the same dedupe fields in `Transaction`.
+- Files changed
+  - `AGENTS.md`
+  - `prisma/schema.prisma`
+  - `prisma/migrations/20260215160618_add_transaction_dedupe_uniqueness/migration.sql`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+  - `src/lib/import/csv-parser.ts`
+  - `src/lib/import/transaction-dedupe.ts`
+  - `src/lib/import/transaction-dedupe.test.ts`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep dedupe fingerprint composition centralized in a helper so import pipelines and DB constraints stay in sync.
+  - Gotchas encountered: `pnpm exec prisma migrate dev` is non-interactive in this environment; create SQL migration files manually and apply with `pnpm exec prisma migrate deploy`.
+  - Useful context: `dedupeParsedTransactions` returns `uniqueRows` plus `duplicateCount`, which can be merged directly into endpoint summary fields.
+---
+
+## 2026-02-15 16:14 CET - US-007
+- Implemented CSV import API endpoint at `POST /api/imports` with required account selection and CSV payload validation (supports multipart `file` and JSON `csvContent`).
+- Added end-to-end import pipeline module that composes parser diagnostics, deterministic dedupe against existing transactions, payment-type normalization, and transaction persistence.
+- Added unit test coverage for account-not-found guard, invalid-only payload handling, dedupe behavior across batch + existing data, and mixed reserved/invalid/valid import summaries.
+- Files changed
+  - `AGENTS.md`
+  - `src/app/api/imports/route.ts`
+  - `src/lib/import/csv-parser.ts`
+  - `src/lib/import/import-transactions.ts`
+  - `src/lib/import/import-transactions.test.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep import orchestration in `src/lib/import/*` modules and keep API routes thin wrappers for request validation + HTTP mapping.
+  - Gotchas encountered: Dedupe fingerprints must use canonical `PaymentType` enum values, not raw CSV labels, or duplicates against persisted rows can be missed.
+  - Useful context: `importTransactionsFromCsv` returns a stable `{ summary, errors }` shape that can be forwarded directly from route handlers.
+---
+
+## 2026-02-15 18:37 CET - US-008
+- Implemented a reusable rule-based categorization engine that matches transaction `normalizedMerchant` text and optional `paymentType` constraints, with deterministic rule precedence.
+- Wired rule suggestions into the CSV import pipeline so newly imported transactions receive persisted `RULE` suggestions with confidence and reasoning metadata.
+- Added unit tests for rule matching precedence, unmatched behavior, and import-level suggestion persistence.
+- Files changed
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+  - `src/lib/categorization/rule-engine.ts`
+  - `src/lib/categorization/rule-engine.test.ts`
+  - `src/lib/import/import-transactions.ts`
+  - `src/lib/import/import-transactions.test.ts`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep rule matching as a pure module and feed it only persisted transaction facts (`id`, `normalizedMerchant`, `paymentType`) to keep suggestion generation deterministic and testable.
+  - Gotchas encountered: Prisma enum member access is not available as a type namespace; use concrete literal types (for example `"RULE"`) in DTO shapes.
+  - Useful context: Import flow now supports account-scoped and global category rules by querying both `accountId = selectedAccount` and `accountId = null`.
+---
+
+## 2026-02-15 18:41 CET - US-009
+- Implemented optional OpenAI categorization support for unresolved imported transactions via a dedicated `openai-suggestions` module.
+- Wired AI suggestions into the import pipeline behind API-key configuration and made provider/network failures non-fatal so imports still succeed.
+- Added unit tests for key-missing behavior, provider failure fallback, and successful `OPENAI` suggestion persistence.
+- Files changed
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+  - `src/lib/categorization/openai-suggestions.ts`
+  - `src/lib/import/import-transactions.ts`
+  - `src/lib/import/import-transactions.test.ts`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep OpenAI integration in an isolated module and inject the builder into import orchestration for deterministic tests without network calls.
+  - Gotchas encountered: Preserve explicit `null` for optional API-key overrides instead of using `??`, or test overrides can be lost to env fallback.
+  - Useful context: `categorizationSuggestion.createMany` now accepts both `RULE` and `OPENAI` sources from one merged suggestion payload.
+---
+
+## 2026-02-15 18:50 CET - US-010
+- Implemented category review backend with `GET /api/categorization/review` for pending suggestions and `POST /api/categorization/review` for batch approval submission.
+- Added deterministic pending-item selection (one suggestion per uncategorized transaction) and batch finalization that only applies submitted decisions.
+- Persisted approved categories by updating `Transaction.categoryId` and clearing related review suggestions atomically.
+- Files changed
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+  - `src/app/api/categorization/review/route.ts`
+  - `src/lib/categorization/review-queue.ts`
+  - `src/lib/categorization/review-queue.test.ts`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep review queue logic in a dedicated library module and keep route handlers thin (payload validation + error mapping).
+  - Gotchas encountered: Pending review queries should explicitly filter `transaction.categoryId = null` to avoid showing already-finalized transactions.
+  - Useful context: Submission endpoint currently accepts `{ decisions: [{ transactionId, categoryId }] }` and returns `{ updated, skipped }` for batch UX feedback.
+---
+
+## 2026-02-15 18:59 CET - US-011
+- Implemented the account management and CSV import home screen with shadcn-style UI components for listing, adding, renaming, and removing accounts.
+- Wired the upload form to `POST /api/imports` with account selection + file input and rendered the structured import summary (`imported`, `duplicates`, `ignoredReserved`, `invalid`) plus validation errors.
+- Added Playwright E2E setup and coverage for the full UI flow (account CRUD + import summary) using mocked API routes.
+- Files changed
+  - `AGENTS.md`
+  - `.gitignore`
+  - `package.json`
+  - `pnpm-lock.yaml`
+  - `playwright.config.ts`
+  - `src/app/globals.css`
+  - `src/app/layout.tsx`
+  - `src/app/page.tsx`
+  - `src/components/ui/button.tsx`
+  - `src/components/ui/card.tsx`
+  - `src/components/ui/input.tsx`
+  - `src/components/ui/select.tsx`
+  - `src/components/ui/table.tsx`
+  - `src/lib/utils.ts`
+  - `tests/e2e/us-011-account-import-ui.e2e.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+  - `pnpm exec playwright test` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep UI API integration in client components and reuse existing route contracts (`/api/accounts`, `/api/imports`) instead of duplicating backend logic.
+  - Gotchas encountered: Vitest will collect `*.spec.ts` under `tests/`; keep Playwright specs on `*.e2e.ts` and set Playwright `testMatch` to avoid cross-runner collisions.
+  - Useful context: Playwright verification is deterministic here by routing API calls in-test, so E2E checks do not depend on seeded database state.
+---
+## 2026-02-15 20:34 CET - US-012
+- Implemented category review UI with inline editable final categories, bulk accept of suggestions, and batch submit wiring to the existing review backend.
+- Added a categories API endpoint used by the review table to populate final-category selects.
+- Added Playwright E2E coverage for review queue behaviors (bulk accept, per-row edit, submit-and-clear) and updated US-011 mocks to account for review-related API calls.
+- Files changed
+  - `src/app/api/categories/route.ts`
+  - `src/app/page.tsx`
+  - `tests/e2e/us-011-account-import-ui.e2e.ts`
+  - `tests/e2e/us-012-category-review-ui.e2e.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+  - `pnpm exec playwright test` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Review UX is stable when final category selections are held client-side and persisted only through one explicit submit call.
+  - Gotchas encountered: Playwright web server startup needs elevated permissions in this sandbox due local port-binding restrictions (`EPERM` on `:3100`).
+- Useful context: `GET /api/categories` plus `GET/POST /api/categorization/review` is now the complete contract for the review table UI.
+---
+## 2026-02-15 20:38 CET - US-013
+- Implemented dashboard analytics query layer with deterministic server-side aggregates for net cashflow, inflow/outflow, category spending breakdown, and per-account trend series.
+- Added an analytics API endpoint at `GET /api/dashboard/analytics` with support for `accountId`, `startDate`, and `endDate` filters plus explicit date-range validation errors.
+- Added unit tests covering aggregate behavior and filter forwarding to the transaction query.
+- Files changed
+  - `AGENTS.md`
+  - `src/lib/dashboard/analytics.ts`
+  - `src/lib/dashboard/analytics.test.ts`
+  - `src/app/api/dashboard/analytics/route.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep dashboard query calculations in pure library modules fed from a single DB fetch, then expose them via thin API handlers.
+  - Gotchas encountered: `amountNok` from Prisma can be Decimal-like at runtime, so analytics aggregation should normalize with `.toString()` before numeric math.
+  - Useful context: API route now returns a stable payload containing `filters`, `netCashflow`, `inflowOutflow`, `categoryBreakdown`, and `accountTrend`.
+---
+
+## 2026-02-15 20:47 CET - US-014
+- Implemented a dashboard UI section on the home page with account filtering plus date-range controls (`30d`, `90d`, `year-to-date`, and custom start/end dates) backed by live `/api/dashboard/analytics` requests.
+- Added four chart panels for net cashflow, inflow vs outflow, category spend breakdown, and account state trend with immediate refresh on account/date changes.
+- Added dedicated Playwright coverage for dashboard filter behavior and updated existing E2E mocks so prior account/import and review specs remain stable with the new analytics fetch.
+- Files changed
+  - `AGENTS.md`
+  - `src/app/page.tsx`
+  - `tests/e2e/us-011-account-import-ui.e2e.ts`
+  - `tests/e2e/us-012-category-review-ui.e2e.ts`
+  - `tests/e2e/us-014-dashboard-ui.e2e.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm test:e2e` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep dashboard date presets as deterministic start/end date setters and keep analytics requests parameterized by those concrete dates.
+  - Gotchas encountered: Playwright server startup still requires elevated permissions in this sandbox to bind dev server port `3100`.
+  - Useful context: Existing E2E specs that open `/` should mock `/api/dashboard/analytics` now that dashboard data loads on initial page render.
+---
+## 2026-02-15 20:50 CET - US-015
+- Implemented repository documentation updates for local setup on macOS and Raspberry Pi Linux, including prerequisites and run instructions.
+- Added explicit Prisma migration/client-generation/seed workflow commands for both development and clean-environment execution.
+- Documented optional `OPENAI_API_KEY` configuration and non-blocking behavior when the key is unset or provider calls fail.
+- Files changed
+  - `README.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (skipped: documentation-only change; no runtime/build-impacting code changes)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep onboarding docs synchronized with current scripts (`pnpm db:migrate`, `pnpm db:seed`, `pnpm exec prisma migrate deploy`) to avoid setup drift.
+  - Gotchas encountered: None.
+  - Useful context: Import pipeline behavior with missing `OPENAI_API_KEY` is intentionally resilient and should be documented as optional, not required.
+---
