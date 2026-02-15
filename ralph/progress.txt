@@ -267,3 +267,25 @@
   - Gotchas encountered: Vitest will collect `*.spec.ts` under `tests/`; keep Playwright specs on `*.e2e.ts` and set Playwright `testMatch` to avoid cross-runner collisions.
   - Useful context: Playwright verification is deterministic here by routing API calls in-test, so E2E checks do not depend on seeded database state.
 ---
+## 2026-02-15 20:34 CET - US-012
+- Implemented category review UI with inline editable final categories, bulk accept of suggestions, and batch submit wiring to the existing review backend.
+- Added a categories API endpoint used by the review table to populate final-category selects.
+- Added Playwright E2E coverage for review queue behaviors (bulk accept, per-row edit, submit-and-clear) and updated US-011 mocks to account for review-related API calls.
+- Files changed
+  - `src/app/api/categories/route.ts`
+  - `src/app/page.tsx`
+  - `tests/e2e/us-011-account-import-ui.e2e.ts`
+  - `tests/e2e/us-012-category-review-ui.e2e.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+  - `pnpm exec playwright test` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Review UX is stable when final category selections are held client-side and persisted only through one explicit submit call.
+  - Gotchas encountered: Playwright web server startup needs elevated permissions in this sandbox due local port-binding restrictions (`EPERM` on `:3100`).
+  - Useful context: `GET /api/categories` plus `GET/POST /api/categorization/review` is now the complete contract for the review table UI.
+---

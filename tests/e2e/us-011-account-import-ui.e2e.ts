@@ -100,6 +100,31 @@ test("manages accounts and displays import summary", async ({ page }) => {
     await route.continue();
   });
 
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ categories: [] }),
+    });
+  });
+
+  await page.route("**/api/categorization/review", async (route, request) => {
+    if (request.method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ items: [], count: 0 }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ updated: 0, skipped: 0 }),
+    });
+  });
+
   await page.route("**/api/imports", async (route) => {
     await route.fulfill({
       status: 200,
@@ -119,7 +144,7 @@ test("manages accounts and displays import summary", async ({ page }) => {
   await page.goto("/");
 
   await expect(
-    page.getByRole("heading", { name: "Accounts and CSV Import" }),
+    page.getByRole("heading", { name: "Accounts, Imports, and Review" }),
   ).toBeVisible();
   await expect(page.getByRole("cell", { name: "Main Account" })).toBeVisible();
 

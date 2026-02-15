@@ -32,6 +32,33 @@ type ImportResponse = {
   errors: ImportError[];
 };
 
+type Category = {
+  id: string;
+  name: string;
+  kind: string;
+  accountId: string | null;
+};
+
+type ReviewItem = {
+  transaction: {
+    id: string;
+    bookingDate: string;
+    amountNok: number;
+    normalizedMerchant: string;
+    paymentType: string;
+  };
+  suggestion: {
+    id: string;
+    source: string;
+    confidence: number | null;
+    reasoning: string | null;
+    category: {
+      id: string;
+      name: string;
+    };
+  };
+};
+
 function getErrorMessage(status: number, body: unknown) {
   if (typeof body === "object" && body && "error" in body) {
     const code = String((body as { error: unknown }).error);
@@ -49,6 +76,38 @@ function getErrorMessage(status: number, body: unknown) {
   }
 
   return "Request failed. Please try again.";
+}
+
+function getReviewErrorMessage(status: number, body: unknown) {
+  if (typeof body === "object" && body && "error" in body) {
+    const code = String((body as { error: unknown }).error);
+
+    if (status === 400 && code === "CATEGORY_NOT_FOUND") {
+      return "One or more selected categories no longer exist. Refresh and try again.";
+    }
+
+    if (status === 400 && code === "INVALID_REVIEW_SUBMIT_PAYLOAD") {
+      return "Invalid review submission. Please verify selected categories.";
+    }
+  }
+
+  return "Could not submit review decisions.";
+}
+
+function formatNok(value: number) {
+  return new Intl.NumberFormat("nb-NO", {
+    style: "currency",
+    currency: "NOK",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function buildInitialDecisions(items: ReviewItem[]) {
+  return items.reduce<Record<string, string>>((acc, item) => {
+    acc[item.transaction.id] = item.suggestion.category.id;
+    return acc;
+  }, {});
 }
 
 export default function Home() {
@@ -69,6 +128,16 @@ export default function Home() {
   const [importLoading, setImportLoading] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importResult, setImportResult] = useState<ImportResponse | null>(null);
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(true);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
+  const [decisionsByTransactionId, setDecisionsByTransactionId] = useState<
+    Record<string, string>
+  >({});
 
   const loadAccounts = useCallback(async () => {
     setAccountsLoading(true);
@@ -105,9 +174,67 @@ export default function Home() {
     setAccountsLoading(false);
   }, []);
 
+  const loadReviewData = useCallback(async () => {
+    setReviewLoading(true);
+    setReviewError(null);
+
+    const [categoriesResponse, reviewResponse] = await Promise.all([
+      fetch("/api/categories"),
+      fetch("/api/categorization/review"),
+    ]);
+
+    const categoriesBody = await categoriesResponse.json().catch(() => null);
+    const reviewBody = await reviewResponse.json().catch(() => null);
+
+    if (
+      !categoriesResponse.ok ||
+      !categoriesBody ||
+      typeof categoriesBody !== "object" ||
+      !("categories" in categoriesBody)
+    ) {
+      setReviewError("Could not load categories for review.");
+      setCategories([]);
+      setReviewItems([]);
+      setDecisionsByTransactionId({});
+      setReviewLoading(false);
+      return;
+    }
+
+    if (
+      !reviewResponse.ok ||
+      !reviewBody ||
+      typeof reviewBody !== "object" ||
+      !("items" in reviewBody)
+    ) {
+      setReviewError("Could not load pending category reviews.");
+      setCategories(
+        Array.isArray(categoriesBody.categories)
+          ? (categoriesBody.categories as Category[])
+          : [],
+      );
+      setReviewItems([]);
+      setDecisionsByTransactionId({});
+      setReviewLoading(false);
+      return;
+    }
+
+    const nextCategories = Array.isArray(categoriesBody.categories)
+      ? (categoriesBody.categories as Category[])
+      : [];
+    const nextReviewItems = Array.isArray(reviewBody.items)
+      ? (reviewBody.items as ReviewItem[])
+      : [];
+
+    setCategories(nextCategories);
+    setReviewItems(nextReviewItems);
+    setDecisionsByTransactionId(buildInitialDecisions(nextReviewItems));
+    setReviewLoading(false);
+  }, []);
+
   useEffect(() => {
     void loadAccounts();
-  }, [loadAccounts]);
+    void loadReviewData();
+  }, [loadAccounts, loadReviewData]);
 
   async function createAccount() {
     if (!newAccountName.trim()) {
@@ -247,6 +374,70 @@ export default function Home() {
     setImportLoading(false);
   }
 
+  function changeDecision(transactionId: string, categoryId: string) {
+    setDecisionsByTransactionId((current) => ({
+      ...current,
+      [transactionId]: categoryId,
+    }));
+  }
+
+  function bulkAcceptSuggested() {
+    setDecisionsByTransactionId(buildInitialDecisions(reviewItems));
+    setReviewNotice("Applied suggested categories to all pending rows.");
+    setReviewError(null);
+  }
+
+  async function submitReview() {
+    if (reviewItems.length === 0) {
+      return;
+    }
+
+    const decisions = reviewItems
+      .map((item) => ({
+        transactionId: item.transaction.id,
+        categoryId:
+          decisionsByTransactionId[item.transaction.id] ??
+          item.suggestion.category.id,
+      }))
+      .filter((item) => item.categoryId);
+
+    if (decisions.length === 0) {
+      setReviewError("Choose a category for at least one row.");
+      return;
+    }
+
+    setReviewSubmitting(true);
+    setReviewError(null);
+    setReviewNotice(null);
+
+    const response = await fetch("/api/categorization/review", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ decisions }),
+    });
+
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok || !body || typeof body !== "object") {
+      setReviewError(getReviewErrorMessage(response.status, body));
+      setReviewSubmitting(false);
+      return;
+    }
+
+    const updated =
+      "updated" in body && typeof body.updated === "number" ? body.updated : 0;
+    const skipped =
+      "skipped" in body && typeof body.skipped === "number" ? body.skipped : 0;
+
+    setReviewNotice(
+      `Submitted review decisions. Updated ${updated}, skipped ${skipped}.`,
+    );
+    setReviewSubmitting(false);
+    await loadReviewData();
+  }
+
   const hasAccounts = accounts.length > 0;
   const activeAccounts = useMemo(
     () => accounts.filter((account) => account.isActive),
@@ -261,10 +452,11 @@ export default function Home() {
             Inflation Station
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">
-            Accounts and CSV Import
+            Accounts, Imports, and Review
           </h1>
           <p className="text-sm text-zinc-600">
-            Manage monitored accounts and import bank transactions.
+            Manage accounts, import transactions, and finalize category
+            decisions.
           </p>
         </header>
 
@@ -523,10 +715,12 @@ export default function Home() {
                 </dl>
 
                 {importResult.errors.length > 0 ? (
-                  <div className="rounded-md border border-zinc-200 bg-white p-3">
-                    <h3 className="text-sm font-semibold">Validation errors</h3>
-                    <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-zinc-700">
-                      {importResult.errors.slice(0, 5).map((error) => (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-700">
+                      Validation errors
+                    </h3>
+                    <ul className="space-y-1 text-sm text-zinc-700">
+                      {importResult.errors.map((error) => (
                         <li key={`${error.rowNumber}-${error.code}`}>
                           Row {error.rowNumber}: {error.message}
                         </li>
@@ -538,6 +732,126 @@ export default function Home() {
             ) : null}
           </Card>
         </div>
+
+        <Card>
+          <div className="space-y-1">
+            <CardTitle>Category Review</CardTitle>
+            <CardDescription>
+              Review suggested categories, edit final categories, and submit in
+              bulk.
+            </CardDescription>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              onClick={bulkAcceptSuggested}
+              disabled={
+                reviewLoading || reviewItems.length === 0 || reviewSubmitting
+              }
+            >
+              Use suggested for all
+            </Button>
+            <Button
+              onClick={submitReview}
+              disabled={
+                reviewLoading || reviewItems.length === 0 || reviewSubmitting
+              }
+            >
+              {reviewSubmitting ? "Submitting..." : "Submit review decisions"}
+            </Button>
+          </div>
+
+          {reviewError ? (
+            <p
+              role="alert"
+              className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {reviewError}
+            </p>
+          ) : null}
+
+          {reviewNotice ? (
+            <p className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {reviewNotice}
+            </p>
+          ) : null}
+
+          <div className="mt-4 overflow-x-auto rounded-md border border-zinc-200">
+            <Table>
+              <THead>
+                <tr>
+                  <TH>Date</TH>
+                  <TH>Merchant</TH>
+                  <TH className="text-right">Amount</TH>
+                  <TH>Suggested</TH>
+                  <TH>Final category</TH>
+                </tr>
+              </THead>
+              <TBody>
+                {reviewLoading ? (
+                  <tr>
+                    <TD colSpan={5}>Loading pending reviews...</TD>
+                  </tr>
+                ) : null}
+                {!reviewLoading && reviewItems.length === 0 ? (
+                  <tr>
+                    <TD colSpan={5}>No pending suggestions.</TD>
+                  </tr>
+                ) : null}
+                {!reviewLoading
+                  ? reviewItems.map((item) => (
+                      <tr key={item.suggestion.id}>
+                        <TD>{item.transaction.bookingDate}</TD>
+                        <TD>{item.transaction.normalizedMerchant}</TD>
+                        <TD className="text-right">
+                          {formatNok(item.transaction.amountNok)}
+                        </TD>
+                        <TD>
+                          <div className="font-medium text-zinc-900">
+                            {item.suggestion.category.name}
+                          </div>
+                          <div className="text-xs text-zinc-500">
+                            {item.suggestion.source}
+                            {typeof item.suggestion.confidence === "number"
+                              ? ` (${Math.round(item.suggestion.confidence * 100)}%)`
+                              : ""}
+                          </div>
+                        </TD>
+                        <TD>
+                          <Select
+                            aria-label={`Final category for ${item.transaction.normalizedMerchant}`}
+                            value={
+                              decisionsByTransactionId[item.transaction.id] ??
+                              item.suggestion.category.id
+                            }
+                            onChange={(event) =>
+                              changeDecision(
+                                item.transaction.id,
+                                event.target.value,
+                              )
+                            }
+                            disabled={
+                              reviewSubmitting || categories.length === 0
+                            }
+                          >
+                            {categories.length === 0 ? (
+                              <option value="">No categories available</option>
+                            ) : null}
+                            {categories.map((category) => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </TD>
+                      </tr>
+                    ))
+                  : null}
+              </TBody>
+            </Table>
+          </div>
+        </Card>
       </main>
     </div>
   );
