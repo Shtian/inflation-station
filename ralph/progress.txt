@@ -2,6 +2,7 @@
 - Use `prisma.config.ts` for Prisma 7 datasource and migration settings; do not set datasource `url` inside `schema.prisma`.
 - Prisma 7 SQLite runtime access requires a driver adapter (`@prisma/adapter-better-sqlite3`) passed into `new PrismaClient({ adapter })`.
 - Keep local SQLite database files ignored (`prisma/dev.db`) and commit schema + migrations only.
+- Store normalized merchant text and explicit payment type on transactions to keep import dedupe and category-rule matching deterministic.
 
 ## 2026-02-15 15:38 CET - US-001
 - Implemented Prisma 7 baseline persistence with `Account` and `Category` models, including relations and unique constraints.
@@ -27,4 +28,24 @@
   - Patterns discovered: Prisma 7 requires `prisma.config.ts` datasource config and adapter-backed `PrismaClient` usage for SQLite.
   - Gotchas encountered: `pnpm approve-builds` must include `better-sqlite3`, `prisma`, and `@prisma/engines` so native/binary dependencies are usable.
   - Useful context: `pnpm-workspace.yaml` now pins approved built dependencies, which should remain committed for reproducible installs.
+---
+
+## 2026-02-15 15:43 CET - US-002
+- Implemented Prisma support tables for import and categorization workflows by adding `Transaction`, `CategoryRule`, and `CategorizationSuggestion` models with enums and relations.
+- Added required transaction fields for account relation, booking date, NOK amount, currency, normalized merchant text, and payment type.
+- Generated and applied migration `20260215144315_add_transaction_and_categorization_tables` to SQLite.
+- Files changed
+  - `prisma/schema.prisma`
+  - `prisma/migrations/20260215144315_add_transaction_and_categorization_tables/migration.sql`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (skipped: no `test` script and no `tests/` directory present)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered: Keep transaction classification metadata (`normalizedMerchant`, `paymentType`) in the core `Transaction` model so later dedupe and rule engines stay deterministic.
+  - Gotchas encountered: `pnpm prisma migrate dev` will create/apply migrations and also create local `prisma/dev.db`, so `.gitignore` must continue excluding local DB files.
+  - Useful context: Suggestion persistence is now normalized through `CategorizationSuggestion` with source metadata (`RULE`/`OPENAI`) for downstream review queue features.
 ---

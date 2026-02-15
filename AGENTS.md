@@ -12,6 +12,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 ## Repository Snapshot (Only What Matters)
 - App: Next.js + TypeScript (`src/`)
 - Database: Prisma (`prisma/`, `prisma.config.ts`)
+- Data modeling convention: `Transaction` stores `normalizedMerchant` + `paymentType` for deterministic dedupe and category-rule workflows.
 - Task artifacts/specs: `tasks/`, `ralph/`, `prompt.md`
 - Tooling: `biome.json`, `tsconfig.json`, `next.config.ts`
 
