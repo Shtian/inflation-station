@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Account = {
   id: string;
@@ -514,35 +521,39 @@ export default function Home() {
 
           <div className="mt-4 overflow-x-auto rounded-md border border-border">
             <Table>
-              <THead>
-                <tr>
-                  <TH>Date</TH>
-                  <TH>Merchant</TH>
-                  <TH className="text-right">Amount</TH>
-                  <TH>Suggested</TH>
-                  <TH>Final category</TH>
-                </tr>
-              </THead>
-              <TBody>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Merchant</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Suggested</TableHead>
+                  <TableHead>Final category</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {reviewLoading ? (
-                  <tr>
-                    <TD colSpan={5}>Loading pending reviews...</TD>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      Loading pending reviews...
+                    </TableCell>
+                  </TableRow>
                 ) : null}
                 {!reviewLoading && reviewItems.length === 0 ? (
-                  <tr>
-                    <TD colSpan={5}>No pending suggestions.</TD>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={5}>No pending suggestions.</TableCell>
+                  </TableRow>
                 ) : null}
                 {!reviewLoading
                   ? reviewItems.map((item) => (
-                      <tr key={item.suggestion.id}>
-                        <TD>{item.transaction.bookingDate}</TD>
-                        <TD>{item.transaction.normalizedMerchant}</TD>
-                        <TD className="text-right">
+                      <TableRow key={item.suggestion.id}>
+                        <TableCell>{item.transaction.bookingDate}</TableCell>
+                        <TableCell>
+                          {item.transaction.normalizedMerchant}
+                        </TableCell>
+                        <TableCell className="text-right">
                           {formatNok(item.transaction.amountNok)}
-                        </TD>
-                        <TD>
+                        </TableCell>
+                        <TableCell>
                           <div className="font-medium text-foreground">
                             {item.suggestion.category.name}
                           </div>
@@ -552,8 +563,8 @@ export default function Home() {
                               ? ` (${Math.round(item.suggestion.confidence * 100)}%)`
                               : ""}
                           </div>
-                        </TD>
-                        <TD>
+                        </TableCell>
+                        <TableCell>
                           <Select
                             aria-label={`Final category for ${item.transaction.normalizedMerchant}`}
                             value={
@@ -579,11 +590,11 @@ export default function Home() {
                               </option>
                             ))}
                           </Select>
-                        </TD>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))
                   : null}
-              </TBody>
+              </TableBody>
             </Table>
           </div>
         </Card>

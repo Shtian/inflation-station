@@ -6,7 +6,14 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Account = {
   id: string;
@@ -431,32 +438,32 @@ export function ImportUploader() {
                 </p>
                 <div className="overflow-x-auto rounded-md border border-border">
                   <Table>
-                    <THead>
-                      <tr>
-                        <TH>Row</TH>
-                        <TH>Date</TH>
-                        <TH>Merchant</TH>
-                        <TH>Amount</TH>
-                        <TH>Payment type</TH>
-                        <TH>Warning</TH>
-                        <TH>Category</TH>
-                      </tr>
-                    </THead>
-                    <TBody>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Row</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Merchant</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Payment type</TableHead>
+                        <TableHead>Warning</TableHead>
+                        <TableHead>Category</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {parseResult.review.rows.map((row) => {
                         const selectedCategoryId =
                           categoryDecisions[row.id] ?? row.categoryId ?? "";
                         const isUncategorized = selectedCategoryId.length === 0;
                         return (
-                          <tr key={row.id}>
-                            <TD>{row.rowNumber}</TD>
-                            <TD>{row.bookingDate}</TD>
-                            <TD>
+                          <TableRow key={row.id}>
+                            <TableCell>{row.rowNumber}</TableCell>
+                            <TableCell>{row.bookingDate}</TableCell>
+                            <TableCell>
                               {row.normalizedMerchant || "Unknown merchant"}
-                            </TD>
-                            <TD>{formatNok(row.amountNok)}</TD>
-                            <TD>{row.paymentType}</TD>
-                            <TD>
+                            </TableCell>
+                            <TableCell>{formatNok(row.amountNok)}</TableCell>
+                            <TableCell>{row.paymentType}</TableCell>
+                            <TableCell>
                               {row.potentialDuplicate ? (
                                 <span className="font-medium text-amber-700">
                                   Potential duplicate
@@ -466,8 +473,8 @@ export function ImportUploader() {
                                   None
                                 </span>
                               )}
-                            </TD>
-                            <TD>
+                            </TableCell>
+                            <TableCell>
                               <div className="space-y-1">
                                 <Select
                                   aria-label={`Category for row ${row.rowNumber}`}
@@ -495,11 +502,11 @@ export function ImportUploader() {
                                   </p>
                                 ) : null}
                               </div>
-                            </TD>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         );
                       })}
-                    </TBody>
+                    </TableBody>
                   </Table>
                 </div>
                 <Button onClick={submitReviewRows} disabled={submitLoading}>

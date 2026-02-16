@@ -6,7 +6,14 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Account = {
   id: string;
@@ -365,26 +372,26 @@ export function OverviewDashboard() {
           {!dashboardLoading && dashboardData ? (
             <div className="mt-3 overflow-x-auto rounded-md border border-border">
               <Table>
-                <THead>
-                  <tr>
-                    <TH>Date</TH>
-                    <TH className="text-right">Inflow</TH>
-                    <TH className="text-right">Outflow</TH>
-                  </tr>
-                </THead>
-                <TBody>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Inflow</TableHead>
+                    <TableHead className="text-right">Outflow</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {dashboardData.inflowOutflow.map((point) => (
-                    <tr key={point.date}>
-                      <TD>{point.date}</TD>
-                      <TD className="text-right text-emerald-700">
+                    <TableRow key={point.date}>
+                      <TableCell>{point.date}</TableCell>
+                      <TableCell className="text-right text-emerald-700">
                         {formatNok(point.inflowNok)}
-                      </TD>
-                      <TD className="text-right text-rose-700">
+                      </TableCell>
+                      <TableCell className="text-right text-rose-700">
                         {formatNok(point.outflowNok)}
-                      </TD>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </TBody>
+                </TableBody>
               </Table>
             </div>
           ) : null}

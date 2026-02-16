@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Account = {
   id: string;
@@ -244,24 +251,24 @@ export function AccountsManager() {
 
       <div className="overflow-x-auto rounded-md border border-border">
         <Table>
-          <THead>
-            <tr>
-              <TH>Name</TH>
-              <TH>Institution</TH>
-              <TH>Status</TH>
-              <TH className="text-right">Actions</TH>
-            </tr>
-          </THead>
-          <TBody>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Institution</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {accountsLoading ? (
-              <tr>
-                <TD colSpan={4}>Loading accounts...</TD>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={4}>Loading accounts...</TableCell>
+              </TableRow>
             ) : null}
             {!accountsLoading && accounts.length === 0 ? (
-              <tr>
-                <TD colSpan={4}>No accounts yet.</TD>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={4}>No accounts yet.</TableCell>
+              </TableRow>
             ) : null}
             {!accountsLoading
               ? accounts.map((account) => {
@@ -269,8 +276,8 @@ export function AccountsManager() {
                   const isBusy = busyAccountId === account.id;
 
                   return (
-                    <tr key={account.id}>
-                      <TD>
+                    <TableRow key={account.id}>
+                      <TableCell>
                         {isEditing ? (
                           <Input
                             aria-label={`Edit name ${account.name}`}
@@ -282,8 +289,8 @@ export function AccountsManager() {
                         ) : (
                           account.name
                         )}
-                      </TD>
-                      <TD>
+                      </TableCell>
+                      <TableCell>
                         {isEditing ? (
                           <Input
                             aria-label={`Edit institution ${account.name}`}
@@ -295,9 +302,11 @@ export function AccountsManager() {
                         ) : (
                           (account.institution ?? "-")
                         )}
-                      </TD>
-                      <TD>{account.isActive ? "Active" : "Inactive"}</TD>
-                      <TD>
+                      </TableCell>
+                      <TableCell>
+                        {account.isActive ? "Active" : "Inactive"}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex justify-end gap-2">
                           {isEditing ? (
                             <>
@@ -335,12 +344,12 @@ export function AccountsManager() {
                             </>
                           )}
                         </div>
-                      </TD>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               : null}
-          </TBody>
+          </TableBody>
         </Table>
       </div>
     </Card>

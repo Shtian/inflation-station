@@ -7,7 +7,14 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Account = {
   id: string;
@@ -394,32 +401,34 @@ export function CategoriesManager() {
 
         <div className="overflow-x-auto rounded-md border border-border">
           <Table>
-            <THead>
-              <tr>
-                <TH>Name</TH>
-                <TH>Kind</TH>
-                <TH>Scope</TH>
-                <TH className="text-right">Actions</TH>
-              </tr>
-            </THead>
-            <TBody>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Kind</TableHead>
+                <TableHead>Scope</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {loading ? (
-                <tr>
-                  <TD colSpan={4}>Loading categories...</TD>
-                </tr>
+                <TableRow>
+                  <TableCell colSpan={4}>Loading categories...</TableCell>
+                </TableRow>
               ) : null}
               {!loading && categories.length === 0 ? (
-                <tr>
-                  <TD colSpan={4}>No categories yet.</TD>
-                </tr>
+                <TableRow>
+                  <TableCell colSpan={4}>No categories yet.</TableCell>
+                </TableRow>
               ) : null}
               {!loading
                 ? categories.map((category) => (
-                    <tr key={category.id}>
-                      <TD>{category.name}</TD>
-                      <TD>{category.kind}</TD>
-                      <TD>{getScopeLabel(category.accountId, accounts)}</TD>
-                      <TD className="text-right">
+                    <TableRow key={category.id}>
+                      <TableCell>{category.name}</TableCell>
+                      <TableCell>{category.kind}</TableCell>
+                      <TableCell>
+                        {getScopeLabel(category.accountId, accounts)}
+                      </TableCell>
+                      <TableCell className="text-right">
                         <Button
                           variant="outline"
                           onClick={() => deleteCategory(category.id)}
@@ -432,11 +441,11 @@ export function CategoriesManager() {
                             ? "Deleting..."
                             : "Delete"}
                         </Button>
-                      </TD>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 : null}
-            </TBody>
+            </TableBody>
           </Table>
         </div>
       </section>
@@ -549,36 +558,38 @@ export function CategoriesManager() {
 
         <div className="overflow-x-auto rounded-md border border-border">
           <Table>
-            <THead>
-              <tr>
-                <TH>Merchant contains</TH>
-                <TH>Category</TH>
-                <TH>Payment type</TH>
-                <TH>Priority</TH>
-                <TH>Scope</TH>
-                <TH className="text-right">Actions</TH>
-              </tr>
-            </THead>
-            <TBody>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Merchant contains</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Payment type</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Scope</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {loading ? (
-                <tr>
-                  <TD colSpan={6}>Loading category rules...</TD>
-                </tr>
+                <TableRow>
+                  <TableCell colSpan={6}>Loading category rules...</TableCell>
+                </TableRow>
               ) : null}
               {!loading && categoryRules.length === 0 ? (
-                <tr>
-                  <TD colSpan={6}>No category rules yet.</TD>
-                </tr>
+                <TableRow>
+                  <TableCell colSpan={6}>No category rules yet.</TableCell>
+                </TableRow>
               ) : null}
               {!loading
                 ? categoryRules.map((rule) => (
-                    <tr key={rule.id}>
-                      <TD>{rule.merchantContains}</TD>
-                      <TD>{rule.category.name}</TD>
-                      <TD>{rule.paymentType ?? "ANY"}</TD>
-                      <TD>{rule.priority}</TD>
-                      <TD>{getScopeLabel(rule.accountId, accounts)}</TD>
-                      <TD className="text-right">
+                    <TableRow key={rule.id}>
+                      <TableCell>{rule.merchantContains}</TableCell>
+                      <TableCell>{rule.category.name}</TableCell>
+                      <TableCell>{rule.paymentType ?? "ANY"}</TableCell>
+                      <TableCell>{rule.priority}</TableCell>
+                      <TableCell>
+                        {getScopeLabel(rule.accountId, accounts)}
+                      </TableCell>
+                      <TableCell className="text-right">
                         <Button
                           variant="outline"
                           onClick={() => deleteRule(rule.id)}
@@ -591,11 +602,11 @@ export function CategoriesManager() {
                             ? "Deleting..."
                             : "Delete"}
                         </Button>
-                      </TD>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 : null}
-            </TBody>
+            </TableBody>
           </Table>
         </div>
       </section>

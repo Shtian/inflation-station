@@ -13,14 +13,14 @@ export function Table({
   return <table className={cn("w-full text-left", className)} {...props} />;
 }
 
-export function THead({
+export function TableHeader({
   className,
   ...props
 }: HTMLAttributes<HTMLTableSectionElement>) {
   return <thead className={cn("bg-muted", className)} {...props} />;
 }
 
-export function TBody({
+export function TableBody({
   className,
   ...props
 }: HTMLAttributes<HTMLTableSectionElement>) {
@@ -29,7 +29,14 @@ export function TBody({
   );
 }
 
-export function TH({
+export function TableRow({
+  className,
+  ...props
+}: HTMLAttributes<HTMLTableRowElement>) {
+  return <tr className={cn(className)} {...props} />;
+}
+
+export function TableHead({
   className,
   ...props
 }: ThHTMLAttributes<HTMLTableCellElement>) {
@@ -44,7 +51,7 @@ export function TH({
   );
 }
 
-export function TD({
+export function TableCell({
   className,
   ...props
 }: TdHTMLAttributes<HTMLTableCellElement>) {
