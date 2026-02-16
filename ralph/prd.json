@@ -1,276 +1,122 @@
 {
   "project": "Inflation Station",
-  "branchName": "ralph/route-split-import-review-soft-duplicates",
-  "description": "Split the app into dedicated routes and add a pre-import review flow with category edits and soft duplicate warnings before database persistence.",
+  "branchName": "ralph/transaction-row-management",
+  "description": "Add a dedicated transaction management workflow that lets users view, edit, and remove existing transaction rows using shadcn components with account filtering and pagination.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create top-level route shell and navigation",
-      "description": "As a user, I want clear top-level navigation so I can move between overview, import, accounts, and categories.",
+      "title": "Add paginated transactions list API",
+      "description": "As a user, I want transactions fetched in pages with account filtering so that I can browse large datasets efficiently.",
       "acceptanceCriteria": [
-        "Add navigation links for /overview, /import, /accounts, and /categories",
-        "Define route pages for all four paths",
-        "Document and implement / behavior (redirect or landing with links)",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Add transactions list API endpoint that accepts page, pageSize, and optional accountId",
+        "Response includes rows plus pagination metadata: total, page, pageSize, totalPages",
+        "Results use deterministic ordering to keep pagination stable",
+        "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Move overview experience to /overview",
-      "description": "As a user, I want analytics and graphs available at /overview so the dashboard is isolated from other workflows.",
+      "title": "Add transaction update API with mutable-field validation",
+      "description": "As a user, I want to edit a transaction safely so that I can correct data without changing immutable import metadata.",
       "acceptanceCriteria": [
-        "Overview charts and filters render from /overview",
-        "Existing overview API calls still execute with same filter behavior",
-        "Old overview UI path no longer required for access",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Add transaction update API endpoint by id",
+        "Validation allows only user-owned mutable fields and rejects immutable import metadata updates",
+        "Successful update returns the persisted row",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Move account management to /accounts",
-      "description": "As a user, I want account CRUD available at /accounts so account setup is separated from import and analytics.",
+      "title": "Add transaction hard-delete API",
+      "description": "As a user, I want a delete endpoint for transactions so that confirmed row removals are persisted.",
       "acceptanceCriteria": [
-        "List/create/update/delete account UI is reachable from /accounts",
-        "Account actions continue to use existing API handlers",
-        "Account page shows clear success and error feedback for CRUD operations",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Add transaction delete API endpoint by id",
+        "Endpoint hard-deletes the transaction when id exists",
+        "Endpoint returns not-found response for missing id",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Move category management to /categories",
-      "description": "As a user, I want category and rule management at /categories so categorization setup has a dedicated workspace.",
+      "title": "Create transactions route with account filter and pagination controls",
+      "description": "As a user, I want a dedicated transactions page with filters and paging controls so that I can navigate transaction history quickly.",
       "acceptanceCriteria": [
-        "Category management UI is reachable from /categories",
-        "Any category rule controls currently available remain functional on /categories",
-        "No category management controls are orphaned after route split",
+        "Add /transactions route and include it in primary navigation",
+        "Route includes account filter with All accounts plus specific account options",
+        "Route includes numeric page controls and page-size selector wired to list API",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Move CSV upload entry point to /import",
-      "description": "As a user, I want CSV upload started from /import so ingestion has a dedicated route.",
+      "title": "Render paginated transaction table using shadcn primitives",
+      "description": "As a user, I want a clear tabular list so that I can inspect transaction rows and current page state.",
       "acceptanceCriteria": [
-        "CSV upload form and account selector are reachable from /import",
-        "Upload action starts parsing flow from /import without direct DB insert",
-        "Import route displays parser validation feedback before review",
+        "Use shadcn table primitives from src/components/ui/table.tsx for transactions list",
+        "Show total count and current page information in the UI",
+        "Show empty state when no rows match active filters",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Add import review staging model",
-      "description": "As a user, I want parsed rows staged for review so nothing is written before I confirm.",
+      "title": "Add transaction edit modal or drawer flow",
+      "description": "As a user, I want to edit transactions in a modal or drawer so that I can update row data without leaving the list.",
       "acceptanceCriteria": [
-        "Parsed valid rows are stored in a review-stage model (session or equivalent) before persistence",
-        "No Transaction rows are inserted during parse/stage step",
-        "Review payload includes row identifier, parsed transaction fields, and category field",
+        "Each row includes an Edit action that opens a shadcn modal or drawer",
+        "Edit form pre-fills current row values and submits to update API",
+        "After save, the list refreshes while keeping current filter and valid page state",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Prefill review rows with category suggestions",
-      "description": "As a user, I want suggested categories prefilled in review so I only edit exceptions.",
+      "title": "Add transaction delete confirmation flow",
+      "description": "As a user, I want explicit delete confirmation so that I do not remove transactions by mistake.",
       "acceptanceCriteria": [
-        "Review-stage rows include suggested category from existing deterministic suggestion pipeline when available",
-        "Rows without suggestions remain uncategorized and editable",
-        "Suggestion generation failure does not block review-stage creation",
+        "Each row includes a Delete action that opens a shadcn confirmation dialog",
+        "Confirm action calls delete API and cancel action leaves row unchanged",
+        "After delete, UI keeps pagination valid (including last-row-on-page removal)",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Flag potential duplicates as warnings in review data",
-      "description": "As a user, I want potential duplicates flagged instead of blocked so I can keep legitimate identical same-day transactions.",
+      "title": "Add automated coverage for transaction management behavior",
+      "description": "As a maintainer, I want tests for transaction list, edit, and delete behaviors so regressions are caught quickly.",
       "acceptanceCriteria": [
-        "Compute duplicate warning flag from existing fingerprint fields (accountId, bookingDate, amountNok, normalizedMerchant, paymentType)",
-        "Potential duplicates are returned as warnings in review data and not auto-dropped",
-        "Review summary includes potential duplicate count",
+        "Add tests for list pagination and account filter behavior",
+        "Add tests for update API validation and persistence",
+        "Add tests for delete behavior and pagination-state edge cases where applicable",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-009",
-      "title": "Build import review UI with category editing and duplicate warnings",
-      "description": "As a user, I want a review table that lets me edit categories and inspect duplicate warnings before submit.",
-      "acceptanceCriteria": [
-        "Review UI lists staged rows with editable category control per row",
-        "Rows flagged as potential duplicates show a visible warning indicator",
-        "Rows without category suggestion are clearly shown as uncategorized",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-010",
-      "title": "Persist reviewed rows only on explicit submit",
-      "description": "As a user, I want only explicitly submitted review rows persisted so import results reflect my final decisions.",
-      "acceptanceCriteria": [
-        "Submit endpoint writes Transaction rows from final reviewed state only",
-        "Edited categories from review are the values persisted",
-        "Cancel or leaving review without submit does not persist staged rows",
-        "Import result summary includes imported, potentialDuplicates, invalid, and skipped counts",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-011",
-      "title": "Finalize import review flow integration on /import",
-      "description": "As a user, I want the import route to transition parse -> review -> submit so the end-to-end flow is consistent.",
-      "acceptanceCriteria": [
-        "Uploading a CSV from /import transitions to review state before persistence",
-        "Submitting from review returns to /import with clear import summary feedback",
-        "End-to-end flow handles uncategorized and potential duplicate rows without hard blocking",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 11,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-012",
-      "title": "Set up shadcn theme tokens and global theming foundation",
-      "description": "As a user, I want a consistent design token foundation so app styling can follow shadcn theming conventions.",
-      "acceptanceCriteria": [
-        "Configure global CSS variables for shadcn-compatible theme tokens based on the official shadcn theming approach",
-        "Ensure app surfaces (background, foreground, border, card, muted, primary, accent, destructive) consume tokenized colors instead of hardcoded values where applicable",
-        "Document any added theming prerequisites/configuration in the relevant project docs",
-        "Typecheck passes",
-        "Tests/lint pass"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Reference: https://ui.shadcn.com/docs/theming"
-    },
-    {
-      "id": "US-013",
-      "title": "Add dark mode with explicit theme switching",
-      "description": "As a user, I want to switch between light and dark themes so the UI remains comfortable in different lighting conditions.",
-      "acceptanceCriteria": [
-        "Integrate the Next.js shadcn dark-mode provider pattern so light/dark theme state is applied at the app shell level",
-        "Add a visible theme toggle control that lets users switch between light and dark modes",
-        "Default theme behavior is deterministic and hydration-safe for App Router rendering",
-        "Typecheck passes",
-        "Tests/lint pass"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": "Reference: https://ui.shadcn.com/docs/dark-mode/next"
-    },
-    {
-      "id": "US-014",
-      "title": "Reduce nested card containers across route pages",
-      "description": "As a user, I want cleaner page layouts with less box-in-box nesting so the interface feels simpler and easier to scan.",
-      "acceptanceCriteria": [
-        "On dedicated pages, merge page title/description blocks into the main content card when it improves readability",
-        "Where multiple sections are required on one page, separate sections with shadcn `Separator` instead of extra nested card wrappers where appropriate",
-        "Avoid unnecessary nested bordered/background containers that duplicate visual hierarchy",
-        "Typecheck passes",
-        "Tests/lint pass"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-015",
-      "title": "Adopt shadcn Table component patterns for list UIs",
-      "description": "As a user, I want consistent list/table presentation so data views feel unified across the app.",
-      "acceptanceCriteria": [
-        "Replace ad-hoc list/table markup with shadcn table primitives where tabular data is displayed",
-        "Existing list behaviors (sorting/order/content/actions) remain functional after migration",
-        "Table styling consumes semantic theme tokens and remains dark-mode compatible",
-        "Typecheck passes",
-        "Tests/lint pass"
-      ],
-      "priority": 15,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-016",
-      "title": "Make /overview the default root route",
-      "description": "As a user, I want the overview dashboard to open by default so I land directly on the primary analytics workspace.",
-      "acceptanceCriteria": [
-        "Visiting `/` redirects or routes directly to `/overview`",
-        "Primary navigation and deep links continue working after root-route change",
-        "README and route documentation reflect the new default root behavior",
-        "Typecheck passes",
-        "Tests/lint pass"
-      ],
-      "priority": 16,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-017",
-      "title": "Use shadcn chart components for overview visualizations",
-      "description": "As a user, I want dashboard charts to use the shadcn chart system for consistent styling and maintainable visualization patterns.",
-      "acceptanceCriteria": [
-        "Overview charts are implemented using shadcn chart component patterns",
-        "Existing analytics data mapping and filter behavior remain intact",
-        "Charts remain readable in both light and dark themes",
-        "Typecheck passes",
-        "Tests/lint pass"
-      ],
-      "priority": 17,
-      "passes": true,
-      "notes": "Reference: https://ui.shadcn.com/charts"
-    },
-    {
-      "id": "US-018",
-      "title": "Standardize on Base UI variants for shadcn components",
-      "description": "As a developer, I want shadcn components to follow Base UI variants so we avoid introducing Radix-based patterns in the app surface.",
-      "acceptanceCriteria": [
-        "New or updated shadcn components in this project use Base UI variations/patterns",
-        "Do not introduce Radix UI component usage for shadcn surfaces in targeted refactors",
-        "Document this component selection rule in AGENTS.md and/or README where relevant",
-        "Typecheck passes",
-        "Tests/lint pass"
-      ],
-      "priority": 18,
       "passes": false,
       "notes": ""
     }
