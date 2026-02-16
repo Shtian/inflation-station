@@ -28,7 +28,7 @@ type TransactionUpdateDbClient = {
         categoryId?: string | null;
         bookingDate?: Date;
         amountNok?: number;
-        currency?: string;
+        currency: string;
         normalizedMerchant?: string;
         paymentType?: PaymentType;
       };
@@ -57,7 +57,6 @@ const MUTABLE_FIELD_KEYS = [
   "categoryId",
   "bookingDate",
   "amountNok",
-  "currency",
   "normalizedMerchant",
   "paymentType",
 ] as const;
@@ -101,7 +100,6 @@ const transactionUpdatePayloadSchema = z
     categoryId: z.string().trim().min(1).nullable().optional(),
     bookingDate: bookingDateSchema.optional(),
     amountNok: z.number().finite().optional(),
-    currency: z.string().trim().min(1).optional(),
     normalizedMerchant: z.string().trim().min(1).optional(),
     paymentType: z.nativeEnum(PaymentType).optional(),
     id: z.never().optional(),
@@ -157,6 +155,7 @@ export async function updateTransaction(
   const transaction = await db.transaction.update({
     where: { id: params.transactionId },
     data: {
+      currency: "NOK",
       ...(params.updates.categoryId !== undefined
         ? { categoryId: params.updates.categoryId }
         : {}),
@@ -165,9 +164,6 @@ export async function updateTransaction(
         : {}),
       ...(params.updates.amountNok !== undefined
         ? { amountNok: params.updates.amountNok }
-        : {}),
-      ...(params.updates.currency !== undefined
-        ? { currency: params.updates.currency }
         : {}),
       ...(params.updates.normalizedMerchant !== undefined
         ? { normalizedMerchant: params.updates.normalizedMerchant }

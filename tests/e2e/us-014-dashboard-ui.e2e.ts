@@ -145,7 +145,7 @@ test("updates dashboard charts when account and date filters change", async ({
   await expect(
     page.getByRole("heading", { name: "Category Spend Breakdown" }),
   ).toBeVisible();
-    await expect(
+  await expect(
     page.getByRole("heading", { name: "Account State Trend" }),
   ).toBeVisible();
   await expect(page.locator("[data-slot='chart']")).toHaveCount(4);
@@ -159,10 +159,9 @@ test("updates dashboard charts when account and date filters change", async ({
   await expect(page.getByText(/1\s?100,00/)).toBeVisible();
 
   await page.getByRole("button", { name: "Year to date" }).click();
-  await expect(page.getByRole("button", { name: "Year to date" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await expect(
+    page.getByRole("button", { name: "Year to date" }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText(/960,00/).first()).toBeVisible();
   await expect(page.getByText(/Utilities:\s/)).toBeVisible();
 });

@@ -92,7 +92,6 @@ type EditFormState = {
   categoryId: string;
   bookingDate: string;
   amountNok: string;
-  currency: string;
   normalizedMerchant: string;
   paymentType: PaymentTypeOption;
 };
@@ -160,7 +159,6 @@ function toEditFormState(row: TransactionRow): EditFormState {
     categoryId: row.categoryId ?? UNCATEGORIZED_VALUE,
     bookingDate: row.bookingDate,
     amountNok: row.amountNok.toFixed(2),
-    currency: row.currency,
     normalizedMerchant: row.normalizedMerchant,
     paymentType: toPaymentTypeOption(row.paymentType),
   };
@@ -337,11 +335,10 @@ export function TransactionsManager() {
     }
 
     const bookingDate = editForm.bookingDate.trim();
-    const currency = editForm.currency.trim().toUpperCase();
     const normalizedMerchant = editForm.normalizedMerchant.trim();
 
-    if (!bookingDate || !currency || !normalizedMerchant) {
-      setEditError("Date, currency, and merchant are required.");
+    if (!bookingDate || !normalizedMerchant) {
+      setEditError("Date and merchant are required.");
       return;
     }
 
@@ -360,7 +357,6 @@ export function TransactionsManager() {
             : editForm.categoryId,
         bookingDate,
         amountNok,
-        currency,
         normalizedMerchant,
         paymentType: editForm.paymentType,
       }),
@@ -741,49 +737,26 @@ export function TransactionsManager() {
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="edit-amount-nok"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Amount (NOK)
-                  </label>
-                  <Input
-                    id="edit-amount-nok"
-                    inputMode="decimal"
-                    value={editForm.amountNok}
-                    onChange={(event) =>
-                      setEditForm((current) =>
-                        current
-                          ? { ...current, amountNok: event.target.value }
-                          : current,
-                      )
-                    }
-                    disabled={editSaving}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label
-                    htmlFor="edit-currency"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    Currency
-                  </label>
-                  <Input
-                    id="edit-currency"
-                    value={editForm.currency}
-                    onChange={(event) =>
-                      setEditForm((current) =>
-                        current
-                          ? { ...current, currency: event.target.value }
-                          : current,
-                      )
-                    }
-                    disabled={editSaving}
-                  />
-                </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="edit-amount-nok"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Amount (NOK)
+                </label>
+                <Input
+                  id="edit-amount-nok"
+                  inputMode="decimal"
+                  value={editForm.amountNok}
+                  onChange={(event) =>
+                    setEditForm((current) =>
+                      current
+                        ? { ...current, amountNok: event.target.value }
+                        : current,
+                    )
+                  }
+                  disabled={editSaving}
+                />
               </div>
 
               <div className="space-y-2">

@@ -29,7 +29,6 @@ describe("parseTransactionUpdatePayload", () => {
     const parsed = parseTransactionUpdatePayload({
       bookingDate: "2026-02-05",
       amountNok: -100.25,
-      currency: "NOK",
       normalizedMerchant: "updated shop",
       paymentType: PaymentType.CARD,
       categoryId: "cat-1",
@@ -72,6 +71,22 @@ describe("parseTransactionUpdatePayload", () => {
 
     expect(parsed.data.categoryId).toBeNull();
   });
+
+  it("rejects currency updates", () => {
+    const parsed = parseTransactionUpdatePayload({
+      amountNok: -100.25,
+      currency: "USD",
+    });
+
+    expect(parsed.success).toBe(false);
+    if (parsed.success) {
+      return;
+    }
+
+    expect(
+      parsed.error.issues.some((issue) => issue.message.includes("currency")),
+    ).toBe(true);
+  });
 });
 
 describe("updateTransaction", () => {
@@ -97,6 +112,7 @@ describe("updateTransaction", () => {
     expect(db.transaction.update).toHaveBeenCalledWith({
       where: { id: "tx-1" },
       data: {
+        currency: "NOK",
         categoryId: "cat-2",
         amountNok: -100.25,
         normalizedMerchant: "updated shop",

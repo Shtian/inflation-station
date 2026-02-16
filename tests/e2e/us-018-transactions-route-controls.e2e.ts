@@ -252,7 +252,6 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     categoryId: string | null;
     bookingDate: string;
     amountNok: number;
-    currency: string;
     normalizedMerchant: string;
     paymentType: string;
   } = null;
@@ -300,7 +299,6 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
       categoryId: string | null;
       bookingDate: string;
       amountNok: number;
-      currency: string;
       normalizedMerchant: string;
       paymentType: string;
     };
@@ -321,7 +319,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
           categoryId: payload.categoryId,
           bookingDate: payload.bookingDate,
           amountNok: payload.amountNok,
-          currency: payload.currency,
+          currency: "NOK",
           normalizedMerchant: payload.normalizedMerchant,
           paymentType: payload.paymentType,
           createdAt: "2026-01-15T08:00:00.000Z",
@@ -414,6 +412,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   await expect(
     page.getByRole("heading", { name: "Edit transaction" }),
   ).toBeVisible();
+  await expect(page.getByLabel("Currency")).toHaveCount(0);
 
   await page.getByLabel("Merchant").fill("Updated Corner Shop");
   await page.getByLabel("Category").click();
@@ -424,6 +423,9 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   await expect(page.getByText("Updated Corner Shop")).toBeVisible();
   await expect(page.getByText("Food")).toBeVisible();
   await expect.poll(() => lastPatchPayload?.categoryId).toBe("cat-food");
+  await expect
+    .poll(() => Object.hasOwn(lastPatchPayload ?? {}, "currency"))
+    .toBe(false);
   await expect
     .poll(() => lastPatchPayload?.normalizedMerchant)
     .toBe("Updated Corner Shop");

@@ -115,9 +115,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await page.goto("/import");
 
   await expect(page.getByRole("heading", { name: "Import" })).toBeVisible();
-  await expect(
-    page.getByRole("combobox", { name: "Account" }),
-  ).toHaveText("Main Account");
+  await expect(page.getByRole("combobox", { name: "Account" })).toHaveText(
+    "Main Account",
+  );
 
   await page.getByLabel("CSV file").setInputFiles({
     name: "transactions.csv",

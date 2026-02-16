@@ -9,6 +9,7 @@
 - Keep transactions route filter state client-side in `src/app/transactions/*`, and refetch `/api/transactions` whenever account, page, or pageSize changes.
 - Keep `/api/transactions` list rows enriched with `categoryName` so `/transactions` can render category labels (or uncategorized states) without extra category lookups.
 - Keep transaction edit UI state local in `src/app/transactions/*` and refresh list data via the same paginated query after successful saves to preserve active filter/page context.
+- Keep the transactions edit workflow NOK-only by removing currency from edit payload parsing/UI and forcing persisted updates to `currency: "NOK"`.
 - Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
 - For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
 - For Next.js App Router handlers, return `new Response(null, { status: 204 })` for no-content responses; `NextResponse.json` is invalid for HTTP 204.
@@ -291,4 +292,33 @@
     - When `pnpm test` includes E2E, local/browser prerequisites must be available or the command fails after unit tests.
   - Useful context (e.g., "the evaluation panel is in component X")
     - `playwright.config.ts` now supports `PLAYWRIGHT_NO_WEBSERVER=1` to force reuse of a running dev server instead of spawning `pnpm dev`.
+---
+## 2026-02-16 20:08 CET - US-011
+- What was implemented
+  - Removed editable currency from the `/transactions` edit dialog so users can no longer change currency in this workflow.
+  - Updated transaction edit submit payloads to omit `currency` and keep mutation payloads focused on supported mutable fields.
+  - Updated transaction update payload parsing to reject incoming `currency` updates and forced transaction updates to persist `currency: "NOK"`.
+  - Expanded tests to cover rejected currency updates, NOK persistence on update, and UI-level absence of a currency field in the edit dialog.
+- Files changed
+  - `src/app/transactions/transactions-manager.tsx`
+  - `src/lib/transactions/update.ts`
+  - `src/lib/transactions/update.test.ts`
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+  - `tests/e2e/us-014-dashboard-ui.e2e.ts`
+  - `tests/e2e/us-016-import-route-upload.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass; required applying existing Biome formatting drift in two unrelated E2E files)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep transaction-edit payload contracts strict and workflow-specific; when a field is non-editable in UI, reject it at parse-time in API helpers.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Zod strict-object rejections for unknown keys surface as generic issues, not typed `fieldErrors` entries for that key.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - The transactions edit flow now relies on backend-enforced `currency: "NOK"` even if clients omit currency from PATCH requests.
 ---
