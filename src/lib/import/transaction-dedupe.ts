@@ -45,9 +45,7 @@ function normalizeAmount(amountNok: number): string {
 }
 
 function resolveNormalizedMerchant(row: ParsedCsvRow): string {
-  return normalizeToken(
-    [row.recipient, row.sender, row.name, row.title].join(" "),
-  );
+  return normalizeToken([row.name, row.title].join(" "));
 }
 
 export function buildTransactionFingerprint(
