@@ -6,6 +6,7 @@
 - Keep category and category-rule CRUD UI/state scoped to `src/app/categories/*`, with dedicated `/api/categories` and `/api/category-rules` handlers for deterministic rule management.
 - Keep the `/import` route wired to `/api/imports/parse` for parse feedback and staging, with transaction persistence deferred to explicit review submit.
 - Keep import review staging in dedicated Prisma models (`ImportReviewSession`, `ImportReviewRow`) and return staged row ids in parse responses so later review edits stay decoupled from persisted `Transaction` rows.
+- Persist import-review transactions only from `/api/imports/submit` using staged `sessionId` + row-level category decisions, and delete the session after submit so abandoned reviews never write data.
 - Run deterministic category-rule matching during import staging and persist prefilled `ImportReviewRow.categoryId`, but degrade gracefully to `null` if suggestion lookup fails.
 - Compute potential duplicate warnings for import review rows from the same fingerprint fields as transaction dedupe (`accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, `paymentType`) and keep flagged rows editable instead of auto-dropping.
 - In `/import` review UI, fetch categories from `/api/categories` and allow both global (`accountId: null`) and selected-account categories in row-level category selectors.
@@ -107,4 +108,16 @@
 - **Learnings for future iterations**
   - Keep review-row category edits local to `/import` state until explicit submit endpoint wiring is introduced.
   - Use precise Playwright locators (`exact` or narrowed selectors) for singular/plural warning labels to avoid strict-mode collisions.
+---
+
+## 2026-02-16 08:56:35 CET - US-010
+- Implemented explicit review-submit persistence by adding `/api/imports/submit` and a new `submitImportReview` service that loads staged rows, applies final category decisions, deduplicates by transaction fingerprint, writes `Transaction` rows, and deletes the submitted review session.
+- Updated `/import` review UI to submit staged rows with category edits and show import summary feedback (`imported`, `skipped`, `potentialDuplicates`, `invalid`) after successful submit.
+- Added unit coverage for submit behavior (edited category persistence, duplicate skipping/potential duplicate counts, session/category validation errors) and extended Playwright `/import` flow coverage to include submit payload + success feedback.
+- Files changed: `src/lib/import/review-submit.ts`, `src/lib/import/review-submit.test.ts`, `src/app/api/imports/submit/route.ts`, `src/app/import/import-uploader.tsx`, `tests/e2e/us-016-import-route-upload.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Keep parse and submit concerns separate: `/api/imports/parse` should only stage rows, while `/api/imports/submit` should be the sole persistence path.
+  - Recompute dedupe at submit from staged rows + current transactions so skipped counts stay correct even if account data changes between parse and submit.
+  - Validate category decisions against account-scoped/global categories before insert to avoid late foreign-key failures in import submit flows.
 ---

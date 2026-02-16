@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 test("parses CSV uploads from /import and shows validation feedback", async ({
   page,
 }) => {
+  let submitRequestBody: unknown = null;
+
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
       status: 200,
@@ -94,6 +96,22 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     });
   });
 
+  await page.route("**/api/imports/submit", async (route, request) => {
+    submitRequestBody = request.postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        summary: {
+          imported: 2,
+          potentialDuplicates: 1,
+          invalid: 1,
+          skipped: 0,
+        },
+      }),
+    });
+  });
+
   await page.goto("/import");
 
   await expect(page.getByRole("heading", { name: "Import" })).toBeVisible();
@@ -127,4 +145,20 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await expect(rowTwoCategory).toHaveValue("");
   await rowTwoCategory.selectOption("cat-food");
   await expect(rowTwoCategory).toHaveValue("cat-food");
+
+  await page.getByRole("button", { name: "Submit reviewed rows" }).click();
+
+  await expect(
+    page.getByText(
+      "Import complete. Imported 2, skipped 0, potential duplicates 1, invalid 1.",
+    ),
+  ).toBeVisible();
+  expect(submitRequestBody).toEqual({
+    sessionId: "session-1",
+    invalidCount: 1,
+    rows: [
+      { rowId: "row-1", categoryId: "cat-food" },
+      { rowId: "row-2", categoryId: "cat-food" },
+    ],
+  });
 });

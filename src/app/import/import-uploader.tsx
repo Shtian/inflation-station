@@ -47,6 +47,15 @@ type ParseResponse = {
   };
 };
 
+type SubmitResponse = {
+  summary: {
+    imported: number;
+    potentialDuplicates: number;
+    invalid: number;
+    skipped: number;
+  };
+};
+
 type Category = {
   id: string;
   name: string;
@@ -88,7 +97,10 @@ export function ImportUploader() {
   const [selectedAccountId, setSelectedAccountId] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [parseResult, setParseResult] = useState<ParseResponse | null>(null);
   const [categoryDecisions, setCategoryDecisions] = useState<
     Record<string, string>
@@ -180,6 +192,8 @@ export function ImportUploader() {
 
     setImportLoading(true);
     setImportError(null);
+    setSubmitError(null);
+    setSubmitNotice(null);
     setParseResult(null);
     setCategoryDecisions({});
 
@@ -218,6 +232,52 @@ export function ImportUploader() {
       }, {}) ?? {},
     );
     setImportLoading(false);
+  }
+
+  async function submitReviewRows() {
+    if (!parseResult?.review?.sessionId) {
+      setSubmitError("No review session is available to submit.");
+      return;
+    }
+
+    setSubmitLoading(true);
+    setSubmitError(null);
+    setSubmitNotice(null);
+
+    const response = await fetch("/api/imports/submit", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        sessionId: parseResult.review.sessionId,
+        invalidCount: parseResult.summary.invalid,
+        rows: parseResult.review.rows.map((row) => ({
+          rowId: row.id,
+          categoryId: categoryDecisions[row.id] ?? row.categoryId,
+        })),
+      }),
+    });
+    const body = await response.json().catch(() => null);
+
+    if (
+      !response.ok ||
+      !body ||
+      typeof body !== "object" ||
+      !("summary" in body)
+    ) {
+      setSubmitError(getRequestErrorMessage(body));
+      setSubmitLoading(false);
+      return;
+    }
+
+    const submitResult = body as SubmitResponse;
+    setSubmitNotice(
+      `Import complete. Imported ${submitResult.summary.imported}, skipped ${submitResult.summary.skipped}, potential duplicates ${submitResult.summary.potentialDuplicates}, invalid ${submitResult.summary.invalid}.`,
+    );
+    setParseResult(null);
+    setCategoryDecisions({});
+    setSubmitLoading(false);
   }
 
   return (
@@ -441,9 +501,27 @@ export function ImportUploader() {
                     </TBody>
                   </Table>
                 </div>
+                <Button onClick={submitReviewRows} disabled={submitLoading}>
+                  {submitLoading ? "Submitting..." : "Submit reviewed rows"}
+                </Button>
               </div>
             ) : null}
           </section>
+        ) : null}
+
+        {submitError ? (
+          <p
+            role="alert"
+            className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          >
+            {submitError}
+          </p>
+        ) : null}
+
+        {submitNotice ? (
+          <output className="mt-4 block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+            {submitNotice}
+          </output>
         ) : null}
       </Card>
     </main>
