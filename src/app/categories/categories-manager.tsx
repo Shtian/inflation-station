@@ -1,11 +1,17 @@
 "use client";
 
 import type { CategoryKind, PaymentType } from "@prisma/client";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -42,6 +48,9 @@ type CategoryRule = {
     name: string;
   };
 };
+
+const GLOBAL_SCOPE_VALUE = "__global__";
+const ANY_PAYMENT_TYPE_VALUE = "__any__";
 
 function getErrorMessage(status: number, body: unknown) {
   if (typeof body === "object" && body && "error" in body) {
@@ -322,12 +331,14 @@ export function CategoriesManager() {
   }
 
   return (
-    <Card>
+    <div className="space-y-4">
       <div className="space-y-1">
-        <CardTitle>Categories</CardTitle>
-        <CardDescription>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Categories
+        </h1>
+        <p className="text-sm text-muted-foreground">
           Manage categories and deterministic rules used in imports and review.
-        </CardDescription>
+        </p>
       </div>
 
       <Separator className="my-4" />
@@ -362,15 +373,17 @@ export function CategoriesManager() {
             Kind
           </label>
           <Select
-            id="new-category-kind"
             value={newCategoryKind}
-            onChange={(event) =>
-              setNewCategoryKind(event.target.value as CategoryKind)
-            }
+            onValueChange={(value) => setNewCategoryKind(value as CategoryKind)}
           >
-            <option value="EXPENSE">Expense</option>
-            <option value="INCOME">Income</option>
-            <option value="TRANSFER">Transfer</option>
+            <SelectTrigger id="new-category-kind" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="EXPENSE">Expense</SelectItem>
+              <SelectItem value="INCOME">Income</SelectItem>
+              <SelectItem value="TRANSFER">Transfer</SelectItem>
+            </SelectContent>
           </Select>
           <label
             htmlFor="new-category-scope"
@@ -379,23 +392,37 @@ export function CategoriesManager() {
             Scope
           </label>
           <Select
-            id="new-category-scope"
-            value={newCategoryScope}
-            onChange={(event) => setNewCategoryScope(event.target.value)}
+            value={newCategoryScope || GLOBAL_SCOPE_VALUE}
+            onValueChange={(value) =>
+              setNewCategoryScope(value === GLOBAL_SCOPE_VALUE ? "" : value)
+            }
           >
-            <option value="">Global</option>
-            {activeAccounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
+            <SelectTrigger id="new-category-scope" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={GLOBAL_SCOPE_VALUE}>Global</SelectItem>
+              {activeAccounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
           <Button
             variant="secondary"
             onClick={createCategory}
             disabled={busyKey === "new-category"}
+            className="gap-2"
           >
-            {busyKey === "new-category" ? "Saving..." : "Add category"}
+            {busyKey === "new-category" ? (
+              "Saving..."
+            ) : (
+              <>
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add category
+              </>
+            )}
           </Button>
         </div>
 
@@ -436,10 +463,18 @@ export function CategoriesManager() {
                             busyKey !== null &&
                             busyKey !== `delete-category-${category.id}`
                           }
+                          className="h-8 w-8 px-0"
+                          aria-label={`Delete category ${category.name}`}
+                          title={`Delete category ${category.name}`}
                         >
-                          {busyKey === `delete-category-${category.id}`
-                            ? "Deleting..."
-                            : "Delete"}
+                          {busyKey === `delete-category-${category.id}` ? (
+                            <Loader2
+                              className="h-4 w-4 animate-spin"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          )}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -471,19 +506,26 @@ export function CategoriesManager() {
             Category
           </label>
           <Select
-            id="rule-category"
             value={ruleCategoryId}
-            onChange={(event) => setRuleCategoryId(event.target.value)}
+            onValueChange={setRuleCategoryId}
             disabled={categories.length === 0}
           >
-            {categories.length === 0 ? (
-              <option value="">No categories available</option>
-            ) : null}
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
+            <SelectTrigger id="rule-category" className="w-full">
+              <SelectValue
+                placeholder={
+                  categories.length === 0
+                    ? "No categories available"
+                    : "Select category"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
 
           <label
@@ -506,16 +548,22 @@ export function CategoriesManager() {
             Payment type (optional)
           </label>
           <Select
-            id="rule-payment-type"
-            value={rulePaymentType}
-            onChange={(event) => setRulePaymentType(event.target.value)}
+            value={rulePaymentType || ANY_PAYMENT_TYPE_VALUE}
+            onValueChange={(value) =>
+              setRulePaymentType(value === ANY_PAYMENT_TYPE_VALUE ? "" : value)
+            }
           >
-            <option value="">Any</option>
-            <option value="CARD">CARD</option>
-            <option value="TRANSFER">TRANSFER</option>
-            <option value="EFT">EFT</option>
-            <option value="CASH">CASH</option>
-            <option value="OTHER">OTHER</option>
+            <SelectTrigger id="rule-payment-type" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY_PAYMENT_TYPE_VALUE}>Any</SelectItem>
+              <SelectItem value="CARD">CARD</SelectItem>
+              <SelectItem value="TRANSFER">TRANSFER</SelectItem>
+              <SelectItem value="EFT">EFT</SelectItem>
+              <SelectItem value="CASH">CASH</SelectItem>
+              <SelectItem value="OTHER">OTHER</SelectItem>
+            </SelectContent>
           </Select>
 
           <label
@@ -539,20 +587,37 @@ export function CategoriesManager() {
             Scope
           </label>
           <Select
-            id="rule-scope"
-            value={ruleScope}
-            onChange={(event) => setRuleScope(event.target.value)}
+            value={ruleScope || GLOBAL_SCOPE_VALUE}
+            onValueChange={(value) =>
+              setRuleScope(value === GLOBAL_SCOPE_VALUE ? "" : value)
+            }
           >
-            <option value="">Global</option>
-            {activeAccounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
+            <SelectTrigger id="rule-scope" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={GLOBAL_SCOPE_VALUE}>Global</SelectItem>
+              {activeAccounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
 
-          <Button onClick={createRule} disabled={busyKey === "new-rule"}>
-            {busyKey === "new-rule" ? "Saving..." : "Add rule"}
+          <Button
+            onClick={createRule}
+            disabled={busyKey === "new-rule"}
+            className="gap-2"
+          >
+            {busyKey === "new-rule" ? (
+              "Saving..."
+            ) : (
+              <>
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add rule
+              </>
+            )}
           </Button>
         </div>
 
@@ -597,10 +662,18 @@ export function CategoriesManager() {
                             busyKey !== null &&
                             busyKey !== `delete-rule-${rule.id}`
                           }
+                          className="h-8 w-8 px-0"
+                          aria-label={`Delete rule for ${rule.merchantContains}`}
+                          title={`Delete rule for ${rule.merchantContains}`}
                         >
-                          {busyKey === `delete-rule-${rule.id}`
-                            ? "Deleting..."
-                            : "Delete"}
+                          {busyKey === `delete-rule-${rule.id}` ? (
+                            <Loader2
+                              className="h-4 w-4 animate-spin"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          )}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -625,6 +698,6 @@ export function CategoriesManager() {
           {notice}
         </p>
       ) : null}
-    </Card>
+    </div>
   );
 }

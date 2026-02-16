@@ -1,10 +1,16 @@
 "use client";
 
+import { Check, Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -69,6 +75,8 @@ type Category = {
   name: string;
   accountId: string | null;
 };
+
+const UNCATEGORIZED_SELECT_VALUE = "__uncategorized__";
 
 function getRequestErrorMessage(body: unknown) {
   if (typeof body === "object" && body && "message" in body) {
@@ -291,13 +299,15 @@ export function ImportUploader() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
-      <Card>
+      <div className="space-y-4">
         <div className="space-y-1">
-          <CardTitle>Import</CardTitle>
-          <CardDescription>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Import
+          </h1>
+          <p className="text-sm text-muted-foreground">
             Choose an account and CSV file to start the parse and validation
             flow.
-          </CardDescription>
+          </p>
         </div>
 
         <Separator className="my-4" />
@@ -310,19 +320,26 @@ export function ImportUploader() {
             Account
           </label>
           <Select
-            id="account-select"
             value={selectedAccountId}
-            onChange={(event) => setSelectedAccountId(event.target.value)}
+            onValueChange={setSelectedAccountId}
             disabled={!hasActiveAccounts}
           >
-            {!hasActiveAccounts ? (
-              <option value="">No active accounts available</option>
-            ) : null}
-            {activeAccounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
+            <SelectTrigger id="account-select" className="w-full">
+              <SelectValue
+                placeholder={
+                  hasActiveAccounts
+                    ? "Select account"
+                    : "No active accounts available"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {activeAccounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
 
           <label
@@ -348,8 +365,16 @@ export function ImportUploader() {
           <Button
             onClick={parseCsv}
             disabled={!hasActiveAccounts || importLoading}
+            className="gap-2"
           >
-            {importLoading ? "Parsing..." : "Parse CSV"}
+            {importLoading ? (
+              "Parsing..."
+            ) : (
+              <>
+                <Upload className="h-4 w-4" aria-hidden="true" />
+                Parse CSV
+              </>
+            )}
           </Button>
         </div>
 
@@ -478,23 +503,38 @@ export function ImportUploader() {
                               <div className="space-y-1">
                                 <Select
                                   aria-label={`Category for row ${row.rowNumber}`}
-                                  value={selectedCategoryId}
-                                  onChange={(event) =>
+                                  value={
+                                    selectedCategoryId ||
+                                    UNCATEGORIZED_SELECT_VALUE
+                                  }
+                                  onValueChange={(value) =>
                                     setCategoryDecisions((current) => ({
                                       ...current,
-                                      [row.id]: event.target.value,
+                                      [row.id]:
+                                        value === UNCATEGORIZED_SELECT_VALUE
+                                          ? ""
+                                          : value,
                                     }))
                                   }
                                 >
-                                  <option value="">Uncategorized</option>
-                                  {reviewCategoryOptions.map((category) => (
-                                    <option
-                                      key={category.id}
-                                      value={category.id}
+                                  <SelectTrigger className="w-[220px]">
+                                    <SelectValue placeholder="Uncategorized" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem
+                                      value={UNCATEGORIZED_SELECT_VALUE}
                                     >
-                                      {category.name}
-                                    </option>
-                                  ))}
+                                      Uncategorized
+                                    </SelectItem>
+                                    {reviewCategoryOptions.map((category) => (
+                                      <SelectItem
+                                        key={category.id}
+                                        value={category.id}
+                                      >
+                                        {category.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
                                 </Select>
                                 {isUncategorized ? (
                                   <p className="text-xs font-medium text-muted-foreground">
@@ -509,8 +549,19 @@ export function ImportUploader() {
                     </TableBody>
                   </Table>
                 </div>
-                <Button onClick={submitReviewRows} disabled={submitLoading}>
-                  {submitLoading ? "Submitting..." : "Submit reviewed rows"}
+                <Button
+                  onClick={submitReviewRows}
+                  disabled={submitLoading}
+                  className="gap-2"
+                >
+                  {submitLoading ? (
+                    "Submitting..."
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" aria-hidden="true" />
+                      Submit reviewed rows
+                    </>
+                  )}
                 </Button>
               </div>
             ) : null}
@@ -531,7 +582,7 @@ export function ImportUploader() {
             {submitNotice}
           </output>
         ) : null}
-      </Card>
+      </div>
     </main>
   );
 }

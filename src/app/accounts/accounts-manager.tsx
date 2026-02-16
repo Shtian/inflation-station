@@ -1,8 +1,8 @@
 "use client";
 
+import { Check, Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -192,12 +192,14 @@ export function AccountsManager() {
   }
 
   return (
-    <Card>
+    <div className="space-y-4">
       <div className="space-y-1">
-        <CardTitle>Accounts</CardTitle>
-        <CardDescription>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Accounts
+        </h1>
+        <p className="text-sm text-muted-foreground">
           Add, rename, and remove accounts used in imports.
-        </CardDescription>
+        </p>
       </div>
 
       <Separator className="my-4" />
@@ -227,8 +229,19 @@ export function AccountsManager() {
           onChange={(event) => setNewAccountInstitution(event.target.value)}
           placeholder="DNB"
         />
-        <Button onClick={createAccount} disabled={busyAccountId === "new"}>
-          {busyAccountId === "new" ? "Saving..." : "Add account"}
+        <Button
+          onClick={createAccount}
+          disabled={busyAccountId === "new"}
+          className="gap-2"
+        >
+          {busyAccountId === "new" ? (
+            "Saving..."
+          ) : (
+            <>
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add account
+            </>
+          )}
         </Button>
       </div>
 
@@ -314,14 +327,18 @@ export function AccountsManager() {
                                 variant="secondary"
                                 onClick={() => saveEdit(account.id)}
                                 disabled={isBusy}
+                                className="gap-2"
                               >
+                                <Check className="h-4 w-4" aria-hidden="true" />
                                 Save
                               </Button>
                               <Button
                                 variant="outline"
                                 onClick={() => setEditingAccountId(null)}
                                 disabled={isBusy}
+                                className="gap-2"
                               >
+                                <X className="h-4 w-4" aria-hidden="true" />
                                 Cancel
                               </Button>
                             </>
@@ -331,15 +348,36 @@ export function AccountsManager() {
                                 variant="outline"
                                 onClick={() => startEdit(account)}
                                 disabled={isBusy}
+                                className="gap-2"
                               >
+                                <Pencil
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                />
                                 Rename
                               </Button>
                               <Button
                                 variant="destructive"
                                 onClick={() => deleteAccount(account.id)}
                                 disabled={isBusy}
+                                className="h-9 w-9 px-0"
+                                aria-label={`Remove account ${account.name}`}
+                                title={`Remove account ${account.name}`}
                               >
-                                Remove
+                                {isBusy ? (
+                                  <Loader2
+                                    className="h-5 w-5 animate-spin"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <Trash2
+                                    className="h-5 w-5 stroke-[2.25]"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                <span className="sr-only">
+                                  Remove account {account.name}
+                                </span>
                               </Button>
                             </>
                           )}
@@ -352,6 +390,6 @@ export function AccountsManager() {
           </TableBody>
         </Table>
       </div>
-    </Card>
+    </div>
   );
 }

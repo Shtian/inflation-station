@@ -1,19 +1,37 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
-import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import type { DateRange } from "react-day-picker";
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
-  ChartContainer,
-  ChartTooltipContent,
+  Cell,
   Legend,
+  Line,
+  LineChart,
   Tooltip,
-} from "@/components/ui/chart";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+  XAxis,
+  YAxis,
+} from "recharts";
+import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { Calendar } from "@/components/ui/calendar";
+import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 type Account = {
   id: string;
@@ -49,6 +67,8 @@ type DashboardAnalytics = {
   }>;
 };
 
+const ALL_ACCOUNTS_VALUE = "__all_accounts__";
+
 function formatNok(value: number) {
   return new Intl.NumberFormat("nb-NO", {
     style: "currency",
@@ -68,6 +88,14 @@ function formatCompactNok(value: number) {
   }).format(value);
 }
 
+function formatTooltipNok(value: unknown) {
+  if (typeof value === "number") {
+    return formatNok(value);
+  }
+
+  return formatNok(Number.parseFloat(String(value)) || 0);
+}
+
 function formatChartDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -80,8 +108,37 @@ function formatChartDate(value: string) {
   }).format(date);
 }
 
+function formatFullDate(value: string) {
+  const date = fromDateInputValue(value);
+  if (!date) {
+    return "Pick a date";
+  }
+
+  return new Intl.DateTimeFormat("nb-NO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
 function toDateInputValue(date: Date) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function fromDateInputValue(value: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  return parsed;
 }
 
 function getPresetRange(preset: Exclude<DashboardRangePreset, "custom">) {
@@ -119,6 +176,7 @@ export function OverviewDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardAnalytics | null>(
     null,
   );
+  const [customDatePopoverOpen, setCustomDatePopoverOpen] = useState(false);
 
   const netCashflowChartConfig = {
     netNok: { label: "Net cashflow" },
@@ -128,7 +186,7 @@ export function OverviewDashboard() {
 
   const inflowOutflowChartConfig = {
     inflowNok: { label: "Inflow", color: "var(--chart-2)" },
-    outflowNok: { label: "Outflow", color: "var(--chart-5)" },
+    outflowNok: { label: "Outflow", color: "var(--destructive)" },
   };
 
   const categoryBreakdownChartConfig = {
@@ -216,15 +274,27 @@ export function OverviewDashboard() {
     () => (dashboardData ? dashboardData.categoryBreakdown.slice(0, 5) : []),
     [dashboardData],
   );
+  const selectedCustomRange = useMemo<DateRange | undefined>(() => {
+    const from = fromDateInputValue(dashboardStartDate);
+    const to = fromDateInputValue(dashboardEndDate);
+
+    if (!from && !to) {
+      return undefined;
+    }
+
+    return { from, to };
+  }, [dashboardEndDate, dashboardStartDate]);
 
   return (
-    <Card>
+    <div className="space-y-4">
       <div className="space-y-1">
-        <CardTitle>Overview</CardTitle>
-        <CardDescription>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Overview
+        </h1>
+        <p className="text-sm text-muted-foreground">
           Track net cashflow, inflow and outflow, category spending, and account
           trends.
-        </CardDescription>
+        </p>
       </div>
 
       <Separator className="my-4" />
@@ -233,27 +303,33 @@ export function OverviewDashboard() {
         <div className="space-y-2">
           <label
             htmlFor="dashboard-account-filter"
-            className="text-sm font-medium text-foreground"
+            className="block text-sm font-medium text-foreground"
           >
             Account filter
           </label>
           <Select
-            id="dashboard-account-filter"
-            value={dashboardAccountId}
-            onChange={(event) => setDashboardAccountId(event.target.value)}
+            value={dashboardAccountId || ALL_ACCOUNTS_VALUE}
+            onValueChange={(value) =>
+              setDashboardAccountId(value === ALL_ACCOUNTS_VALUE ? "" : value)
+            }
           >
-            <option value="">All accounts</option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
+            <SelectTrigger id="dashboard-account-filter" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_ACCOUNTS_VALUE}>All accounts</SelectItem>
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">Date range</p>
-          <div className="flex flex-wrap gap-2">
+          <ButtonGroup className="flex w-full flex-wrap gap-2 md:flex-nowrap md:gap-0.5">
             <Button
               variant={dashboardRangePreset === "30d" ? "default" : "outline"}
               onClick={() => setDashboardPreset("30d")}
@@ -275,53 +351,55 @@ export function OverviewDashboard() {
             >
               Year to date
             </Button>
-            <Button
-              variant={
-                dashboardRangePreset === "custom" ? "default" : "outline"
-              }
-              onClick={() => setDashboardRangePreset("custom")}
-              aria-pressed={dashboardRangePreset === "custom"}
+            <Popover
+              open={customDatePopoverOpen}
+              onOpenChange={setCustomDatePopoverOpen}
             >
-              Custom
-            </Button>
-          </div>
-        </div>
-      </div>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={
+                    dashboardRangePreset === "custom" ? "default" : "outline"
+                  }
+                  onClick={() => setDashboardRangePreset("custom")}
+                  aria-pressed={dashboardRangePreset === "custom"}
+                >
+                  Custom
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  selected={selectedCustomRange}
+                  defaultMonth={selectedCustomRange?.from}
+                  numberOfMonths={2}
+                  onSelect={(range) => {
+                    if (!range?.from) {
+                      return;
+                    }
 
-      <div className="mt-3 grid gap-3 md:grid-cols-2">
-        <div className="space-y-2">
-          <label
-            htmlFor="dashboard-start-date"
-            className="text-sm font-medium text-foreground"
+                    setDashboardRangePreset("custom");
+                    setDashboardStartDate(toDateInputValue(range.from));
+
+                    if (range.to) {
+                      setDashboardEndDate(toDateInputValue(range.to));
+                      setCustomDatePopoverOpen(false);
+                    } else {
+                      setDashboardEndDate(toDateInputValue(range.from));
+                    }
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          </ButtonGroup>
+          <p
+            className={cn(
+              "text-xs text-muted-foreground",
+              dashboardRangePreset !== "custom" && "hidden",
+            )}
           >
-            Start date
-          </label>
-          <Input
-            id="dashboard-start-date"
-            type="date"
-            value={dashboardStartDate}
-            onChange={(event) => {
-              setDashboardRangePreset("custom");
-              setDashboardStartDate(event.target.value);
-            }}
-          />
-        </div>
-        <div className="space-y-2">
-          <label
-            htmlFor="dashboard-end-date"
-            className="text-sm font-medium text-foreground"
-          >
-            End date
-          </label>
-          <Input
-            id="dashboard-end-date"
-            type="date"
-            value={dashboardEndDate}
-            onChange={(event) => {
-              setDashboardRangePreset("custom");
-              setDashboardEndDate(event.target.value);
-            }}
-          />
+            {formatFullDate(dashboardStartDate)} -{" "}
+            {formatFullDate(dashboardEndDate)}
+          </p>
         </div>
       </div>
 
@@ -374,7 +452,7 @@ export function OverviewDashboard() {
                 <Tooltip
                   content={
                     <ChartTooltipContent
-                      formatter={(value) => formatNok(value)}
+                      formatter={formatTooltipNok}
                       labelFormatter={formatChartDate}
                     />
                   }
@@ -430,7 +508,7 @@ export function OverviewDashboard() {
                 <Tooltip
                   content={
                     <ChartTooltipContent
-                      formatter={(value) => formatNok(value)}
+                      formatter={formatTooltipNok}
                       labelFormatter={formatChartDate}
                     />
                   }
@@ -487,9 +565,7 @@ export function OverviewDashboard() {
                   />
                   <Tooltip
                     content={
-                      <ChartTooltipContent
-                        formatter={(value) => formatNok(value)}
-                      />
+                      <ChartTooltipContent formatter={formatTooltipNok} />
                     }
                   />
                   <Bar
@@ -562,7 +638,7 @@ export function OverviewDashboard() {
                           content={
                             <ChartTooltipContent
                               indicator="line"
-                              formatter={(value) => formatNok(value)}
+                              formatter={formatTooltipNok}
                               labelFormatter={formatChartDate}
                             />
                           }
@@ -586,6 +662,6 @@ export function OverviewDashboard() {
           ) : null}
         </section>
       </div>
-    </Card>
+    </div>
   );
 }

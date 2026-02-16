@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { ModeToggle } from "@/components/theme-toggle";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,7 +41,7 @@ export default function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
-          enableSystem={false}
+          enableSystem
           disableTransitionOnChange
           storageKey="inflation-station-theme"
         >
@@ -62,7 +62,7 @@ export default function RootLayout({
                     </Link>
                   ))}
                 </nav>
-                <ThemeToggle className="ml-auto" />
+                <ModeToggle />
               </div>
             </header>
             {children}
