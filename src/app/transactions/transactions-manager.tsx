@@ -60,6 +60,12 @@ type Account = {
   name: string;
 };
 
+type Category = {
+  id: string;
+  name: string;
+  accountId: string | null;
+};
+
 type TransactionRow = {
   id: string;
   accountId: string;
@@ -83,6 +89,7 @@ type TransactionsResponse = {
 };
 
 type EditFormState = {
+  categoryId: string;
   bookingDate: string;
   amountNok: string;
   currency: string;
@@ -92,6 +99,7 @@ type EditFormState = {
 
 const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"] as const;
 const ALL_ACCOUNTS_VALUE = "__all_accounts__";
+const UNCATEGORIZED_VALUE = "__uncategorized__";
 const PAYMENT_TYPE_OPTIONS = [
   "CARD",
   "TRANSFER",
@@ -149,6 +157,7 @@ function toPaymentTypeOption(value: string): PaymentTypeOption {
 
 function toEditFormState(row: TransactionRow): EditFormState {
   return {
+    categoryId: row.categoryId ?? UNCATEGORIZED_VALUE,
     bookingDate: row.bookingDate,
     amountNok: row.amountNok.toFixed(2),
     currency: row.currency,
@@ -159,6 +168,7 @@ function toEditFormState(row: TransactionRow): EditFormState {
 
 export function TransactionsManager() {
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [accountId, setAccountId] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -224,6 +234,36 @@ export function TransactionsManager() {
     );
   }, []);
 
+  const loadCategories = useCallback(async () => {
+    const response = await fetch("/api/categories");
+    const body = await response.json().catch(() => null);
+
+    if (
+      !response.ok ||
+      !body ||
+      typeof body !== "object" ||
+      !("categories" in body) ||
+      !Array.isArray(body.categories)
+    ) {
+      setCategories([]);
+      return;
+    }
+
+    setCategories(
+      (
+        body.categories as Array<{
+          id: string;
+          name: string;
+          accountId: string | null;
+        }>
+      ).map((next) => ({
+        id: next.id,
+        name: next.name,
+        accountId: next.accountId,
+      })),
+    );
+  }, []);
+
   const loadTransactions = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -270,6 +310,10 @@ export function TransactionsManager() {
   }, [loadAccounts]);
 
   useEffect(() => {
+    void loadCategories();
+  }, [loadCategories]);
+
+  useEffect(() => {
     void loadTransactions();
   }, [loadTransactions]);
 
@@ -310,6 +354,10 @@ export function TransactionsManager() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        categoryId:
+          editForm.categoryId === UNCATEGORIZED_VALUE
+            ? null
+            : editForm.categoryId,
         bookingDate,
         amountNok,
         currency,
@@ -618,6 +666,38 @@ export function TransactionsManager() {
 
           {editForm ? (
             <form className="space-y-4" onSubmit={handleEditSubmit}>
+              <div className="space-y-2">
+                <label
+                  htmlFor="edit-category-id"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Category
+                </label>
+                <Select
+                  value={editForm.categoryId}
+                  onValueChange={(value) =>
+                    setEditForm((current) =>
+                      current ? { ...current, categoryId: value } : current,
+                    )
+                  }
+                  disabled={editSaving}
+                >
+                  <SelectTrigger id="edit-category-id">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={UNCATEGORIZED_VALUE}>
+                      Uncategorized
+                    </SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <label
                   htmlFor="edit-booking-date"

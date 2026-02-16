@@ -21,6 +21,29 @@ test("manages transactions filters and pagination controls from /transactions", 
     });
   });
 
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        categories: [
+          {
+            id: "cat-groceries",
+            name: "Groceries",
+            kind: "EXPENSE",
+            accountId: null,
+          },
+          {
+            id: "cat-food",
+            name: "Food",
+            kind: "EXPENSE",
+            accountId: null,
+          },
+        ],
+      }),
+    });
+  });
+
   await page.route("**/api/transactions**", async (route, request) => {
     const url = new URL(request.url());
     const accountId = url.searchParams.get("accountId");
@@ -223,7 +246,10 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   page,
 }) => {
   let updatedMerchant = "Corner Shop";
+  let updatedCategoryId: string | null = null;
+  let updatedCategoryName = "Uncategorized";
   let lastPatchPayload: null | {
+    categoryId: string | null;
     bookingDate: string;
     amountNok: number;
     currency: string;
@@ -241,6 +267,29 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     });
   });
 
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        categories: [
+          {
+            id: "cat-food",
+            name: "Food",
+            kind: "EXPENSE",
+            accountId: null,
+          },
+          {
+            id: "cat-transport",
+            name: "Transport",
+            kind: "EXPENSE",
+            accountId: null,
+          },
+        ],
+      }),
+    });
+  });
+
   await page.route("**/api/transactions/txn-page-2", async (route, request) => {
     if (request.method() !== "PATCH") {
       await route.fallback();
@@ -248,6 +297,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     }
 
     const payload = (await request.postDataJSON()) as {
+      categoryId: string | null;
       bookingDate: string;
       amountNok: number;
       currency: string;
@@ -257,6 +307,9 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
 
     lastPatchPayload = payload;
     updatedMerchant = payload.normalizedMerchant;
+    updatedCategoryId = payload.categoryId;
+    updatedCategoryName =
+      payload.categoryId === "cat-food" ? "Food" : "Uncategorized";
 
     await route.fulfill({
       status: 200,
@@ -265,7 +318,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
         transaction: {
           id: "txn-page-2",
           accountId: "acc-1",
-          categoryId: null,
+          categoryId: payload.categoryId,
           bookingDate: payload.bookingDate,
           amountNok: payload.amountNok,
           currency: payload.currency,
@@ -297,8 +350,8 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
             {
               id: "txn-page-2",
               accountId: "acc-1",
-              categoryId: null,
-              categoryName: null,
+              categoryId: updatedCategoryId,
+              categoryName: updatedCategoryId ? updatedCategoryName : null,
               bookingDate: "2026-01-15",
               amountNok: -210,
               currency: "NOK",
@@ -363,10 +416,14 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   ).toBeVisible();
 
   await page.getByLabel("Merchant").fill("Updated Corner Shop");
+  await page.getByLabel("Category").click();
+  await page.getByRole("option", { name: "Food" }).click();
   await page.getByRole("button", { name: "Save changes" }).click();
 
   await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.getByText("Updated Corner Shop")).toBeVisible();
+  await expect(page.getByText("Food")).toBeVisible();
+  await expect.poll(() => lastPatchPayload?.categoryId).toBe("cat-food");
   await expect
     .poll(() => lastPatchPayload?.normalizedMerchant)
     .toBe("Updated Corner Shop");
@@ -384,6 +441,23 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
       contentType: "application/json",
       body: JSON.stringify({
         accounts: [{ id: "acc-1", name: "Main Account", institution: "DNB" }],
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        categories: [
+          {
+            id: "cat-groceries",
+            name: "Groceries",
+            kind: "EXPENSE",
+            accountId: null,
+          },
+        ],
       }),
     });
   });

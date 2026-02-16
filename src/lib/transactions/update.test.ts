@@ -58,12 +58,27 @@ describe("parseTransactionUpdatePayload", () => {
 
     expect(parsed.error.flatten().fieldErrors.accountId).toBeDefined();
   });
+
+  it("accepts nullable category updates", () => {
+    const parsed = parseTransactionUpdatePayload({
+      categoryId: null,
+      amountNok: -100.25,
+    });
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      return;
+    }
+
+    expect(parsed.data.categoryId).toBeNull();
+  });
 });
 
 describe("updateTransaction", () => {
   it("updates and maps the persisted transaction row", async () => {
     const db = createUpdateDbMock();
     const parsed = parseTransactionUpdatePayload({
+      categoryId: "cat-2",
       amountNok: -100.25,
       normalizedMerchant: "updated shop",
       paymentType: PaymentType.CARD,
@@ -82,6 +97,7 @@ describe("updateTransaction", () => {
     expect(db.transaction.update).toHaveBeenCalledWith({
       where: { id: "tx-1" },
       data: {
+        categoryId: "cat-2",
         amountNok: -100.25,
         normalizedMerchant: "updated shop",
         paymentType: PaymentType.CARD,

@@ -12,6 +12,8 @@
 - Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
 - For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
 - For Next.js App Router handlers, return `new Response(null, { status: 204 })` for no-content responses; `NextResponse.json` is invalid for HTTP 204.
+- Keep Playwright configured for base URL `http://127.0.0.1:3000` and use `PLAYWRIGHT_NO_WEBSERVER=1` when you need to force reuse of an already running local dev server.
+- Keep `pnpm test` as the full verification entry point (unit + E2E) and use `pnpm test:unit` for fast Vitest-only loops.
 
 ## 2026-02-16 12:46 CET - US-001
 - What was implemented
@@ -257,4 +259,36 @@
     - Playwright webServer startup can fail with stale `.next/dev/lock`; when this happens, browser tests may fail before app routing assertions run.
   - Useful context (e.g., "the evaluation panel is in component X")
     - `/transactions` now expects `categoryName` in API rows and falls back to `Uncategorized` in `src/app/transactions/transactions-manager.tsx`.
+## 2026-02-16 19:58 CET - US-010
+- What was implemented
+  - Added category loading to `/transactions` and wired the edit dialog with a category selector that supports explicit `Uncategorized` (`null`) as well as concrete categories.
+  - Extended edit submit payloads to include `categoryId`, and refreshed paginated results now reflect updated category labels in the table.
+  - Updated transaction update/API tests and transaction-route Playwright coverage to assert category edit persistence behavior.
+  - Added a permanent Playwright/local-dev workflow fix: `playwright.config.ts` now targets port `3000`, can skip managed web server via `PLAYWRIGHT_NO_WEBSERVER`, and `pnpm test` now runs full unit + E2E checks while `pnpm test:unit` remains available for quick loops.
+- Files changed
+  - `src/app/transactions/transactions-manager.tsx`
+  - `src/lib/transactions/update.test.ts`
+  - `src/app/api/transactions/[transactionId]/route.test.ts`
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+  - `playwright.config.ts`
+  - `package.json`
+  - `README.md`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm run test:unit` (pass)
+  - `pnpm build` (pass)
+  - `PLAYWRIGHT_NO_WEBSERVER=1 pnpm test` (blocked in this sandbox: Playwright Chromium launch permission error `bootstrap_check_in ... Permission denied (1100)`)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep transaction-edit form state authoritative in `transactions-manager` and include all mutable fields (including `categoryId`) in one PATCH payload so table refreshes stay deterministic.
+    - Use `pnpm test` for full verification and `pnpm test:unit` for fast feedback while iterating on non-browser changes.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - In constrained environments, Playwright browser launch can fail even when the app server is healthy; this is separate from Next.js dev-server lock issues.
+    - When `pnpm test` includes E2E, local/browser prerequisites must be available or the command fails after unit tests.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - `playwright.config.ts` now supports `PLAYWRIGHT_NO_WEBSERVER=1` to force reuse of a running dev server instead of spawning `pnpm dev`.
 ---

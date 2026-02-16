@@ -75,7 +75,11 @@ describe("PATCH /api/transactions/[transactionId]", () => {
   it("persists valid updates and returns the updated transaction", async () => {
     parseTransactionUpdatePayloadMock.mockReturnValue({
       success: true,
-      data: { paymentType: PaymentType.CARD, normalizedMerchant: "Store" },
+      data: {
+        categoryId: "cat-1",
+        paymentType: PaymentType.CARD,
+        normalizedMerchant: "Store",
+      },
     });
     updateTransactionMock.mockResolvedValue({
       id: "tx-1",
@@ -94,6 +98,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
       new Request("http://localhost", {
         method: "PATCH",
         body: JSON.stringify({
+          categoryId: "cat-1",
           paymentType: PaymentType.CARD,
           normalizedMerchant: "Store",
         }),
@@ -108,6 +113,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
     expect(updateTransactionMock).toHaveBeenCalledWith(prismaMock, {
       transactionId: "tx-1",
       updates: {
+        categoryId: "cat-1",
         paymentType: PaymentType.CARD,
         normalizedMerchant: "Store",
       },
