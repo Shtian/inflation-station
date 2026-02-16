@@ -122,23 +122,23 @@ export function OverviewDashboard() {
 
   const netCashflowChartConfig = {
     netNok: { label: "Net cashflow" },
-    positive: { label: "Inflow", color: "hsl(var(--chart-2))" },
-    negative: { label: "Outflow", color: "hsl(var(--destructive))" },
+    positive: { label: "Inflow", color: "var(--chart-2)" },
+    negative: { label: "Outflow", color: "var(--destructive)" },
   };
 
   const inflowOutflowChartConfig = {
-    inflowNok: { label: "Inflow", color: "hsl(var(--chart-2))" },
-    outflowNok: { label: "Outflow", color: "hsl(var(--chart-5))" },
+    inflowNok: { label: "Inflow", color: "var(--chart-2)" },
+    outflowNok: { label: "Outflow", color: "var(--chart-5)" },
   };
 
   const categoryBreakdownChartConfig = {
-    spendNok: { label: "Spend", color: "hsl(var(--chart-3))" },
+    spendNok: { label: "Spend", color: "var(--chart-3)" },
   };
 
   const accountTrendChartConfig = {
     cumulativeNok: {
       label: "Cumulative balance",
-      color: "hsl(var(--chart-1))",
+      color: "var(--chart-1)",
     },
   };
 
