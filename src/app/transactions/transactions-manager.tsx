@@ -2,6 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -46,8 +54,24 @@ type TransactionsResponse = {
   };
 };
 
+type EditFormState = {
+  bookingDate: string;
+  amountNok: string;
+  currency: string;
+  normalizedMerchant: string;
+  paymentType: PaymentTypeOption;
+};
+
 const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"] as const;
 const ALL_ACCOUNTS_VALUE = "__all_accounts__";
+const PAYMENT_TYPE_OPTIONS = [
+  "CARD",
+  "TRANSFER",
+  "EFT",
+  "CASH",
+  "OTHER",
+] as const;
+type PaymentTypeOption = (typeof PAYMENT_TYPE_OPTIONS)[number];
 
 function formatNok(value: number) {
   return new Intl.NumberFormat("nb-NO", {
@@ -69,6 +93,42 @@ function getTransactionsErrorMessage(body: unknown) {
   return "Could not load transactions.";
 }
 
+function getMutationErrorMessage(body: unknown, fallback: string) {
+  if (typeof body === "object" && body && "message" in body) {
+    const message = (body as { message: unknown }).message;
+    if (typeof message === "string" && message.length > 0) {
+      return message;
+    }
+  }
+
+  if (typeof body === "object" && body && "error" in body) {
+    const error = (body as { error: unknown }).error;
+    if (typeof error === "string" && error.length > 0) {
+      return error;
+    }
+  }
+
+  return fallback;
+}
+
+function toPaymentTypeOption(value: string): PaymentTypeOption {
+  if (PAYMENT_TYPE_OPTIONS.includes(value as PaymentTypeOption)) {
+    return value as PaymentTypeOption;
+  }
+
+  return "OTHER";
+}
+
+function toEditFormState(row: TransactionRow): EditFormState {
+  return {
+    bookingDate: row.bookingDate,
+    amountNok: row.amountNok.toFixed(2),
+    currency: row.currency,
+    normalizedMerchant: row.normalizedMerchant,
+    paymentType: toPaymentTypeOption(row.paymentType),
+  };
+}
+
 export function TransactionsManager() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState("");
@@ -80,6 +140,24 @@ export function TransactionsManager() {
   const [transactions, setTransactions] = useState<TransactionsResponse | null>(
     null,
   );
+  const [editingTransaction, setEditingTransaction] =
+    useState<TransactionRow | null>(null);
+  const [editForm, setEditForm] = useState<EditFormState | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  const closeEditDialog = useCallback(() => {
+    setEditingTransaction(null);
+    setEditForm(null);
+    setEditError(null);
+    setEditSaving(false);
+  }, []);
+
+  const openEditDialog = useCallback((row: TransactionRow) => {
+    setEditingTransaction(row);
+    setEditForm(toEditFormState(row));
+    setEditError(null);
+  }, []);
 
   const loadAccounts = useCallback(async () => {
     const response = await fetch("/api/accounts");
@@ -165,6 +243,59 @@ export function TransactionsManager() {
     const clamped = Math.min(parsed, max);
     setPage(clamped);
     setPageInput(String(clamped));
+  }
+
+  async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!editingTransaction || !editForm) {
+      return;
+    }
+
+    const amountNok = Number.parseFloat(editForm.amountNok.replace(",", "."));
+    if (!Number.isFinite(amountNok)) {
+      setEditError("Amount must be a valid number.");
+      return;
+    }
+
+    const bookingDate = editForm.bookingDate.trim();
+    const currency = editForm.currency.trim().toUpperCase();
+    const normalizedMerchant = editForm.normalizedMerchant.trim();
+
+    if (!bookingDate || !currency || !normalizedMerchant) {
+      setEditError("Date, currency, and merchant are required.");
+      return;
+    }
+
+    setEditSaving(true);
+    setEditError(null);
+
+    const response = await fetch(`/api/transactions/${editingTransaction.id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        bookingDate,
+        amountNok,
+        currency,
+        normalizedMerchant,
+        paymentType: editForm.paymentType,
+      }),
+    });
+
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      setEditError(
+        getMutationErrorMessage(body, "Could not update transaction."),
+      );
+      setEditSaving(false);
+      return;
+    }
+
+    await loadTransactions();
+    closeEditDialog();
   }
 
   return (
@@ -319,6 +450,7 @@ export function TransactionsManager() {
                   <TableHead>Merchant</TableHead>
                   <TableHead>Payment type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -330,6 +462,16 @@ export function TransactionsManager() {
                     <TableCell className="text-right">
                       {formatNok(row.amountNok)}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(row)}
+                      >
+                        Edit
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -337,6 +479,173 @@ export function TransactionsManager() {
           )}
         </section>
       ) : null}
+
+      <Dialog
+        open={editingTransaction !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !editSaving) {
+            closeEditDialog();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit transaction</DialogTitle>
+            <DialogDescription>
+              Update mutable fields and save to keep this page in sync.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editForm ? (
+            <form className="space-y-4" onSubmit={handleEditSubmit}>
+              <div className="space-y-2">
+                <label
+                  htmlFor="edit-booking-date"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Date
+                </label>
+                <Input
+                  id="edit-booking-date"
+                  type="date"
+                  value={editForm.bookingDate}
+                  onChange={(event) =>
+                    setEditForm((current) =>
+                      current
+                        ? { ...current, bookingDate: event.target.value }
+                        : current,
+                    )
+                  }
+                  disabled={editSaving}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="edit-normalized-merchant"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Merchant
+                </label>
+                <Input
+                  id="edit-normalized-merchant"
+                  value={editForm.normalizedMerchant}
+                  onChange={(event) =>
+                    setEditForm((current) =>
+                      current
+                        ? { ...current, normalizedMerchant: event.target.value }
+                        : current,
+                    )
+                  }
+                  disabled={editSaving}
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="edit-amount-nok"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Amount (NOK)
+                  </label>
+                  <Input
+                    id="edit-amount-nok"
+                    inputMode="decimal"
+                    value={editForm.amountNok}
+                    onChange={(event) =>
+                      setEditForm((current) =>
+                        current
+                          ? { ...current, amountNok: event.target.value }
+                          : current,
+                      )
+                    }
+                    disabled={editSaving}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label
+                    htmlFor="edit-currency"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Currency
+                  </label>
+                  <Input
+                    id="edit-currency"
+                    value={editForm.currency}
+                    onChange={(event) =>
+                      setEditForm((current) =>
+                        current
+                          ? { ...current, currency: event.target.value }
+                          : current,
+                      )
+                    }
+                    disabled={editSaving}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="edit-payment-type"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Payment type
+                </label>
+                <Select
+                  value={editForm.paymentType}
+                  onValueChange={(value) =>
+                    setEditForm((current) =>
+                      current
+                        ? {
+                            ...current,
+                            paymentType: toPaymentTypeOption(value),
+                          }
+                        : current,
+                    )
+                  }
+                  disabled={editSaving}
+                >
+                  <SelectTrigger id="edit-payment-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editError ? (
+                <p
+                  role="alert"
+                  className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+                >
+                  {editError}
+                </p>
+              ) : null}
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeEditDialog}
+                  disabled={editSaving}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={editSaving}>
+                  {editSaving ? "Saving..." : "Save changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

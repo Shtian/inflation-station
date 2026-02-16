@@ -207,3 +207,151 @@ test("manages transactions filters and pagination controls from /transactions", 
   ).toBeVisible();
   await expect(page.getByText("0 total transactions.")).toBeVisible();
 });
+
+test("edits a transaction in a modal and keeps pagination state after save", async ({
+  page,
+}) => {
+  let updatedMerchant = "Corner Shop";
+  let lastPatchPayload: null | {
+    bookingDate: string;
+    amountNok: number;
+    currency: string;
+    normalizedMerchant: string;
+    paymentType: string;
+  } = null;
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [{ id: "acc-1", name: "Main Account", institution: "DNB" }],
+      }),
+    });
+  });
+
+  await page.route("**/api/transactions/txn-page-2", async (route, request) => {
+    if (request.method() !== "PATCH") {
+      await route.fallback();
+      return;
+    }
+
+    const payload = (await request.postDataJSON()) as {
+      bookingDate: string;
+      amountNok: number;
+      currency: string;
+      normalizedMerchant: string;
+      paymentType: string;
+    };
+
+    lastPatchPayload = payload;
+    updatedMerchant = payload.normalizedMerchant;
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        transaction: {
+          id: "txn-page-2",
+          accountId: "acc-1",
+          categoryId: null,
+          bookingDate: payload.bookingDate,
+          amountNok: payload.amountNok,
+          currency: payload.currency,
+          normalizedMerchant: payload.normalizedMerchant,
+          paymentType: payload.paymentType,
+          createdAt: "2026-01-15T08:00:00.000Z",
+          updatedAt: "2026-02-16T12:00:00.000Z",
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/transactions**", async (route, request) => {
+    if (request.method() !== "GET") {
+      await route.fallback();
+      return;
+    }
+
+    const url = new URL(request.url());
+    const pageParam = url.searchParams.get("page");
+    const pageSizeParam = url.searchParams.get("pageSize");
+
+    if (pageParam === "2" && pageSizeParam === "25") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          rows: [
+            {
+              id: "txn-page-2",
+              accountId: "acc-1",
+              categoryId: null,
+              bookingDate: "2026-01-15",
+              amountNok: -210,
+              currency: "NOK",
+              normalizedMerchant: updatedMerchant,
+              paymentType: "CARD",
+              createdAt: "2026-01-15T08:00:00.000Z",
+              updatedAt: "2026-01-15T08:00:00.000Z",
+            },
+          ],
+          pagination: {
+            total: 35,
+            page: 2,
+            pageSize: 25,
+            totalPages: 2,
+          },
+        }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        rows: [
+          {
+            id: "txn-page-1",
+            accountId: "acc-1",
+            categoryId: null,
+            bookingDate: "2026-02-05",
+            amountNok: -320,
+            currency: "NOK",
+            normalizedMerchant: "Supermarket",
+            paymentType: "CARD",
+            createdAt: "2026-02-05T09:00:00.000Z",
+            updatedAt: "2026-02-05T09:00:00.000Z",
+          },
+        ],
+        pagination: {
+          total: 35,
+          page: 1,
+          pageSize: 25,
+          totalPages: 2,
+        },
+      }),
+    });
+  });
+
+  await page.goto("/transactions");
+
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.getByText("Page 2 of 2.")).toBeVisible();
+  await expect(page.getByText("Corner Shop")).toBeVisible();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Edit transaction" }),
+  ).toBeVisible();
+
+  await page.getByLabel("Merchant").fill("Updated Corner Shop");
+  await page.getByRole("button", { name: "Save changes" }).click();
+
+  await expect(page.getByText("Page 2 of 2.")).toBeVisible();
+  await expect(page.getByText("Updated Corner Shop")).toBeVisible();
+  await expect
+    .poll(() => lastPatchPayload?.normalizedMerchant)
+    .toBe("Updated Corner Shop");
+});

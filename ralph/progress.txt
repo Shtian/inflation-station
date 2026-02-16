@@ -7,6 +7,7 @@
 - Keep transactions pagination/filter query logic in `src/lib/transactions/*`, and keep `/api/transactions` handlers focused on request validation and HTTP response shaping.
 - Keep `/api/transactions/[transactionId]` handlers consistent across mutation methods by validating `transactionId` up front and mapping Prisma `P2025` to `TRANSACTION_NOT_FOUND`.
 - Keep transactions route filter state client-side in `src/app/transactions/*`, and refetch `/api/transactions` whenever account, page, or pageSize changes.
+- Keep transaction edit UI state local in `src/app/transactions/*` and refresh list data via the same paginated query after successful saves to preserve active filter/page context.
 - For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
 
 ## 2026-02-16 12:46 CET - US-001
@@ -144,4 +145,32 @@
     - In this environment, Playwright web server startup may require escalated permissions for local port binding (`EPERM` on `0.0.0.0:3100`).
   - Useful context (e.g., "the evaluation panel is in component X")
     - `tests/e2e/us-018-transactions-route-controls.e2e.ts` now covers both pagination/filter interactions and zero-row filtered state assertions.
+---
+## 2026-02-16 13:58 CET - US-006
+- What was implemented
+  - Added row-level `Edit` actions on `/transactions` that open a shadcn `Dialog` with prefilled mutable transaction fields.
+  - Wired dialog submit to `PATCH /api/transactions/[transactionId]` with client-side validation for required fields and numeric amount parsing.
+  - Refreshed the paginated transaction list after successful save so the current account filter/page state is preserved.
+  - Expanded Playwright coverage to validate the modal edit flow and post-save refresh behavior on the active page.
+- Files changed
+  - `src/components/ui/dialog.tsx`
+  - `src/app/transactions/transactions-manager.tsx`
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+  - `pnpm exec playwright test tests/e2e/us-018-transactions-route-controls.e2e.ts` (pass; required escalated permissions for local web server port binding)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep transaction edit interactions in route-local client state and re-fetch through existing paginated query parameters after save rather than mutating table state ad hoc.
+    - Add reusable shadcn-style primitives under `src/components/ui/*` when introducing new interaction patterns (for example dialog-based editing).
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Broad Playwright route mocks like `**/api/transactions**` can unintentionally intercept mutation calls; guard by HTTP method and fallback non-GET requests.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - The `/transactions` edit form currently supports `bookingDate`, `amountNok`, `currency`, `normalizedMerchant`, and `paymentType` through the existing transaction update API.
 ---
