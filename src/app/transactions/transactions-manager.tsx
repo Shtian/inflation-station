@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { CategoryBadge } from "@/components/category-badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -495,7 +496,9 @@ export function TransactionsManager() {
                         {row.normalizedMerchant || "Unknown"}
                       </TableCell>
                       <TableCell>
-                        {row.categoryName ?? "Uncategorized"}
+                        <CategoryBadge
+                          label={row.categoryName ?? "Uncategorized"}
+                        />
                       </TableCell>
                       <TableCell>{row.paymentType}</TableCell>
                       <TableCell className="text-right">
