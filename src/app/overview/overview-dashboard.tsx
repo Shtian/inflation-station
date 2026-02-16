@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
 
 type Account = {
@@ -185,18 +186,20 @@ export function OverviewDashboard() {
   return (
     <Card>
       <div className="space-y-1">
-        <CardTitle>Dashboard</CardTitle>
+        <CardTitle>Overview</CardTitle>
         <CardDescription>
           Track net cashflow, inflow and outflow, category spending, and account
           trends.
         </CardDescription>
       </div>
 
+      <Separator className="my-4" />
+
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div className="space-y-2">
           <label
             htmlFor="dashboard-account-filter"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Account filter
           </label>
@@ -215,7 +218,7 @@ export function OverviewDashboard() {
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-zinc-800">Date range</p>
+          <p className="text-sm font-medium text-foreground">Date range</p>
           <div className="flex flex-wrap gap-2">
             <Button
               variant={dashboardRangePreset === "30d" ? "default" : "outline"}
@@ -255,7 +258,7 @@ export function OverviewDashboard() {
         <div className="space-y-2">
           <label
             htmlFor="dashboard-start-date"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Start date
           </label>
@@ -272,7 +275,7 @@ export function OverviewDashboard() {
         <div className="space-y-2">
           <label
             htmlFor="dashboard-end-date"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             End date
           </label>
@@ -297,15 +300,21 @@ export function OverviewDashboard() {
         </p>
       ) : null}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <section className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
-          <h3 className="text-sm font-semibold text-zinc-900">Net Cashflow</h3>
+      <Separator className="my-4" />
+
+      <div className="space-y-4">
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">
+            Net Cashflow
+          </h3>
           {dashboardLoading ? (
-            <p className="mt-3 text-sm text-zinc-600">Loading chart data...</p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Loading chart data...
+            </p>
           ) : null}
           {!dashboardLoading &&
           (!dashboardData || dashboardData.netCashflow.length === 0) ? (
-            <p className="mt-3 text-sm text-zinc-600">
+            <p className="mt-3 text-sm text-muted-foreground">
               No data for selected filters.
             </p>
           ) : null}
@@ -320,11 +329,11 @@ export function OverviewDashboard() {
 
                 return (
                   <li key={point.date} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-zinc-600">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{point.date}</span>
                       <span>{formatNok(point.netNok)}</span>
                     </div>
-                    <div className="h-2 rounded bg-zinc-200">
+                    <div className="h-2 rounded bg-muted">
                       <div
                         className={
                           positive
@@ -341,18 +350,20 @@ export function OverviewDashboard() {
           ) : null}
         </section>
 
-        <section className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
-          <h3 className="text-sm font-semibold text-zinc-900">
+        <Separator />
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">
             Inflow vs Outflow
           </h3>
           {!dashboardLoading &&
           (!dashboardData || dashboardData.inflowOutflow.length === 0) ? (
-            <p className="mt-3 text-sm text-zinc-600">
+            <p className="mt-3 text-sm text-muted-foreground">
               No data for selected filters.
             </p>
           ) : null}
           {!dashboardLoading && dashboardData ? (
-            <div className="mt-3 overflow-x-auto">
+            <div className="mt-3 overflow-x-auto rounded-md border border-border">
               <Table>
                 <THead>
                   <tr>
@@ -379,13 +390,15 @@ export function OverviewDashboard() {
           ) : null}
         </section>
 
-        <section className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
-          <h3 className="text-sm font-semibold text-zinc-900">
+        <Separator />
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">
             Category Spend Breakdown
           </h3>
           {!dashboardLoading &&
           (!dashboardData || dashboardData.categoryBreakdown.length === 0) ? (
-            <p className="mt-3 text-sm text-zinc-600">
+            <p className="mt-3 text-sm text-muted-foreground">
               No spending data for selected filters.
             </p>
           ) : null}
@@ -398,13 +411,13 @@ export function OverviewDashboard() {
                 );
                 return (
                   <li key={point.categoryId ?? "uncategorized"}>
-                    <div className="flex items-center justify-between text-xs text-zinc-600">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{point.categoryName}</span>
                       <span>
                         {formatNok(point.spendNok)} ({point.transactionCount})
                       </span>
                     </div>
-                    <div className="mt-1 h-2 rounded bg-zinc-200">
+                    <div className="mt-1 h-2 rounded bg-muted">
                       <div
                         className="h-2 rounded bg-blue-600"
                         style={{ width: `${width}%` }}
@@ -417,13 +430,15 @@ export function OverviewDashboard() {
           ) : null}
         </section>
 
-        <section className="rounded-md border border-zinc-200 bg-zinc-50 p-4">
-          <h3 className="text-sm font-semibold text-zinc-900">
+        <Separator />
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">
             Account State Trend
           </h3>
           {!dashboardLoading &&
           (!dashboardData || dashboardData.accountTrend.length === 0) ? (
-            <p className="mt-3 text-sm text-zinc-600">
+            <p className="mt-3 text-sm text-muted-foreground">
               No trend data for selected filters.
             </p>
           ) : null}
@@ -434,17 +449,17 @@ export function OverviewDashboard() {
                 return (
                   <div
                     key={series.accountId}
-                    className="rounded border border-zinc-200 bg-white p-3"
+                    className="rounded border border-border p-3"
                   >
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-zinc-900">
+                      <p className="text-sm font-medium text-foreground">
                         {series.accountName}
                       </p>
-                      <p className="text-sm text-zinc-600">
+                      <p className="text-sm text-muted-foreground">
                         {latest ? formatNok(latest.cumulativeNok) : "-"}
                       </p>
                     </div>
-                    <p className="mt-1 text-xs text-zinc-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {series.points.length} points
                     </p>
                   </div>

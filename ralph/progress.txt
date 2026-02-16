@@ -13,6 +13,7 @@
 - In `/import` review UI, fetch categories from `/api/categories` and allow both global (`accountId: null`) and selected-account categories in row-level category selectors.
 - Keep shadcn-compatible semantic theme tokens centralized in `src/app/globals.css`, and map shared UI primitives to semantic utility classes (`bg-background`, `text-foreground`, `border-border`, etc.) instead of hardcoded palettes.
 - Keep app-wide theme state at the layout level using a `next-themes` provider with `html` class toggling, and drive dark tokens from `.dark` in `src/app/globals.css`.
+- For dedicated route pages, keep a single top-level `Card` as the primary container and split multi-section content with `Separator` instead of nesting extra `Card` wrappers.
 
 ## 2026-02-15 21:20:39 CET - US-001
 - Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
@@ -155,4 +156,14 @@
 - **Learnings for future iterations**
   - Theme toggles should live in the shared app shell so route-level pages inherit consistent behavior automatically.
   - For App Router hydration safety with runtime theme classes, apply `suppressHydrationWarning` on `<html>` and keep theme class control centralized in `next-themes`.
+---
+
+## 2026-02-16 10:14:38 CET - US-014
+- Reduced nested card containers across dedicated route pages by merging page headers into each route's main content card and simplifying interior section wrappers.
+- Added a shared `Separator` primitive and used section separators in multi-section pages to avoid box-in-box card nesting while keeping readability.
+- Files changed: `AGENTS.md`, `src/app/accounts/accounts-manager.tsx`, `src/app/accounts/page.tsx`, `src/app/categories/categories-manager.tsx`, `src/app/categories/page.tsx`, `src/app/globals.css`, `src/app/import/import-uploader.tsx`, `src/app/layout.tsx`, `src/app/overview/overview-dashboard.tsx`, `src/app/overview/page.tsx`, `src/app/page.tsx`, `src/components/ui/separator.tsx`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Keep route-level title/description content inside the feature's primary `Card` to avoid duplicate heading blocks at both page and card levels.
+  - When route screens require multiple functional sections, use `Separator` boundaries before introducing additional cards with repeated borders/backgrounds.
 ---

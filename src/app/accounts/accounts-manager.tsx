@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
 
 type Account = {
@@ -186,16 +187,18 @@ export function AccountsManager() {
   return (
     <Card>
       <div className="space-y-1">
-        <CardTitle>Account Management</CardTitle>
+        <CardTitle>Accounts</CardTitle>
         <CardDescription>
           Add, rename, and remove accounts used in imports.
         </CardDescription>
       </div>
 
-      <div className="mt-4 grid gap-3 rounded-md border border-zinc-200 bg-zinc-50 p-4">
+      <Separator className="my-4" />
+
+      <div className="grid gap-3">
         <label
           htmlFor="new-account-name"
-          className="text-sm font-medium text-zinc-800"
+          className="text-sm font-medium text-foreground"
         >
           Account name
         </label>
@@ -207,7 +210,7 @@ export function AccountsManager() {
         />
         <label
           htmlFor="new-account-institution"
-          className="text-sm font-medium text-zinc-800"
+          className="text-sm font-medium text-foreground"
         >
           Institution (optional)
         </label>
@@ -237,7 +240,9 @@ export function AccountsManager() {
         </p>
       ) : null}
 
-      <div className="mt-4 overflow-x-auto rounded-md border border-zinc-200">
+      <Separator className="my-4" />
+
+      <div className="overflow-x-auto rounded-md border border-border">
         <Table>
           <THead>
             <tr>

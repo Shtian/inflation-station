@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
 
 type Account = {
@@ -314,19 +315,30 @@ export function CategoriesManager() {
   }
 
   return (
-    <div className="grid gap-6">
-      <Card>
+    <Card>
+      <div className="space-y-1">
+        <CardTitle>Categories</CardTitle>
+        <CardDescription>
+          Manage categories and deterministic rules used in imports and review.
+        </CardDescription>
+      </div>
+
+      <Separator className="my-4" />
+
+      <section className="space-y-4">
         <div className="space-y-1">
-          <CardTitle>Category Management</CardTitle>
-          <CardDescription>
+          <h3 className="text-base font-semibold text-foreground">
+            Category Management
+          </h3>
+          <p className="text-sm text-muted-foreground">
             Create and remove categories used in review and analytics.
-          </CardDescription>
+          </p>
         </div>
 
-        <div className="mt-4 grid gap-3 rounded-md border border-zinc-200 bg-zinc-50 p-4">
+        <div className="grid gap-3">
           <label
             htmlFor="new-category-name"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Category name
           </label>
@@ -338,7 +350,7 @@ export function CategoriesManager() {
           />
           <label
             htmlFor="new-category-kind"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Kind
           </label>
@@ -355,7 +367,7 @@ export function CategoriesManager() {
           </Select>
           <label
             htmlFor="new-category-scope"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Scope
           </label>
@@ -372,6 +384,7 @@ export function CategoriesManager() {
             ))}
           </Select>
           <Button
+            variant="secondary"
             onClick={createCategory}
             disabled={busyKey === "new-category"}
           >
@@ -379,7 +392,7 @@ export function CategoriesManager() {
           </Button>
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-md border border-zinc-200">
+        <div className="overflow-x-auto rounded-md border border-border">
           <Table>
             <THead>
               <tr>
@@ -426,21 +439,25 @@ export function CategoriesManager() {
             </TBody>
           </Table>
         </div>
-      </Card>
+      </section>
 
-      <Card>
+      <Separator className="my-4" />
+
+      <section className="space-y-4">
         <div className="space-y-1">
-          <CardTitle>Category Rules</CardTitle>
-          <CardDescription>
+          <h3 className="text-base font-semibold text-foreground">
+            Category Rules
+          </h3>
+          <p className="text-sm text-muted-foreground">
             Define deterministic category suggestions by merchant text and
             optional payment type.
-          </CardDescription>
+          </p>
         </div>
 
-        <div className="mt-4 grid gap-3 rounded-md border border-zinc-200 bg-zinc-50 p-4">
+        <div className="grid gap-3">
           <label
             htmlFor="rule-category"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Category
           </label>
@@ -462,7 +479,7 @@ export function CategoriesManager() {
 
           <label
             htmlFor="rule-merchant"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Merchant contains
           </label>
@@ -475,7 +492,7 @@ export function CategoriesManager() {
 
           <label
             htmlFor="rule-payment-type"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Payment type (optional)
           </label>
@@ -494,7 +511,7 @@ export function CategoriesManager() {
 
           <label
             htmlFor="rule-priority"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Priority
           </label>
@@ -508,7 +525,7 @@ export function CategoriesManager() {
 
           <label
             htmlFor="rule-scope"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Scope
           </label>
@@ -530,7 +547,7 @@ export function CategoriesManager() {
           </Button>
         </div>
 
-        <div className="mt-4 overflow-x-auto rounded-md border border-zinc-200">
+        <div className="overflow-x-auto rounded-md border border-border">
           <Table>
             <THead>
               <tr>
@@ -581,22 +598,22 @@ export function CategoriesManager() {
             </TBody>
           </Table>
         </div>
-      </Card>
+      </section>
 
       {error ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
         >
           {error}
         </p>
       ) : null}
 
       {notice ? (
-        <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
           {notice}
         </p>
       ) : null}
-    </div>
+    </Card>
   );
 }

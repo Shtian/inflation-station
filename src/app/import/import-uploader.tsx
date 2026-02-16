@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { Table, TBody, TD, TH, THead } from "@/components/ui/table";
 
 type Account = {
@@ -283,26 +284,21 @@ export function ImportUploader() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
-      <header className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Import</h1>
-        <p className="text-sm text-zinc-600">
-          Upload a CSV to parse and validate rows before review.
-        </p>
-      </header>
-
-      <Card className="mt-6">
+      <Card>
         <div className="space-y-1">
-          <CardTitle>CSV Upload</CardTitle>
+          <CardTitle>Import</CardTitle>
           <CardDescription>
             Choose an account and CSV file to start the parse and validation
             flow.
           </CardDescription>
         </div>
 
+        <Separator className="my-4" />
+
         <div className="mt-4 grid gap-3">
           <label
             htmlFor="account-select"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             Account
           </label>
@@ -324,7 +320,7 @@ export function ImportUploader() {
 
           <label
             htmlFor="csv-file"
-            className="text-sm font-medium text-zinc-800"
+            className="text-sm font-medium text-foreground"
           >
             CSV file
           </label>
@@ -378,44 +374,41 @@ export function ImportUploader() {
         ) : null}
 
         {parseResult ? (
-          <section
-            aria-live="polite"
-            className="mt-4 space-y-4 rounded-md border border-zinc-200 bg-zinc-50 p-4"
-          >
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-700">
+          <section aria-live="polite" className="mt-4 space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
               Parse summary
             </h2>
             <dl className="grid grid-cols-2 gap-2 text-sm">
               <div>
-                <dt className="text-zinc-600">Imported</dt>
+                <dt className="text-muted-foreground">Imported</dt>
                 <dd className="font-semibold">
                   {parseResult.summary.imported}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-600">Duplicates</dt>
+                <dt className="text-muted-foreground">Duplicates</dt>
                 <dd className="font-semibold">
                   {parseResult.summary.duplicates}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-600">Ignored reserved</dt>
+                <dt className="text-muted-foreground">Ignored reserved</dt>
                 <dd className="font-semibold">
                   {parseResult.summary.ignoredReserved}
                 </dd>
               </div>
               <div>
-                <dt className="text-zinc-600">Invalid</dt>
+                <dt className="text-muted-foreground">Invalid</dt>
                 <dd className="font-semibold">{parseResult.summary.invalid}</dd>
               </div>
             </dl>
 
             {parseResult.errors.length > 0 ? (
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-700">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
                   Validation errors
                 </h3>
-                <ul className="space-y-1 text-sm text-zinc-700">
+                <ul className="space-y-1 text-sm text-foreground">
                   {parseResult.errors.map((error) => (
                     <li key={`${error.rowNumber}-${error.code}`}>
                       Row {error.rowNumber}: {error.message}
@@ -427,16 +420,16 @@ export function ImportUploader() {
 
             {parseResult.review && parseResult.review.rows.length > 0 ? (
               <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-700">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
                   Review rows
                 </h3>
-                <p className="text-sm text-zinc-700">
+                <p className="text-sm text-foreground">
                   Potential duplicates:{" "}
                   <span className="font-semibold">
                     {parseResult.review.potentialDuplicates}
                   </span>
                 </p>
-                <div className="overflow-x-auto rounded-md border border-zinc-200 bg-white">
+                <div className="overflow-x-auto rounded-md border border-border">
                   <Table>
                     <THead>
                       <tr>
@@ -469,7 +462,9 @@ export function ImportUploader() {
                                   Potential duplicate
                                 </span>
                               ) : (
-                                <span className="text-zinc-500">None</span>
+                                <span className="text-muted-foreground">
+                                  None
+                                </span>
                               )}
                             </TD>
                             <TD>
@@ -495,7 +490,7 @@ export function ImportUploader() {
                                   ))}
                                 </Select>
                                 {isUncategorized ? (
-                                  <p className="text-xs font-medium text-zinc-600">
+                                  <p className="text-xs font-medium text-muted-foreground">
                                     Uncategorized
                                   </p>
                                 ) : null}

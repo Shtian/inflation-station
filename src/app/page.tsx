@@ -327,16 +327,16 @@ export default function Home() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-100 via-white to-zinc-50 px-5 py-8 text-zinc-900 md:px-10">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted px-5 py-8 text-foreground md:px-10">
       <main className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             Inflation Station
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">
             Imports and Review
           </h1>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-muted-foreground">
             Upload transactions and finalize category decisions.
           </p>
         </header>
@@ -353,7 +353,7 @@ export default function Home() {
             <div className="mt-4 grid gap-3">
               <label
                 htmlFor="account-select"
-                className="text-sm font-medium text-zinc-800"
+                className="text-sm font-medium text-foreground"
               >
                 Account
               </label>
@@ -375,7 +375,7 @@ export default function Home() {
 
               <label
                 htmlFor="csv-file"
-                className="text-sm font-medium text-zinc-800"
+                className="text-sm font-medium text-foreground"
               >
                 CSV file
               </label>
@@ -417,32 +417,32 @@ export default function Home() {
             {importResult ? (
               <section
                 aria-live="polite"
-                className="mt-4 space-y-4 rounded-md border border-zinc-200 bg-zinc-50 p-4"
+                className="mt-4 space-y-4 rounded-md border border-border bg-card p-4"
               >
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-700">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
                   Import summary
                 </h2>
                 <dl className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <dt className="text-zinc-600">Imported</dt>
+                    <dt className="text-muted-foreground">Imported</dt>
                     <dd className="font-semibold">
                       {importResult.summary.imported}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-600">Duplicates</dt>
+                    <dt className="text-muted-foreground">Duplicates</dt>
                     <dd className="font-semibold">
                       {importResult.summary.duplicates}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-600">Ignored reserved</dt>
+                    <dt className="text-muted-foreground">Ignored reserved</dt>
                     <dd className="font-semibold">
                       {importResult.summary.ignoredReserved}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-zinc-600">Invalid</dt>
+                    <dt className="text-muted-foreground">Invalid</dt>
                     <dd className="font-semibold">
                       {importResult.summary.invalid}
                     </dd>
@@ -451,10 +451,10 @@ export default function Home() {
 
                 {importResult.errors.length > 0 ? (
                   <div className="space-y-2">
-                    <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-700">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
                       Validation errors
                     </h3>
-                    <ul className="space-y-1 text-sm text-zinc-700">
+                    <ul className="space-y-1 text-sm text-foreground">
                       {importResult.errors.map((error) => (
                         <li key={`${error.rowNumber}-${error.code}`}>
                           Row {error.rowNumber}: {error.message}
@@ -512,7 +512,7 @@ export default function Home() {
             </p>
           ) : null}
 
-          <div className="mt-4 overflow-x-auto rounded-md border border-zinc-200">
+          <div className="mt-4 overflow-x-auto rounded-md border border-border">
             <Table>
               <THead>
                 <tr>
@@ -543,10 +543,10 @@ export default function Home() {
                           {formatNok(item.transaction.amountNok)}
                         </TD>
                         <TD>
-                          <div className="font-medium text-zinc-900">
+                          <div className="font-medium text-foreground">
                             {item.suggestion.category.name}
                           </div>
-                          <div className="text-xs text-zinc-500">
+                          <div className="text-xs text-muted-foreground">
                             {item.suggestion.source}
                             {typeof item.suggestion.confidence === "number"
                               ? ` (${Math.round(item.suggestion.confidence * 100)}%)`
