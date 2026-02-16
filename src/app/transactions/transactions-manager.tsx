@@ -1,6 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -145,6 +155,10 @@ export function TransactionsManager() {
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [deletingTransaction, setDeletingTransaction] =
+    useState<TransactionRow | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSaving, setDeleteSaving] = useState(false);
 
   const closeEditDialog = useCallback(() => {
     setEditingTransaction(null);
@@ -157,6 +171,17 @@ export function TransactionsManager() {
     setEditingTransaction(row);
     setEditForm(toEditFormState(row));
     setEditError(null);
+  }, []);
+
+  const closeDeleteDialog = useCallback(() => {
+    setDeletingTransaction(null);
+    setDeleteError(null);
+    setDeleteSaving(false);
+  }, []);
+
+  const openDeleteDialog = useCallback((row: TransactionRow) => {
+    setDeletingTransaction(row);
+    setDeleteError(null);
   }, []);
 
   const loadAccounts = useCallback(async () => {
@@ -296,6 +321,34 @@ export function TransactionsManager() {
 
     await loadTransactions();
     closeEditDialog();
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deletingTransaction) {
+      return;
+    }
+
+    setDeleteSaving(true);
+    setDeleteError(null);
+
+    const response = await fetch(
+      `/api/transactions/${deletingTransaction.id}`,
+      {
+        method: "DELETE",
+      },
+    );
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      setDeleteError(
+        getMutationErrorMessage(body, "Could not delete transaction."),
+      );
+      setDeleteSaving(false);
+      return;
+    }
+
+    await loadTransactions();
+    closeDeleteDialog();
   }
 
   return (
@@ -463,14 +516,24 @@ export function TransactionsManager() {
                       {formatNok(row.amountNok)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(row)}
-                      >
-                        Edit
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(row)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => openDeleteDialog(row)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -646,6 +709,49 @@ export function TransactionsManager() {
           ) : null}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={deletingTransaction !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !deleteSaving) {
+            closeDeleteDialog();
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete transaction</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the selected transaction.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {deleteError ? (
+            <p
+              role="alert"
+              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {deleteError}
+            </p>
+          ) : null}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={closeDeleteDialog}
+              disabled={deleteSaving}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              onClick={handleDeleteConfirm}
+              disabled={deleteSaving}
+            >
+              {deleteSaving ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
