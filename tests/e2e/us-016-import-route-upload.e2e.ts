@@ -153,12 +153,15 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
       "Import complete. Imported 2, skipped 0, potential duplicates 1, invalid 1.",
     ),
   ).toBeVisible();
+  await expect(page.getByText("Review rows")).toHaveCount(0);
+  await expect(page.getByText("Parse summary")).toHaveCount(0);
+  await expect(page.getByLabel("CSV file")).toHaveValue("");
   expect(submitRequestBody).toEqual({
     sessionId: "session-1",
     invalidCount: 1,
     rows: [
       { rowId: "row-1", categoryId: "cat-food" },
-      { rowId: "row-2", categoryId: "cat-food" },
+      { rowId: "row-2", categoryId: "cat-transport" },
     ],
   });
 });

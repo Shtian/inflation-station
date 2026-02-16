@@ -277,6 +277,7 @@ export function ImportUploader() {
     );
     setParseResult(null);
     setCategoryDecisions({});
+    setSelectedFile(null);
     setSubmitLoading(false);
   }
 
@@ -331,6 +332,11 @@ export function ImportUploader() {
             id="csv-file"
             type="file"
             accept=".csv,text/csv"
+            key={
+              selectedFile
+                ? `${selectedFile.name}-${selectedFile.size}-${selectedFile.lastModified}`
+                : "empty"
+            }
             onChange={(event) =>
               setSelectedFile(event.target.files?.[0] ?? null)
             }
