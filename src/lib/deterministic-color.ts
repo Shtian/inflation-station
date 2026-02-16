@@ -39,7 +39,7 @@ const COLOR_PROFILES: Record<DeterministicColorVariation, ColorProfile> = {
 
 function normalizeText(text: string) {
   const trimmed = text.trim().toLowerCase();
-  return trimmed.length > 0 ? trimmed : "uncategorized";
+  return trimmed.length > 0 ? trimmed : UNCATEGORIZED_LABEL;
 }
 
 function hashText(text: string) {

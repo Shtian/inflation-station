@@ -1,9 +1,7 @@
 import type { CSSProperties } from "react";
 import { Badge } from "@/components/ui/badge";
-import {
-  type DeterministicColorVariation,
-  getDeterministicColorFromText,
-} from "@/lib/deterministic-color";
+import { getCategoryColor } from "@/lib/category-color";
+import type { DeterministicColorVariation } from "@/lib/deterministic-color";
 import { cn } from "@/lib/utils";
 
 type CategoryBadgeProps = {
@@ -17,7 +15,7 @@ export function CategoryBadge({
   variation = "mattePastel",
   className,
 }: CategoryBadgeProps) {
-  const color = getDeterministicColorFromText(label, variation);
+  const color = getCategoryColor(label, variation);
   const style = {
     "--category-badge-fg-light": color.lightTextColor,
     "--category-badge-fg-dark": color.darkTextColor,
