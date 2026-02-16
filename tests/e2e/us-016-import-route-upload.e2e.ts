@@ -39,6 +39,57 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
               'Row 4 has invalid amount "abc". Expected Norwegian decimal format like 123,45.',
           },
         ],
+        review: {
+          sessionId: "session-1",
+          potentialDuplicates: 1,
+          rows: [
+            {
+              id: "row-1",
+              rowNumber: 2,
+              bookingDate: "2026-01-01",
+              amountNok: -123.45,
+              currency: "NOK",
+              normalizedMerchant: "joker",
+              paymentType: "CARD",
+              categoryId: null,
+              potentialDuplicate: true,
+            },
+            {
+              id: "row-2",
+              rowNumber: 3,
+              bookingDate: "2026-01-02",
+              amountNok: -50,
+              currency: "NOK",
+              normalizedMerchant: "ruter",
+              paymentType: "CARD",
+              categoryId: "cat-transport",
+              potentialDuplicate: false,
+            },
+          ],
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        categories: [
+          {
+            id: "cat-transport",
+            name: "Transport",
+            kind: "EXPENSE",
+            accountId: null,
+          },
+          {
+            id: "cat-food",
+            name: "Food",
+            kind: "EXPENSE",
+            accountId: null,
+          },
+        ],
       }),
     });
   });
@@ -65,4 +116,15 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
       'Row 4: Row 4 has invalid amount "abc". Expected Norwegian decimal format like 123,45.',
     ),
   ).toBeVisible();
+  await expect(page.getByText("Review rows")).toBeVisible();
+  await expect(page.getByText("Potential duplicates:")).toBeVisible();
+  await expect(
+    page.getByText("Potential duplicate", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("p", { hasText: /^Uncategorized$/ })).toBeVisible();
+
+  const rowTwoCategory = page.getByLabel("Category for row 2");
+  await expect(rowTwoCategory).toHaveValue("");
+  await rowTwoCategory.selectOption("cat-food");
+  await expect(rowTwoCategory).toHaveValue("cat-food");
 });
