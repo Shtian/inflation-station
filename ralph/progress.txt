@@ -6,6 +6,7 @@
 - Keep category and category-rule CRUD UI/state scoped to `src/app/categories/*`, with dedicated `/api/categories` and `/api/category-rules` handlers for deterministic rule management.
 - Keep the `/import` route wired to `/api/imports/parse` for parse feedback and staging, with transaction persistence deferred to explicit review submit.
 - Keep import review staging in dedicated Prisma models (`ImportReviewSession`, `ImportReviewRow`) and return staged row ids in parse responses so later review edits stay decoupled from persisted `Transaction` rows.
+- Run deterministic category-rule matching during import staging and persist prefilled `ImportReviewRow.categoryId`, but degrade gracefully to `null` if suggestion lookup fails.
 
 ## 2026-02-15 21:20:39 CET - US-001
 - Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
@@ -71,4 +72,15 @@
 - **Learnings for future iterations**
   - Stage parse-valid rows with immutable row metadata (`rowNumber`, normalized merchant/payment type) so review edits can be tracked without mutating `Transaction` entities before submit.
   - Keep parse endpoint responses additive (`summary`/`errors` + `review`) to avoid breaking existing importer UI while enabling incremental review-flow rollout.
+---
+
+## 2026-02-16 08:39:41 CET - US-007
+- Implemented deterministic category suggestion prefills during import review staging by matching staged rows against account/global category rules before persistence.
+- Ensured staged rows without matches remain uncategorized (`categoryId: null`) and wrapped suggestion lookup so failures do not block session/row staging.
+- Added/updated unit tests covering rule-match prefills, uncategorized fallback, and non-blocking behavior when rule lookup throws.
+- Files changed: `src/lib/import/review-stage.ts`, `src/lib/import/review-stage.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Import-stage suggestion prefills should happen before `ImportReviewRow.createMany` so review payloads reflect editable initial categories immediately.
+  - Suggestion generation in parse/stage flows should fail open to preserve import-review availability when optional categorization dependencies fail.
 ---

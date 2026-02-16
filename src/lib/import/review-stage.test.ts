@@ -1,11 +1,14 @@
 import { PaymentType } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
+import type { CategoryRuleCandidate } from "../categorization/rule-engine";
 import { stageParsedImportRows } from "./review-stage";
 
 const HEADER =
   "Bokføringsdato;Beløp;Avsender;Mottaker;Navn;Tittel;Valuta;Betalingstype";
 
 function createDbMock(options?: {
+  categoryRules?: CategoryRuleCandidate[];
+  throwOnCategoryRuleLookup?: boolean;
   stagedRows?: Array<{
     id: string;
     rowNumber: number;
@@ -22,6 +25,14 @@ function createDbMock(options?: {
   }>;
 }) {
   return {
+    categoryRule: {
+      findMany: vi.fn(async () => {
+        if (options?.throwOnCategoryRuleLookup) {
+          throw new Error("rule engine unavailable");
+        }
+        return options?.categoryRules ?? [];
+      }),
+    },
     importReviewSession: {
       create: vi.fn(async () => ({ id: "session-1" })),
     },
@@ -165,5 +176,122 @@ describe("stageParsedImportRows", () => {
     });
     expect(db.importReviewSession.create).not.toHaveBeenCalled();
     expect(db.importReviewRow.createMany).not.toHaveBeenCalled();
+  });
+
+  it("prefills staged categoryId when deterministic rules match", async () => {
+    const db = createDbMock({
+      categoryRules: [
+        {
+          id: "rule-1",
+          categoryId: "cat-groceries",
+          merchantContains: "shop a",
+          paymentType: PaymentType.CARD,
+          priority: 10,
+        },
+      ],
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "shop a alice groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: "cat-groceries",
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+    });
+
+    expect(db.categoryRule.findMany).toHaveBeenCalledWith({
+      where: {
+        OR: [{ accountId: "account-1" }, { accountId: null }],
+      },
+      select: {
+        id: true,
+        categoryId: true,
+        merchantContains: true,
+        paymentType: true,
+        priority: true,
+      },
+      orderBy: [{ priority: "asc" }, { id: "asc" }],
+    });
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "shop a alice groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: "cat-groceries",
+        },
+      ],
+    });
+    expect(result.review.rows[0]?.categoryId).toBe("cat-groceries");
+  });
+
+  it("continues staging uncategorized rows when suggestion lookup fails", async () => {
+    const db = createDbMock({
+      throwOnCategoryRuleLookup: true,
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "shop a alice groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+    });
+
+    expect(db.importReviewSession.create).toHaveBeenCalledOnce();
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "shop a alice groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+    expect(result.summary.imported).toBe(1);
+    expect(result.review.rows[0]?.categoryId).toBeNull();
   });
 });

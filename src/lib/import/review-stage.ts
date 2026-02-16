@@ -1,5 +1,9 @@
 import { PaymentType } from "@prisma/client";
 import {
+  buildRuleBasedSuggestions,
+  type CategoryRuleCandidate,
+} from "../categorization/rule-engine";
+import {
   type CsvValidationError,
   type ParsedCsvRow,
   parseNorwegianBankCsv,
@@ -51,6 +55,28 @@ type StagedImportRow = {
 };
 
 type ImportReviewStageDbClient = {
+  categoryRule: {
+    findMany(args: {
+      where: {
+        OR: Array<
+          | {
+              accountId: string;
+            }
+          | {
+              accountId: null;
+            }
+        >;
+      };
+      select: {
+        id: true;
+        categoryId: true;
+        merchantContains: true;
+        paymentType: true;
+        priority: true;
+      };
+      orderBy: [{ priority: "asc" }, { id: "asc" }];
+    }): Promise<CategoryRuleCandidate[]>;
+  };
   importReviewSession: {
     create(args: {
       data: {
@@ -282,6 +308,50 @@ function buildSummary(
   };
 }
 
+type RuleMatchSeed = {
+  id: string;
+  normalizedMerchant: string;
+  paymentType: PaymentType;
+};
+
+async function buildPrefilledCategoryMap(
+  db: ImportReviewStageDbClient,
+  accountId: string,
+  validRows: ValidatedStageRow[],
+): Promise<Map<number, string>> {
+  const categoryRules = await db.categoryRule.findMany({
+    where: {
+      OR: [{ accountId }, { accountId: null }],
+    },
+    select: {
+      id: true,
+      categoryId: true,
+      merchantContains: true,
+      paymentType: true,
+      priority: true,
+    },
+    orderBy: [{ priority: "asc" }, { id: "asc" }],
+  });
+
+  const suggestionSeeds: RuleMatchSeed[] = validRows.map((row) => ({
+    id: `row-${row.rowNumber}`,
+    normalizedMerchant: row.normalizedMerchant,
+    paymentType: row.paymentType,
+  }));
+  const suggestions = buildRuleBasedSuggestions(suggestionSeeds, categoryRules);
+
+  return suggestions.reduce((map, suggestion) => {
+    const rowNumber = Number.parseInt(
+      suggestion.transactionId.replace("row-", ""),
+      10,
+    );
+    if (!Number.isNaN(rowNumber)) {
+      map.set(rowNumber, suggestion.suggestedCategoryId);
+    }
+    return map;
+  }, new Map<number, string>());
+}
+
 export async function stageParsedImportRows(
   db: ImportReviewStageDbClient,
   params: {
@@ -315,6 +385,17 @@ export async function stageParsedImportRows(
     };
   }
 
+  let prefilledCategoryByRowNumber = new Map<number, string>();
+  try {
+    prefilledCategoryByRowNumber = await buildPrefilledCategoryMap(
+      db,
+      params.accountId,
+      validRows,
+    );
+  } catch {
+    prefilledCategoryByRowNumber = new Map<number, string>();
+  }
+
   const session = await db.importReviewSession.create({
     data: {
       accountId: params.accountId,
@@ -325,10 +406,15 @@ export async function stageParsedImportRows(
   });
 
   await db.importReviewRow.createMany({
-    data: toStagedRows(validRows).map((row) => ({
-      sessionId: session.id,
-      ...row,
-    })),
+    data: toStagedRows(validRows).map((row) => {
+      const prefilledCategoryId =
+        prefilledCategoryByRowNumber.get(row.rowNumber) ?? null;
+      return {
+        sessionId: session.id,
+        ...row,
+        categoryId: prefilledCategoryId,
+      };
+    }),
   });
 
   const stagedRows = await db.importReviewRow.findMany({
