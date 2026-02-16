@@ -100,7 +100,7 @@ OpenAI-based categorization suggestions are optional.
 
 ## Routing
 
-- `/` remains the legacy combined workspace while route-splitting is in progress.
+- `/` redirects to `/overview` so the analytics dashboard is the default landing route.
 - Top-level navigation links are available for `/overview`, `/import`, `/accounts`, and `/categories`.
 
 ## Theming
