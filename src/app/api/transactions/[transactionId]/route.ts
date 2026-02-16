@@ -102,7 +102,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
 
   try {
     await deleteTransaction(prisma, transactionId);
-    return NextResponse.json(null, { status: 204 });
+    return new Response(null, { status: 204 });
   } catch (error) {
     if (
       typeof error === "object" &&

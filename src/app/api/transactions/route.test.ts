@@ -1,0 +1,71 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { GET } from "./route";
+
+const { getTransactionsPageMock, prismaMock } = vi.hoisted(() => ({
+  getTransactionsPageMock: vi.fn(),
+  prismaMock: { _tag: "prisma-mock" },
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: prismaMock,
+}));
+
+vi.mock("@/lib/transactions/list", () => ({
+  getTransactionsPage: getTransactionsPageMock,
+}));
+
+describe("GET /api/transactions", () => {
+  beforeEach(() => {
+    getTransactionsPageMock.mockReset();
+    getTransactionsPageMock.mockResolvedValue({
+      rows: [],
+      pagination: {
+        total: 0,
+        page: 1,
+        pageSize: 25,
+        totalPages: 1,
+      },
+    });
+  });
+
+  it("returns 400 for invalid page", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/transactions?page=0"),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_PAGE",
+      message: "Expected page to be a positive integer.",
+    });
+    expect(getTransactionsPageMock).not.toHaveBeenCalled();
+  });
+
+  it("forwards validated page, pageSize, and account filter", async () => {
+    const response = await GET(
+      new Request(
+        "http://localhost/api/transactions?page=2&pageSize=10&accountId=acc-1",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(getTransactionsPageMock).toHaveBeenCalledWith(prismaMock, {
+      page: 2,
+      pageSize: 10,
+      accountId: "acc-1",
+    });
+  });
+
+  it("uses defaults and omits empty account filter", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/transactions?accountId=%20%20"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(getTransactionsPageMock).toHaveBeenCalledWith(prismaMock, {
+      page: 1,
+      pageSize: 25,
+      accountId: undefined,
+    });
+  });
+});
