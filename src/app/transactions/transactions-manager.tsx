@@ -11,6 +11,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type Account = {
   id: string;
@@ -304,14 +312,28 @@ export function TransactionsManager() {
               No transactions found for the selected filters.
             </p>
           ) : (
-            <ul className="space-y-1 text-sm text-foreground">
-              {transactions.rows.map((row) => (
-                <li key={row.id}>
-                  {row.bookingDate}: {row.normalizedMerchant || "Unknown"} (
-                  {formatNok(row.amountNok)})
-                </li>
-              ))}
-            </ul>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Merchant</TableHead>
+                  <TableHead>Payment type</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.rows.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>{row.bookingDate}</TableCell>
+                    <TableCell>{row.normalizedMerchant || "Unknown"}</TableCell>
+                    <TableCell>{row.paymentType}</TableCell>
+                    <TableCell className="text-right">
+                      {formatNok(row.amountNok)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </section>
       ) : null}

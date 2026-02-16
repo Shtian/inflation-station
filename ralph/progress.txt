@@ -2,6 +2,7 @@
 - Keep primary app navigation in `src/app/layout.tsx`, and keep `/` redirecting to `/overview`.
 - Keep API handlers in `src/app/api/**` and use the shared server-only Prisma client in `src/lib/prisma.ts`.
 - Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
+- For paginated table routes, keep summary metadata (`page`, `totalPages`, `total`) outside the table and keep row rendering inside table primitives.
 - Keep route page state client-side and fetch route-specific API data on filter/pagination changes.
 - Keep transactions pagination/filter query logic in `src/lib/transactions/*`, and keep `/api/transactions` handlers focused on request validation and HTTP response shaping.
 - Keep `/api/transactions/[transactionId]` handlers consistent across mutation methods by validating `transactionId` up front and mapping Prisma `P2025` to `TRANSACTION_NOT_FOUND`.
@@ -118,4 +119,29 @@
     - Playwright strict locators can collide with Next.js dev-tools UI in dev mode; use exact button-name matching when labels are short.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Transactions route currently renders summary + preview rows from paginated API responses; table/edit/delete flows remain for later stories.
+---
+## 2026-02-16 13:51 CET - US-005
+- What was implemented
+  - Replaced transactions preview list rendering with canonical shadcn table primitives (`Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell`) on `/transactions`.
+  - Kept page metadata and total-count metadata visible while rendering paginated rows.
+  - Preserved explicit empty-state messaging when no rows match active filters.
+  - Expanded Playwright coverage to assert table headers/metadata and empty-state behavior for account-filtered results.
+- Files changed
+  - `src/app/transactions/transactions-manager.tsx`
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass; required formatting fix applied to updated E2E spec)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+  - `pnpm exec playwright test tests/e2e/us-018-transactions-route-controls.e2e.ts` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - For transactions list UI, keep pagination metadata (`page`, `totalPages`, `total`) outside the table while using `src/components/ui/table.tsx` primitives for row rendering.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - In this environment, Playwright web server startup may require escalated permissions for local port binding (`EPERM` on `0.0.0.0:3100`).
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - `tests/e2e/us-018-transactions-route-controls.e2e.ts` now covers both pagination/filter interactions and zero-row filtered state assertions.
 ---

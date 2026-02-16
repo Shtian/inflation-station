@@ -11,6 +11,11 @@ test("manages transactions filters and pagination controls from /transactions", 
         accounts: [
           { id: "acc-1", name: "Main Account", institution: "DNB" },
           { id: "acc-2", name: "Savings Account", institution: "Nordea" },
+          {
+            id: "acc-3",
+            name: "No Transactions Account",
+            institution: "Sparebanken",
+          },
         ],
       }),
     });
@@ -43,6 +48,23 @@ test("manages transactions filters and pagination controls from /transactions", 
           ],
           pagination: {
             total: 1,
+            page: 1,
+            pageSize: 25,
+            totalPages: 1,
+          },
+        }),
+      });
+      return;
+    }
+
+    if (accountId === "acc-3" && pageParam === "1" && pageSizeParam === "25") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          rows: [],
+          pagination: {
+            total: 0,
             page: 1,
             pageSize: 25,
             totalPages: 1,
@@ -145,7 +167,18 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(
     page.getByRole("heading", { name: "Transactions" }),
   ).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Date" })).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Merchant" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Payment type" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("columnheader", { name: "Amount" }),
+  ).toBeVisible();
   await expect(page.getByText("Page 1 of 2.")).toBeVisible();
+  await expect(page.getByText("35 total transactions.")).toBeVisible();
   await expect(page.getByText("Supermarket")).toBeVisible();
 
   await page.getByLabel("Account").click();
@@ -164,4 +197,13 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.getByRole("option", { name: "10 rows" }).click();
   await expect(page.getByText("Page 1 of 4.")).toBeVisible();
   await expect(page.getByText("Metro Kiosk")).toBeVisible();
+
+  await page.getByLabel("Page size").click();
+  await page.getByRole("option", { name: "25 rows" }).click();
+  await page.getByLabel("Account").click();
+  await page.getByRole("option", { name: "No Transactions Account" }).click();
+  await expect(
+    page.getByText("No transactions found for the selected filters."),
+  ).toBeVisible();
+  await expect(page.getByText("0 total transactions.")).toBeVisible();
 });
