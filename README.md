@@ -97,3 +97,14 @@ OpenAI-based categorization suggestions are optional.
 - `pnpm test`
 - `pnpm test:e2e`
 - `pnpm build`
+
+## Routing
+
+- `/` redirects to `/overview` so the analytics dashboard is the default landing route.
+- Top-level navigation links are available for `/overview`, `/import`, `/accounts`, and `/categories`.
+
+## Theming
+
+- Global semantic theme tokens are defined in `src/app/globals.css` using shadcn-compatible names (`background`, `foreground`, `card`, `muted`, `primary`, `accent`, `destructive`, `border`, `input`, `ring`).
+- Shared UI primitives in `src/components/ui/*` should consume semantic token utilities (for example `bg-card`, `text-foreground`, `border-border`) instead of hardcoded palette classes.
+- Theme switching is managed with `next-themes` in `src/components/theme-provider.tsx`, using the `html` class strategy and a header toggle in `src/components/theme-toggle.tsx`.

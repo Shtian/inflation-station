@@ -1,2 +1,202 @@
 ## Codebase Patterns
-- (Capture stable implementation patterns discovered during this Ralph run.)
+- Keep cross-route navigation in `src/app/layout.tsx` so route-level pages can be introduced incrementally without duplicating nav markup.
+- Keep `/` as a lightweight entry route that redirects to `/overview` so analytics remains the default landing workspace while top-level navigation stays centralized in `src/app/layout.tsx`.
+- Keep overview analytics filter state and `/api/dashboard/analytics` fetching logic scoped to the `/overview` route UI instead of the legacy `/` workspace.
+- Keep account CRUD interactions and success/error notices inside `src/app/accounts/*`, and let other routes only consume `/api/accounts` for account selection needs.
+- Keep category and category-rule CRUD UI/state scoped to `src/app/categories/*`, with dedicated `/api/categories` and `/api/category-rules` handlers for deterministic rule management.
+- Keep the `/import` route wired to `/api/imports/parse` for parse feedback and staging, with transaction persistence deferred to explicit review submit.
+- Keep import review staging in dedicated Prisma models (`ImportReviewSession`, `ImportReviewRow`) and return staged row ids in parse responses so later review edits stay decoupled from persisted `Transaction` rows.
+- Persist import-review transactions only from `/api/imports/submit` using staged `sessionId` + row-level category decisions, and delete the session after submit so abandoned reviews never write data.
+- After successful `/api/imports/submit`, clear `/import` client-side review state (including selected file) while keeping a submit summary notice visible so the page returns to parse-ready state.
+- Run deterministic category-rule matching during import staging and persist prefilled `ImportReviewRow.categoryId`, but degrade gracefully to `null` if suggestion lookup fails.
+- Compute potential duplicate warnings for import review rows from the same fingerprint fields as transaction dedupe (`accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, `paymentType`) and keep flagged rows editable instead of auto-dropping.
+- In `/import` review UI, fetch categories from `/api/categories` and allow both global (`accountId: null`) and selected-account categories in row-level category selectors.
+- Keep shadcn-compatible semantic theme tokens centralized in `src/app/globals.css`, and map shared UI primitives to semantic utility classes (`bg-background`, `text-foreground`, `border-border`, etc.) instead of hardcoded palettes.
+- Keep app-wide theme state at the layout level using a `next-themes` provider with `html` class toggling, and drive dark tokens from `.dark` in `src/app/globals.css`.
+- For dedicated route pages, keep a single top-level `Card` as the primary container and split multi-section content with `Separator` instead of nesting extra `Card` wrappers.
+- For tabular route UIs, use the canonical shadcn table primitives from `src/components/ui/table.tsx` (`TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell`) instead of ad-hoc `<table>/<thead>/<tbody>/<tr>` markup.
+- Keep overview visualizations implemented with `src/components/ui/chart.tsx` shadcn chart wrappers (`ChartContainer`, `ChartTooltipContent`) around Recharts primitives so tokenized chart colors/theme behavior stay consistent.
+
+## 2026-02-15 21:20:39 CET - US-001
+- Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
+- Files changed: `src/app/layout.tsx`, `src/app/overview/page.tsx`, `src/app/import/page.tsx`, `src/app/accounts/page.tsx`, `src/app/categories/page.tsx`, `README.md`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`, `src/lib/import/import-transactions.ts`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - `pnpm lint` can fail on pre-existing formatting in unrelated files; applying targeted `pnpm exec biome format --write <file>` can unblock required checks while keeping scope tight.
+  - Playwright tests live under `tests/e2e/*.e2e.ts`, while `pnpm test` runs Vitest-only unit tests.
+---
+
+## 2026-02-15 22:13:08 CET - US-005
+- Implemented a dedicated `/import` uploader with account selection and CSV upload that starts parse-only validation flow from `/api/imports/parse`.
+- Added a new parse endpoint that validates payload/account existence and returns parser summary/errors without creating `Transaction` records.
+- Added Playwright coverage for `/import` parse flow, including parse summary and row-level validation error feedback.
+- Files changed: `src/app/import/page.tsx`, `src/app/import/import-uploader.tsx`, `src/app/api/imports/parse/route.ts`, `tests/e2e/us-016-import-route-upload.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-016-import-route-upload.e2e.ts` (pass).
+- **Learnings for future iterations**
+  - Route-split import work should isolate parse feedback in `/import` first, then layer staging/review submit behavior in later stories.
+  - Reusing multipart payload parsing for import endpoints keeps client upload shape stable while splitting parse and persistence APIs.
+---
+
+## 2026-02-15 21:26:33 CET - US-002
+- Implemented the dashboard/overview experience on `/overview` by adding a dedicated client dashboard component and wiring the route page to render it.
+- Removed dashboard UI/state/effects from the legacy `/` page so overview access is no longer tied to the old combined workspace.
+- Updated Playwright coverage for dashboard filters/charts to target `/overview`.
+- Files changed: `src/app/overview/page.tsx`, `src/app/overview/overview-dashboard.tsx`, `src/app/page.tsx`, `tests/e2e/us-014-dashboard-ui.e2e.ts`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-014-dashboard-ui.e2e.ts` (failed: Next dev lock at `.next/dev/lock` prevented Playwright web server start on port 3100).
+- **Learnings for future iterations**
+  - Keep route-specific client state/effects in the destination route component during route-split stories to avoid duplicated behavior between `/` and target routes.
+- Playwright may fail to boot its managed Next dev server if another dev instance already holds `.next/dev/lock`; resolve lock contention before rerunning e2e.
+---
+
+## 2026-02-15 21:31:49 CET - US-003
+- Implemented dedicated account management on `/accounts` via a new client component that handles list/create/update/delete using existing `/api/accounts` handlers.
+- Removed account CRUD UI from the legacy `/` workspace so imports/review remain there while account setup is separated to `/accounts`.
+- Added explicit success notices (`Account added/updated/removed`) and preserved clear error feedback for account operations.
+- Updated Playwright coverage to validate account CRUD from `/accounts`, including both success and duplicate-name error feedback.
+- Files changed: `src/app/accounts/accounts-manager.tsx`, `src/app/accounts/page.tsx`, `src/app/page.tsx`, `tests/e2e/us-011-account-import-ui.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-011-account-import-ui.e2e.ts` (pass).
+- **Learnings for future iterations**
+  - Keep route-split changes decoupled by moving feature-specific client state and mutation handlers into route-local components (for example `src/app/accounts/accounts-manager.tsx`) while preserving shared API contracts.
+  - For UI stories, targeted Playwright specs can validate route-specific behavior independently of legacy `/` workspace transitions.
+---
+
+## 2026-02-15 21:38:03 CET - US-004
+- Implemented dedicated category management at `/categories` with route-local CRUD UI for categories and category rules, including clear success/error notices.
+- Added new API handlers for category and category-rule create/list/delete flows while preserving deterministic rule fields (`merchantContains`, `paymentType`, `priority`, optional account scope).
+- Added Playwright E2E coverage for `/categories` to verify category creation, rule creation, and delete flows via user-facing controls.
+- Files changed: `src/app/categories/page.tsx`, `src/app/categories/categories-manager.tsx`, `src/app/api/categories/route.ts`, `src/app/api/categories/[categoryId]/route.ts`, `src/app/api/category-rules/route.ts`, `src/app/api/category-rules/[ruleId]/route.ts`, `tests/e2e/us-015-categories-route-management.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-015-categories-route-management.e2e.ts` (pass).
+- **Learnings for future iterations**
+  - Route-split management stories work best with route-local client components (for example `src/app/categories/categories-manager.tsx`) that own fetch/mutation UX and keep legacy `/` scope unchanged.
+  - Category-rule APIs should return joined category labels (`rule.category.name`) so rule tables can render deterministically without extra client joins.
+- Targeted Playwright tests with API route mocking provide stable UI verification for CRUD stories without coupling to seed data.
+---
+
+## 2026-02-15 22:27:50 CET - US-006
+- Implemented import review staging with new Prisma models (`ImportReviewSession`, `ImportReviewRow`) and migration-backed storage for parse-valid rows before persistence.
+- Added `stageParsedImportRows` flow to parse, validate booking dates, normalize merchants/payment types, persist staged rows, and return review payload with row identifiers plus nullable `categoryId`.
+- Updated `/api/imports/parse` to return staged review data (`review.sessionId`, `review.rows`) alongside summary/errors while keeping transaction persistence out of the parse step.
+- Files changed: `prisma/schema.prisma`, `prisma/migrations/20260215231500_add_import_review_staging_tables/migration.sql`, `src/lib/import/review-stage.ts`, `src/lib/import/review-stage.test.ts`, `src/app/api/imports/parse/route.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Stage parse-valid rows with immutable row metadata (`rowNumber`, normalized merchant/payment type) so review edits can be tracked without mutating `Transaction` entities before submit.
+  - Keep parse endpoint responses additive (`summary`/`errors` + `review`) to avoid breaking existing importer UI while enabling incremental review-flow rollout.
+---
+
+## 2026-02-16 08:39:41 CET - US-007
+- Implemented deterministic category suggestion prefills during import review staging by matching staged rows against account/global category rules before persistence.
+- Ensured staged rows without matches remain uncategorized (`categoryId: null`) and wrapped suggestion lookup so failures do not block session/row staging.
+- Added/updated unit tests covering rule-match prefills, uncategorized fallback, and non-blocking behavior when rule lookup throws.
+- Files changed: `src/lib/import/review-stage.ts`, `src/lib/import/review-stage.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Import-stage suggestion prefills should happen before `ImportReviewRow.createMany` so review payloads reflect editable initial categories immediately.
+  - Suggestion generation in parse/stage flows should fail open to preserve import-review availability when optional categorization dependencies fail.
+---
+
+## 2026-02-16 08:47:32 CET - US-008
+- Implemented potential duplicate warning detection during import review staging using deterministic fingerprints from `accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, and `paymentType`.
+- Added review payload metadata `review.potentialDuplicates` and per-row `potentialDuplicate` flags while keeping all staged rows persisted for user review.
+- Added/updated unit tests for duplicate-warning behavior against existing transactions and duplicate rows inside the same upload batch.
+- Files changed: `src/lib/import/review-stage.ts`, `src/lib/import/review-stage.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Keep parse diagnostics summary stable for importer UI compatibility, and add review-specific counts under `review` when extending review workflows.
+  - Reuse `buildTransactionFingerprint` from `src/lib/import/transaction-dedupe.ts` for review warnings so soft-duplicate detection stays aligned with hard dedupe rules.
+---
+
+## 2026-02-16 08:51:34 CET - US-009
+- Implemented `/import` review-table UI that renders staged `review.rows` with per-row category editing controls, potential duplicate warning indicators, and explicit uncategorized state.
+- Loaded review category options from `/api/categories`, filtered selectors to global or selected-account categories, and kept edits ephemeral in client state.
+- Updated Playwright coverage for `/import` parse flow to assert review-row rendering, duplicate warnings, uncategorized rows, and inline category changes.
+- Files changed: `src/app/import/import-uploader.tsx`, `tests/e2e/us-016-import-route-upload.e2e.ts`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-016-import-route-upload.e2e.ts` (pass).
+- **Learnings for future iterations**
+  - Keep review-row category edits local to `/import` state until explicit submit endpoint wiring is introduced.
+  - Use precise Playwright locators (`exact` or narrowed selectors) for singular/plural warning labels to avoid strict-mode collisions.
+---
+
+## 2026-02-16 08:56:35 CET - US-010
+- Implemented explicit review-submit persistence by adding `/api/imports/submit` and a new `submitImportReview` service that loads staged rows, applies final category decisions, deduplicates by transaction fingerprint, writes `Transaction` rows, and deletes the submitted review session.
+- Updated `/import` review UI to submit staged rows with category edits and show import summary feedback (`imported`, `skipped`, `potentialDuplicates`, `invalid`) after successful submit.
+- Added unit coverage for submit behavior (edited category persistence, duplicate skipping/potential duplicate counts, session/category validation errors) and extended Playwright `/import` flow coverage to include submit payload + success feedback.
+- Files changed: `src/lib/import/review-submit.ts`, `src/lib/import/review-submit.test.ts`, `src/app/api/imports/submit/route.ts`, `src/app/import/import-uploader.tsx`, `tests/e2e/us-016-import-route-upload.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Keep parse and submit concerns separate: `/api/imports/parse` should only stage rows, while `/api/imports/submit` should be the sole persistence path.
+  - Recompute dedupe at submit from staged rows + current transactions so skipped counts stay correct even if account data changes between parse and submit.
+  - Validate category decisions against account-scoped/global categories before insert to avoid late foreign-key failures in import submit flows.
+---
+
+## 2026-02-16 09:01:35 CET - US-011
+- Finalized `/import` parse -> review -> submit transition UX by clearing staged review state and selected file after successful submit while preserving a clear import summary notice.
+- Extended `/import` Playwright coverage to assert post-submit return to parse-ready state (review/parse panels hidden, file input reset) and verified reviewed-row category payload behavior.
+- Files changed: `src/app/import/import-uploader.tsx`, `tests/e2e/us-016-import-route-upload.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-016-import-route-upload.e2e.ts` (pass).
+- **Learnings for future iterations**
+  - Keep submit success UX deterministic in `/import`: clear local review-session state and file selection to avoid stale resubmission paths.
+  - When review rows are only partially edited, preserve original suggested `categoryId` values for untouched rows in submit payload assertions.
+---
+
+## 2026-02-16 09:15:14 CET - US-012
+- Implemented a shadcn-compatible theming foundation by defining semantic global tokens in `src/app/globals.css` for background/foreground, card, popover, primary, secondary, muted, accent, destructive, border, input, and ring.
+- Updated shared app shell and UI primitives to consume tokenized classes (`bg-background`, `text-foreground`, `border-border`, `bg-card`, `bg-primary`, `bg-accent`, `bg-destructive`) instead of hardcoded zinc/red palette classes.
+- Documented theming setup/conventions for contributors in project docs and agent guidance.
+- Files changed: `src/app/globals.css`, `src/app/layout.tsx`, `src/components/ui/button.tsx`, `src/components/ui/input.tsx`, `src/components/ui/select.tsx`, `src/components/ui/table.tsx`, `src/components/ui/card.tsx`, `README.md`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass after rerun post-build artifact refresh), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+- When introducing theme changes, prioritize shared primitives in `src/components/ui/*` first to propagate semantic token usage with minimal route-level churn.
+- `pnpm exec tsc --noEmit` can fail on stale `.next/types` artifacts (`validator.ts` route imports); rerunning after a successful `pnpm build` refreshes generated types.
+---
+
+## 2026-02-16 09:27:11 CET - US-013
+- Integrated explicit light/dark theme switching with `next-themes` at the app shell level, including hydration-safe layout setup (`suppressHydrationWarning`) and persisted theme state.
+- Added a visible header toggle control that switches between light and dark modes, and updated global tokens to use `.dark` class overrides instead of `prefers-color-scheme`.
+- Added Playwright coverage for theme toggling and persistence across reload.
+- Files changed: `package.json`, `pnpm-lock.yaml`, `src/app/layout.tsx`, `src/app/globals.css`, `src/components/theme-provider.tsx`, `src/components/theme-toggle.tsx`, `tests/e2e/us-017-theme-toggle.e2e.ts`, `README.md`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-017-theme-toggle.e2e.ts` (pass).
+- **Learnings for future iterations**
+  - Theme toggles should live in the shared app shell so route-level pages inherit consistent behavior automatically.
+  - For App Router hydration safety with runtime theme classes, apply `suppressHydrationWarning` on `<html>` and keep theme class control centralized in `next-themes`.
+---
+
+## 2026-02-16 10:14:38 CET - US-014
+- Reduced nested card containers across dedicated route pages by merging page headers into each route's main content card and simplifying interior section wrappers.
+- Added a shared `Separator` primitive and used section separators in multi-section pages to avoid box-in-box card nesting while keeping readability.
+- Files changed: `AGENTS.md`, `src/app/accounts/accounts-manager.tsx`, `src/app/accounts/page.tsx`, `src/app/categories/categories-manager.tsx`, `src/app/categories/page.tsx`, `src/app/globals.css`, `src/app/import/import-uploader.tsx`, `src/app/layout.tsx`, `src/app/overview/overview-dashboard.tsx`, `src/app/overview/page.tsx`, `src/app/page.tsx`, `src/components/ui/separator.tsx`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Keep route-level title/description content inside the feature's primary `Card` to avoid duplicate heading blocks at both page and card levels.
+  - When route screens require multiple functional sections, use `Separator` boundaries before introducing additional cards with repeated borders/backgrounds.
+---
+
+## 2026-02-16 10:18:22 CET - US-015
+- Adopted the canonical shadcn table pattern by renaming shared table primitives to `TableHeader`, `TableBody`, `TableRow`, `TableHead`, and `TableCell` in `src/components/ui/table.tsx`.
+- Migrated tabular list UIs in accounts, categories, import review, overview, and the legacy `/` workspace to use the canonical table primitive names while preserving existing row content/actions and ordering.
+- Files changed: `AGENTS.md`, `src/components/ui/table.tsx`, `src/app/accounts/accounts-manager.tsx`, `src/app/categories/categories-manager.tsx`, `src/app/import/import-uploader.tsx`, `src/app/overview/overview-dashboard.tsx`, `src/app/page.tsx`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Keeping shared primitive API names aligned with upstream shadcn conventions reduces custom table wrapper drift across route modules.
+  - When migrating JSX primitives, run targeted `pnpm exec biome format --write <changed-files>` before lint to resolve predictable multiline import/wrapping diffs quickly.
+---
+
+## 2026-02-16 10:23:45 CET - US-016
+- Implemented root-route defaulting by replacing the legacy `/` page content with a Next.js server redirect to `/overview`.
+- Updated route documentation and agent guidance to reflect `/overview` as the default landing workspace.
+- Files changed: `src/app/page.tsx`, `README.md`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - For App Router root route changes, prefer `redirect("/overview")` in `src/app/page.tsx` to keep the default landing behavior explicit and easy to maintain.
+  - Keep routing behavior documented in both `README.md` and `AGENTS.md` so contributors and agents stay aligned.
+---
+
+## 2026-02-16 10:41:14 CET - US-017
+- Replaced manual overview visual sections with shadcn-style chart implementations using Recharts (`BarChart`/`LineChart`) through a shared `ChartContainer` + tooltip helper primitive.
+- Added reusable `src/components/ui/chart.tsx` and migrated `/overview` Net Cashflow, Inflow vs Outflow, Category Spend Breakdown, and Account State Trend to chart components while preserving existing filter/query behavior.
+- Updated dashboard Playwright coverage to assert chart container rendering and filter-driven result changes against the migrated chart UI.
+- Files changed: `package.json`, `pnpm-lock.yaml`, `src/components/ui/chart.tsx`, `src/app/overview/overview-dashboard.tsx`, `tests/e2e/us-014-dashboard-ui.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-014-dashboard-ui.e2e.ts` (failed due existing `.next/dev/lock` on port 3100), `pnpm exec playwright test tests/e2e/us-014-dashboard-ui.e2e.ts --config=/tmp/playwright.local-3000.config.ts` (pass).
+- **Learnings for future iterations**
+  - Recharts-backed shadcn chart wrappers should expose CSS-variable color keys (for example `--color-<dataKey>`) so each chart can stay theme-tokenized without inline hardcoded palettes.
+  - If Playwright `webServer` hits `.next/dev/lock` contention, use an existing running app server with a temporary no-webserver config to keep targeted E2E validation unblocked.
+---

@@ -7,7 +7,9 @@ type MockAccount = {
   isActive: boolean;
 };
 
-test("manages accounts and displays import summary", async ({ page }) => {
+test("manages accounts from /accounts with success and error feedback", async ({
+  page,
+}) => {
   const accounts: MockAccount[] = [
     {
       id: "acc-1",
@@ -32,6 +34,19 @@ test("manages accounts and displays import summary", async ({ page }) => {
         name: string;
         institution?: string;
       };
+      const normalizedName = body.name.trim().toLowerCase();
+      const duplicate = accounts.some(
+        (account) => account.name.trim().toLowerCase() === normalizedName,
+      );
+
+      if (duplicate) {
+        await route.fulfill({
+          status: 409,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "ACCOUNT_NAME_MUST_BE_UNIQUE" }),
+        });
+        return;
+      }
 
       const created: MockAccount = {
         id: `acc-${accounts.length + 1}`,
@@ -100,75 +115,15 @@ test("manages accounts and displays import summary", async ({ page }) => {
     await route.continue();
   });
 
-  await page.route("**/api/categories", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ categories: [] }),
-    });
-  });
+  await page.goto("/accounts");
 
-  await page.route("**/api/categorization/review", async (route, request) => {
-    if (request.method() === "GET") {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ items: [], count: 0 }),
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ updated: 0, skipped: 0 }),
-    });
-  });
-
-  await page.route("**/api/imports", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        summary: {
-          imported: 3,
-          duplicates: 1,
-          ignoredReserved: 2,
-          invalid: 0,
-        },
-        errors: [],
-      }),
-    });
-  });
-
-  await page.route("**/api/dashboard/analytics**", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        filters: {
-          accountId: null,
-          startDate: "2026-01-01",
-          endDate: "2026-01-31",
-        },
-        netCashflow: [],
-        inflowOutflow: [],
-        categoryBreakdown: [],
-        accountTrend: [],
-      }),
-    });
-  });
-
-  await page.goto("/");
-
-  await expect(
-    page.getByRole("heading", { name: "Accounts, Imports, and Review" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Accounts" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "Main Account" })).toBeVisible();
 
   await page.getByLabel("Account name").fill("Savings Account");
   await page.getByLabel("Institution (optional)").fill("Nordea");
   await page.getByRole("button", { name: "Add account" }).click();
+  await expect(page.getByText("Account added.")).toBeVisible();
 
   await expect(
     page.getByRole("cell", { name: "Savings Account" }),
@@ -177,6 +132,7 @@ test("manages accounts and displays import summary", async ({ page }) => {
   await page.getByRole("button", { name: "Rename" }).nth(1).click();
   await page.getByLabel("Edit name Savings Account").fill("Rainy Day Account");
   await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Account updated.")).toBeVisible();
 
   await expect(
     page.getByRole("cell", { name: "Rainy Day Account" }),
@@ -186,28 +142,15 @@ test("manages accounts and displays import summary", async ({ page }) => {
     void dialog.accept();
   });
   await page.getByRole("button", { name: "Remove" }).nth(1).click();
+  await expect(page.getByText("Account removed.")).toBeVisible();
 
   await expect(
     page.getByRole("cell", { name: "Rainy Day Account" }),
   ).not.toBeVisible();
 
-  await page.locator("#csv-file").setInputFiles({
-    name: "import.csv",
-    mimeType: "text/csv",
-    buffer: Buffer.from(
-      "Bokføringsdato;Beløp;Avsender;Mottaker;Navn;Tittel;Valuta;Betalingstype\n01.01.2026;10,00;A;B;C;D;NOK;Kort",
-    ),
-  });
-
-  await page.getByRole("button", { name: "Import transactions" }).click();
-
+  await page.getByLabel("Account name").fill("Main Account");
+  await page.getByRole("button", { name: "Add account" }).click();
   await expect(
-    page.getByRole("heading", { name: "Import summary" }),
+    page.getByText("An account with this name already exists."),
   ).toBeVisible();
-  await expect(page.getByText("Imported").locator("..")).toContainText("3");
-  await expect(page.getByText("Duplicates").locator("..")).toContainText("1");
-  await expect(page.getByText("Ignored reserved").locator("..")).toContainText(
-    "2",
-  );
-  await expect(page.getByText("Invalid").locator("..")).toContainText("0");
 });

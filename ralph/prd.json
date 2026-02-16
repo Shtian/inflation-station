@@ -15,7 +15,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -30,7 +30,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -45,7 +45,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -60,7 +60,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -75,7 +75,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -90,7 +90,7 @@
         "Tests pass"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -105,7 +105,7 @@
         "Tests pass"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -120,7 +120,7 @@
         "Tests pass"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -135,7 +135,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -151,7 +151,7 @@
         "Tests pass"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -166,6 +166,111 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Set up shadcn theme tokens and global theming foundation",
+      "description": "As a user, I want a consistent design token foundation so app styling can follow shadcn theming conventions.",
+      "acceptanceCriteria": [
+        "Configure global CSS variables for shadcn-compatible theme tokens based on the official shadcn theming approach",
+        "Ensure app surfaces (background, foreground, border, card, muted, primary, accent, destructive) consume tokenized colors instead of hardcoded values where applicable",
+        "Document any added theming prerequisites/configuration in the relevant project docs",
+        "Typecheck passes",
+        "Tests/lint pass"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "Reference: https://ui.shadcn.com/docs/theming"
+    },
+    {
+      "id": "US-013",
+      "title": "Add dark mode with explicit theme switching",
+      "description": "As a user, I want to switch between light and dark themes so the UI remains comfortable in different lighting conditions.",
+      "acceptanceCriteria": [
+        "Integrate the Next.js shadcn dark-mode provider pattern so light/dark theme state is applied at the app shell level",
+        "Add a visible theme toggle control that lets users switch between light and dark modes",
+        "Default theme behavior is deterministic and hydration-safe for App Router rendering",
+        "Typecheck passes",
+        "Tests/lint pass"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": "Reference: https://ui.shadcn.com/docs/dark-mode/next"
+    },
+    {
+      "id": "US-014",
+      "title": "Reduce nested card containers across route pages",
+      "description": "As a user, I want cleaner page layouts with less box-in-box nesting so the interface feels simpler and easier to scan.",
+      "acceptanceCriteria": [
+        "On dedicated pages, merge page title/description blocks into the main content card when it improves readability",
+        "Where multiple sections are required on one page, separate sections with shadcn `Separator` instead of extra nested card wrappers where appropriate",
+        "Avoid unnecessary nested bordered/background containers that duplicate visual hierarchy",
+        "Typecheck passes",
+        "Tests/lint pass"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Adopt shadcn Table component patterns for list UIs",
+      "description": "As a user, I want consistent list/table presentation so data views feel unified across the app.",
+      "acceptanceCriteria": [
+        "Replace ad-hoc list/table markup with shadcn table primitives where tabular data is displayed",
+        "Existing list behaviors (sorting/order/content/actions) remain functional after migration",
+        "Table styling consumes semantic theme tokens and remains dark-mode compatible",
+        "Typecheck passes",
+        "Tests/lint pass"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Make /overview the default root route",
+      "description": "As a user, I want the overview dashboard to open by default so I land directly on the primary analytics workspace.",
+      "acceptanceCriteria": [
+        "Visiting `/` redirects or routes directly to `/overview`",
+        "Primary navigation and deep links continue working after root-route change",
+        "README and route documentation reflect the new default root behavior",
+        "Typecheck passes",
+        "Tests/lint pass"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Use shadcn chart components for overview visualizations",
+      "description": "As a user, I want dashboard charts to use the shadcn chart system for consistent styling and maintainable visualization patterns.",
+      "acceptanceCriteria": [
+        "Overview charts are implemented using shadcn chart component patterns",
+        "Existing analytics data mapping and filter behavior remain intact",
+        "Charts remain readable in both light and dark themes",
+        "Typecheck passes",
+        "Tests/lint pass"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": "Reference: https://ui.shadcn.com/charts"
+    },
+    {
+      "id": "US-018",
+      "title": "Standardize on Base UI variants for shadcn components",
+      "description": "As a developer, I want shadcn components to follow Base UI variants so we avoid introducing Radix-based patterns in the app surface.",
+      "acceptanceCriteria": [
+        "New or updated shadcn components in this project use Base UI variations/patterns",
+        "Do not introduce Radix UI component usage for shadcn surfaces in targeted refactors",
+        "Document this component selection rule in AGENTS.md and/or README where relevant",
+        "Typecheck passes",
+        "Tests/lint pass"
+      ],
+      "priority": 18,
       "passes": false,
       "notes": ""
     }

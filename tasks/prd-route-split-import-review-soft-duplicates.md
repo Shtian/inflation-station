@@ -72,6 +72,24 @@ This work addresses three problems:
 - [ ] Import result summary clearly reports counts for imported, flagged duplicates, invalid, and skipped rows.
 - [ ] Typecheck/lint passes.
 
+### US-006: Establish shadcn theming foundation
+**Description:** As a user, I want consistent global theme tokens so the UI follows shadcn theming conventions and is easier to evolve.
+
+**Acceptance Criteria:**
+- [ ] App defines shadcn-compatible CSS theme variables for semantic tokens (for example background/foreground/card/popover/primary/secondary/muted/accent/destructive/border/input/ring).
+- [ ] Shared app surfaces and controls use semantic theme tokens instead of hardcoded color values where applicable.
+- [ ] Any required setup or conventions are documented for future contributors.
+- [ ] Typecheck/lint passes.
+
+### US-007: Add dark mode and explicit theme switching
+**Description:** As a user, I want to switch between light and dark themes so the app remains readable and comfortable in different environments.
+
+**Acceptance Criteria:**
+- [ ] App shell integrates the shadcn-recommended Next.js theme provider pattern for App Router.
+- [ ] UI includes a clear theme switch control for light/dark mode.
+- [ ] Theme selection is hydration-safe and applied consistently across routes.
+- [ ] Typecheck/lint passes.
+
 ## 4. Functional Requirements
 
 - FR-1: The system must provide separate routes for `/overview`, `/import`, `/accounts`, and `/categories`.
@@ -84,6 +102,9 @@ This work addresses three problems:
 - FR-8: Final import persistence must use the post-review row state only.
 - FR-9: Canceling/leaving review without submit must not persist staged rows.
 - FR-10: Import diagnostics/summary must include explicit counters for `imported`, `potentialDuplicates`, `invalid`, and `skipped`.
+- FR-11: The app must provide a global shadcn-compatible semantic theme token setup in shared styles.
+- FR-12: The app must support dark/light theme switching using a Next.js App Router-safe theme provider approach.
+- FR-13: Theme state changes must apply consistently across all top-level routes (`/overview`, `/import`, `/accounts`, `/categories`).
 
 ## 5. Non-Goals (Out of Scope)
 

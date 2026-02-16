@@ -26,22 +26,6 @@ test("updates dashboard charts when account and date filters change", async ({
     });
   });
 
-  await page.route("**/api/categories", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ categories: [] }),
-    });
-  });
-
-  await page.route("**/api/categorization/review", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({ items: [], count: 0 }),
-    });
-  });
-
   await page.route("**/api/dashboard/analytics**", async (route, request) => {
     const url = new URL(request.url());
     const accountId = url.searchParams.get("accountId");
@@ -144,9 +128,9 @@ test("updates dashboard charts when account and date filters change", async ({
     });
   });
 
-  await page.goto("/");
+  await page.goto("/overview");
 
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Net Cashflow" }),
   ).toBeVisible();
@@ -159,11 +143,12 @@ test("updates dashboard charts when account and date filters change", async ({
   await expect(
     page.getByRole("heading", { name: "Account State Trend" }),
   ).toBeVisible();
-  await expect(page.getByText("2026-01-02").first()).toBeVisible();
-  await expect(page.getByText("Food")).toBeVisible();
+  await expect(page.locator("[data-slot='chart-container']")).toHaveCount(4);
+  await expect(page.getByText(/200,00/).first()).toBeVisible();
+  await expect(page.getByText(/Food:\s/)).toBeVisible();
 
   await page.getByLabel("Account filter").selectOption("acc-2");
-  await expect(page.getByText("2026-01-15").first()).toBeVisible();
+  await expect(page.getByText(/1\s?100,00/)).toBeVisible();
 
   await page.getByLabel("Start date").fill("2026-01-10");
   await page.getByLabel("End date").fill("2026-01-25");
@@ -171,6 +156,6 @@ test("updates dashboard charts when account and date filters change", async ({
     "aria-pressed",
     "true",
   );
-  await expect(page.getByText("2026-01-20").first()).toBeVisible();
-  await expect(page.getByText("Utilities")).toBeVisible();
+  await expect(page.getByText(/960,00/).first()).toBeVisible();
+  await expect(page.getByText(/Utilities:\s/)).toBeVisible();
 });

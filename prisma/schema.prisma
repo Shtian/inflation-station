@@ -35,6 +35,7 @@ model Account {
   categories  Category[]
   transactions Transaction[]
   categoryRules CategoryRule[]
+  importReviewSessions ImportReviewSession[]
 }
 
 model Category {
@@ -102,4 +103,36 @@ model CategorizationSuggestion {
 
   @@index([transactionId, source])
   @@index([suggestedCategoryId])
+}
+
+model ImportReviewSession {
+  id        String            @id @default(cuid())
+  accountId String
+  account   Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  rows      ImportReviewRow[]
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@index([accountId, createdAt])
+}
+
+model ImportReviewRow {
+  id                 String              @id @default(cuid())
+  sessionId          String
+  session            ImportReviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  rowNumber          Int
+  bookingDate        DateTime
+  amountNok          Decimal
+  currency           String
+  normalizedMerchant String
+  paymentType        PaymentType         @default(OTHER)
+  sender             String
+  recipient          String
+  name               String
+  title              String
+  categoryId         String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([sessionId, rowNumber])
 }
