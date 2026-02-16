@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { getCategoryColor } from "@/lib/category-color";
 import { cn } from "@/lib/utils";
 
 type Account = {
@@ -572,7 +573,16 @@ export function OverviewDashboard() {
                     dataKey="spendNok"
                     fill="var(--color-spendNok)"
                     radius={4}
-                  />
+                  >
+                    {dashboardData.categoryBreakdown.map((point) => (
+                      <Cell
+                        key={`${point.categoryId ?? "uncategorized"}-${point.categoryName}`}
+                        fill={
+                          getCategoryColor(point.categoryName, "muted").backgroundColor
+                        }
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ChartContainer>
               <div className="space-y-1 text-xs text-muted-foreground">

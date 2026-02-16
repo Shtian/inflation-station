@@ -12,7 +12,7 @@ type CategoryBadgeProps = {
 
 export function CategoryBadge({
   label,
-  variation = "mattePastel",
+  variation = "muted",
   className,
 }: CategoryBadgeProps) {
   const color = getCategoryColor(label, variation);
