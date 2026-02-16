@@ -12,6 +12,7 @@
 - Compute potential duplicate warnings for import review rows from the same fingerprint fields as transaction dedupe (`accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, `paymentType`) and keep flagged rows editable instead of auto-dropping.
 - In `/import` review UI, fetch categories from `/api/categories` and allow both global (`accountId: null`) and selected-account categories in row-level category selectors.
 - Keep shadcn-compatible semantic theme tokens centralized in `src/app/globals.css`, and map shared UI primitives to semantic utility classes (`bg-background`, `text-foreground`, `border-border`, etc.) instead of hardcoded palettes.
+- Keep app-wide theme state at the layout level using a `next-themes` provider with `html` class toggling, and drive dark tokens from `.dark` in `src/app/globals.css`.
 
 ## 2026-02-15 21:20:39 CET - US-001
 - Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
@@ -141,6 +142,17 @@
 - Files changed: `src/app/globals.css`, `src/app/layout.tsx`, `src/components/ui/button.tsx`, `src/components/ui/input.tsx`, `src/components/ui/select.tsx`, `src/components/ui/table.tsx`, `src/components/ui/card.tsx`, `README.md`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
 - Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass after rerun post-build artifact refresh), `pnpm test` (pass), `pnpm build` (pass).
 - **Learnings for future iterations**
-  - When introducing theme changes, prioritize shared primitives in `src/components/ui/*` first to propagate semantic token usage with minimal route-level churn.
-  - `pnpm exec tsc --noEmit` can fail on stale `.next/types` artifacts (`validator.ts` route imports); rerunning after a successful `pnpm build` refreshes generated types.
+- When introducing theme changes, prioritize shared primitives in `src/components/ui/*` first to propagate semantic token usage with minimal route-level churn.
+- `pnpm exec tsc --noEmit` can fail on stale `.next/types` artifacts (`validator.ts` route imports); rerunning after a successful `pnpm build` refreshes generated types.
+---
+
+## 2026-02-16 09:27:11 CET - US-013
+- Integrated explicit light/dark theme switching with `next-themes` at the app shell level, including hydration-safe layout setup (`suppressHydrationWarning`) and persisted theme state.
+- Added a visible header toggle control that switches between light and dark modes, and updated global tokens to use `.dark` class overrides instead of `prefers-color-scheme`.
+- Added Playwright coverage for theme toggling and persistence across reload.
+- Files changed: `package.json`, `pnpm-lock.yaml`, `src/app/layout.tsx`, `src/app/globals.css`, `src/components/theme-provider.tsx`, `src/components/theme-toggle.tsx`, `tests/e2e/us-017-theme-toggle.e2e.ts`, `README.md`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-017-theme-toggle.e2e.ts` (pass).
+- **Learnings for future iterations**
+  - Theme toggles should live in the shared app shell so route-level pages inherit consistent behavior automatically.
+  - For App Router hydration safety with runtime theme classes, apply `suppressHydrationWarning` on `<html>` and keep theme class control centralized in `next-themes`.
 ---
