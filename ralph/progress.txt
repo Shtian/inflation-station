@@ -4,6 +4,7 @@
 - Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
 - Keep route page state client-side and fetch route-specific API data on filter/pagination changes.
 - Keep transactions pagination/filter query logic in `src/lib/transactions/*`, and keep `/api/transactions` handlers focused on request validation and HTTP response shaping.
+- For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
 
 ## 2026-02-16 12:46 CET - US-001
 - What was implemented
@@ -35,4 +36,31 @@
     - Biome lint can fail due unrelated formatting drift already present in branch; run targeted `biome check --write` on reported files before rerunning required gates.
   - Useful context (e.g., "the evaluation panel is in component X")
     - `pnpm test` runs Vitest unit tests only; Playwright E2E remains under `pnpm test:e2e`.
+---
+## 2026-02-16 12:51 CET - US-002
+- What was implemented
+  - Added `PATCH /api/transactions/[transactionId]` to update mutable transaction fields (`categoryId`, `bookingDate`, `amountNok`, `currency`, `normalizedMerchant`, `paymentType`).
+  - Added strict update payload validation that rejects immutable transaction metadata fields (`id`, `accountId`, `createdAt`, `updatedAt`) and invalid booking-date formats.
+  - Added transaction update library logic to persist updates and return a stable API row shape.
+  - Added unit tests for mutable-field parsing, immutable-field rejection, and update persistence/mapping behavior.
+- Files changed
+  - `src/app/api/transactions/[transactionId]/route.ts`
+  - `src/lib/transactions/update.ts`
+  - `src/lib/transactions/update.test.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep transaction mutation business logic and row shaping in `src/lib/transactions/*`, with API routes limited to validation and Prisma error-to-HTTP mapping.
+    - Use strict payload schemas with explicit immutable-field rejections for edit endpoints that must protect import metadata.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Next.js route type generation can reject narrow `params` handler signatures; keep the signature broad and narrow route params inside the handler.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Transaction update responses currently reuse the list-row shape for consistency with `/api/transactions`.
 ---

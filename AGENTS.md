@@ -21,7 +21,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Review workflow convention: keep review edits ephemeral until explicit submit; apply approved categories and clear related suggestions atomically so pending queues stay consistent.
 - OpenAI suggestion convention: keep AI categorization optional behind `OPENAI_API_KEY`; unresolved transactions may receive `OPENAI` suggestions, and provider/network failures must not fail the import pipeline.
 - Dashboard analytics convention: keep aggregate query logic in `src/lib/dashboard/*` with stable date-bucketed numeric series, and keep `/api/dashboard/*` routes focused on filter parsing and validation.
-- Transactions API convention: keep pagination/filter query logic in `src/lib/transactions/*` and keep `/api/transactions` focused on query-param validation plus HTTP error mapping.
+- Transactions API convention: keep transaction query/mutation logic in `src/lib/transactions/*`, and keep `/api/transactions*` handlers focused on payload/query validation plus HTTP error mapping.
 - Dashboard UI convention: keep chart/filter state client-side in the page component and fetch `/api/dashboard/analytics` on every account/date filter change so visuals stay in sync with backend aggregates.
 - Dashboard chart convention: render overview visualizations through shadcn chart primitives in `src/components/ui/chart.tsx` (Recharts-backed `ChartContainer` + tooltip helpers) so charts stay tokenized and dark-mode compatible.
 - Route convention: keep primary app navigation in `src/app/layout.tsx` and redirect `/` to `/overview` so analytics remains the default landing workspace.
