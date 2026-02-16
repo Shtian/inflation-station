@@ -102,3 +102,8 @@ OpenAI-based categorization suggestions are optional.
 
 - `/` remains the legacy combined workspace while route-splitting is in progress.
 - Top-level navigation links are available for `/overview`, `/import`, `/accounts`, and `/categories`.
+
+## Theming
+
+- Global semantic theme tokens are defined in `src/app/globals.css` using shadcn-compatible names (`background`, `foreground`, `card`, `muted`, `primary`, `accent`, `destructive`, `border`, `input`, `ring`).
+- Shared UI primitives in `src/components/ui/*` should consume semantic token utilities (for example `bg-card`, `text-foreground`, `border-border`) instead of hardcoded palette classes.

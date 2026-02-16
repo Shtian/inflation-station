@@ -181,7 +181,7 @@
         "Tests/lint pass"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "Reference: https://ui.shadcn.com/docs/theming"
     },
     {

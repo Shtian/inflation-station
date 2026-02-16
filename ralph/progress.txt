@@ -11,6 +11,7 @@
 - Run deterministic category-rule matching during import staging and persist prefilled `ImportReviewRow.categoryId`, but degrade gracefully to `null` if suggestion lookup fails.
 - Compute potential duplicate warnings for import review rows from the same fingerprint fields as transaction dedupe (`accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, `paymentType`) and keep flagged rows editable instead of auto-dropping.
 - In `/import` review UI, fetch categories from `/api/categories` and allow both global (`accountId: null`) and selected-account categories in row-level category selectors.
+- Keep shadcn-compatible semantic theme tokens centralized in `src/app/globals.css`, and map shared UI primitives to semantic utility classes (`bg-background`, `text-foreground`, `border-border`, etc.) instead of hardcoded palettes.
 
 ## 2026-02-15 21:20:39 CET - US-001
 - Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
@@ -131,4 +132,15 @@
 - **Learnings for future iterations**
   - Keep submit success UX deterministic in `/import`: clear local review-session state and file selection to avoid stale resubmission paths.
   - When review rows are only partially edited, preserve original suggested `categoryId` values for untouched rows in submit payload assertions.
+---
+
+## 2026-02-16 09:15:14 CET - US-012
+- Implemented a shadcn-compatible theming foundation by defining semantic global tokens in `src/app/globals.css` for background/foreground, card, popover, primary, secondary, muted, accent, destructive, border, input, and ring.
+- Updated shared app shell and UI primitives to consume tokenized classes (`bg-background`, `text-foreground`, `border-border`, `bg-card`, `bg-primary`, `bg-accent`, `bg-destructive`) instead of hardcoded zinc/red palette classes.
+- Documented theming setup/conventions for contributors in project docs and agent guidance.
+- Files changed: `src/app/globals.css`, `src/app/layout.tsx`, `src/components/ui/button.tsx`, `src/components/ui/input.tsx`, `src/components/ui/select.tsx`, `src/components/ui/table.tsx`, `src/components/ui/card.tsx`, `README.md`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass after rerun post-build artifact refresh), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - When introducing theme changes, prioritize shared primitives in `src/components/ui/*` first to propagate semantic token usage with minimal route-level churn.
+  - `pnpm exec tsc --noEmit` can fail on stale `.next/types` artifacts (`validator.ts` route imports); rerunning after a successful `pnpm build` refreshes generated types.
 ---

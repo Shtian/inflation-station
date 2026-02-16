@@ -17,7 +17,7 @@ export function THead({
   className,
   ...props
 }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn("bg-zinc-100", className)} {...props} />;
+  return <thead className={cn("bg-muted", className)} {...props} />;
 }
 
 export function TBody({
@@ -25,7 +25,7 @@ export function TBody({
   ...props
 }: HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <tbody className={cn("divide-y divide-zinc-200", className)} {...props} />
+    <tbody className={cn("divide-y divide-border", className)} {...props} />
   );
 }
 
@@ -36,7 +36,7 @@ export function TH({
   return (
     <th
       className={cn(
-        "px-3 py-2 text-xs font-semibold uppercase text-zinc-700",
+        "px-3 py-2 text-xs font-semibold uppercase text-muted-foreground",
         className,
       )}
       {...props}
@@ -50,7 +50,7 @@ export function TD({
 }: TdHTMLAttributes<HTMLTableCellElement>) {
   return (
     <td
-      className={cn("px-3 py-2 text-sm text-zinc-800", className)}
+      className={cn("px-3 py-2 text-sm text-foreground", className)}
       {...props}
     />
   );
