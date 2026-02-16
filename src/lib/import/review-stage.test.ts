@@ -23,6 +23,12 @@ function createDbMock(options?: {
     title: string;
     categoryId: string | null;
   }>;
+  existingTransactions?: Array<{
+    bookingDate: Date;
+    amountNok: number;
+    normalizedMerchant: string;
+    paymentType: PaymentType;
+  }>;
 }) {
   return {
     categoryRule: {
@@ -41,6 +47,9 @@ function createDbMock(options?: {
         count: options?.stagedRows?.length ?? 0,
       })),
       findMany: vi.fn(async () => options?.stagedRows ?? []),
+    },
+    transaction: {
+      findMany: vi.fn(async () => options?.existingTransactions ?? []),
     },
   };
 }
@@ -106,6 +115,7 @@ describe("stageParsedImportRows", () => {
     });
     expect(result.review).toEqual({
       sessionId: "session-1",
+      potentialDuplicates: 0,
       rows: [
         {
           id: "row-1",
@@ -120,6 +130,7 @@ describe("stageParsedImportRows", () => {
           name: "Groceries",
           title: "Friday",
           categoryId: null,
+          potentialDuplicate: false,
         },
       ],
     });
@@ -149,6 +160,7 @@ describe("stageParsedImportRows", () => {
     ]);
     expect(result.review).toEqual({
       sessionId: null,
+      potentialDuplicates: 0,
       rows: [],
     });
 
@@ -172,6 +184,7 @@ describe("stageParsedImportRows", () => {
     });
     expect(result.review).toEqual({
       sessionId: null,
+      potentialDuplicates: 0,
       rows: [],
     });
     expect(db.importReviewSession.create).not.toHaveBeenCalled();
@@ -244,6 +257,7 @@ describe("stageParsedImportRows", () => {
       ],
     });
     expect(result.review.rows[0]?.categoryId).toBe("cat-groceries");
+    expect(result.review.rows[0]?.potentialDuplicate).toBe(false);
   });
 
   it("continues staging uncategorized rows when suggestion lookup fails", async () => {
@@ -293,5 +307,97 @@ describe("stageParsedImportRows", () => {
     });
     expect(result.summary.imported).toBe(1);
     expect(result.review.rows[0]?.categoryId).toBeNull();
+    expect(result.review.rows[0]?.potentialDuplicate).toBe(false);
+  });
+
+  it("flags staged rows as potential duplicates when fingerprint already exists", async () => {
+    const db = createDbMock({
+      existingTransactions: [
+        {
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          normalizedMerchant: "shop a alice groceries friday",
+          paymentType: PaymentType.CARD,
+        },
+      ],
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "shop a alice groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+    });
+
+    expect(result.review.potentialDuplicates).toBe(1);
+    expect(result.review.rows[0]?.potentialDuplicate).toBe(true);
+  });
+
+  it("flags every matching row as potential duplicate when duplicates exist within upload", async () => {
+    const db = createDbMock({
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "shop a alice groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+        {
+          id: "row-2",
+          rowNumber: 3,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "shop a alice groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+    });
+
+    expect(result.review.potentialDuplicates).toBe(2);
+    expect(result.review.rows).toEqual([
+      expect.objectContaining({
+        id: "row-1",
+        rowNumber: 2,
+        potentialDuplicate: true,
+      }),
+      expect.objectContaining({
+        id: "row-2",
+        rowNumber: 3,
+        potentialDuplicate: true,
+      }),
+    ]);
   });
 });

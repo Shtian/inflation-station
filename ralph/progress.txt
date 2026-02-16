@@ -7,6 +7,7 @@
 - Keep the `/import` route wired to `/api/imports/parse` for parse feedback and staging, with transaction persistence deferred to explicit review submit.
 - Keep import review staging in dedicated Prisma models (`ImportReviewSession`, `ImportReviewRow`) and return staged row ids in parse responses so later review edits stay decoupled from persisted `Transaction` rows.
 - Run deterministic category-rule matching during import staging and persist prefilled `ImportReviewRow.categoryId`, but degrade gracefully to `null` if suggestion lookup fails.
+- Compute potential duplicate warnings for import review rows from the same fingerprint fields as transaction dedupe (`accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, `paymentType`) and keep flagged rows editable instead of auto-dropping.
 
 ## 2026-02-15 21:20:39 CET - US-001
 - Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
@@ -83,4 +84,15 @@
 - **Learnings for future iterations**
   - Import-stage suggestion prefills should happen before `ImportReviewRow.createMany` so review payloads reflect editable initial categories immediately.
   - Suggestion generation in parse/stage flows should fail open to preserve import-review availability when optional categorization dependencies fail.
+---
+
+## 2026-02-16 08:47:32 CET - US-008
+- Implemented potential duplicate warning detection during import review staging using deterministic fingerprints from `accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, and `paymentType`.
+- Added review payload metadata `review.potentialDuplicates` and per-row `potentialDuplicate` flags while keeping all staged rows persisted for user review.
+- Added/updated unit tests for duplicate-warning behavior against existing transactions and duplicate rows inside the same upload batch.
+- Files changed: `src/lib/import/review-stage.ts`, `src/lib/import/review-stage.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass).
+- **Learnings for future iterations**
+  - Keep parse diagnostics summary stable for importer UI compatibility, and add review-specific counts under `review` when extending review workflows.
+  - Reuse `buildTransactionFingerprint` from `src/lib/import/transaction-dedupe.ts` for review warnings so soft-duplicate detection stays aligned with hard dedupe rules.
 ---

@@ -8,6 +8,7 @@ import {
   type ParsedCsvRow,
   parseNorwegianBankCsv,
 } from "./csv-parser";
+import { buildTransactionFingerprint } from "./transaction-dedupe";
 
 export type ReviewStageSummary = {
   imported: number;
@@ -29,6 +30,7 @@ export type ReviewStageRow = {
   name: string;
   title: string;
   categoryId: string | null;
+  potentialDuplicate: boolean;
 };
 
 export type StageParsedImportResult = {
@@ -36,6 +38,7 @@ export type StageParsedImportResult = {
   errors: CsvValidationError[];
   review: {
     sessionId: string | null;
+    potentialDuplicates: number;
     rows: ReviewStageRow[];
   };
 };
@@ -139,6 +142,24 @@ type ImportReviewStageDbClient = {
         name: string;
         title: string;
         categoryId: string | null;
+      }>
+    >;
+  };
+  transaction: {
+    findMany(args: {
+      where: { accountId: string };
+      select: {
+        bookingDate: true;
+        amountNok: true;
+        normalizedMerchant: true;
+        paymentType: true;
+      };
+    }): Promise<
+      Array<{
+        bookingDate: Date;
+        amountNok: { toString(): string } | number;
+        normalizedMerchant: string;
+        paymentType: PaymentType;
       }>
     >;
   };
@@ -314,6 +335,13 @@ type RuleMatchSeed = {
   paymentType: PaymentType;
 };
 
+type ExistingTransactionFingerprintSource = {
+  bookingDate: Date;
+  amountNok: { toString(): string } | number;
+  normalizedMerchant: string;
+  paymentType: PaymentType;
+};
+
 async function buildPrefilledCategoryMap(
   db: ImportReviewStageDbClient,
   accountId: string,
@@ -352,6 +380,55 @@ async function buildPrefilledCategoryMap(
   }, new Map<number, string>());
 }
 
+function buildPotentialDuplicateRowNumbers(
+  accountId: string,
+  validRows: ValidatedStageRow[],
+  existingTransactions: ExistingTransactionFingerprintSource[],
+): Set<number> {
+  const existingFingerprints = new Set(
+    existingTransactions.map((transaction) =>
+      buildTransactionFingerprint({
+        accountId,
+        bookingDate: transaction.bookingDate.toISOString().slice(0, 10),
+        amountNok: Number.parseFloat(transaction.amountNok.toString()),
+        normalizedMerchant: transaction.normalizedMerchant,
+        paymentType: transaction.paymentType,
+      }),
+    ),
+  );
+
+  const uploadFingerprintCounts = validRows.reduce((counts, row) => {
+    const fingerprint = buildTransactionFingerprint({
+      accountId,
+      bookingDate: row.bookingDate,
+      amountNok: row.amountNok,
+      normalizedMerchant: row.normalizedMerchant,
+      paymentType: row.paymentType,
+    });
+    counts.set(fingerprint, (counts.get(fingerprint) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>());
+
+  return validRows.reduce((duplicateRows, row) => {
+    const fingerprint = buildTransactionFingerprint({
+      accountId,
+      bookingDate: row.bookingDate,
+      amountNok: row.amountNok,
+      normalizedMerchant: row.normalizedMerchant,
+      paymentType: row.paymentType,
+    });
+
+    if (
+      existingFingerprints.has(fingerprint) ||
+      (uploadFingerprintCounts.get(fingerprint) ?? 0) > 1
+    ) {
+      duplicateRows.add(row.rowNumber);
+    }
+
+    return duplicateRows;
+  }, new Set<number>());
+}
+
 export async function stageParsedImportRows(
   db: ImportReviewStageDbClient,
   params: {
@@ -367,6 +444,7 @@ export async function stageParsedImportRows(
       errors: parsed.errors,
       review: {
         sessionId: null,
+        potentialDuplicates: 0,
         rows: [],
       },
     };
@@ -380,10 +458,26 @@ export async function stageParsedImportRows(
       errors: [...parsed.errors, ...invalidRows],
       review: {
         sessionId: null,
+        potentialDuplicates: 0,
         rows: [],
       },
     };
   }
+
+  const existingTransactions = await db.transaction.findMany({
+    where: { accountId: params.accountId },
+    select: {
+      bookingDate: true,
+      amountNok: true,
+      normalizedMerchant: true,
+      paymentType: true,
+    },
+  });
+  const potentialDuplicateRowNumbers = buildPotentialDuplicateRowNumbers(
+    params.accountId,
+    validRows,
+    existingTransactions,
+  );
 
   let prefilledCategoryByRowNumber = new Map<number, string>();
   try {
@@ -449,6 +543,7 @@ export async function stageParsedImportRows(
     errors: [...parsed.errors, ...invalidRows],
     review: {
       sessionId: session.id,
+      potentialDuplicates: potentialDuplicateRowNumbers.size,
       rows: stagedRows.map((row) => ({
         id: row.id,
         rowNumber: row.rowNumber,
@@ -462,6 +557,7 @@ export async function stageParsedImportRows(
         name: row.name,
         title: row.title,
         categoryId: row.categoryId,
+        potentialDuplicate: potentialDuplicateRowNumbers.has(row.rowNumber),
       })),
     },
   };
