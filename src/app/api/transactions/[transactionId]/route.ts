@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { deleteTransaction } from "@/lib/transactions/delete";
 import {
   parseTransactionUpdatePayload,
   updateTransaction,
@@ -9,15 +10,18 @@ type RouteParams = {
   params: Promise<unknown>;
 };
 
-export async function PATCH(request: Request, { params }: RouteParams) {
+async function parseTransactionId(params: Promise<unknown>) {
   const routeParams = await params;
-  const transactionId =
-    typeof routeParams === "object" &&
+  return typeof routeParams === "object" &&
     routeParams !== null &&
     "transactionId" in routeParams &&
     typeof routeParams.transactionId === "string"
-      ? routeParams.transactionId
-      : null;
+    ? routeParams.transactionId
+    : null;
+}
+
+export async function PATCH(request: Request, { params }: RouteParams) {
+  const transactionId = await parseTransactionId(params);
 
   if (!transactionId) {
     return NextResponse.json(
@@ -78,6 +82,36 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     ) {
       return NextResponse.json(
         { error: "CATEGORY_NOT_FOUND" },
+        { status: 404 },
+      );
+    }
+
+    throw error;
+  }
+}
+
+export async function DELETE(_request: Request, { params }: RouteParams) {
+  const transactionId = await parseTransactionId(params);
+
+  if (!transactionId) {
+    return NextResponse.json(
+      { error: "INVALID_TRANSACTION_ID" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    await deleteTransaction(prisma, transactionId);
+    return NextResponse.json(null, { status: 204 });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json(
+        { error: "TRANSACTION_NOT_FOUND" },
         { status: 404 },
       );
     }

@@ -4,6 +4,7 @@
 - Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
 - Keep route page state client-side and fetch route-specific API data on filter/pagination changes.
 - Keep transactions pagination/filter query logic in `src/lib/transactions/*`, and keep `/api/transactions` handlers focused on request validation and HTTP response shaping.
+- Keep `/api/transactions/[transactionId]` handlers consistent across mutation methods by validating `transactionId` up front and mapping Prisma `P2025` to `TRANSACTION_NOT_FOUND`.
 - For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
 
 ## 2026-02-16 12:46 CET - US-001
@@ -63,4 +64,30 @@
     - Next.js route type generation can reject narrow `params` handler signatures; keep the signature broad and narrow route params inside the handler.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Transaction update responses currently reuse the list-row shape for consistency with `/api/transactions`.
+---
+## 2026-02-16 13:00 CET - US-003
+- What was implemented
+  - Added transaction hard-delete library logic in `src/lib/transactions/delete.ts` and wired `DELETE /api/transactions/[transactionId]` to perform hard deletes by id.
+  - Added route-level `transactionId` validation for delete requests and returned `INVALID_TRANSACTION_ID` when params are malformed.
+  - Mapped Prisma not-found (`P2025`) to `TRANSACTION_NOT_FOUND` with HTTP 404 for delete operations.
+  - Added unit coverage for delete persistence call behavior.
+- Files changed
+  - `src/app/api/transactions/[transactionId]/route.ts`
+  - `src/lib/transactions/delete.ts`
+  - `src/lib/transactions/delete.test.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep transaction deletion as a dedicated helper in `src/lib/transactions/*` so API handlers remain focused on parameter validation and HTTP mapping.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Biome formatting checks are strict; run `pnpm exec biome check --write` on edited files if lint fails on formatting-only differences.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - The transaction detail API route now supports both `PATCH` and `DELETE`, sharing the same guarded transaction-id parsing path.
 ---
