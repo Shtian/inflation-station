@@ -1,19 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bar, BarChart, Cell, Line, LineChart, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import {
+  CartesianGrid,
+  ChartContainer,
+  ChartTooltipContent,
+  Legend,
+  Tooltip,
+} from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 type Account = {
   id: string;
@@ -58,6 +58,28 @@ function formatNok(value: number) {
   }).format(value);
 }
 
+function formatCompactNok(value: number) {
+  return new Intl.NumberFormat("nb-NO", {
+    style: "currency",
+    currency: "NOK",
+    notation: "compact",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
+function formatChartDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("nb-NO", {
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+}
+
 function toDateInputValue(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -97,6 +119,28 @@ export function OverviewDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardAnalytics | null>(
     null,
   );
+
+  const netCashflowChartConfig = {
+    netNok: { label: "Net cashflow" },
+    positive: { label: "Inflow", color: "hsl(var(--chart-2))" },
+    negative: { label: "Outflow", color: "hsl(var(--destructive))" },
+  };
+
+  const inflowOutflowChartConfig = {
+    inflowNok: { label: "Inflow", color: "hsl(var(--chart-2))" },
+    outflowNok: { label: "Outflow", color: "hsl(var(--chart-5))" },
+  };
+
+  const categoryBreakdownChartConfig = {
+    spendNok: { label: "Spend", color: "hsl(var(--chart-3))" },
+  };
+
+  const accountTrendChartConfig = {
+    cumulativeNok: {
+      label: "Cumulative balance",
+      color: "hsl(var(--chart-1))",
+    },
+  };
 
   const loadAccounts = useCallback(async () => {
     const response = await fetch("/api/accounts");
@@ -168,27 +212,10 @@ export function OverviewDashboard() {
     setDashboardEndDate(range.endDate);
   }
 
-  const maxNetMagnitude = useMemo(() => {
-    if (!dashboardData || dashboardData.netCashflow.length === 0) {
-      return 1;
-    }
-
-    return Math.max(
-      ...dashboardData.netCashflow.map((point) => Math.abs(point.netNok)),
-      1,
-    );
-  }, [dashboardData]);
-
-  const maxCategorySpend = useMemo(() => {
-    if (!dashboardData || dashboardData.categoryBreakdown.length === 0) {
-      return 1;
-    }
-
-    return Math.max(
-      ...dashboardData.categoryBreakdown.map((point) => point.spendNok),
-      1,
-    );
-  }, [dashboardData]);
+  const topCategories = useMemo(
+    () => (dashboardData ? dashboardData.categoryBreakdown.slice(0, 5) : []),
+    [dashboardData],
+  );
 
   return (
     <Card>
@@ -326,34 +353,46 @@ export function OverviewDashboard() {
             </p>
           ) : null}
           {!dashboardLoading && dashboardData ? (
-            <ul className="mt-3 space-y-2">
-              {dashboardData.netCashflow.map((point) => {
-                const width = Math.max(
-                  6,
-                  (Math.abs(point.netNok) / maxNetMagnitude) * 100,
-                );
-                const positive = point.netNok >= 0;
-
-                return (
-                  <li key={point.date} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{point.date}</span>
-                      <span>{formatNok(point.netNok)}</span>
-                    </div>
-                    <div className="h-2 rounded bg-muted">
-                      <div
-                        className={
-                          positive
-                            ? "h-2 rounded bg-emerald-600"
-                            : "h-2 rounded bg-rose-600"
-                        }
-                        style={{ width: `${width}%` }}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <ChartContainer
+              config={netCashflowChartConfig}
+              className="mt-3 h-64 w-full"
+            >
+              <BarChart accessibilityLayer data={dashboardData.netCashflow}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  minTickGap={24}
+                  tickFormatter={formatChartDate}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={formatCompactNok}
+                />
+                <Tooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value) => formatNok(value)}
+                      labelFormatter={formatChartDate}
+                    />
+                  }
+                />
+                <Bar dataKey="netNok" radius={4}>
+                  {dashboardData.netCashflow.map((point) => (
+                    <Cell
+                      key={point.date}
+                      fill={
+                        point.netNok >= 0
+                          ? "var(--color-positive)"
+                          : "var(--color-negative)"
+                      }
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
           ) : null}
         </section>
 
@@ -370,30 +409,45 @@ export function OverviewDashboard() {
             </p>
           ) : null}
           {!dashboardLoading && dashboardData ? (
-            <div className="mt-3 overflow-x-auto rounded-md border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Inflow</TableHead>
-                    <TableHead className="text-right">Outflow</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {dashboardData.inflowOutflow.map((point) => (
-                    <TableRow key={point.date}>
-                      <TableCell>{point.date}</TableCell>
-                      <TableCell className="text-right text-emerald-700">
-                        {formatNok(point.inflowNok)}
-                      </TableCell>
-                      <TableCell className="text-right text-rose-700">
-                        {formatNok(point.outflowNok)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <ChartContainer
+              config={inflowOutflowChartConfig}
+              className="mt-3 h-64 w-full"
+            >
+              <BarChart accessibilityLayer data={dashboardData.inflowOutflow}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="date"
+                  tickLine={false}
+                  axisLine={false}
+                  minTickGap={24}
+                  tickFormatter={formatChartDate}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={formatCompactNok}
+                />
+                <Tooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value) => formatNok(value)}
+                      labelFormatter={formatChartDate}
+                    />
+                  }
+                />
+                <Legend />
+                <Bar
+                  dataKey="inflowNok"
+                  fill="var(--color-inflowNok)"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="outflowNok"
+                  fill="var(--color-outflowNok)"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ChartContainer>
           ) : null}
         </section>
 
@@ -410,30 +464,50 @@ export function OverviewDashboard() {
             </p>
           ) : null}
           {!dashboardLoading && dashboardData ? (
-            <ul className="mt-3 space-y-2">
-              {dashboardData.categoryBreakdown.map((point) => {
-                const width = Math.max(
-                  6,
-                  (point.spendNok / maxCategorySpend) * 100,
-                );
-                return (
-                  <li key={point.categoryId ?? "uncategorized"}>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{point.categoryName}</span>
-                      <span>
-                        {formatNok(point.spendNok)} ({point.transactionCount})
-                      </span>
-                    </div>
-                    <div className="mt-1 h-2 rounded bg-muted">
-                      <div
-                        className="h-2 rounded bg-blue-600"
-                        style={{ width: `${width}%` }}
+            <div className="mt-3 space-y-3">
+              <ChartContainer
+                config={categoryBreakdownChartConfig}
+                className="h-64 w-full"
+              >
+                <BarChart
+                  accessibilityLayer
+                  data={dashboardData.categoryBreakdown}
+                >
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="categoryName"
+                    tickLine={false}
+                    axisLine={false}
+                    minTickGap={12}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={formatCompactNok}
+                  />
+                  <Tooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value) => formatNok(value)}
                       />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                    }
+                  />
+                  <Bar
+                    dataKey="spendNok"
+                    fill="var(--color-spendNok)"
+                    radius={4}
+                  />
+                </BarChart>
+              </ChartContainer>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                {topCategories.map((point) => (
+                  <p key={point.categoryId ?? "uncategorized"}>
+                    {point.categoryName}: {formatNok(point.spendNok)} (
+                    {point.transactionCount})
+                  </p>
+                ))}
+              </div>
+            </div>
           ) : null}
         </section>
 
@@ -466,7 +540,43 @@ export function OverviewDashboard() {
                         {latest ? formatNok(latest.cumulativeNok) : "-"}
                       </p>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <ChartContainer
+                      config={accountTrendChartConfig}
+                      className="mt-3 h-44 w-full"
+                    >
+                      <LineChart accessibilityLayer data={series.points}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tickLine={false}
+                          axisLine={false}
+                          minTickGap={24}
+                          tickFormatter={formatChartDate}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={formatCompactNok}
+                        />
+                        <Tooltip
+                          content={
+                            <ChartTooltipContent
+                              indicator="line"
+                              formatter={(value) => formatNok(value)}
+                              labelFormatter={formatChartDate}
+                            />
+                          }
+                        />
+                        <Line
+                          dataKey="cumulativeNok"
+                          type="monotone"
+                          stroke="var(--color-cumulativeNok)"
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ChartContainer>
+                    <p className="mt-2 text-xs text-muted-foreground">
                       {series.points.length} points
                     </p>
                   </div>

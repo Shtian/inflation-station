@@ -256,7 +256,7 @@
         "Tests/lint pass"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": "Reference: https://ui.shadcn.com/charts"
     },
     {

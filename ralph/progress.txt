@@ -15,6 +15,7 @@
 - Keep app-wide theme state at the layout level using a `next-themes` provider with `html` class toggling, and drive dark tokens from `.dark` in `src/app/globals.css`.
 - For dedicated route pages, keep a single top-level `Card` as the primary container and split multi-section content with `Separator` instead of nesting extra `Card` wrappers.
 - For tabular route UIs, use the canonical shadcn table primitives from `src/components/ui/table.tsx` (`TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell`) instead of ad-hoc `<table>/<thead>/<tbody>/<tr>` markup.
+- Keep overview visualizations implemented with `src/components/ui/chart.tsx` shadcn chart wrappers (`ChartContainer`, `ChartTooltipContent`) around Recharts primitives so tokenized chart colors/theme behavior stay consistent.
 
 ## 2026-02-15 21:20:39 CET - US-001
 - Implemented top-level route shell navigation with links to `/overview`, `/import`, `/accounts`, and `/categories`, and added concrete route pages for those paths.
@@ -187,4 +188,15 @@
 - **Learnings for future iterations**
   - For App Router root route changes, prefer `redirect("/overview")` in `src/app/page.tsx` to keep the default landing behavior explicit and easy to maintain.
   - Keep routing behavior documented in both `README.md` and `AGENTS.md` so contributors and agents stay aligned.
+---
+
+## 2026-02-16 10:41:14 CET - US-017
+- Replaced manual overview visual sections with shadcn-style chart implementations using Recharts (`BarChart`/`LineChart`) through a shared `ChartContainer` + tooltip helper primitive.
+- Added reusable `src/components/ui/chart.tsx` and migrated `/overview` Net Cashflow, Inflow vs Outflow, Category Spend Breakdown, and Account State Trend to chart components while preserving existing filter/query behavior.
+- Updated dashboard Playwright coverage to assert chart container rendering and filter-driven result changes against the migrated chart UI.
+- Files changed: `package.json`, `pnpm-lock.yaml`, `src/components/ui/chart.tsx`, `src/app/overview/overview-dashboard.tsx`, `tests/e2e/us-014-dashboard-ui.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` (pass), `pnpm exec tsc --noEmit` (pass), `pnpm test` (pass), `pnpm build` (pass), `pnpm test:e2e tests/e2e/us-014-dashboard-ui.e2e.ts` (failed due existing `.next/dev/lock` on port 3100), `pnpm exec playwright test tests/e2e/us-014-dashboard-ui.e2e.ts --config=/tmp/playwright.local-3000.config.ts` (pass).
+- **Learnings for future iterations**
+  - Recharts-backed shadcn chart wrappers should expose CSS-variable color keys (for example `--color-<dataKey>`) so each chart can stay theme-tokenized without inline hardcoded palettes.
+  - If Playwright `webServer` hits `.next/dev/lock` contention, use an existing running app server with a temporary no-webserver config to keep targeted E2E validation unblocked.
 ---

@@ -22,6 +22,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - OpenAI suggestion convention: keep AI categorization optional behind `OPENAI_API_KEY`; unresolved transactions may receive `OPENAI` suggestions, and provider/network failures must not fail the import pipeline.
 - Dashboard analytics convention: keep aggregate query logic in `src/lib/dashboard/*` with stable date-bucketed numeric series, and keep `/api/dashboard/*` routes focused on filter parsing and validation.
 - Dashboard UI convention: keep chart/filter state client-side in the page component and fetch `/api/dashboard/analytics` on every account/date filter change so visuals stay in sync with backend aggregates.
+- Dashboard chart convention: render overview visualizations through shadcn chart primitives in `src/components/ui/chart.tsx` (Recharts-backed `ChartContainer` + tooltip helpers) so charts stay tokenized and dark-mode compatible.
 - Route convention: keep primary app navigation in `src/app/layout.tsx` and redirect `/` to `/overview` so analytics remains the default landing workspace.
 - Route page layout convention: avoid duplicate page/card headings and reduce nested bordered cards; for multi-section route content, prefer section blocks separated with `src/components/ui/separator.tsx`.
 - Table UI convention: when rendering tabular data, use the canonical shadcn table primitives from `src/components/ui/table.tsx` (`Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell`) instead of ad-hoc table markup.
