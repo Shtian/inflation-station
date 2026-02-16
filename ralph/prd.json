@@ -168,6 +168,36 @@
       "priority": 11,
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Set up shadcn theme tokens and global theming foundation",
+      "description": "As a user, I want a consistent design token foundation so app styling can follow shadcn theming conventions.",
+      "acceptanceCriteria": [
+        "Configure global CSS variables for shadcn-compatible theme tokens based on the official shadcn theming approach",
+        "Ensure app surfaces (background, foreground, border, card, muted, primary, accent, destructive) consume tokenized colors instead of hardcoded values where applicable",
+        "Document any added theming prerequisites/configuration in the relevant project docs",
+        "Typecheck passes",
+        "Tests/lint pass"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Reference: https://ui.shadcn.com/docs/theming"
+    },
+    {
+      "id": "US-013",
+      "title": "Add dark mode with explicit theme switching",
+      "description": "As a user, I want to switch between light and dark themes so the UI remains comfortable in different lighting conditions.",
+      "acceptanceCriteria": [
+        "Integrate the Next.js shadcn dark-mode provider pattern so light/dark theme state is applied at the app shell level",
+        "Add a visible theme toggle control that lets users switch between light and dark modes",
+        "Default theme behavior is deterministic and hydration-safe for App Router rendering",
+        "Typecheck passes",
+        "Tests/lint pass"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Reference: https://ui.shadcn.com/docs/dark-mode/next"
     }
   ]
 }
