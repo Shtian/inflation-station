@@ -8,6 +8,9 @@ type TransactionUpdateRecord = {
   id: string;
   accountId: string;
   categoryId: string | null;
+  category: {
+    name: string;
+  } | null;
   bookingDate: Date;
   amountNok: DecimalLike;
   currency: string;
@@ -33,6 +36,11 @@ type TransactionUpdateDbClient = {
         id: true;
         accountId: true;
         categoryId: true;
+        category: {
+          select: {
+            name: true;
+          };
+        };
         bookingDate: true;
         amountNok: true;
         currency: true;
@@ -124,6 +132,7 @@ function toTransactionListRow(
     id: record.id,
     accountId: record.accountId,
     categoryId: record.categoryId,
+    categoryName: record.category?.name ?? null,
     bookingDate: record.bookingDate.toISOString().slice(0, 10),
     amountNok: toNumber(record.amountNok),
     currency: record.currency,
@@ -171,6 +180,11 @@ export async function updateTransaction(
       id: true,
       accountId: true,
       categoryId: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
       bookingDate: true,
       amountNok: true,
       currency: true,

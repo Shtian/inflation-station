@@ -9,6 +9,9 @@ function createUpdateDbMock() {
         id: "tx-1",
         accountId: "acc-1",
         categoryId: "cat-1",
+        category: {
+          name: "Groceries",
+        },
         bookingDate: new Date("2026-02-05T00:00:00.000Z"),
         amountNok: { toString: () => "-100.25" },
         currency: "NOK",
@@ -87,6 +90,11 @@ describe("updateTransaction", () => {
         id: true,
         accountId: true,
         categoryId: true,
+        category: {
+          select: {
+            name: true,
+          },
+        },
         bookingDate: true,
         amountNok: true,
         currency: true,
@@ -100,6 +108,7 @@ describe("updateTransaction", () => {
       id: "tx-1",
       accountId: "acc-1",
       categoryId: "cat-1",
+      categoryName: "Groceries",
       bookingDate: "2026-02-05",
       amountNok: -100.25,
       currency: "NOK",

@@ -10,6 +10,9 @@ function createTransactionsDbMock(total: number) {
           id: "tx-2",
           accountId: "acc-1",
           categoryId: "cat-1",
+          category: {
+            name: "Groceries",
+          },
           bookingDate: new Date("2026-02-04T00:00:00.000Z"),
           amountNok: { toString: () => "-123.45" },
           currency: "NOK",
@@ -46,6 +49,11 @@ describe("getTransactionsPage", () => {
         id: true,
         accountId: true,
         categoryId: true,
+        category: {
+          select: {
+            name: true,
+          },
+        },
         bookingDate: true,
         amountNok: true,
         currency: true,
@@ -79,6 +87,7 @@ describe("getTransactionsPage", () => {
         id: "tx-2",
         accountId: "acc-1",
         categoryId: "cat-1",
+        categoryName: "Groceries",
         bookingDate: "2026-02-04",
         amountNok: -123.45,
         currency: "NOK",

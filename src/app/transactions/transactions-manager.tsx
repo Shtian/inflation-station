@@ -64,6 +64,7 @@ type TransactionRow = {
   id: string;
   accountId: string;
   categoryId: string | null;
+  categoryName: string | null;
   bookingDate: string;
   amountNok: number;
   currency: string;
@@ -434,6 +435,7 @@ export function TransactionsManager() {
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Merchant</TableHead>
+                    <TableHead>Category</TableHead>
                     <TableHead>Payment type</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="w-0 text-right">
@@ -447,6 +449,9 @@ export function TransactionsManager() {
                       <TableCell>{row.bookingDate}</TableCell>
                       <TableCell>
                         {row.normalizedMerchant || "Unknown"}
+                      </TableCell>
+                      <TableCell>
+                        {row.categoryName ?? "Uncategorized"}
                       </TableCell>
                       <TableCell>{row.paymentType}</TableCell>
                       <TableCell className="text-right">

@@ -37,6 +37,7 @@ test("manages transactions filters and pagination controls from /transactions", 
               id: "txn-acc2-1",
               accountId: "acc-2",
               categoryId: null,
+              categoryName: null,
               bookingDate: "2026-02-01",
               amountNok: 500,
               currency: "NOK",
@@ -83,7 +84,8 @@ test("manages transactions filters and pagination controls from /transactions", 
             {
               id: "txn-page-2",
               accountId: "acc-1",
-              categoryId: null,
+              categoryId: "cat-food",
+              categoryName: "Food",
               bookingDate: "2026-01-15",
               amountNok: -210,
               currency: "NOK",
@@ -114,6 +116,7 @@ test("manages transactions filters and pagination controls from /transactions", 
               id: "txn-page-size-10",
               accountId: "acc-1",
               categoryId: null,
+              categoryName: null,
               bookingDate: "2026-01-20",
               amountNok: -75,
               currency: "NOK",
@@ -142,7 +145,8 @@ test("manages transactions filters and pagination controls from /transactions", 
           {
             id: "txn-default-1",
             accountId: "acc-1",
-            categoryId: null,
+            categoryId: "cat-groceries",
+            categoryName: "Groceries",
             bookingDate: "2026-02-05",
             amountNok: -320,
             currency: "NOK",
@@ -175,31 +179,38 @@ test("manages transactions filters and pagination controls from /transactions", 
     page.getByRole("columnheader", { name: "Payment type" }),
   ).toBeVisible();
   await expect(
+    page.getByRole("columnheader", { name: "Category" }),
+  ).toBeVisible();
+  await expect(
     page.getByRole("columnheader", { name: "Amount" }),
   ).toBeVisible();
-  await expect(page.getByText("Page 1 of 2.")).toBeVisible();
+  await expect(page.getByText("Page 1 of 2")).toBeVisible();
   await expect(page.getByText("35 total transactions.")).toBeVisible();
   await expect(page.getByText("Supermarket")).toBeVisible();
+  await expect(page.getByText("Groceries")).toBeVisible();
 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "Savings Account" }).click();
-  await expect(page.getByText("Page 1 of 1.")).toBeVisible();
+  await expect(page.getByText("Page 1 of 1")).toBeVisible();
   await expect(page.getByText("Savings Transfer")).toBeVisible();
+  await expect(page.getByText("Uncategorized")).toBeVisible();
 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "All accounts" }).click();
 
-  await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(page.getByText("Page 2 of 2.")).toBeVisible();
+  await page.getByRole("button", { name: "Go to next page" }).click();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.getByText("Corner Shop")).toBeVisible();
+  await expect(page.getByText("Food")).toBeVisible();
 
-  await page.getByLabel("Page size").click();
-  await page.getByRole("option", { name: "10 rows" }).click();
-  await expect(page.getByText("Page 1 of 4.")).toBeVisible();
+  await page.locator("#transactions-rows-per-page").click();
+  await page.getByRole("option", { name: "10" }).click();
+  await expect(page.getByText("Page 1 of 4")).toBeVisible();
   await expect(page.getByText("Metro Kiosk")).toBeVisible();
+  await expect(page.getByText("Uncategorized")).toBeVisible();
 
-  await page.getByLabel("Page size").click();
-  await page.getByRole("option", { name: "25 rows" }).click();
+  await page.locator("#transactions-rows-per-page").click();
+  await page.getByRole("option", { name: "25" }).click();
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "No Transactions Account" }).click();
   await expect(
@@ -287,6 +298,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
               id: "txn-page-2",
               accountId: "acc-1",
               categoryId: null,
+              categoryName: null,
               bookingDate: "2026-01-15",
               amountNok: -210,
               currency: "NOK",
@@ -316,6 +328,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
             id: "txn-page-1",
             accountId: "acc-1",
             categoryId: null,
+            categoryName: null,
             bookingDate: "2026-02-05",
             amountNok: -320,
             currency: "NOK",
@@ -337,11 +350,14 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
 
   await page.goto("/transactions");
 
-  await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(page.getByText("Page 2 of 2.")).toBeVisible();
+  await page.getByRole("button", { name: "Go to next page" }).click();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.getByText("Corner Shop")).toBeVisible();
 
-  await page.getByRole("button", { name: "Edit" }).click();
+  await page
+    .getByRole("button", { name: "Actions for transaction from 2026-01-15" })
+    .click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
   await expect(
     page.getByRole("heading", { name: "Edit transaction" }),
   ).toBeVisible();
@@ -349,7 +365,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   await page.getByLabel("Merchant").fill("Updated Corner Shop");
   await page.getByRole("button", { name: "Save changes" }).click();
 
-  await expect(page.getByText("Page 2 of 2.")).toBeVisible();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.getByText("Updated Corner Shop")).toBeVisible();
   await expect
     .poll(() => lastPatchPayload?.normalizedMerchant)
@@ -403,6 +419,7 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
               id: "txn-page-2",
               accountId: "acc-1",
               categoryId: null,
+              categoryName: null,
               bookingDate: "2026-01-15",
               amountNok: -210,
               currency: "NOK",
@@ -449,6 +466,7 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
             id: "txn-page-1",
             accountId: "acc-1",
             categoryId: null,
+            categoryName: null,
             bookingDate: "2026-02-05",
             amountNok: -320,
             currency: "NOK",
@@ -470,11 +488,14 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
 
   await page.goto("/transactions");
 
-  await page.getByRole("button", { name: "Next", exact: true }).click();
-  await expect(page.getByText("Page 2 of 2.")).toBeVisible();
+  await page.getByRole("button", { name: "Go to next page" }).click();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.getByText("Corner Shop")).toBeVisible();
 
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Actions for transaction from 2026-01-15" })
+    .click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(
     page.getByRole("heading", { name: "Delete transaction" }),
   ).toBeVisible();
@@ -486,13 +507,16 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
   await expect(page.getByText("Corner Shop")).toBeVisible();
   await expect.poll(() => deleteCallCount).toBe(0);
 
-  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Actions for transaction from 2026-01-15" })
+    .click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await page
     .getByRole("alertdialog")
     .getByRole("button", { name: "Delete", exact: true })
     .click();
 
-  await expect(page.getByText("Page 1 of 1.")).toBeVisible();
+  await expect(page.getByText("Page 1 of 1")).toBeVisible();
   await expect(page.getByText("Supermarket")).toBeVisible();
   await expect(page.getByText("Corner Shop")).not.toBeVisible();
   await expect.poll(() => deleteCallCount).toBe(1);
