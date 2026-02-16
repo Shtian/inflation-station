@@ -118,7 +118,9 @@ test("manages accounts from /accounts with success and error feedback", async ({
   await page.goto("/accounts");
 
   await expect(page.getByRole("heading", { name: "Accounts" })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Main Account" })).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Main Account", exact: true }),
+  ).toBeVisible();
 
   await page.getByLabel("Account name").fill("Savings Account");
   await page.getByLabel("Institution (optional)").fill("Nordea");
@@ -126,7 +128,7 @@ test("manages accounts from /accounts with success and error feedback", async ({
   await expect(page.getByText("Account added.")).toBeVisible();
 
   await expect(
-    page.getByRole("cell", { name: "Savings Account" }),
+    page.getByRole("cell", { name: "Savings Account", exact: true }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Rename" }).nth(1).click();
@@ -135,7 +137,7 @@ test("manages accounts from /accounts with success and error feedback", async ({
   await expect(page.getByText("Account updated.")).toBeVisible();
 
   await expect(
-    page.getByRole("cell", { name: "Rainy Day Account" }),
+    page.getByRole("cell", { name: "Rainy Day Account", exact: true }),
   ).toBeVisible();
 
   page.on("dialog", (dialog) => {
@@ -145,7 +147,7 @@ test("manages accounts from /accounts with success and error feedback", async ({
   await expect(page.getByText("Account removed.")).toBeVisible();
 
   await expect(
-    page.getByRole("cell", { name: "Rainy Day Account" }),
+    page.getByRole("cell", { name: "Rainy Day Account", exact: true }),
   ).not.toBeVisible();
 
   await page.getByLabel("Account name").fill("Main Account");

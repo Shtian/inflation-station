@@ -34,19 +34,21 @@ test("switches between light and dark themes from the app shell", async ({
   await page.goto("/overview");
 
   const html = page.locator("html");
-  const themeToggle = page.getByRole("button", { name: "Dark mode" });
+  const themeToggle = page.getByRole("button", { name: "Toggle theme" });
 
   await expect(themeToggle).toBeVisible();
-  await expect(themeToggle).toHaveText("Dark mode");
+  await expect(html).toHaveClass(/\bdark\b/);
+
+  await themeToggle.click();
+  await page.getByRole("menuitem", { name: "Light" }).click();
   await expect(html).not.toHaveClass(/\bdark\b/);
 
   await themeToggle.click();
-
-  await expect(page.getByRole("button", { name: "Light mode" })).toBeVisible();
+  await page.getByRole("menuitem", { name: "Dark" }).click();
   await expect(html).toHaveClass(/\bdark\b/);
 
   await page.reload();
 
-  await expect(page.getByRole("button", { name: "Light mode" })).toBeVisible();
+  await expect(themeToggle).toBeVisible();
   await expect(html).toHaveClass(/\bdark\b/);
 });

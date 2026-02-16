@@ -227,13 +227,13 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(page.getByText("Food")).toBeVisible();
 
   await page.locator("#transactions-rows-per-page").click();
-  await page.getByRole("option", { name: "10" }).click();
+  await page.getByRole("option", { name: "10", exact: true }).click();
   await expect(page.getByText("Page 1 of 4")).toBeVisible();
   await expect(page.getByText("Metro Kiosk")).toBeVisible();
   await expect(page.getByText("Uncategorized")).toBeVisible();
 
   await page.locator("#transactions-rows-per-page").click();
-  await page.getByRole("option", { name: "25" }).click();
+  await page.getByRole("option", { name: "25", exact: true }).click();
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "No Transactions Account" }).click();
   await expect(
