@@ -14,14 +14,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -29,6 +21,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -1022,7 +1022,10 @@ export function ProviderMappingsManager() {
                       placeholder="Source column for amount"
                       className="w-full pr-8"
                     />
-                    {getMappingSourceValue(newFieldMappings, "amount").trim() ? (
+                    {getMappingSourceValue(
+                      newFieldMappings,
+                      "amount",
+                    ).trim() ? (
                       <Check
                         className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
                         aria-hidden="true"
@@ -1098,71 +1101,76 @@ export function ProviderMappingsManager() {
                       No optional mappings added.
                     </p>
                   ) : (
-                    newOptionalFieldMappingRows.map(({ fieldMapping, index }) => (
-                      <div key={`new-optional-${index + 1}`} className="contents">
-                        <Select
-                          value={fieldMapping.canonicalField}
-                          onValueChange={(value) =>
-                            setNewFieldMappings((current) =>
-                              current.map((item, itemIndex) =>
-                                itemIndex === index
-                                  ? { ...item, canonicalField: value }
-                                  : item,
-                              ),
-                            )
-                          }
+                    newOptionalFieldMappingRows.map(
+                      ({ fieldMapping, index }) => (
+                        <div
+                          key={`new-optional-${index + 1}`}
+                          className="contents"
                         >
-                          <SelectTrigger
-                            aria-label={`Optional canonical field ${index + 1}`}
-                            className="w-full"
+                          <Select
+                            value={fieldMapping.canonicalField}
+                            onValueChange={(value) =>
+                              setNewFieldMappings((current) =>
+                                current.map((item, itemIndex) =>
+                                  itemIndex === index
+                                    ? { ...item, canonicalField: value }
+                                    : item,
+                                ),
+                              )
+                            }
                           >
-                            <SelectValue placeholder="Select canonical field" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {OPTIONAL_CANONICAL_FIELDS.filter(
-                              (option) =>
-                                option !== newMerchantSignalCanonicalField &&
-                                !isRequiredCanonicalField(option),
-                            ).map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
-                        <Input
-                          aria-label={`Optional source column ${index + 1}`}
-                          value={fieldMapping.sourceField}
-                          onChange={(event) =>
-                            setNewFieldMappings((current) =>
-                              current.map((item, itemIndex) =>
-                                itemIndex === index
-                                  ? {
-                                      ...item,
-                                      sourceField: event.target.value,
-                                    }
-                                  : item,
-                              ),
-                            )
-                          }
-                          placeholder="Source column"
-                          className="w-full"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="icon-sm"
-                          aria-label={`Remove optional mapping row ${index + 1}`}
-                          onClick={() =>
-                            setNewFieldMappings((current) =>
-                              removeMappingByIndex(current, index),
-                            )
-                          }
-                        >
-                          <Trash2 className="h-4 w-4" aria-hidden="true" />
-                        </Button>
-                      </div>
-                    ))
+                            <SelectTrigger
+                              aria-label={`Optional canonical field ${index + 1}`}
+                              className="w-full"
+                            >
+                              <SelectValue placeholder="Select canonical field" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {OPTIONAL_CANONICAL_FIELDS.filter(
+                                (option) =>
+                                  option !== newMerchantSignalCanonicalField &&
+                                  !isRequiredCanonicalField(option),
+                              ).map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+                          <Input
+                            aria-label={`Optional source column ${index + 1}`}
+                            value={fieldMapping.sourceField}
+                            onChange={(event) =>
+                              setNewFieldMappings((current) =>
+                                current.map((item, itemIndex) =>
+                                  itemIndex === index
+                                    ? {
+                                        ...item,
+                                        sourceField: event.target.value,
+                                      }
+                                    : item,
+                                ),
+                              )
+                            }
+                            placeholder="Source column"
+                            className="w-full"
+                          />
+                          <Button
+                            variant="destructive"
+                            size="icon-sm"
+                            aria-label={`Remove optional mapping row ${index + 1}`}
+                            onClick={() =>
+                              setNewFieldMappings((current) =>
+                                removeMappingByIndex(current, index),
+                              )
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          </Button>
+                        </div>
+                      ),
+                    )
                   )}
                 </div>
                 <Button
@@ -1198,7 +1206,10 @@ export function ProviderMappingsManager() {
             >
               {busyKey === "new" ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  <Loader2
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
                   Saving...
                 </>
               ) : (
@@ -1539,13 +1550,18 @@ export function ProviderMappingsManager() {
               Cancel
             </Button>
             <Button
-              onClick={() => editingMappingId && void saveEdit(editingMappingId)}
+              onClick={() =>
+                editingMappingId && void saveEdit(editingMappingId)
+              }
               disabled={busyKey === editingMappingId}
               className="gap-2"
             >
               {busyKey === editingMappingId ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  <Loader2
+                    className="h-4 w-4 animate-spin"
+                    aria-hidden="true"
+                  />
                   Saving...
                 </>
               ) : (
