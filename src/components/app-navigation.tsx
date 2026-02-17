@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/navigation-menu";
 
 const primaryLinks = [
-  { href: "/overview", label: "Overview" },
   { href: "/transactions", label: "Transactions" },
   { href: "/import", label: "Import" },
 ];
