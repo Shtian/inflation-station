@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { detectProviderFromCsv } from "@/lib/import/provider-detection";
 import { stageParsedImportRows } from "@/lib/import/review-stage";
 import { prisma } from "@/lib/prisma";
 
@@ -103,8 +104,10 @@ export async function POST(request: Request) {
     accountId,
     csvContent,
   });
+  const detection = await detectProviderFromCsv(prisma, csvContent);
 
   return NextResponse.json({
+    detection,
     summary: staged.summary,
     errors: staged.errors,
     review: staged.review,

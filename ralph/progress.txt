@@ -16,6 +16,7 @@
 - Keep Playwright configured for base URL `http://127.0.0.1:3000` and use `PLAYWRIGHT_NO_WEBSERVER=1` when you need to force reuse of an already running local dev server.
 - Keep `pnpm test` as the full verification entry point (unit + E2E) and use `pnpm test:unit` for fast Vitest-only loops.
 - Store provider import mappings in Prisma using a parent mapping model plus child field-mapping rows, with JSON normalization/transform payloads and `mappingVersion` metadata for diagnostics.
+- For provider autodetection, read configurable `requiredHeaders`/`anyHeaders`/`headerPatterns` from mapping JSON, fall back to mapped source fields, and return parse diagnostics with a `certain`/`uncertain`/`missing` confidence state.
 
 ## 2026-02-17 13:53 CET - US-001
 - What was implemented
@@ -47,4 +48,31 @@
     - Overview dashboard assertions in Playwright must switch tabs before expecting category-tab content; those headings/charts are not visible in the default `Flow` tab.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Prisma migration `20260217125021_add_import_provider_mappings` is now the baseline for upcoming provider detection and mapping API stories.
+---
+
+## 2026-02-17 14:28 CET - US-002
+- What was implemented
+  - Added provider detection service in `src/lib/import/provider-detection.ts` that evaluates mappings with configurable header/pattern rules and score-based confidence.
+  - Wired `/api/imports/parse` to return `detection` diagnostics with detected provider id/name, confidence state, score, matched headers, and ranked candidates.
+  - Added focused unit coverage for certain/uncertain/missing detection and source-field fallback behavior.
+- Files changed
+  - `src/lib/import/provider-detection.ts`
+  - `src/lib/import/provider-detection.test.ts`
+  - `src/app/api/imports/parse/route.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep provider detection logic in `src/lib/import/*` and keep `/api/imports/parse` focused on payload validation plus response shaping.
+    - Keep detection confidence deterministic by combining required-header coverage with optional/pattern signal and ranking candidates.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - CSV files without a recognizable header row should return `missing` detection diagnostics instead of forcing a low-confidence provider guess.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Detection currently informs diagnostics only; canonical row transformation is still handled by the existing parser and staging flow.
 ---
