@@ -3,17 +3,7 @@ import type {
   CsvValidationError,
   ParsedCsvRow,
 } from "./csv-parser";
-
-const REQUIRED_CANONICAL_FIELDS = [
-  "bookingDate",
-  "amount",
-  "sender",
-  "recipient",
-  "name",
-  "title",
-  "currency",
-  "paymentType",
-] as const;
+import { REQUIRED_PROVIDER_CANONICAL_FIELDS } from "./provider-mapping-contract";
 
 export type ProviderFieldMapping = {
   sourceField: string;
@@ -99,7 +89,7 @@ function isReservedBookingDate(value: string): boolean {
   return value.trim().toLowerCase() === "reservert";
 }
 
-type CanonicalField = (typeof REQUIRED_CANONICAL_FIELDS)[number];
+type CanonicalField = (typeof REQUIRED_PROVIDER_CANONICAL_FIELDS)[number];
 type HeaderMap = Record<CanonicalField, number>;
 
 function buildFieldMap(
@@ -109,7 +99,7 @@ function buildFieldMap(
 
   for (const fieldMapping of mapping.fieldMappings) {
     const canonicalField = fieldMapping.canonicalField as CanonicalField;
-    if (!REQUIRED_CANONICAL_FIELDS.includes(canonicalField)) {
+    if (!REQUIRED_PROVIDER_CANONICAL_FIELDS.includes(canonicalField)) {
       continue;
     }
 
@@ -135,7 +125,7 @@ function buildHeaderMap(
   const fieldMap = buildFieldMap(mapping);
   const resolved = {} as HeaderMap;
 
-  for (const canonicalField of REQUIRED_CANONICAL_FIELDS) {
+  for (const canonicalField of REQUIRED_PROVIDER_CANONICAL_FIELDS) {
     const mappedSourceField = fieldMap.get(canonicalField);
     if (!mappedSourceField) {
       return null;
