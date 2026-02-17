@@ -14,7 +14,7 @@
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -28,7 +28,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -42,7 +42,7 @@
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -57,7 +57,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -72,7 +72,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -87,7 +87,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -102,7 +102,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
@@ -117,7 +117,52 @@
         "Tests pass"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Show transaction category in the transactions table",
+      "description": "As a user, I want to see each transaction's category in the table so I can review categorization status without opening row details.",
+      "acceptanceCriteria": [
+        "Transactions list API response includes category data needed for table rendering",
+        "Transactions table adds a Category column and renders the category label for each row",
+        "Rows with no category are clearly shown as uncategorized",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Allow category edits in transaction row edit dialog",
+      "description": "As a user, I want to change a transaction category while editing a row so I can correct categorization from the same workflow.",
+      "acceptanceCriteria": [
+        "Edit dialog includes a category selector populated from available categories",
+        "Update API accepts category changes and persists categoryId updates",
+        "Submitting a category change refreshes the current paginated table view with updated category values",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Enforce NOK-only currency in transaction edit workflow",
+      "description": "As a user, I should not edit currency because all transactions are NOK for now.",
+      "acceptanceCriteria": [
+        "Edit dialog removes currency as an editable field",
+        "Update API no longer accepts arbitrary currency updates from this workflow",
+        "Transaction edit submissions always persist currency as NOK",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": true,
       "notes": ""
     }
   ]

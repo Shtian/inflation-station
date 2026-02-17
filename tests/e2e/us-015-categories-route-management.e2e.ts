@@ -157,23 +157,33 @@ test("manages categories and category rules from /categories", async ({
   await expect(
     page.getByRole("heading", { name: "Category Rules" }),
   ).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Food" })).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Food", exact: true }),
+  ).toBeVisible();
 
   await page.getByLabel("Category name").fill("Transport");
   await page.getByRole("button", { name: "Add category" }).click();
 
   await expect(page.getByText("Category added.")).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Transport" })).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Transport", exact: true }),
+  ).toBeVisible();
 
-  await page.locator("#rule-category").selectOption({ label: "Transport" });
+  await page.locator("#rule-category").click();
+  await page.getByRole("option", { name: "Transport", exact: true }).click();
   await page.getByLabel("Merchant contains").fill("ruter");
-  await page.getByLabel("Payment type (optional)").selectOption("CARD");
+  await page.getByLabel("Payment type (optional)").click();
+  await page.getByRole("option", { name: "CARD", exact: true }).click();
   await page.getByLabel("Priority").fill("5");
   await page.getByRole("button", { name: "Add rule" }).click();
 
   await expect(page.getByText("Category rule added.")).toBeVisible();
-  await expect(page.getByRole("cell", { name: "ruter" })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "CARD" })).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "ruter", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "CARD", exact: true }),
+  ).toBeVisible();
 
   page.once("dialog", (dialog) => dialog.accept());
   await page
@@ -181,7 +191,9 @@ test("manages categories and category rules from /categories", async ({
     .getByRole("button", { name: "Delete" })
     .click();
   await expect(page.getByText("Category rule removed.")).toBeVisible();
-  await expect(page.getByRole("cell", { name: "ruter" })).toHaveCount(0);
+  await expect(
+    page.getByRole("cell", { name: "ruter", exact: true }),
+  ).toHaveCount(0);
 
   page.once("dialog", (dialog) => dialog.accept());
   await page
@@ -189,5 +201,7 @@ test("manages categories and category rules from /categories", async ({
     .getByRole("button", { name: "Delete" })
     .click();
   await expect(page.getByText("Category removed.")).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Transport" })).toHaveCount(0);
+  await expect(
+    page.getByRole("cell", { name: "Transport", exact: true }),
+  ).toHaveCount(0);
 });

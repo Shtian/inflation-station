@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 test("updates dashboard charts when account and date filters change", async ({
   page,
 }) => {
+  let savingsAccountRequestCount = 0;
+
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
       status: 200,
@@ -29,9 +31,12 @@ test("updates dashboard charts when account and date filters change", async ({
   await page.route("**/api/dashboard/analytics**", async (route, request) => {
     const url = new URL(request.url());
     const accountId = url.searchParams.get("accountId");
-    const startDate = url.searchParams.get("startDate");
 
-    if (accountId === "acc-2" && startDate === "2026-01-10") {
+    if (accountId === "acc-2") {
+      savingsAccountRequestCount += 1;
+    }
+
+    if (accountId === "acc-2" && savingsAccountRequestCount >= 2) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -143,19 +148,20 @@ test("updates dashboard charts when account and date filters change", async ({
   await expect(
     page.getByRole("heading", { name: "Account State Trend" }),
   ).toBeVisible();
-  await expect(page.locator("[data-slot='chart-container']")).toHaveCount(4);
+  await expect(page.locator("[data-slot='chart']")).toHaveCount(4);
   await expect(page.getByText(/200,00/).first()).toBeVisible();
   await expect(page.getByText(/Food:\s/)).toBeVisible();
 
-  await page.getByLabel("Account filter").selectOption("acc-2");
+  await page.getByRole("combobox", { name: "Account filter" }).click();
+  await page
+    .getByRole("option", { name: "Savings Account", exact: true })
+    .click();
   await expect(page.getByText(/1\s?100,00/)).toBeVisible();
 
-  await page.getByLabel("Start date").fill("2026-01-10");
-  await page.getByLabel("End date").fill("2026-01-25");
-  await expect(page.getByRole("button", { name: "Custom" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  await page.getByRole("button", { name: "Year to date" }).click();
+  await expect(
+    page.getByRole("button", { name: "Year to date" }),
+  ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText(/960,00/).first()).toBeVisible();
   await expect(page.getByText(/Utilities:\s/)).toBeVisible();
 });

@@ -28,6 +28,7 @@ export default function RootLayout({
 }>) {
   const links = [
     { href: "/overview", label: "Overview" },
+    { href: "/transactions", label: "Transactions" },
     { href: "/import", label: "Import" },
     { href: "/accounts", label: "Accounts" },
     { href: "/categories", label: "Categories" },

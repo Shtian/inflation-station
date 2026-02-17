@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Upload } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -121,6 +121,7 @@ export function ImportUploader() {
   const [categoryDecisions, setCategoryDecisions] = useState<
     Record<string, string>
   >({});
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadAccounts = useCallback(async () => {
     setAccountError(null);
@@ -294,6 +295,9 @@ export function ImportUploader() {
     setParseResult(null);
     setCategoryDecisions({});
     setSelectedFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     setSubmitLoading(false);
   }
 
@@ -349,14 +353,10 @@ export function ImportUploader() {
             CSV file
           </label>
           <Input
+            ref={fileInputRef}
             id="csv-file"
             type="file"
             accept=".csv,text/csv"
-            key={
-              selectedFile
-                ? `${selectedFile.name}-${selectedFile.size}-${selectedFile.lastModified}`
-                : "empty"
-            }
             onChange={(event) =>
               setSelectedFile(event.target.files?.[0] ?? null)
             }

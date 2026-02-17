@@ -3,6 +3,7 @@
 import type { CategoryKind, PaymentType } from "@prisma/client";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { CategoryBadge } from "@/components/category-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -450,7 +451,9 @@ export function CategoriesManager() {
               {!loading
                 ? categories.map((category) => (
                     <TableRow key={category.id}>
-                      <TableCell>{category.name}</TableCell>
+                      <TableCell>
+                        <CategoryBadge label={category.name} />
+                      </TableCell>
                       <TableCell>{category.kind}</TableCell>
                       <TableCell>
                         {getScopeLabel(category.accountId, accounts)}
@@ -648,7 +651,9 @@ export function CategoriesManager() {
                 ? categoryRules.map((rule) => (
                     <TableRow key={rule.id}>
                       <TableCell>{rule.merchantContains}</TableCell>
-                      <TableCell>{rule.category.name}</TableCell>
+                      <TableCell>
+                        <CategoryBadge label={rule.category.name} />
+                      </TableCell>
                       <TableCell>{rule.paymentType ?? "ANY"}</TableCell>
                       <TableCell>{rule.priority}</TableCell>
                       <TableCell>

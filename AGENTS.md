@@ -21,6 +21,14 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Review workflow convention: keep review edits ephemeral until explicit submit; apply approved categories and clear related suggestions atomically so pending queues stay consistent.
 - OpenAI suggestion convention: keep AI categorization optional behind `OPENAI_API_KEY`; unresolved transactions may receive `OPENAI` suggestions, and provider/network failures must not fail the import pipeline.
 - Dashboard analytics convention: keep aggregate query logic in `src/lib/dashboard/*` with stable date-bucketed numeric series, and keep `/api/dashboard/*` routes focused on filter parsing and validation.
+- Transactions API convention: keep transaction query/mutation logic in `src/lib/transactions/*`, and keep `/api/transactions*` handlers focused on payload/query validation plus HTTP error mapping.
+- Transaction detail API convention: for `/api/transactions/[transactionId]`, validate `transactionId` params before mutation methods and map Prisma `P2025` to `TRANSACTION_NOT_FOUND` for both update/delete flows.
+- Empty response convention: in Next.js App Router handlers, use `new Response(null, { status: 204 })` for no-content responses instead of `NextResponse.json` to avoid invalid 204 response construction.
+- Transactions route convention: keep account/pagination filter state client-side in `src/app/transactions/*` and fetch `/api/transactions` whenever account, page, or page size changes.
+- Transactions table convention: on `/transactions`, render rows with shadcn table primitives and keep pagination/total summary text outside the table so empty states stay explicit.
+- Transactions category-display convention: include `categoryName` in `/api/transactions` list rows (resolved via category relation) so the table can render category labels and explicit uncategorized states without extra client fetches.
+- Transactions edit convention: keep row edit dialog state local to `src/app/transactions/*`, submit mutable fields through `/api/transactions/[transactionId]`, enforce NOK-only currency in this workflow (no editable currency input), and refresh the current paginated query after save so filter/page context remains stable.
+- Transactions delete convention: keep row delete confirmation state local to `src/app/transactions/*`, submit deletes through `/api/transactions/[transactionId]`, and refetch the paginated query so out-of-range pages fall back to a valid page after removals.
 - Dashboard UI convention: keep chart/filter state client-side in the page component and fetch `/api/dashboard/analytics` on every account/date filter change so visuals stay in sync with backend aggregates.
 - Dashboard chart convention: render overview visualizations through shadcn chart primitives in `src/components/ui/chart.tsx` (Recharts-backed `ChartContainer` + tooltip helpers) so charts stay tokenized and dark-mode compatible.
 - Route convention: keep primary app navigation in `src/app/layout.tsx` and redirect `/` to `/overview` so analytics remains the default landing workspace.
@@ -35,7 +43,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Import review duplicate convention: compute potential duplicate warnings from the transaction fingerprint fields (`accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, `paymentType`) and surface warnings in review payloads without dropping rows.
 - Account route convention: keep account CRUD interactions and user-facing success/error feedback in `src/app/accounts/*`, while other routes consume `/api/accounts` only for selection/filtering.
 - Categories route convention: keep category/category-rule CRUD interactions and user-facing success/error feedback in `src/app/categories/*`, backed by `/api/categories` and `/api/category-rules` handlers.
-- E2E testing convention: keep Playwright specs under `tests/e2e/*.e2e.ts` and run them via Playwright CLI so Vitest (`pnpm test`) does not pick up browser tests.
+- E2E testing convention: keep Playwright specs under `tests/e2e/*.e2e.ts` and run them via Playwright CLI (`pnpm test:e2e`); use `pnpm test:unit` for Vitest-only loops when `pnpm test` runs full unit+E2E checks.
 - Task artifacts/specs: `tasks/`, `ralph/`, `prompt.md`
 - Tooling: `biome.json`, `tsconfig.json`, `next.config.ts`
 

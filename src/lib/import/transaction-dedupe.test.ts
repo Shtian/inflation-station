@@ -58,7 +58,7 @@ describe("dedupeParsedTransactions", () => {
       accountId: "account-1",
       bookingDate: row.bookingDate,
       amountNok: row.amountNok,
-      normalizedMerchant: `${row.recipient} ${row.sender} ${row.name} ${row.title}`,
+      normalizedMerchant: `${row.name} ${row.title}`,
       paymentType: row.paymentType,
     });
 

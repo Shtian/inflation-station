@@ -95,6 +95,7 @@ OpenAI-based categorization suggestions are optional.
 - `pnpm lint`
 - `pnpm exec tsc --noEmit`
 - `pnpm test`
+- `pnpm test:unit`
 - `pnpm test:e2e`
 - `pnpm build`
 

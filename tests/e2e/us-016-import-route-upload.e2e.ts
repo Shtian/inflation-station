@@ -115,7 +115,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await page.goto("/import");
 
   await expect(page.getByRole("heading", { name: "Import" })).toBeVisible();
-  await expect(page.getByLabel("Account")).toHaveValue("acc-1");
+  await expect(page.getByRole("combobox", { name: "Account" })).toHaveText(
+    "Main Account",
+  );
 
   await page.getByLabel("CSV file").setInputFiles({
     name: "transactions.csv",
@@ -141,10 +143,13 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   ).toBeVisible();
   await expect(page.locator("p", { hasText: /^Uncategorized$/ })).toBeVisible();
 
-  const rowTwoCategory = page.getByLabel("Category for row 2");
-  await expect(rowTwoCategory).toHaveValue("");
-  await rowTwoCategory.selectOption("cat-food");
-  await expect(rowTwoCategory).toHaveValue("cat-food");
+  const rowTwoCategory = page
+    .getByRole("row", { name: /2\s+2026-01-01\s+joker/i })
+    .getByRole("combobox");
+  await expect(rowTwoCategory).toHaveText("Uncategorized");
+  await rowTwoCategory.click();
+  await page.getByRole("option", { name: "Food", exact: true }).click();
+  await expect(rowTwoCategory).toHaveText("Food");
 
   await page.getByRole("button", { name: "Submit reviewed rows" }).click();
 

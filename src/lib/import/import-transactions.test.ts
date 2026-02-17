@@ -91,7 +91,7 @@ describe("importTransactionsFromCsv", () => {
         {
           bookingDate: new Date("2026-01-03T00:00:00.000Z"),
           amountNok: 200,
-          normalizedMerchant: "shop a alice groceries friday",
+          normalizedMerchant: "groceries friday",
           paymentType: PaymentType.CARD,
         },
       ],
@@ -123,7 +123,7 @@ describe("importTransactionsFromCsv", () => {
         bookingDate: new Date("2026-01-01T00:00:00.000Z"),
         amountNok: 100,
         currency: "NOK",
-        normalizedMerchant: "shop a alice groceries friday",
+        normalizedMerchant: "groceries friday",
         paymentType: PaymentType.CARD,
       },
       select: {
@@ -178,7 +178,7 @@ describe("importTransactionsFromCsv", () => {
         bookingDate: new Date("2026-02-13T00:00:00.000Z"),
         amountNok: 100,
         currency: "NOK",
-        normalizedMerchant: "shop a alice groceries friday",
+        normalizedMerchant: "groceries friday",
         paymentType: PaymentType.CARD,
       },
       select: {
@@ -197,14 +197,14 @@ describe("importTransactionsFromCsv", () => {
       {
         id: "rule-1",
         categoryId: "cat-groceries",
-        merchantContains: "shop a",
+        merchantContains: "groceries",
         paymentType: PaymentType.CARD,
         priority: 10,
       },
     ]);
     db.transaction.create.mockResolvedValueOnce({
       id: "tx-1",
-      normalizedMerchant: "shop a alice groceries friday",
+      normalizedMerchant: "groceries friday",
       paymentType: PaymentType.CARD,
     });
 
@@ -221,7 +221,7 @@ describe("importTransactionsFromCsv", () => {
           suggestedCategoryId: "cat-groceries",
           source: "RULE",
           confidence: 0.95,
-          reasoning: 'Matched merchant "shop a" and payment type "CARD".',
+          reasoning: 'Matched merchant "groceries" and payment type "CARD".',
         },
       ],
     });
@@ -287,7 +287,7 @@ describe("importTransactionsFromCsv", () => {
       transactions: [
         {
           id: "tx-created-1",
-          normalizedMerchant: "shop a alice groceries friday",
+          normalizedMerchant: "groceries friday",
           paymentType: PaymentType.CARD,
         },
       ],
