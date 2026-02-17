@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("redirects / to /overview and renders dashboard sections", async ({
+test("renders overview dashboard sections at /", async ({
   page,
 }) => {
   await page.route("**/api/accounts", async (route) => {
@@ -40,7 +40,6 @@ test("redirects / to /overview and renders dashboard sections", async ({
 
   await page.goto("/");
 
-  await expect(page).toHaveURL(/\/overview$/);
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Net Cashflow" }),

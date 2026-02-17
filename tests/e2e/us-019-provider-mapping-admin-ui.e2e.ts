@@ -150,15 +150,19 @@ test("manages provider mappings from admin UI with validation feedback", async (
   await expect(
     page.getByRole("heading", { name: "Provider mappings" }),
   ).toBeVisible();
+
+  await page.getByRole("button", { name: "Add provider mapping" }).click();
   await page.getByLabel("Provider name").fill("Bank B");
   await page.getByLabel("Mapping version (optional)").fill("2");
-  await page.getByLabel("Normalization rules (JSON)").fill("{}");
-  await page.getByLabel("Source column 1").fill("Dato");
-
-  await page.getByRole("button", { name: "Add field mapping" }).click();
-  await page.getByLabel("Source column 2").fill("Belop");
-  await page.getByRole("combobox", { name: "Canonical field 2" }).click();
-  await page.getByRole("option", { name: "amount", exact: true }).click();
+  await page
+    .getByRole("textbox", { name: "Required source field bookingDate" })
+    .fill("Dato");
+  await page
+    .getByRole("textbox", { name: "Required source field amount" })
+    .fill("Belop");
+  await page
+    .getByRole("textbox", { name: "Required source field merchant signal" })
+    .fill("Tekst");
 
   await page.getByRole("button", { name: "Create provider mapping" }).click();
   await expect(
@@ -170,10 +174,15 @@ test("manages provider mappings from admin UI with validation feedback", async (
   await expect(page.getByRole("row", { name: /Bank B/i })).toBeVisible();
 
   const bankBRow = page.getByRole("row", { name: /Bank B/i });
-  await bankBRow.getByRole("button", { name: "Edit" }).click();
-  await page
-    .getByLabel("Edit normalization rules (JSON)")
-    .fill('{"requiredHeaders":["dato","belop"]}');
+  await bankBRow.getByRole("button", { name: "Actions for Bank B" }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  const editReqHeaders = page.getByRole("textbox", {
+    name: "Edit required headers",
+  });
+  await editReqHeaders.fill("dato");
+  await editReqHeaders.press("Enter");
+  await editReqHeaders.fill("belop");
+  await editReqHeaders.press("Enter");
   await page.getByRole("button", { name: "Save provider mapping" }).click();
 
   await expect(page.getByText("Provider mapping updated.")).toBeVisible();

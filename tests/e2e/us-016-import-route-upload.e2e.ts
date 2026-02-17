@@ -167,35 +167,24 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
       "Default message selection uses AI-cleaned text when available. Rows without a suggestion keep the original message.",
     ),
   ).toBeVisible();
+  // Row 1 (rowNumber 2): defaults to AI-cleaned message
+  await expect(page.getByText("Joker Trondheim", { exact: true })).toBeVisible();
+  // Row 2 (rowNumber 3): shows original message (no AI-cleaned alternative)
+  await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();
+  // Toggle button available for row 1 which has an AI-cleaned message
+  const toggleRow1 = page.getByRole("button", {
+    name: "Toggle message source for row 2",
+  });
+  await expect(toggleRow1).toBeVisible();
+  // Row 2 has no AI-cleaned message, so no toggle button
   await expect(
-    page.getByRole("cell", { name: "JOKER TRONDHEIM", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("cell", { name: "Joker Trondheim", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("cell", { name: "No suggestion", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Potential duplicate", { exact: true }),
-  ).toBeVisible();
-  await expect(page.locator("p", { hasText: /^Uncategorized$/ })).toBeVisible();
-  await expect(
-    page.getByRole("combobox", { name: "Message choice for row 2" }),
-  ).toHaveText("AI-cleaned message");
-  await expect(
-    page.getByRole("combobox", { name: "Message choice for row 3" }),
-  ).toHaveText("Original message");
-
-  await page
-    .getByRole("combobox", { name: "Message choice for row 2" })
-    .click();
-  await page
-    .getByRole("option", { name: "Original message", exact: true })
-    .click();
-  await expect(
-    page.getByRole("combobox", { name: "Message choice for row 2" }),
-  ).toHaveText("Original message");
+    page.getByRole("button", { name: "Toggle message source for row 3" }),
+  ).not.toBeVisible();
+  // Potential duplicate indicator shown for row 1
+  await expect(page.getByLabel("Potential duplicate")).toBeVisible();
+  // Switch row 1 to use original message
+  await toggleRow1.click();
+  await expect(page.getByText("JOKER TRONDHEIM", { exact: true })).toBeVisible();
 
   const rowTwoCategory = page.getByRole("combobox", {
     name: "Category for row 2",
