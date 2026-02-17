@@ -8,6 +8,10 @@ import {
   type ParsedCsvRow,
   parseNorwegianBankCsv,
 } from "./csv-parser";
+import {
+  type ProviderCsvMapping,
+  parseProviderMappedCsv,
+} from "./provider-csv-parser";
 import { buildTransactionFingerprint } from "./transaction-dedupe";
 
 export type ReviewStageSummary = {
@@ -432,9 +436,12 @@ export async function stageParsedImportRows(
   params: {
     accountId: string;
     csvContent: string;
+    providerMapping?: ProviderCsvMapping | null;
   },
 ): Promise<StageParsedImportResult> {
-  const parsed = parseNorwegianBankCsv(params.csvContent);
+  const parsed = params.providerMapping
+    ? parseProviderMappedCsv(params.csvContent, params.providerMapping)
+    : parseNorwegianBankCsv(params.csvContent);
 
   if (parsed.rows.length === 0) {
     return {

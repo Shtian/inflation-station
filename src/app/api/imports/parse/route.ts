@@ -153,9 +153,28 @@ export async function POST(request: Request) {
     );
   }
 
+  const providerMapping = detection.providerId
+    ? await prisma.importProviderMapping.findUnique({
+        where: { id: detection.providerId },
+        select: {
+          id: true,
+          providerName: true,
+          normalizationRules: true,
+          fieldMappings: {
+            select: {
+              sourceField: true,
+              canonicalField: true,
+              transformRules: true,
+            },
+          },
+        },
+      })
+    : null;
+
   const staged = await stageParsedImportRows(prisma, {
     accountId,
     csvContent,
+    providerMapping,
   });
 
   return NextResponse.json({

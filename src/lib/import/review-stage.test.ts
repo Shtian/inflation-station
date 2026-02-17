@@ -55,6 +55,105 @@ function createDbMock(options?: {
 }
 
 describe("stageParsedImportRows", () => {
+  it("uses provider mapping to transform provider-specific headers into canonical staged rows", async () => {
+    const db = createDbMock({
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      csvContent:
+        "Dato;Belastning;Fra;Til;Beskrivelse;Melding;Valuta;Type\n2026-01-01;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort",
+      providerMapping: {
+        id: "provider-1",
+        providerName: "Bank B",
+        normalizationRules: {},
+        fieldMappings: [
+          {
+            sourceField: "Dato",
+            canonicalField: "bookingDate",
+            transformRules: null,
+          },
+          {
+            sourceField: "Belastning",
+            canonicalField: "amount",
+            transformRules: null,
+          },
+          {
+            sourceField: "Fra",
+            canonicalField: "sender",
+            transformRules: null,
+          },
+          {
+            sourceField: "Til",
+            canonicalField: "recipient",
+            transformRules: null,
+          },
+          {
+            sourceField: "Beskrivelse",
+            canonicalField: "name",
+            transformRules: null,
+          },
+          {
+            sourceField: "Melding",
+            canonicalField: "title",
+            transformRules: null,
+          },
+          {
+            sourceField: "Valuta",
+            canonicalField: "currency",
+            transformRules: null,
+          },
+          {
+            sourceField: "Type",
+            canonicalField: "paymentType",
+            transformRules: null,
+          },
+        ],
+      },
+    });
+
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+    expect(result.summary).toEqual({
+      imported: 1,
+      duplicates: 0,
+      ignoredReserved: 0,
+      invalid: 0,
+    });
+  });
+
   it("stages valid rows and returns review payload with row identifiers", async () => {
     const db = createDbMock({
       stagedRows: [
