@@ -52,7 +52,7 @@ export function AppNavigation() {
           <NavigationMenuItem>
             <NavigationMenuTrigger>Configuration</NavigationMenuTrigger>
             <NavigationMenuContent>
-              <ul className="grid w-[220px] gap-1 p-2">
+              <ul className="grid w-55 gap-1 p-2">
                 {configurationLinks.map((link) => (
                   <li key={link.href}>
                     <NavigationMenuLink asChild>
