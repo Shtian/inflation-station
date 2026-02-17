@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Upload } from "lucide-react";
+import { Check, Sparkles, TriangleAlert, Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 type Account = {
   id: string;
@@ -609,16 +616,26 @@ export function ImportUploader() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Row</TableHead>
                         <TableHead>Date</TableHead>
-                        <TableHead>Merchant</TableHead>
+                        <TableHead>Message</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Payment type</TableHead>
-                        <TableHead>Original message</TableHead>
-                        <TableHead>AI-cleaned suggestion</TableHead>
-                        <TableHead>Message choice</TableHead>
-                        <TableHead>Warning</TableHead>
                         <TableHead>Category</TableHead>
+                        <TableHead>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <TriangleAlert
+                                  className="h-4 w-4 text-muted-foreground"
+                                  aria-label="Warnings"
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                Potential duplicates or other import warnings
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -644,110 +661,129 @@ export function ImportUploader() {
                         const isUncategorized = selectedCategoryId.length === 0;
                         return (
                           <TableRow key={row.id}>
-                            <TableCell>{row.rowNumber}</TableCell>
                             <TableCell>{row.bookingDate}</TableCell>
                             <TableCell>
-                              {row.normalizedMerchant || "Unknown merchant"}
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">
+                                  {selectedMessageSource ===
+                                  MESSAGE_SOURCE_CLEANED
+                                    ? row.cleanedMessage
+                                    : originalMessage}
+                                </span>
+                                {hasCleanedMessage ? (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <button
+                                          type="button"
+                                          aria-label={`Toggle message source for row ${row.rowNumber}`}
+                                          onClick={() =>
+                                            setMessageDecisions((current) => ({
+                                              ...current,
+                                              [row.id]:
+                                                selectedMessageSource ===
+                                                MESSAGE_SOURCE_CLEANED
+                                                  ? MESSAGE_SOURCE_ORIGINAL
+                                                  : MESSAGE_SOURCE_CLEANED,
+                                            }))
+                                          }
+                                          className={cn(
+                                            "shrink-0 rounded p-0.5 transition-colors hover:bg-accent",
+                                            selectedMessageSource ===
+                                              MESSAGE_SOURCE_CLEANED
+                                              ? "text-violet-500"
+                                              : "text-muted-foreground",
+                                          )}
+                                        >
+                                          <Sparkles
+                                            className="h-3.5 w-3.5"
+                                            aria-hidden="true"
+                                          />
+                                        </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent
+                                        side="top"
+                                        className="max-w-xs space-y-1 p-3 text-xs"
+                                      >
+                                        <p>
+                                          <span className="font-medium">
+                                            Original:
+                                          </span>{" "}
+                                          {originalMessage}
+                                        </p>
+                                        <p>
+                                          <span className="font-medium">
+                                            AI-cleaned:
+                                          </span>{" "}
+                                          {row.cleanedMessage}
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                ) : null}
+                              </div>
                             </TableCell>
                             <TableCell>{formatNok(row.amountNok)}</TableCell>
                             <TableCell>{row.paymentType}</TableCell>
-                            <TableCell>{originalMessage}</TableCell>
-                            <TableCell>
-                              {hasCleanedMessage ? (
-                                row.cleanedMessage
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  No suggestion
-                                </span>
-                              )}
-                            </TableCell>
                             <TableCell>
                               <Select
-                                value={selectedMessageSource}
+                                value={
+                                  selectedCategoryId ||
+                                  UNCATEGORIZED_SELECT_VALUE
+                                }
                                 onValueChange={(value) =>
-                                  setMessageDecisions((current) => ({
+                                  setCategoryDecisions((current) => ({
                                     ...current,
                                     [row.id]:
-                                      value === MESSAGE_SOURCE_CLEANED
-                                        ? MESSAGE_SOURCE_CLEANED
-                                        : MESSAGE_SOURCE_ORIGINAL,
+                                      value === UNCATEGORIZED_SELECT_VALUE
+                                        ? ""
+                                        : value,
                                   }))
                                 }
                               >
                                 <SelectTrigger
-                                  aria-label={`Message choice for row ${row.rowNumber}`}
-                                  className="w-[220px]"
+                                  aria-label={`Category for row ${row.rowNumber}`}
+                                  className={cn(
+                                    "w-[220px]",
+                                    isUncategorized && "text-amber-500",
+                                  )}
                                 >
-                                  <SelectValue />
+                                  <SelectValue placeholder="Uncategorized" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value={MESSAGE_SOURCE_ORIGINAL}>
-                                    Original message
+                                  <SelectItem
+                                    value={UNCATEGORIZED_SELECT_VALUE}
+                                    className="text-amber-500"
+                                  >
+                                    Uncategorized
                                   </SelectItem>
-                                  {hasCleanedMessage ? (
-                                    <SelectItem value={MESSAGE_SOURCE_CLEANED}>
-                                      AI-cleaned message
+                                  {reviewCategoryOptions.map((category) => (
+                                    <SelectItem
+                                      key={category.id}
+                                      value={category.id}
+                                    >
+                                      {category.name}
                                     </SelectItem>
-                                  ) : null}
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </TableCell>
                             <TableCell>
                               {row.potentialDuplicate ? (
-                                <span className="font-medium text-amber-700">
-                                  Potential duplicate
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  None
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <Select
-                                  value={
-                                    selectedCategoryId ||
-                                    UNCATEGORIZED_SELECT_VALUE
-                                  }
-                                  onValueChange={(value) =>
-                                    setCategoryDecisions((current) => ({
-                                      ...current,
-                                      [row.id]:
-                                        value === UNCATEGORIZED_SELECT_VALUE
-                                          ? ""
-                                          : value,
-                                    }))
-                                  }
-                                >
-                                  <SelectTrigger
-                                    aria-label={`Category for row ${row.rowNumber}`}
-                                    className="w-[220px]"
-                                  >
-                                    <SelectValue placeholder="Uncategorized" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem
-                                      value={UNCATEGORIZED_SELECT_VALUE}
-                                    >
-                                      Uncategorized
-                                    </SelectItem>
-                                    {reviewCategoryOptions.map((category) => (
-                                      <SelectItem
-                                        key={category.id}
-                                        value={category.id}
-                                      >
-                                        {category.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                {isUncategorized ? (
-                                  <p className="text-xs font-medium text-muted-foreground">
-                                    Uncategorized
-                                  </p>
-                                ) : null}
-                              </div>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <TriangleAlert
+                                        className="h-4 w-4 text-amber-500"
+                                        aria-label="Potential duplicate"
+                                      />
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top">
+                                      Potential duplicate
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              ) : null}
                             </TableCell>
                           </TableRow>
                         );
