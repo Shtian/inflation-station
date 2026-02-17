@@ -3,7 +3,11 @@ import type {
   CsvValidationError,
   ParsedCsvRow,
 } from "./csv-parser";
-import { REQUIRED_PROVIDER_CANONICAL_FIELDS } from "./provider-mapping-contract";
+import {
+  MERCHANT_SIGNAL_CANONICAL_FIELDS,
+  PROVIDER_CANONICAL_FIELDS,
+  REQUIRED_PROVIDER_CANONICAL_FIELDS,
+} from "./provider-mapping-contract";
 
 export type ProviderFieldMapping = {
   sourceField: string;
@@ -89,8 +93,8 @@ function isReservedBookingDate(value: string): boolean {
   return value.trim().toLowerCase() === "reservert";
 }
 
-type CanonicalField = (typeof REQUIRED_PROVIDER_CANONICAL_FIELDS)[number];
-type HeaderMap = Record<CanonicalField, number>;
+type CanonicalField = (typeof PROVIDER_CANONICAL_FIELDS)[number];
+type HeaderMap = Partial<Record<CanonicalField, number>>;
 
 function buildFieldMap(
   mapping: ProviderCsvMapping,
@@ -99,7 +103,7 @@ function buildFieldMap(
 
   for (const fieldMapping of mapping.fieldMappings) {
     const canonicalField = fieldMapping.canonicalField as CanonicalField;
-    if (!REQUIRED_PROVIDER_CANONICAL_FIELDS.includes(canonicalField)) {
+    if (!PROVIDER_CANONICAL_FIELDS.includes(canonicalField)) {
       continue;
     }
 
@@ -137,6 +141,50 @@ function buildHeaderMap(
 
     if (sourceIndex === -1) {
       return null;
+    }
+
+    resolved[canonicalField] = sourceIndex;
+  }
+
+  const merchantSignalIndexes = MERCHANT_SIGNAL_CANONICAL_FIELDS.map(
+    (canonicalField) => {
+      const mappedSourceField = fieldMap.get(canonicalField);
+      if (!mappedSourceField) {
+        return null;
+      }
+
+      const sourceIndex = normalizedHeaders.indexOf(
+        normalizeHeader(mappedSourceField),
+      );
+
+      if (sourceIndex === -1) {
+        return null;
+      }
+
+      resolved[canonicalField] = sourceIndex;
+      return sourceIndex;
+    },
+  ).filter((index): index is number => index !== null);
+
+  if (merchantSignalIndexes.length === 0) {
+    return null;
+  }
+
+  for (const canonicalField of PROVIDER_CANONICAL_FIELDS) {
+    if (canonicalField in resolved) {
+      continue;
+    }
+
+    const mappedSourceField = fieldMap.get(canonicalField);
+    if (!mappedSourceField) {
+      continue;
+    }
+
+    const sourceIndex = normalizedHeaders.indexOf(
+      normalizeHeader(mappedSourceField),
+    );
+    if (sourceIndex === -1) {
+      continue;
     }
 
     resolved[canonicalField] = sourceIndex;
@@ -196,16 +244,7 @@ export function parseProviderMappedCsv(
     const rowNumber = index + 1;
     const cells = parseDelimitedLine(lines[index], delimiter);
 
-    if (cells.length < Object.keys(headerMap).length) {
-      errors.push({
-        rowNumber,
-        code: "INVALID_COLUMN_COUNT",
-        message: `Row ${rowNumber} has too few columns for the expected delimiter format.`,
-      });
-      continue;
-    }
-
-    const bookingDate = cells[headerMap.bookingDate] ?? "";
+    const bookingDate = cells[headerMap.bookingDate ?? -1] ?? "";
     if (!bookingDate.trim()) {
       errors.push({
         rowNumber,
@@ -220,7 +259,7 @@ export function parseProviderMappedCsv(
       continue;
     }
 
-    const amountValue = cells[headerMap.amount] ?? "";
+    const amountValue = cells[headerMap.amount ?? -1] ?? "";
     const amountNok = parseNokAmount(amountValue);
     if (amountNok === null) {
       errors.push({
@@ -231,21 +270,34 @@ export function parseProviderMappedCsv(
       continue;
     }
 
-    const currencyValue = (cells[headerMap.currency] ?? "").toUpperCase();
+    const currencyIndex = headerMap.currency;
+    const currencyValue =
+      currencyIndex === undefined
+        ? "NOK"
+        : (cells[currencyIndex] ?? "").toUpperCase();
     if (currencyValue !== "NOK") {
       errors.push({
         rowNumber,
         code: "INVALID_CURRENCY",
-        message: `Row ${rowNumber} has unsupported currency "${cells[headerMap.currency] ?? ""}". Only NOK is accepted.`,
+        message: `Row ${rowNumber} has unsupported currency "${currencyIndex === undefined ? "" : (cells[currencyIndex] ?? "")}". Only NOK is accepted.`,
       });
       continue;
     }
 
-    const sender = cells[headerMap.sender] ?? "";
-    const recipient = cells[headerMap.recipient] ?? "";
-    const name = cells[headerMap.name] ?? "";
-    const title = cells[headerMap.title] ?? "";
-    const paymentType = cells[headerMap.paymentType] ?? "";
+    const sender =
+      headerMap.sender === undefined ? "" : (cells[headerMap.sender] ?? "");
+    const recipient =
+      headerMap.recipient === undefined
+        ? ""
+        : (cells[headerMap.recipient] ?? "");
+    const name =
+      headerMap.name === undefined ? "" : (cells[headerMap.name] ?? "");
+    const title =
+      headerMap.title === undefined ? "" : (cells[headerMap.title] ?? "");
+    const paymentType =
+      headerMap.paymentType === undefined
+        ? ""
+        : (cells[headerMap.paymentType] ?? "");
 
     rows.push({
       bookingDate,

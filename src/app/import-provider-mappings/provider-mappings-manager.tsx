@@ -1,7 +1,16 @@
 "use client";
 
-import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -20,7 +29,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { REQUIRED_PROVIDER_CANONICAL_FIELDS } from "@/lib/import/provider-mapping-contract";
+import {
+  PROVIDER_CANONICAL_FIELDS,
+  REQUIRED_PROVIDER_CANONICAL_FIELDS,
+} from "@/lib/import/provider-mapping-contract";
 
 type ProviderFieldMapping = {
   id: string;
@@ -42,13 +54,127 @@ type EditableFieldMapping = {
   canonicalField: string;
 };
 
-const DEFAULT_CANONICAL_FIELD = REQUIRED_PROVIDER_CANONICAL_FIELDS[0];
+type NormalizationFormState = {
+  requiredHeaders: string[];
+  anyHeaders: string[];
+  headerPatterns: string[];
+  extraRules: Record<string, unknown>;
+};
+
+const MERCHANT_SIGNAL_CANONICAL_FIELDS = ["name", "title"] as const;
+type MerchantSignalCanonicalField =
+  (typeof MERCHANT_SIGNAL_CANONICAL_FIELDS)[number];
+const DEFAULT_MERCHANT_SIGNAL_CANONICAL_FIELD: MerchantSignalCanonicalField =
+  "title";
+const OPTIONAL_CANONICAL_FIELDS = PROVIDER_CANONICAL_FIELDS.filter(
+  (field) =>
+    !REQUIRED_PROVIDER_CANONICAL_FIELDS.includes(
+      field as (typeof REQUIRED_PROVIDER_CANONICAL_FIELDS)[number],
+    ),
+);
+const DEFAULT_OPTIONAL_CANONICAL_FIELD = "sender";
+
+const DEFAULT_REQUIRED_FIELD_MAPPINGS: EditableFieldMapping[] = [
+  {
+    sourceField: "",
+    canonicalField: "bookingDate",
+  },
+  {
+    sourceField: "",
+    canonicalField: "amount",
+  },
+  {
+    sourceField: "",
+    canonicalField: DEFAULT_MERCHANT_SIGNAL_CANONICAL_FIELD,
+  },
+];
+
+const DEFAULT_CANONICAL_FIELD = DEFAULT_OPTIONAL_CANONICAL_FIELD;
 
 function createEmptyFieldMapping(): EditableFieldMapping {
   return {
     sourceField: "",
     canonicalField: DEFAULT_CANONICAL_FIELD,
   };
+}
+
+function isRequiredCanonicalField(canonicalField: string): boolean {
+  return REQUIRED_PROVIDER_CANONICAL_FIELDS.includes(
+    canonicalField as (typeof REQUIRED_PROVIDER_CANONICAL_FIELDS)[number],
+  );
+}
+
+function isMerchantSignalCanonicalField(
+  canonicalField: string,
+): canonicalField is MerchantSignalCanonicalField {
+  return MERCHANT_SIGNAL_CANONICAL_FIELDS.includes(
+    canonicalField as MerchantSignalCanonicalField,
+  );
+}
+
+function getMappingSourceValue(
+  fieldMappings: EditableFieldMapping[],
+  canonicalField: string,
+): string {
+  return (
+    fieldMappings.find((mapping) => mapping.canonicalField === canonicalField)
+      ?.sourceField ?? ""
+  );
+}
+
+function upsertMappingValue(
+  fieldMappings: EditableFieldMapping[],
+  canonicalField: string,
+  sourceField: string,
+): EditableFieldMapping[] {
+  const mappingIndex = fieldMappings.findIndex(
+    (mapping) => mapping.canonicalField === canonicalField,
+  );
+
+  if (mappingIndex === -1) {
+    return [...fieldMappings, { canonicalField, sourceField }];
+  }
+
+  return fieldMappings.map((mapping, index) =>
+    index === mappingIndex ? { ...mapping, sourceField } : mapping,
+  );
+}
+
+function removeMappingByIndex(
+  fieldMappings: EditableFieldMapping[],
+  indexToRemove: number,
+): EditableFieldMapping[] {
+  return fieldMappings.filter((_, index) => index !== indexToRemove);
+}
+
+function ensureRequiredFieldMappings(
+  fieldMappings: EditableFieldMapping[],
+  merchantSignalCanonicalField: MerchantSignalCanonicalField,
+): EditableFieldMapping[] {
+  let nextMappings = [...fieldMappings];
+
+  for (const requiredField of REQUIRED_PROVIDER_CANONICAL_FIELDS) {
+    nextMappings = upsertMappingValue(
+      nextMappings,
+      requiredField,
+      getMappingSourceValue(nextMappings, requiredField),
+    );
+  }
+
+  nextMappings = upsertMappingValue(
+    nextMappings,
+    merchantSignalCanonicalField,
+    getMappingSourceValue(nextMappings, merchantSignalCanonicalField),
+  );
+
+  return nextMappings;
+}
+
+function buildDefaultRequiredFieldMappings(): EditableFieldMapping[] {
+  return DEFAULT_REQUIRED_FIELD_MAPPINGS.map((fieldMapping) => ({
+    sourceField: fieldMapping.sourceField,
+    canonicalField: fieldMapping.canonicalField,
+  }));
 }
 
 function getProviderMappingErrorMessage(status: number, body: unknown) {
@@ -88,17 +214,188 @@ function getProviderMappingErrorMessage(status: number, body: unknown) {
     ) {
       return "Invalid provider mapping payload.";
     }
+
+    if (status === 400 && code === "MERCHANT_SIGNAL_FIELD_REQUIRED") {
+      return "At least one merchant signal field mapping is required (name or title).";
+    }
   }
 
   return "Request failed. Please try again.";
 }
 
-function parseJsonInput(value: string): { value: unknown } | { error: string } {
-  try {
-    return { value: JSON.parse(value) };
-  } catch {
-    return { error: "Normalization rules must be valid JSON." };
+function createEmptyNormalizationFormState(): NormalizationFormState {
+  return {
+    requiredHeaders: [],
+    anyHeaders: [],
+    headerPatterns: [],
+    extraRules: {},
+  };
+}
+
+function parseStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
   }
+
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
+function parseNormalizationFormState(value: unknown): NormalizationFormState {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return createEmptyNormalizationFormState();
+  }
+
+  const rules = value as Record<string, unknown>;
+  const { requiredHeaders, anyHeaders, headerPatterns, ...extraRules } = rules;
+
+  return {
+    requiredHeaders: parseStringArray(requiredHeaders),
+    anyHeaders: parseStringArray(anyHeaders),
+    headerPatterns: parseStringArray(headerPatterns),
+    extraRules,
+  };
+}
+
+function buildNormalizationRulesPayload(
+  state: NormalizationFormState,
+): unknown {
+  const payload: Record<string, unknown> = {
+    ...state.extraRules,
+  };
+
+  if (state.requiredHeaders.length > 0) {
+    payload.requiredHeaders = state.requiredHeaders;
+  }
+  if (state.anyHeaders.length > 0) {
+    payload.anyHeaders = state.anyHeaders;
+  }
+  if (state.headerPatterns.length > 0) {
+    payload.headerPatterns = state.headerPatterns;
+  }
+
+  return payload;
+}
+
+function mergeStringList(values: string[], candidate: string): string[] {
+  const normalized = candidate.trim();
+  if (!normalized) {
+    return values;
+  }
+
+  const exists = values.some((value) => value === normalized);
+  if (exists) {
+    return values;
+  }
+
+  return [...values, normalized];
+}
+
+function removeStringListValue(values: string[], candidate: string): string[] {
+  return values.filter((value) => value !== candidate);
+}
+
+function validateRegexPattern(value: string): string | null {
+  try {
+    // Validate regex syntax so headerPatterns are actionable in detection.
+    new RegExp(value);
+    return null;
+  } catch {
+    return "Pattern is not valid regex syntax.";
+  }
+}
+
+function StringBadgeInput(props: {
+  id: string;
+  label: string;
+  inputAriaLabel: string;
+  placeholder: string;
+  values: string[];
+  onChange(values: string[]): void;
+  validator?(value: string): string | null;
+}) {
+  const [inputValue, setInputValue] = useState("");
+  const [inputError, setInputError] = useState<string | null>(null);
+
+  const addValue = useCallback(
+    (candidate: string) => {
+      const trimmed = candidate.trim();
+      if (!trimmed) {
+        return;
+      }
+
+      if (props.validator) {
+        const validationError = props.validator(trimmed);
+        if (validationError) {
+          setInputError(validationError);
+          return;
+        }
+      }
+
+      props.onChange(mergeStringList(props.values, trimmed));
+      setInputValue("");
+      setInputError(null);
+    },
+    [props],
+  );
+
+  return (
+    <div className="space-y-2">
+      <label htmlFor={props.id} className="text-sm font-medium text-foreground">
+        {props.label}
+      </label>
+      <Input
+        id={props.id}
+        aria-label={props.inputAriaLabel}
+        value={inputValue}
+        onChange={(event) => {
+          setInputValue(event.target.value);
+          if (inputError) {
+            setInputError(null);
+          }
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            addValue(inputValue);
+          }
+        }}
+        placeholder={props.placeholder}
+      />
+      {inputError ? (
+        <p className="text-xs text-red-700" role="alert">
+          {inputError}
+        </p>
+      ) : null}
+      {props.values.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {props.values.map((value) => (
+            <Badge
+              key={value}
+              variant="secondary"
+              className="animate-in fade-in-0 slide-in-from-top-1 duration-200 gap-1"
+            >
+              <span>{value}</span>
+              <button
+                type="button"
+                aria-label={`Remove ${value}`}
+                className="rounded-full p-0.5 hover:bg-black/10"
+                onClick={() =>
+                  props.onChange(removeStringListValue(props.values, value))
+                }
+              >
+                <X className="h-3 w-3" aria-hidden="true" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">No values added yet.</p>
+      )}
+    </div>
+  );
 }
 
 function parseMappingVersion(
@@ -119,34 +416,48 @@ function parseMappingVersion(
 }
 
 function validateFieldMappings(fieldMappings: EditableFieldMapping[]) {
-  if (fieldMappings.length === 0) {
-    return "Add at least one field mapping.";
+  const bookingDateSource = getMappingSourceValue(fieldMappings, "bookingDate");
+  if (!bookingDateSource.trim()) {
+    return "Required mapping is missing source field for bookingDate.";
   }
 
-  for (const [index, fieldMapping] of fieldMappings.entries()) {
+  const amountSource = getMappingSourceValue(fieldMappings, "amount");
+  if (!amountSource.trim()) {
+    return "Required mapping is missing source field for amount.";
+  }
+
+  const hasMerchantSignal = MERCHANT_SIGNAL_CANONICAL_FIELDS.some((field) =>
+    getMappingSourceValue(fieldMappings, field).trim(),
+  );
+  if (!hasMerchantSignal) {
+    return "Required merchant signal mapping is missing (name or title).";
+  }
+
+  const optionalRows = fieldMappings.filter(
+    (fieldMapping) =>
+      !isRequiredCanonicalField(fieldMapping.canonicalField) &&
+      !isMerchantSignalCanonicalField(fieldMapping.canonicalField),
+  );
+
+  for (const [index, fieldMapping] of optionalRows.entries()) {
     if (!fieldMapping.sourceField.trim()) {
-      return `Source field is required for mapping row ${index + 1}.`;
+      return `Optional mapping source field is required for row ${index + 1}.`;
     }
 
     if (!fieldMapping.canonicalField.trim()) {
-      return `Canonical field is required for mapping row ${index + 1}.`;
+      return `Optional mapping canonical field is required for row ${index + 1}.`;
     }
+  }
+
+  const canonicalFields = fieldMappings
+    .map((fieldMapping) => fieldMapping.canonicalField.trim())
+    .filter((canonicalField) => canonicalField.length > 0);
+  const uniqueCanonicalFields = new Set(canonicalFields);
+  if (uniqueCanonicalFields.size !== canonicalFields.length) {
+    return "Each canonical field can only be mapped once.";
   }
 
   return null;
-}
-
-function getCanonicalFieldOptions(fieldMappings: EditableFieldMapping[]) {
-  const options = new Set<string>(REQUIRED_PROVIDER_CANONICAL_FIELDS);
-
-  for (const fieldMapping of fieldMappings) {
-    const trimmed = fieldMapping.canonicalField.trim();
-    if (trimmed) {
-      options.add(trimmed);
-    }
-  }
-
-  return [...options.values()].sort();
 }
 
 export function ProviderMappingsManager() {
@@ -158,18 +469,30 @@ export function ProviderMappingsManager() {
 
   const [newProviderName, setNewProviderName] = useState("");
   const [newMappingVersion, setNewMappingVersion] = useState("");
-  const [newNormalizationRules, setNewNormalizationRules] = useState("{}");
+  const [newNormalizationRules, setNewNormalizationRules] =
+    useState<NormalizationFormState>(createEmptyNormalizationFormState());
   const [newFieldMappings, setNewFieldMappings] = useState<
     EditableFieldMapping[]
-  >([createEmptyFieldMapping()]);
+  >(buildDefaultRequiredFieldMappings());
+  const [newMerchantSignalCanonicalField, setNewMerchantSignalCanonicalField] =
+    useState<MerchantSignalCanonicalField>(
+      DEFAULT_MERCHANT_SIGNAL_CANONICAL_FIELD,
+    );
 
   const [editingMappingId, setEditingMappingId] = useState<string | null>(null);
   const [editProviderName, setEditProviderName] = useState("");
   const [editMappingVersion, setEditMappingVersion] = useState("");
-  const [editNormalizationRules, setEditNormalizationRules] = useState("{}");
+  const [editNormalizationRules, setEditNormalizationRules] =
+    useState<NormalizationFormState>(createEmptyNormalizationFormState());
   const [editFieldMappings, setEditFieldMappings] = useState<
     EditableFieldMapping[]
   >([]);
+  const [
+    editMerchantSignalCanonicalField,
+    setEditMerchantSignalCanonicalField,
+  ] = useState<MerchantSignalCanonicalField>(
+    DEFAULT_MERCHANT_SIGNAL_CANONICAL_FIELD,
+  );
 
   const loadMappings = useCallback(async () => {
     setLoading(true);
@@ -200,14 +523,106 @@ export function ProviderMappingsManager() {
     void loadMappings();
   }, [loadMappings]);
 
-  const newCanonicalFieldOptions = useMemo(
-    () => getCanonicalFieldOptions(newFieldMappings),
-    [newFieldMappings],
+  const newOptionalFieldMappingRows = useMemo(
+    () =>
+      newFieldMappings
+        .map((fieldMapping, index) => ({ fieldMapping, index }))
+        .filter(
+          ({ fieldMapping }) =>
+            !isRequiredCanonicalField(fieldMapping.canonicalField) &&
+            fieldMapping.canonicalField !== newMerchantSignalCanonicalField,
+        ),
+    [newFieldMappings, newMerchantSignalCanonicalField],
   );
-  const editCanonicalFieldOptions = useMemo(
-    () => getCanonicalFieldOptions(editFieldMappings),
-    [editFieldMappings],
+  const editOptionalFieldMappingRows = useMemo(
+    () =>
+      editFieldMappings
+        .map((fieldMapping, index) => ({ fieldMapping, index }))
+        .filter(
+          ({ fieldMapping }) =>
+            !isRequiredCanonicalField(fieldMapping.canonicalField) &&
+            fieldMapping.canonicalField !== editMerchantSignalCanonicalField,
+        ),
+    [editFieldMappings, editMerchantSignalCanonicalField],
   );
+
+  function updateNewRequiredMapping(
+    canonicalField: string,
+    sourceField: string,
+  ) {
+    setNewFieldMappings((current) =>
+      upsertMappingValue(current, canonicalField, sourceField),
+    );
+  }
+
+  function updateEditRequiredMapping(
+    canonicalField: string,
+    sourceField: string,
+  ) {
+    setEditFieldMappings((current) =>
+      upsertMappingValue(current, canonicalField, sourceField),
+    );
+  }
+
+  function changeNewMerchantSignalCanonicalField(
+    nextCanonicalField: MerchantSignalCanonicalField,
+  ) {
+    const currentCanonicalField = newMerchantSignalCanonicalField;
+    const currentSourceField = getMappingSourceValue(
+      newFieldMappings,
+      currentCanonicalField,
+    );
+    const existingNextSourceField = getMappingSourceValue(
+      newFieldMappings,
+      nextCanonicalField,
+    );
+
+    setNewFieldMappings((current) => {
+      const withoutMerchantFields = current.filter(
+        (fieldMapping) =>
+          !isMerchantSignalCanonicalField(fieldMapping.canonicalField),
+      );
+
+      return [
+        ...withoutMerchantFields,
+        {
+          canonicalField: nextCanonicalField,
+          sourceField: existingNextSourceField || currentSourceField,
+        },
+      ];
+    });
+    setNewMerchantSignalCanonicalField(nextCanonicalField);
+  }
+
+  function changeEditMerchantSignalCanonicalField(
+    nextCanonicalField: MerchantSignalCanonicalField,
+  ) {
+    const currentCanonicalField = editMerchantSignalCanonicalField;
+    const currentSourceField = getMappingSourceValue(
+      editFieldMappings,
+      currentCanonicalField,
+    );
+    const existingNextSourceField = getMappingSourceValue(
+      editFieldMappings,
+      nextCanonicalField,
+    );
+
+    setEditFieldMappings((current) => {
+      const withoutMerchantFields = current.filter(
+        (fieldMapping) =>
+          !isMerchantSignalCanonicalField(fieldMapping.canonicalField),
+      );
+
+      return [
+        ...withoutMerchantFields,
+        {
+          canonicalField: nextCanonicalField,
+          sourceField: existingNextSourceField || currentSourceField,
+        },
+      ];
+    });
+    setEditMerchantSignalCanonicalField(nextCanonicalField);
+  }
 
   async function createMapping() {
     if (!newProviderName.trim()) {
@@ -219,13 +634,6 @@ export function ProviderMappingsManager() {
     const fieldMappingValidationError = validateFieldMappings(newFieldMappings);
     if (fieldMappingValidationError) {
       setError(fieldMappingValidationError);
-      setNotice(null);
-      return;
-    }
-
-    const parsedJson = parseJsonInput(newNormalizationRules);
-    if ("error" in parsedJson) {
-      setError(parsedJson.error);
       setNotice(null);
       return;
     }
@@ -248,7 +656,9 @@ export function ProviderMappingsManager() {
       },
       body: JSON.stringify({
         providerName: newProviderName.trim(),
-        normalizationRules: parsedJson.value,
+        normalizationRules: buildNormalizationRulesPayload(
+          newNormalizationRules,
+        ),
         mappingVersion: parsedVersion.value,
         fieldMappings: newFieldMappings.map((fieldMapping) => ({
           sourceField: fieldMapping.sourceField.trim(),
@@ -266,27 +676,38 @@ export function ProviderMappingsManager() {
 
     setNewProviderName("");
     setNewMappingVersion("");
-    setNewNormalizationRules("{}");
-    setNewFieldMappings([createEmptyFieldMapping()]);
+    setNewNormalizationRules(createEmptyNormalizationFormState());
+    setNewFieldMappings(buildDefaultRequiredFieldMappings());
+    setNewMerchantSignalCanonicalField(DEFAULT_MERCHANT_SIGNAL_CANONICAL_FIELD);
     setBusyKey(null);
     setNotice("Provider mapping added.");
     await loadMappings();
   }
 
   function startEdit(mapping: ProviderMapping) {
+    const merchantSignalCanonicalField = mapping.fieldMappings.some(
+      (fieldMapping) => fieldMapping.canonicalField === "name",
+    )
+      ? "name"
+      : DEFAULT_MERCHANT_SIGNAL_CANONICAL_FIELD;
+
     setEditingMappingId(mapping.id);
     setEditProviderName(mapping.providerName);
     setEditMappingVersion(
       mapping.mappingVersion ? String(mapping.mappingVersion) : "",
     );
     setEditNormalizationRules(
-      JSON.stringify(mapping.normalizationRules ?? {}, null, 2),
+      parseNormalizationFormState(mapping.normalizationRules),
     );
+    setEditMerchantSignalCanonicalField(merchantSignalCanonicalField);
     setEditFieldMappings(
-      mapping.fieldMappings.map((fieldMapping) => ({
-        sourceField: fieldMapping.sourceField,
-        canonicalField: fieldMapping.canonicalField,
-      })),
+      ensureRequiredFieldMappings(
+        mapping.fieldMappings.map((fieldMapping) => ({
+          sourceField: fieldMapping.sourceField,
+          canonicalField: fieldMapping.canonicalField,
+        })),
+        merchantSignalCanonicalField,
+      ),
     );
     setError(null);
     setNotice(null);
@@ -296,8 +717,11 @@ export function ProviderMappingsManager() {
     setEditingMappingId(null);
     setEditProviderName("");
     setEditMappingVersion("");
-    setEditNormalizationRules("{}");
+    setEditNormalizationRules(createEmptyNormalizationFormState());
     setEditFieldMappings([]);
+    setEditMerchantSignalCanonicalField(
+      DEFAULT_MERCHANT_SIGNAL_CANONICAL_FIELD,
+    );
     setError(null);
   }
 
@@ -312,13 +736,6 @@ export function ProviderMappingsManager() {
       validateFieldMappings(editFieldMappings);
     if (fieldMappingValidationError) {
       setError(fieldMappingValidationError);
-      setNotice(null);
-      return;
-    }
-
-    const parsedJson = parseJsonInput(editNormalizationRules);
-    if ("error" in parsedJson) {
-      setError(parsedJson.error);
       setNotice(null);
       return;
     }
@@ -341,7 +758,9 @@ export function ProviderMappingsManager() {
       },
       body: JSON.stringify({
         providerName: editProviderName.trim(),
-        normalizationRules: parsedJson.value,
+        normalizationRules: buildNormalizationRulesPayload(
+          editNormalizationRules,
+        ),
         mappingVersion: parsedVersion.value,
         fieldMappings: editFieldMappings.map((fieldMapping) => ({
           sourceField: fieldMapping.sourceField.trim(),
@@ -435,97 +854,266 @@ export function ProviderMappingsManager() {
           inputMode="numeric"
           placeholder="1"
         />
-        <label
-          htmlFor="new-normalization-rules"
-          className="text-sm font-medium text-foreground"
-        >
-          Normalization rules (JSON)
-        </label>
-        <textarea
-          id="new-normalization-rules"
-          value={newNormalizationRules}
-          onChange={(event) => setNewNormalizationRules(event.target.value)}
-          rows={5}
-          className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
-        />
+        <section className="space-y-3 rounded-md border border-border p-3">
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">
+              Provider detection rules
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Used when matching the uploaded CSV to a provider mapping during
+              import parsing.
+            </p>
+          </div>
+          <StringBadgeInput
+            id="new-required-headers"
+            label="Required headers"
+            inputAriaLabel="Add required header"
+            placeholder="Type header and press Enter"
+            values={newNormalizationRules.requiredHeaders}
+            onChange={(values) =>
+              setNewNormalizationRules((current) => ({
+                ...current,
+                requiredHeaders: values,
+              }))
+            }
+          />
+          <StringBadgeInput
+            id="new-any-headers"
+            label="Optional headers (any)"
+            inputAriaLabel="Add optional header"
+            placeholder="Type header and press Enter"
+            values={newNormalizationRules.anyHeaders}
+            onChange={(values) =>
+              setNewNormalizationRules((current) => ({
+                ...current,
+                anyHeaders: values,
+              }))
+            }
+          />
+          <StringBadgeInput
+            id="new-header-patterns"
+            label="Header patterns (regex)"
+            inputAriaLabel="Add header pattern"
+            placeholder="Type regex and press Enter"
+            values={newNormalizationRules.headerPatterns}
+            onChange={(values) =>
+              setNewNormalizationRules((current) => ({
+                ...current,
+                headerPatterns: values,
+              }))
+            }
+            validator={validateRegexPattern}
+          />
+        </section>
 
-        <div className="space-y-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+        <section className="space-y-3 rounded-md border border-border p-3">
+          <h3 className="text-sm font-semibold text-foreground">
             Field mappings
           </h3>
-          <div className="space-y-2">
-            {newFieldMappings.map((fieldMapping, index) => (
-              <div
-                key={`new-${index + 1}`}
-                className="grid gap-2 md:grid-cols-3"
-              >
+          <section className="space-y-2 rounded-md border border-border p-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+              Required mappings
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Required: booking date, amount, and one merchant signal field.
+            </p>
+            <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)]">
+              <span className="text-xs font-medium text-muted-foreground">
+                Destination
+              </span>
+              <span />
+              <span className="text-xs font-medium text-muted-foreground">
+                Source
+              </span>
+              <Input value="bookingDate" disabled className="w-full" />
+              <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+              <div className="relative">
                 <Input
-                  aria-label={`Source column ${index + 1}`}
-                  value={fieldMapping.sourceField}
+                  aria-label="Required source field bookingDate"
+                  value={getMappingSourceValue(newFieldMappings, "bookingDate")}
                   onChange={(event) =>
-                    setNewFieldMappings((current) =>
-                      current.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, sourceField: event.target.value }
-                          : item,
-                      ),
-                    )
+                    updateNewRequiredMapping("bookingDate", event.target.value)
                   }
-                  placeholder="Belop"
+                  placeholder="Source column for booking date"
+                  className="w-full pr-8"
                 />
-                <Select
-                  value={fieldMapping.canonicalField}
-                  onValueChange={(value) =>
-                    setNewFieldMappings((current) =>
-                      current.map((item, itemIndex) =>
-                        itemIndex === index
-                          ? { ...item, canonicalField: value }
-                          : item,
-                      ),
-                    )
-                  }
-                >
-                  <SelectTrigger aria-label={`Canonical field ${index + 1}`}>
-                    <SelectValue placeholder="Select canonical field" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {newCanonicalFieldOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    setNewFieldMappings((current) =>
-                      current.length > 1
-                        ? current.filter((_, itemIndex) => itemIndex !== index)
-                        : current,
-                    )
-                  }
-                  disabled={newFieldMappings.length <= 1}
-                >
-                  Remove
-                </Button>
+                {getMappingSourceValue(
+                  newFieldMappings,
+                  "bookingDate",
+                ).trim() ? (
+                  <Check
+                    className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
+                    aria-hidden="true"
+                  />
+                ) : null}
               </div>
-            ))}
-          </div>
-          <Button
-            variant="outline"
-            onClick={() =>
-              setNewFieldMappings((current) => [
-                ...current,
-                createEmptyFieldMapping(),
-              ])
-            }
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Add field mapping
-          </Button>
-        </div>
+              <Input value="amount" disabled className="w-full" />
+              <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+              <div className="relative">
+                <Input
+                  aria-label="Required source field amount"
+                  value={getMappingSourceValue(newFieldMappings, "amount")}
+                  onChange={(event) =>
+                    updateNewRequiredMapping("amount", event.target.value)
+                  }
+                  placeholder="Source column for amount"
+                  className="w-full pr-8"
+                />
+                {getMappingSourceValue(newFieldMappings, "amount").trim() ? (
+                  <Check
+                    className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
+                    aria-hidden="true"
+                  />
+                ) : null}
+              </div>
+              <Select
+                value={newMerchantSignalCanonicalField}
+                onValueChange={(value) =>
+                  changeNewMerchantSignalCanonicalField(
+                    value as MerchantSignalCanonicalField,
+                  )
+                }
+              >
+                <SelectTrigger
+                  aria-label="Required merchant signal field"
+                  className="w-full"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MERCHANT_SIGNAL_CANONICAL_FIELDS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+              <div className="relative">
+                <Input
+                  aria-label="Required source field merchant signal"
+                  value={getMappingSourceValue(
+                    newFieldMappings,
+                    newMerchantSignalCanonicalField,
+                  )}
+                  onChange={(event) =>
+                    updateNewRequiredMapping(
+                      newMerchantSignalCanonicalField,
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Source column for merchant signal"
+                  className="w-full pr-8"
+                />
+                {getMappingSourceValue(
+                  newFieldMappings,
+                  newMerchantSignalCanonicalField,
+                ).trim() ? (
+                  <Check
+                    className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
+                    aria-hidden="true"
+                  />
+                ) : null}
+              </div>
+            </div>
+          </section>
+          <section className="space-y-2 rounded-md border border-border p-3">
+            <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+              Optional mappings
+            </h4>
+            <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)_auto]">
+              <span className="text-xs font-medium text-muted-foreground">
+                Destination
+              </span>
+              <span />
+              <span className="text-xs font-medium text-muted-foreground">
+                Source
+              </span>
+              <span />
+              {newOptionalFieldMappingRows.length === 0 ? (
+                <p className="text-xs text-muted-foreground md:col-span-4">
+                  No optional mappings added.
+                </p>
+              ) : (
+                newOptionalFieldMappingRows.map(({ fieldMapping, index }) => (
+                  <div key={`new-optional-${index + 1}`} className="contents">
+                    <Select
+                      value={fieldMapping.canonicalField}
+                      onValueChange={(value) =>
+                        setNewFieldMappings((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, canonicalField: value }
+                              : item,
+                          ),
+                        )
+                      }
+                    >
+                      <SelectTrigger
+                        aria-label={`Optional canonical field ${index + 1}`}
+                        className="w-full"
+                      >
+                        <SelectValue placeholder="Select canonical field" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {OPTIONAL_CANONICAL_FIELDS.filter(
+                          (option) =>
+                            option !== newMerchantSignalCanonicalField &&
+                            !isRequiredCanonicalField(option),
+                        ).map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {option}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+                    <Input
+                      aria-label={`Optional source column ${index + 1}`}
+                      value={fieldMapping.sourceField}
+                      onChange={(event) =>
+                        setNewFieldMappings((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, sourceField: event.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      placeholder="Source column"
+                      className="w-full"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="icon-sm"
+                      aria-label={`Remove optional mapping row ${index + 1}`}
+                      onClick={() =>
+                        setNewFieldMappings((current) =>
+                          removeMappingByIndex(current, index),
+                        )
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+            <Button
+              variant="outline"
+              onClick={() =>
+                setNewFieldMappings((current) => [
+                  ...current,
+                  createEmptyFieldMapping(),
+                ])
+              }
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add optional mapping
+            </Button>
+          </section>
+        </section>
 
         <Button
           onClick={createMapping}
@@ -624,66 +1212,158 @@ export function ProviderMappingsManager() {
                       <TableCell>
                         {isEditing ? (
                           <div className="space-y-2">
-                            <label
-                              htmlFor={`edit-normalization-rules-${mapping.id}`}
-                              className="text-xs font-medium text-foreground"
-                            >
-                              Normalization rules (JSON)
-                            </label>
-                            <textarea
-                              id={`edit-normalization-rules-${mapping.id}`}
-                              aria-label="Edit normalization rules (JSON)"
-                              value={editNormalizationRules}
-                              onChange={(event) =>
-                                setEditNormalizationRules(event.target.value)
-                              }
-                              rows={4}
-                              className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
-                            />
-                            <div className="space-y-2">
-                              {editFieldMappings.map((fieldMapping, index) => (
-                                <div
-                                  key={`edit-${index + 1}`}
-                                  className="grid gap-2 md:grid-cols-3"
-                                >
+                            <section className="space-y-3 rounded-md border border-border p-3">
+                              <div className="space-y-1">
+                                <h4 className="text-sm font-semibold text-foreground">
+                                  Provider detection rules
+                                </h4>
+                                <p className="text-xs text-muted-foreground">
+                                  Used when matching the uploaded CSV to this
+                                  provider mapping during import parsing.
+                                </p>
+                              </div>
+                              <StringBadgeInput
+                                key={`edit-required-headers-${mapping.id}`}
+                                id={`edit-required-headers-${mapping.id}`}
+                                label="Required headers"
+                                inputAriaLabel="Edit required headers"
+                                placeholder="Type header and press Enter"
+                                values={editNormalizationRules.requiredHeaders}
+                                onChange={(values) =>
+                                  setEditNormalizationRules((current) => ({
+                                    ...current,
+                                    requiredHeaders: values,
+                                  }))
+                                }
+                              />
+                              <StringBadgeInput
+                                key={`edit-any-headers-${mapping.id}`}
+                                id={`edit-any-headers-${mapping.id}`}
+                                label="Optional headers (any)"
+                                inputAriaLabel="Edit optional headers"
+                                placeholder="Type header and press Enter"
+                                values={editNormalizationRules.anyHeaders}
+                                onChange={(values) =>
+                                  setEditNormalizationRules((current) => ({
+                                    ...current,
+                                    anyHeaders: values,
+                                  }))
+                                }
+                              />
+                              <StringBadgeInput
+                                key={`edit-header-patterns-${mapping.id}`}
+                                id={`edit-header-patterns-${mapping.id}`}
+                                label="Header patterns (regex)"
+                                inputAriaLabel="Edit header patterns"
+                                placeholder="Type regex and press Enter"
+                                values={editNormalizationRules.headerPatterns}
+                                onChange={(values) =>
+                                  setEditNormalizationRules((current) => ({
+                                    ...current,
+                                    headerPatterns: values,
+                                  }))
+                                }
+                                validator={validateRegexPattern}
+                              />
+                            </section>
+                            <section className="space-y-3 rounded-md border border-border p-3">
+                              <h4 className="text-sm font-semibold text-foreground">
+                                Field mappings
+                              </h4>
+                              <section className="space-y-2 rounded-md border border-border p-3">
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                                  Required mappings
+                                </h4>
+                                <p className="text-xs text-muted-foreground">
+                                  Required: booking date, amount, and one
+                                  merchant signal field.
+                                </p>
+                                <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)]">
+                                  <span className="text-xs font-medium text-muted-foreground">
+                                    Destination
+                                  </span>
+                                  <span />
+                                  <span className="text-xs font-medium text-muted-foreground">
+                                    Source
+                                  </span>
                                   <Input
-                                    aria-label={`Edit source column ${index + 1}`}
-                                    value={fieldMapping.sourceField}
-                                    onChange={(event) =>
-                                      setEditFieldMappings((current) =>
-                                        current.map((item, itemIndex) =>
-                                          itemIndex === index
-                                            ? {
-                                                ...item,
-                                                sourceField: event.target.value,
-                                              }
-                                            : item,
-                                        ),
-                                      )
-                                    }
+                                    value="bookingDate"
+                                    disabled
+                                    className="w-full"
                                   />
+                                  <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+                                  <div className="relative">
+                                    <Input
+                                      aria-label="Edit required source field bookingDate"
+                                      value={getMappingSourceValue(
+                                        editFieldMappings,
+                                        "bookingDate",
+                                      )}
+                                      onChange={(event) =>
+                                        updateEditRequiredMapping(
+                                          "bookingDate",
+                                          event.target.value,
+                                        )
+                                      }
+                                      className="w-full pr-8"
+                                    />
+                                    {getMappingSourceValue(
+                                      editFieldMappings,
+                                      "bookingDate",
+                                    ).trim() ? (
+                                      <Check
+                                        className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
+                                        aria-hidden="true"
+                                      />
+                                    ) : null}
+                                  </div>
+                                  <Input
+                                    value="amount"
+                                    disabled
+                                    className="w-full"
+                                  />
+                                  <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+                                  <div className="relative">
+                                    <Input
+                                      aria-label="Edit required source field amount"
+                                      value={getMappingSourceValue(
+                                        editFieldMappings,
+                                        "amount",
+                                      )}
+                                      onChange={(event) =>
+                                        updateEditRequiredMapping(
+                                          "amount",
+                                          event.target.value,
+                                        )
+                                      }
+                                      className="w-full pr-8"
+                                    />
+                                    {getMappingSourceValue(
+                                      editFieldMappings,
+                                      "amount",
+                                    ).trim() ? (
+                                      <Check
+                                        className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
+                                        aria-hidden="true"
+                                      />
+                                    ) : null}
+                                  </div>
                                   <Select
-                                    value={fieldMapping.canonicalField}
+                                    value={editMerchantSignalCanonicalField}
                                     onValueChange={(value) =>
-                                      setEditFieldMappings((current) =>
-                                        current.map((item, itemIndex) =>
-                                          itemIndex === index
-                                            ? {
-                                                ...item,
-                                                canonicalField: value,
-                                              }
-                                            : item,
-                                        ),
+                                      changeEditMerchantSignalCanonicalField(
+                                        value as MerchantSignalCanonicalField,
                                       )
                                     }
                                   >
                                     <SelectTrigger
-                                      aria-label={`Edit canonical field ${index + 1}`}
+                                      aria-label="Edit required merchant signal field"
+                                      className="w-full"
                                     >
-                                      <SelectValue placeholder="Select canonical field" />
+                                      <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {editCanonicalFieldOptions.map(
+                                      {MERCHANT_SIGNAL_CANONICAL_FIELDS.map(
                                         (option) => (
                                           <SelectItem
                                             key={option}
@@ -695,38 +1375,159 @@ export function ProviderMappingsManager() {
                                       )}
                                     </SelectContent>
                                   </Select>
-                                  <Button
-                                    variant="outline"
-                                    onClick={() =>
-                                      setEditFieldMappings((current) =>
-                                        current.length > 1
-                                          ? current.filter(
-                                              (_, itemIndex) =>
-                                                itemIndex !== index,
-                                            )
-                                          : current,
-                                      )
-                                    }
-                                    disabled={editFieldMappings.length <= 1}
-                                  >
-                                    Remove
-                                  </Button>
+                                  <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+                                  <div className="relative">
+                                    <Input
+                                      aria-label="Edit required source field merchant signal"
+                                      value={getMappingSourceValue(
+                                        editFieldMappings,
+                                        editMerchantSignalCanonicalField,
+                                      )}
+                                      onChange={(event) =>
+                                        updateEditRequiredMapping(
+                                          editMerchantSignalCanonicalField,
+                                          event.target.value,
+                                        )
+                                      }
+                                      className="w-full pr-8"
+                                    />
+                                    {getMappingSourceValue(
+                                      editFieldMappings,
+                                      editMerchantSignalCanonicalField,
+                                    ).trim() ? (
+                                      <Check
+                                        className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
+                                        aria-hidden="true"
+                                      />
+                                    ) : null}
+                                  </div>
                                 </div>
-                              ))}
-                            </div>
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                setEditFieldMappings((current) => [
-                                  ...current,
-                                  createEmptyFieldMapping(),
-                                ])
-                              }
-                              className="gap-2"
-                            >
-                              <Plus className="h-4 w-4" aria-hidden="true" />
-                              Add field mapping
-                            </Button>
+                              </section>
+                              <section className="space-y-2 rounded-md border border-border p-3">
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                                  Optional mappings
+                                </h4>
+                                <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)_auto]">
+                                  <span className="text-xs font-medium text-muted-foreground">
+                                    Destination
+                                  </span>
+                                  <span />
+                                  <span className="text-xs font-medium text-muted-foreground">
+                                    Source
+                                  </span>
+                                  <span />
+                                  {editOptionalFieldMappingRows.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground md:col-span-4">
+                                      No optional mappings added.
+                                    </p>
+                                  ) : (
+                                    editOptionalFieldMappingRows.map(
+                                      ({ fieldMapping, index }) => (
+                                        <div
+                                          key={`edit-optional-${index + 1}`}
+                                          className="contents"
+                                        >
+                                          <Select
+                                            value={fieldMapping.canonicalField}
+                                            onValueChange={(value) =>
+                                              setEditFieldMappings((current) =>
+                                                current.map(
+                                                  (item, itemIndex) =>
+                                                    itemIndex === index
+                                                      ? {
+                                                          ...item,
+                                                          canonicalField: value,
+                                                        }
+                                                      : item,
+                                                ),
+                                              )
+                                            }
+                                          >
+                                            <SelectTrigger
+                                              aria-label={`Edit optional canonical field ${index + 1}`}
+                                              className="w-full"
+                                            >
+                                              <SelectValue placeholder="Select canonical field" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {OPTIONAL_CANONICAL_FIELDS.filter(
+                                                (option) =>
+                                                  option !==
+                                                    editMerchantSignalCanonicalField &&
+                                                  !isRequiredCanonicalField(
+                                                    option,
+                                                  ),
+                                              ).map((option) => (
+                                                <SelectItem
+                                                  key={option}
+                                                  value={option}
+                                                >
+                                                  {option}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                          <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
+                                          <Input
+                                            aria-label={`Edit optional source column ${index + 1}`}
+                                            value={fieldMapping.sourceField}
+                                            onChange={(event) =>
+                                              setEditFieldMappings((current) =>
+                                                current.map(
+                                                  (item, itemIndex) =>
+                                                    itemIndex === index
+                                                      ? {
+                                                          ...item,
+                                                          sourceField:
+                                                            event.target.value,
+                                                        }
+                                                      : item,
+                                                ),
+                                              )
+                                            }
+                                            className="w-full"
+                                          />
+                                          <Button
+                                            variant="destructive"
+                                            size="icon-sm"
+                                            aria-label={`Remove edit optional mapping row ${index + 1}`}
+                                            onClick={() =>
+                                              setEditFieldMappings((current) =>
+                                                removeMappingByIndex(
+                                                  current,
+                                                  index,
+                                                ),
+                                              )
+                                            }
+                                          >
+                                            <Trash2
+                                              className="h-4 w-4"
+                                              aria-hidden="true"
+                                            />
+                                          </Button>
+                                        </div>
+                                      ),
+                                    )
+                                  )}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  onClick={() =>
+                                    setEditFieldMappings((current) => [
+                                      ...current,
+                                      createEmptyFieldMapping(),
+                                    ])
+                                  }
+                                  className="gap-2"
+                                >
+                                  <Plus
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                  Add optional mapping
+                                </Button>
+                              </section>
+                            </section>
                           </div>
                         ) : (
                           <span className="text-sm">

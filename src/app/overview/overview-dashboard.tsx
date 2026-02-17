@@ -332,7 +332,7 @@ export function OverviewDashboard() {
 
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">Date range</p>
-          <ButtonGroup className="flex w-full flex-wrap gap-2 md:flex-nowrap md:gap-0.5">
+          <ButtonGroup>
             <Button
               variant={dashboardRangePreset === "30d" ? "default" : "outline"}
               onClick={() => setDashboardPreset("30d")}

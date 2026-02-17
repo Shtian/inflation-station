@@ -61,7 +61,7 @@ describe("POST /api/import-provider-mappings", () => {
     expect(prismaMock.importProviderMapping.create).not.toHaveBeenCalled();
   });
 
-  it("returns 400 when required canonical fields are missing", async () => {
+  it("returns 400 when merchant signal mapping is missing", async () => {
     const response = await POST(
       new Request("http://localhost/api/import-provider-mappings", {
         method: "POST",
@@ -76,14 +76,9 @@ describe("POST /api/import-provider-mappings", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: "REQUIRED_CANONICAL_FIELDS_MISSING",
-      missingCanonicalFields: [
-        "recipient",
-        "name",
-        "title",
-        "currency",
-        "paymentType",
-      ],
+      error: "MERCHANT_SIGNAL_FIELD_REQUIRED",
+      message:
+        "At least one merchant signal field (name or title) is required.",
     });
     expect(prismaMock.importProviderMapping.create).not.toHaveBeenCalled();
   });

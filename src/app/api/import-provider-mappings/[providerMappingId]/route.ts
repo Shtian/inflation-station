@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { isInputJsonValue } from "../../../../lib/import/json-value";
-import { findMissingRequiredCanonicalFields } from "../../../../lib/import/provider-mapping-contract";
+import {
+  findMissingRequiredCanonicalFields,
+  hasMerchantSignalCanonicalField,
+} from "../../../../lib/import/provider-mapping-contract";
 
 const jsonValueSchema = z.custom<Prisma.InputJsonValue>(
   (value) => isInputJsonValue(value),
@@ -114,6 +117,23 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         {
           error: "REQUIRED_CANONICAL_FIELDS_MISSING",
           missingCanonicalFields,
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      !hasMerchantSignalCanonicalField(
+        parsed.data.fieldMappings.map(
+          (fieldMapping) => fieldMapping.canonicalField,
+        ),
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error: "MERCHANT_SIGNAL_FIELD_REQUIRED",
+          message:
+            "At least one merchant signal field (name or title) is required.",
         },
         { status: 400 },
       );

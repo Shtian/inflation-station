@@ -1,4 +1,4 @@
-export const REQUIRED_PROVIDER_CANONICAL_FIELDS = [
+export const PROVIDER_CANONICAL_FIELDS = [
   "bookingDate",
   "amount",
   "sender",
@@ -9,6 +9,13 @@ export const REQUIRED_PROVIDER_CANONICAL_FIELDS = [
   "paymentType",
 ] as const;
 
+export const REQUIRED_PROVIDER_CANONICAL_FIELDS = [
+  "bookingDate",
+  "amount",
+] as const;
+
+export const MERCHANT_SIGNAL_CANONICAL_FIELDS = ["name", "title"] as const;
+
 export function findMissingRequiredCanonicalFields(
   canonicalFields: ReadonlyArray<string>,
 ): string[] {
@@ -17,4 +24,12 @@ export function findMissingRequiredCanonicalFields(
   return REQUIRED_PROVIDER_CANONICAL_FIELDS.filter(
     (requiredField) => !provided.has(requiredField),
   );
+}
+
+export function hasMerchantSignalCanonicalField(
+  canonicalFields: ReadonlyArray<string>,
+): boolean {
+  const provided = new Set(canonicalFields);
+
+  return MERCHANT_SIGNAL_CANONICAL_FIELDS.some((field) => provided.has(field));
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/theme-toggle";
 import "./globals.css";
+import { Button } from "@/components/ui/button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,13 +56,14 @@ export default function RootLayout({
                 </Link>
                 <nav aria-label="Primary" className="flex flex-wrap gap-2">
                   {links.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    >
-                      {link.label}
-                    </Link>
+                    <Button asChild key={link.label} variant="link">
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        >
+                        {link.label}
+                      </Link>
+                      </Button>
                   ))}
                 </nav>
                 <ModeToggle />
