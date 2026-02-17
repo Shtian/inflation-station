@@ -61,6 +61,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
         review: {
           sessionId: "session-1",
           potentialDuplicates: 1,
+          messageCleanupUnavailableReason: null,
           rows: [
             {
               id: "row-1",
@@ -70,6 +71,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
               currency: "NOK",
               normalizedMerchant: "joker",
               paymentType: "CARD",
+              name: "joker",
+              title: "JOKER TRONDHEIM",
+              cleanedMessage: "Joker Trondheim",
               categoryId: null,
               potentialDuplicate: true,
             },
@@ -81,6 +85,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
               currency: "NOK",
               normalizedMerchant: "ruter",
               paymentType: "CARD",
+              name: "ruter",
+              title: "RUTER BILLETT",
+              cleanedMessage: null,
               categoryId: "cat-transport",
               potentialDuplicate: false,
             },
@@ -156,13 +163,43 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await expect(page.getByText("Review rows")).toBeVisible();
   await expect(page.getByText("Potential duplicates:")).toBeVisible();
   await expect(
+    page.getByText(
+      "Default message selection uses AI-cleaned text when available. Rows without a suggestion keep the original message.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "JOKER TRONDHEIM", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Joker Trondheim", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "No suggestion", exact: true }),
+  ).toBeVisible();
+  await expect(
     page.getByText("Potential duplicate", { exact: true }),
   ).toBeVisible();
   await expect(page.locator("p", { hasText: /^Uncategorized$/ })).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Message choice for row 2" }),
+  ).toHaveText("AI-cleaned message");
+  await expect(
+    page.getByRole("combobox", { name: "Message choice for row 3" }),
+  ).toHaveText("Original message");
 
-  const rowTwoCategory = page
-    .getByRole("row", { name: /2\s+2026-01-01\s+joker/i })
-    .getByRole("combobox");
+  await page
+    .getByRole("combobox", { name: "Message choice for row 2" })
+    .click();
+  await page
+    .getByRole("option", { name: "Original message", exact: true })
+    .click();
+  await expect(
+    page.getByRole("combobox", { name: "Message choice for row 2" }),
+  ).toHaveText("Original message");
+
+  const rowTwoCategory = page.getByRole("combobox", {
+    name: "Category for row 2",
+  });
   await expect(rowTwoCategory).toHaveText("Uncategorized");
   await rowTwoCategory.click();
   await page.getByRole("option", { name: "Food", exact: true }).click();
@@ -296,6 +333,7 @@ test("requires provider override when detection is uncertain and continues after
         review: {
           sessionId: "session-override",
           potentialDuplicates: 0,
+          messageCleanupUnavailableReason: "disabled",
           rows: [
             {
               id: "row-1",
@@ -305,6 +343,9 @@ test("requires provider override when detection is uncertain and continues after
               currency: "NOK",
               normalizedMerchant: "butikk",
               paymentType: "CARD",
+              name: "butikk",
+              title: "BUTIKK",
+              cleanedMessage: null,
               categoryId: null,
               potentialDuplicate: false,
             },

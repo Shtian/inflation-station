@@ -66,6 +66,12 @@ type ParseResponse = {
   review?: {
     sessionId: string | null;
     potentialDuplicates: number;
+    messageCleanupUnavailableReason:
+      | "disabled"
+      | "key_missing"
+      | "timeout"
+      | "provider_error"
+      | null;
     rows: Array<{
       id: string;
       rowNumber: number;
@@ -74,6 +80,9 @@ type ParseResponse = {
       currency: "NOK";
       normalizedMerchant: string;
       paymentType: string;
+      name?: string;
+      title?: string;
+      cleanedMessage?: string | null;
       categoryId: string | null;
       potentialDuplicate: boolean;
     }>;
@@ -97,6 +106,12 @@ type Category = {
 
 const UNCATEGORIZED_SELECT_VALUE = "__uncategorized__";
 const AUTO_PROVIDER_SELECT_VALUE = "__auto_provider__";
+const MESSAGE_SOURCE_ORIGINAL = "original";
+const MESSAGE_SOURCE_CLEANED = "cleaned";
+
+type MessageSource =
+  | typeof MESSAGE_SOURCE_ORIGINAL
+  | typeof MESSAGE_SOURCE_CLEANED;
 
 function getRequestErrorMessage(body: unknown) {
   if (typeof body === "object" && body && "message" in body) {
@@ -145,6 +160,9 @@ export function ImportUploader() {
   );
   const [categoryDecisions, setCategoryDecisions] = useState<
     Record<string, string>
+  >({});
+  const [messageDecisions, setMessageDecisions] = useState<
+    Record<string, MessageSource>
   >({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -251,6 +269,7 @@ export function ImportUploader() {
     setSubmitNotice(null);
     setParseResult(null);
     setCategoryDecisions({});
+    setMessageDecisions({});
 
     const formData = new FormData();
     formData.set("accountId", selectedAccountId);
@@ -312,6 +331,16 @@ export function ImportUploader() {
         return acc;
       }, {}) ?? {},
     );
+    setMessageDecisions(
+      reviewRows?.reduce<Record<string, MessageSource>>((acc, row) => {
+        acc[row.id] =
+          typeof row.cleanedMessage === "string" &&
+          row.cleanedMessage.length > 0
+            ? MESSAGE_SOURCE_CLEANED
+            : MESSAGE_SOURCE_ORIGINAL;
+        return acc;
+      }, {}) ?? {},
+    );
     setImportLoading(false);
   }
 
@@ -358,6 +387,7 @@ export function ImportUploader() {
     );
     setParseResult(null);
     setCategoryDecisions({});
+    setMessageDecisions({});
     setSelectedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -459,6 +489,7 @@ export function ImportUploader() {
               setSelectedFile(event.target.files?.[0] ?? null);
               setParseResult(null);
               setCategoryDecisions({});
+              setMessageDecisions({});
               setProviderDetection(null);
               setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
               setImportError(null);
@@ -564,6 +595,10 @@ export function ImportUploader() {
                     {parseResult.review.potentialDuplicates}
                   </span>
                 </p>
+                <p className="text-xs text-muted-foreground">
+                  Default message selection uses AI-cleaned text when available.
+                  Rows without a suggestion keep the original message.
+                </p>
                 <div className="overflow-x-auto rounded-md border border-border">
                   <Table>
                     <TableHeader>
@@ -573,12 +608,31 @@ export function ImportUploader() {
                         <TableHead>Merchant</TableHead>
                         <TableHead>Amount</TableHead>
                         <TableHead>Payment type</TableHead>
+                        <TableHead>Original message</TableHead>
+                        <TableHead>AI-cleaned suggestion</TableHead>
+                        <TableHead>Message choice</TableHead>
                         <TableHead>Warning</TableHead>
                         <TableHead>Category</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {parseResult.review.rows.map((row) => {
+                        const originalMessage =
+                          typeof row.title === "string" &&
+                          row.title.trim().length > 0
+                            ? row.title
+                            : typeof row.name === "string" &&
+                                row.name.trim().length > 0
+                              ? row.name
+                              : "No original message";
+                        const hasCleanedMessage =
+                          typeof row.cleanedMessage === "string" &&
+                          row.cleanedMessage.trim().length > 0;
+                        const selectedMessageSource =
+                          messageDecisions[row.id] ??
+                          (hasCleanedMessage
+                            ? MESSAGE_SOURCE_CLEANED
+                            : MESSAGE_SOURCE_ORIGINAL);
                         const selectedCategoryId =
                           categoryDecisions[row.id] ?? row.categoryId ?? "";
                         const isUncategorized = selectedCategoryId.length === 0;
@@ -591,6 +645,47 @@ export function ImportUploader() {
                             </TableCell>
                             <TableCell>{formatNok(row.amountNok)}</TableCell>
                             <TableCell>{row.paymentType}</TableCell>
+                            <TableCell>{originalMessage}</TableCell>
+                            <TableCell>
+                              {hasCleanedMessage ? (
+                                row.cleanedMessage
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  No suggestion
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={selectedMessageSource}
+                                onValueChange={(value) =>
+                                  setMessageDecisions((current) => ({
+                                    ...current,
+                                    [row.id]:
+                                      value === MESSAGE_SOURCE_CLEANED
+                                        ? MESSAGE_SOURCE_CLEANED
+                                        : MESSAGE_SOURCE_ORIGINAL,
+                                  }))
+                                }
+                              >
+                                <SelectTrigger
+                                  aria-label={`Message choice for row ${row.rowNumber}`}
+                                  className="w-[220px]"
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value={MESSAGE_SOURCE_ORIGINAL}>
+                                    Original message
+                                  </SelectItem>
+                                  {hasCleanedMessage ? (
+                                    <SelectItem value={MESSAGE_SOURCE_CLEANED}>
+                                      AI-cleaned message
+                                    </SelectItem>
+                                  ) : null}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
                             <TableCell>
                               {row.potentialDuplicate ? (
                                 <span className="font-medium text-amber-700">
@@ -605,7 +700,6 @@ export function ImportUploader() {
                             <TableCell>
                               <div className="space-y-1">
                                 <Select
-                                  aria-label={`Category for row ${row.rowNumber}`}
                                   value={
                                     selectedCategoryId ||
                                     UNCATEGORIZED_SELECT_VALUE
@@ -620,7 +714,10 @@ export function ImportUploader() {
                                     }))
                                   }
                                 >
-                                  <SelectTrigger className="w-[220px]">
+                                  <SelectTrigger
+                                    aria-label={`Category for row ${row.rowNumber}`}
+                                    className="w-[220px]"
+                                  >
                                     <SelectValue placeholder="Uncategorized" />
                                   </SelectTrigger>
                                   <SelectContent>

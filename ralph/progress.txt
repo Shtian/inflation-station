@@ -23,6 +23,7 @@
 - Keep review-stage OpenAI message cleanup best-effort and expose unavailable diagnostics with stable reason codes (`disabled`, `key_missing`, `timeout`, `provider_error`) without blocking parse staging.
 - Keep provider mapping admin CRUD in `/api/import-provider-mappings*` and reject create/update payloads that omit any required canonical field mapping.
 - Keep provider mapping admin UI state local in `src/app/import-provider-mappings/*` and submit create/update payloads as full mapping definitions (provider metadata + field mappings + normalization rules JSON) so API validation feedback stays deterministic.
+- For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
 
 ## 2026-02-17 13:53 CET - US-001
 - What was implemented
@@ -262,4 +263,32 @@
     - Review-stage tests should inject `openAiApiKey` explicitly to avoid environment-dependent expectations.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Cleanup diagnostics now live on parse review payload as `review.messageCleanupUnavailableReason`; row suggestions are exposed as `row.cleanedMessage`.
+---
+
+## 2026-02-17 16:30 CET - US-009
+- What was implemented
+  - Updated `/import` review table UI to show original message text and optional AI-cleaned suggestion per row.
+  - Added explicit per-row message source control (`Original message` vs `AI-cleaned message`) in review, with deterministic defaults: choose AI-cleaned when available, otherwise original.
+  - Added deterministic UI copy documenting the default selection behavior.
+  - Exposed row-level accessible names on review combobox triggers to keep row-specific controls uniquely targetable.
+  - Extended import route E2E coverage to verify message rendering, default choice behavior, and user override interaction.
+- Files changed
+  - `src/app/import/import-uploader.tsx`
+  - `tests/e2e/us-016-import-route-upload.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - In shadcn Select workflows, put row-specific accessible labels on `SelectTrigger` so Playwright can reliably target one combobox when a row has multiple selects.
+    - Keep UI-only review decisions local to `/import` state when submit payload contracts are intentionally deferred to a later story.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Broad `getByRole("combobox")` row locators become ambiguous as soon as additional row-level selects are introduced.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Review payload rows already include `title` and optional `cleanedMessage`; this story surfaces them in the table while persistence of message choice remains for `US-010`.
 ---
