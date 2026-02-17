@@ -219,8 +219,16 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     sessionId: "session-1",
     invalidCount: 1,
     rows: [
-      { rowId: "row-1", categoryId: "cat-food" },
-      { rowId: "row-2", categoryId: "cat-transport" },
+      {
+        rowId: "row-1",
+        categoryId: "cat-food",
+        selectedMessage: "JOKER TRONDHEIM",
+      },
+      {
+        rowId: "row-2",
+        categoryId: "cat-transport",
+        selectedMessage: "RUTER BILLETT",
+      },
     ],
   });
 });

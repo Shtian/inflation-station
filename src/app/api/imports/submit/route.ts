@@ -12,6 +12,7 @@ type SubmitImportPayload = {
   rows: Array<{
     rowId: string;
     categoryId: string | null;
+    selectedMessage: string;
   }>;
 };
 
@@ -61,14 +62,27 @@ function parsePayload(payload: unknown): SubmitImportPayload | null {
         return null;
       }
 
+      if (
+        !("selectedMessage" in row) ||
+        typeof row.selectedMessage !== "string"
+      ) {
+        return null;
+      }
+
       return {
         rowId: row.rowId,
         categoryId: row.categoryId,
+        selectedMessage: row.selectedMessage,
       };
     })
     .filter(
-      (row): row is { rowId: string; categoryId: string | null } =>
-        row !== null,
+      (
+        row,
+      ): row is {
+        rowId: string;
+        categoryId: string | null;
+        selectedMessage: string;
+      } => row !== null,
     );
 
   if (rows.length !== payload.rows.length) {
@@ -88,7 +102,7 @@ export async function POST(request: Request) {
   if (!payload) {
     return badRequest(
       "INVALID_IMPORT_REVIEW_SUBMIT_PAYLOAD",
-      "Expected sessionId, invalidCount, and rows [{ rowId, categoryId }] in request body.",
+      "Expected sessionId, invalidCount, and rows [{ rowId, categoryId, selectedMessage }] in request body.",
     );
   }
 

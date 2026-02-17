@@ -363,6 +363,12 @@ export function ImportUploader() {
         sessionId: parseResult.review.sessionId,
         invalidCount: parseResult.summary.invalid,
         rows: parseResult.review.rows.map((row) => ({
+          selectedMessage:
+            messageDecisions[row.id] === MESSAGE_SOURCE_CLEANED &&
+            typeof row.cleanedMessage === "string" &&
+            row.cleanedMessage.trim().length > 0
+              ? row.cleanedMessage
+              : row.title,
           rowId: row.id,
           categoryId: categoryDecisions[row.id] ?? row.categoryId,
         })),

@@ -24,6 +24,7 @@
 - Keep provider mapping admin CRUD in `/api/import-provider-mappings*` and reject create/update payloads that omit any required canonical field mapping.
 - Keep provider mapping admin UI state local in `src/app/import-provider-mappings/*` and submit create/update payloads as full mapping definitions (provider metadata + field mappings + normalization rules JSON) so API validation feedback stays deterministic.
 - For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
+- Keep `/api/imports/submit` payload rows carrying finalized `selectedMessage` text, and recompute `normalizedMerchant` from staged `name` + selected message before dedupe/persistence.
 
 ## 2026-02-17 13:53 CET - US-001
 - What was implemented
@@ -291,4 +292,34 @@
     - Broad `getByRole("combobox")` row locators become ambiguous as soon as additional row-level selects are introduced.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Review payload rows already include `title` and optional `cleanedMessage`; this story surfaces them in the table while persistence of message choice remains for `US-010`.
+---
+## 2026-02-17 18:49 CET - US-010
+- What was implemented
+  - Extended `/import` review submit payload to include per-row finalized message values as `selectedMessage`, based on each row's explicit message choice (original vs AI-cleaned suggestion).
+  - Updated `/api/imports/submit` payload validation to require and parse `rows[{ rowId, categoryId, selectedMessage }]`.
+  - Updated review submit persistence (`src/lib/import/review-submit.ts`) to apply submitted message decisions when finalizing rows by recomputing `normalizedMerchant` from staged `name` + `selectedMessage` before fingerprint dedupe and transaction insert.
+  - Kept review-session cleanup atomic after persistence and category validation.
+  - Added/updated tests to verify submit payload contract and persisted transaction behavior using selected message text.
+- Files changed
+  - `src/app/import/import-uploader.tsx`
+  - `src/app/api/imports/submit/route.ts`
+  - `src/lib/import/review-submit.ts`
+  - `src/lib/import/review-submit.test.ts`
+  - `tests/e2e/us-016-import-route-upload.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep submit-time review decisions explicit in the API contract so UI-only selection state does not get lost between parse and submit.
+    - Recompute normalized fingerprint inputs from finalized review values at submit time to ensure dedupe behavior matches user-approved edits.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - `review-submit` test fixtures should mirror staged normalization shape (`normalizedMerchant` based on `name + title`) or expectations will drift when submit logic re-normalizes from finalized message input.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Message choices are still ephemeral until submit; persistence now happens only through `rows[].selectedMessage` in `/api/imports/submit`.
 ---

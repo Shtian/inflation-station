@@ -47,7 +47,7 @@ function createDbMock(options?: {
                   bookingDate: new Date("2026-01-01T00:00:00.000Z"),
                   amountNok: 100,
                   currency: "NOK",
-                  normalizedMerchant: "shop a alice groceries friday",
+                  normalizedMerchant: "groceries friday",
                   paymentType: PaymentType.CARD,
                   sender: "Alice",
                   recipient: "Shop A",
@@ -82,7 +82,13 @@ describe("submitImportReview", () => {
     const result = await submitImportReview(db, {
       sessionId: "session-1",
       invalidCount: 1,
-      rows: [{ rowId: "row-1", categoryId: "cat-transport" }],
+      rows: [
+        {
+          rowId: "row-1",
+          categoryId: "cat-transport",
+          selectedMessage: "Friday",
+        },
+      ],
     });
 
     expect(db.transaction.createMany).toHaveBeenCalledWith({
@@ -93,7 +99,7 @@ describe("submitImportReview", () => {
           bookingDate: new Date("2026-01-01T00:00:00.000Z"),
           amountNok: 100,
           currency: "NOK",
-          normalizedMerchant: "shop a alice groceries friday",
+          normalizedMerchant: "groceries friday",
           paymentType: PaymentType.CARD,
         },
       ],
@@ -123,7 +129,7 @@ describe("submitImportReview", () => {
             bookingDate: new Date("2026-01-01T00:00:00.000Z"),
             amountNok: 100,
             currency: "NOK",
-            normalizedMerchant: "shop a alice groceries friday",
+            normalizedMerchant: "groceries friday",
             paymentType: PaymentType.CARD,
             sender: "Alice",
             recipient: "Shop A",
@@ -137,7 +143,7 @@ describe("submitImportReview", () => {
             bookingDate: new Date("2026-01-01T00:00:00.000Z"),
             amountNok: 100,
             currency: "NOK",
-            normalizedMerchant: "shop a alice groceries friday",
+            normalizedMerchant: "groceries friday",
             paymentType: PaymentType.CARD,
             sender: "Alice",
             recipient: "Shop A",
@@ -164,7 +170,7 @@ describe("submitImportReview", () => {
           bookingDate: new Date("2026-01-01T00:00:00.000Z"),
           amountNok: 100,
           currency: "NOK",
-          normalizedMerchant: "shop a alice groceries friday",
+          normalizedMerchant: "groceries friday",
           paymentType: PaymentType.CARD,
         },
       ],
@@ -203,11 +209,49 @@ describe("submitImportReview", () => {
       submitImportReview(db, {
         sessionId: "session-1",
         invalidCount: 0,
-        rows: [{ rowId: "row-1", categoryId: "cat-not-allowed" }],
+        rows: [
+          {
+            rowId: "row-1",
+            categoryId: "cat-not-allowed",
+            selectedMessage: "Friday",
+          },
+        ],
       }),
     ).rejects.toBeInstanceOf(InvalidImportReviewCategoryError);
 
     expect(db.transaction.createMany).not.toHaveBeenCalled();
     expect(db.importReviewSession.delete).not.toHaveBeenCalled();
+  });
+
+  it("uses selected message text when building persisted transaction data", async () => {
+    const db = createDbMock({
+      validCategories: [{ id: "cat-food" }],
+    });
+
+    await submitImportReview(db, {
+      sessionId: "session-1",
+      invalidCount: 0,
+      rows: [
+        {
+          rowId: "row-1",
+          categoryId: "cat-food",
+          selectedMessage: "Joker Trondheim",
+        },
+      ],
+    });
+
+    expect(db.transaction.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          accountId: "account-1",
+          categoryId: "cat-food",
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries joker trondheim",
+          paymentType: PaymentType.CARD,
+        },
+      ],
+    });
   });
 });
