@@ -21,6 +21,7 @@
 - For provider-backed parsing, transform raw CSV through provider field mappings into canonical parser rows before review staging, and keep parser summary keys exactly `imported`, `duplicates`, `ignoredReserved`, `invalid`.
 - Keep import token/payment-type normalization centralized in `src/lib/import/normalization.ts` and apply it before any fingerprint dedupe or duplicate-warning computation.
 - Keep provider mapping admin CRUD in `/api/import-provider-mappings*` and reject create/update payloads that omit any required canonical field mapping.
+- Keep provider mapping admin UI state local in `src/app/import-provider-mappings/*` and submit create/update payloads as full mapping definitions (provider metadata + field mappings + normalization rules JSON) so API validation feedback stays deterministic.
 
 ## 2026-02-17 13:53 CET - US-001
 - What was implemented
@@ -201,4 +202,33 @@
     - Provider mapping JSON payloads should be validated as JSON-serializable input before Prisma writes to avoid `unknown`-typed request data leaking into typed persistence paths.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Provider mapping admin APIs are now available at `/api/import-provider-mappings*` and ready for the upcoming admin UI story.
+---
+
+## 2026-02-17 16:10 CET - US-007
+- What was implemented
+  - Added provider mapping admin route UI at `/import-provider-mappings` with create/edit/delete flows.
+  - Implemented source-column to canonical-field assignment controls with add/remove row support for both create and edit forms.
+  - Added normalization-rules JSON editing for create and edit workflows, including client-side JSON validation.
+  - Surfaced API validation failures (including `REQUIRED_CANONICAL_FIELDS_MISSING`) as user-facing feedback in the UI.
+  - Added Playwright coverage for provider mapping admin create/edit flow and validation feedback.
+- Files changed
+  - `src/app/import-provider-mappings/page.tsx`
+  - `src/app/import-provider-mappings/provider-mappings-manager.tsx`
+  - `src/app/layout.tsx`
+  - `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep provider mapping admin interactions consolidated in `src/app/import-provider-mappings/*` and rely on `/api/import-provider-mappings*` for canonical validation and persistence behavior.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Playwright `getByRole("alert")` can match Next.js route-announcer nodes; use text-specific assertions for user-visible error alerts.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Provider mapping UI now appears in primary navigation as `Providers` and supports inline edit of normalization JSON plus field mappings.
 ---

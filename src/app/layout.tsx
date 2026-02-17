@@ -30,6 +30,7 @@ export default function RootLayout({
     { href: "/overview", label: "Overview" },
     { href: "/transactions", label: "Transactions" },
     { href: "/import", label: "Import" },
+    { href: "/import-provider-mappings", label: "Providers" },
     { href: "/accounts", label: "Accounts" },
     { href: "/categories", label: "Categories" },
   ];
