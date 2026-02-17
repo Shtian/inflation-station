@@ -19,6 +19,7 @@
 - For provider autodetection, read configurable `requiredHeaders`/`anyHeaders`/`headerPatterns` from mapping JSON, fall back to mapped source fields, and return parse diagnostics with a `certain`/`uncertain`/`missing` confidence state.
 - When `/api/imports/parse` detection is not `certain` and provider candidates exist, return `PROVIDER_SELECTION_REQUIRED` with diagnostics and require a follow-up parse call with explicit `providerId`.
 - For provider-backed parsing, transform raw CSV through provider field mappings into canonical parser rows before review staging, and keep parser summary keys exactly `imported`, `duplicates`, `ignoredReserved`, `invalid`.
+- Keep import token/payment-type normalization centralized in `src/lib/import/normalization.ts` and apply it before any fingerprint dedupe or duplicate-warning computation.
 
 ## 2026-02-17 13:53 CET - US-001
 - What was implemented
@@ -136,4 +137,35 @@
     - Biome enforces `indexOf` for direct header equality lookups and sorted import specifiers in import blocks.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Provider mapping parser currently supports both semicolon and comma delimiters with quoted-cell handling.
+---
+
+## 2026-02-17 15:13 CET - US-005
+- What was implemented
+  - Added shared import normalization helpers in `src/lib/import/normalization.ts` for deterministic token folding (including Nordic characters), payment-type normalization to Prisma `PaymentType`, and merchant normalization.
+  - Updated fingerprint dedupe flow to normalize provider payment labels before fingerprint generation in `src/lib/import/transaction-dedupe.ts`.
+  - Updated import persistence (`src/lib/import/import-transactions.ts`) and review staging (`src/lib/import/review-stage.ts`) to reuse shared normalization before dedupe and duplicate-warning checks.
+  - Added focused unit coverage validating `Overføring` + Nordic merchant text normalization for both import dedupe and review duplicate-warning behavior.
+- Files changed
+  - `src/lib/import/normalization.ts`
+  - `src/lib/import/transaction-dedupe.ts`
+  - `src/lib/import/import-transactions.ts`
+  - `src/lib/import/review-stage.ts`
+  - `src/lib/import/transaction-dedupe.test.ts`
+  - `src/lib/import/import-transactions.test.ts`
+  - `src/lib/import/review-stage.test.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep import normalization logic centralized to avoid drift between parse/review/submit dedupe paths.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Running heavy checks in parallel (`pnpm test` with `pnpm build`) can cause transient Playwright timeouts; run `pnpm test` in isolation for stable E2E verification.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Duplicate warnings in review are computed from normalized fingerprint fields and intentionally mark all matching upload rows as potential duplicates.
 ---

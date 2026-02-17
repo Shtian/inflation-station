@@ -1,4 +1,9 @@
 import type { ParsedCsvRow } from "./csv-parser";
+import {
+  normalizeImportMerchant,
+  normalizeImportPaymentType,
+  normalizeImportToken,
+} from "./normalization";
 
 export type TransactionFingerprintParts = {
   accountId: string;
@@ -19,15 +24,6 @@ export type DedupeResult = {
   duplicateCount: number;
 };
 
-function normalizeToken(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]/g, " ")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
-
 function normalizeBookingDate(value: string): string {
   const trimmed = value.trim();
   const norwegianDate = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(trimmed);
@@ -45,18 +41,18 @@ function normalizeAmount(amountNok: number): string {
 }
 
 function resolveNormalizedMerchant(row: ParsedCsvRow): string {
-  return normalizeToken([row.name, row.title].join(" "));
+  return normalizeImportMerchant(row.name, row.title);
 }
 
 export function buildTransactionFingerprint(
   parts: TransactionFingerprintParts,
 ): string {
   return [
-    normalizeToken(parts.accountId),
+    normalizeImportToken(parts.accountId),
     normalizeBookingDate(parts.bookingDate),
     normalizeAmount(parts.amountNok),
-    normalizeToken(parts.normalizedMerchant),
-    normalizeToken(parts.paymentType),
+    normalizeImportToken(parts.normalizedMerchant),
+    normalizeImportToken(parts.paymentType),
   ].join("|");
 }
 
@@ -76,7 +72,7 @@ export function dedupeParsedTransactions(
       bookingDate: row.bookingDate,
       amountNok: row.amountNok,
       normalizedMerchant,
-      paymentType: row.paymentType,
+      paymentType: normalizeImportPaymentType(row.paymentType),
     });
 
     if (seenFingerprints.has(fingerprint)) {

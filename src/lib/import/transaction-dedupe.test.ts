@@ -1,3 +1,4 @@
+import { PaymentType } from "@prisma/client";
 import { describe, expect, it } from "vitest";
 
 import type { ParsedCsvRow } from "./csv-parser";
@@ -59,7 +60,31 @@ describe("dedupeParsedTransactions", () => {
       bookingDate: row.bookingDate,
       amountNok: row.amountNok,
       normalizedMerchant: `${row.name} ${row.title}`,
-      paymentType: row.paymentType,
+      paymentType: PaymentType.CARD,
+    });
+
+    const result = dedupeParsedTransactions(
+      "account-1",
+      [row],
+      new Set([existingFingerprint]),
+    );
+
+    expect(result.uniqueRows).toEqual([]);
+    expect(result.duplicateCount).toBe(1);
+  });
+
+  it("normalizes provider payment labels before fingerprint dedupe", () => {
+    const row = createRow({
+      paymentType: "Overføring",
+      name: "Bær",
+      title: "Øl",
+    });
+    const existingFingerprint = buildTransactionFingerprint({
+      accountId: "account-1",
+      bookingDate: "2026-02-01",
+      amountNok: 100,
+      normalizedMerchant: "baer ol",
+      paymentType: PaymentType.TRANSFER,
     });
 
     const result = dedupeParsedTransactions(

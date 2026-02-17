@@ -1,4 +1,4 @@
-import { PaymentType } from "@prisma/client";
+import type { PaymentType } from "@prisma/client";
 import {
   buildRuleBasedSuggestions,
   type CategoryRuleCandidate,
@@ -8,6 +8,10 @@ import {
   type ParsedCsvRow,
   parseNorwegianBankCsv,
 } from "./csv-parser";
+import {
+  normalizeImportMerchant,
+  normalizeImportPaymentType,
+} from "./normalization";
 import {
   type ProviderCsvMapping,
   parseProviderMappedCsv,
@@ -182,39 +186,8 @@ type ValidatedStageRow = {
   title: string;
 };
 
-function normalizeToken(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]/g, " ")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
-
-function normalizePaymentType(value: string): PaymentType {
-  const normalized = normalizeToken(value);
-
-  if (["kort", "card"].includes(normalized)) {
-    return PaymentType.CARD;
-  }
-
-  if (["overforing", "overfoering", "transfer"].includes(normalized)) {
-    return PaymentType.TRANSFER;
-  }
-
-  if (["eft", "giro", "avtalegiro"].includes(normalized)) {
-    return PaymentType.EFT;
-  }
-
-  if (["cash", "kontant"].includes(normalized)) {
-    return PaymentType.CASH;
-  }
-
-  return PaymentType.OTHER;
-}
-
 function normalizeMerchant(row: ParsedCsvRow): string {
-  return normalizeToken([row.name, row.title].join(" "));
+  return normalizeImportMerchant(row.name, row.title);
 }
 
 function parseBookingDate(value: string): Date | null {
@@ -290,7 +263,7 @@ function splitValidAndInvalidRows(rows: ParsedCsvRow[]): {
       bookingDate: bookingDate.toISOString().slice(0, 10),
       amountNok: row.amountNok,
       currency: row.currency,
-      paymentType: normalizePaymentType(row.paymentType),
+      paymentType: normalizeImportPaymentType(row.paymentType),
       normalizedMerchant: normalizeMerchant(row),
       sender: row.sender,
       recipient: row.recipient,

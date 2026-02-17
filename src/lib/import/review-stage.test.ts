@@ -446,6 +446,61 @@ describe("stageParsedImportRows", () => {
     expect(result.review.rows[0]?.potentialDuplicate).toBe(true);
   });
 
+  it("computes duplicate warnings from normalized merchant and payment type values", async () => {
+    const db = createDbMock({
+      existingTransactions: [
+        {
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          normalizedMerchant: "baer ol",
+          paymentType: PaymentType.TRANSFER,
+        },
+      ],
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "baer ol",
+          paymentType: PaymentType.TRANSFER,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Bær",
+          title: "Øl",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Bær;Øl;NOK;Overføring`,
+    });
+
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "baer ol",
+          paymentType: PaymentType.TRANSFER,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Bær",
+          title: "Øl",
+          categoryId: null,
+        },
+      ],
+    });
+    expect(result.review.potentialDuplicates).toBe(1);
+    expect(result.review.rows[0]?.potentialDuplicate).toBe(true);
+  });
+
   it("flags every matching row as potential duplicate when duplicates exist within upload", async () => {
     const db = createDbMock({
       stagedRows: [

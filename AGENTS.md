@@ -17,6 +17,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Data modeling convention: `Transaction` stores `normalizedMerchant` + `paymentType` for deterministic dedupe and category-rule workflows.
 - Dedupe convention: build fingerprints from `accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, and `paymentType`, and keep that aligned with the Prisma unique constraint on `Transaction`.
 - Import pipeline convention: normalize bank CSV payment-type labels (for example `Kort`) to Prisma `PaymentType` enum values before fingerprint dedupe and persistence so duplicate detection stays deterministic across uploads.
+- Import normalization convention: centralize merchant/payment-type token normalization in `src/lib/import/normalization.ts` (including Nordic character folding) and run that normalization before any fingerprint-based dedupe or duplicate-warning checks.
 - Categorization convention: apply category rules deterministically (priority first, then specificity) and persist suggestions with source/confidence/reasoning while leaving unmatched transactions uncategorized for review.
 - Review workflow convention: keep review edits ephemeral until explicit submit; apply approved categories and clear related suggestions atomically so pending queues stay consistent.
 - OpenAI suggestion convention: keep AI categorization optional behind `OPENAI_API_KEY`; unresolved transactions may receive `OPENAI` suggestions, and provider/network failures must not fail the import pipeline.
