@@ -174,10 +174,16 @@ describe("stageParsedImportRows", () => {
       ],
     });
 
-    const result = await stageParsedImportRows(db, {
-      accountId: "account-1",
-      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
-    });
+    const result = await stageParsedImportRows(
+      db,
+      {
+        accountId: "account-1",
+        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      },
+      {
+        openAiApiKey: null,
+      },
+    );
 
     expect(db.importReviewSession.create).toHaveBeenCalledWith({
       data: {
@@ -215,6 +221,7 @@ describe("stageParsedImportRows", () => {
     expect(result.review).toEqual({
       sessionId: "session-1",
       potentialDuplicates: 0,
+      messageCleanupUnavailableReason: "key_missing",
       rows: [
         {
           id: "row-1",
@@ -228,6 +235,7 @@ describe("stageParsedImportRows", () => {
           recipient: "Shop A",
           name: "Groceries",
           title: "Friday",
+          cleanedMessage: null,
           categoryId: null,
           potentialDuplicate: false,
         },
@@ -260,6 +268,7 @@ describe("stageParsedImportRows", () => {
     expect(result.review).toEqual({
       sessionId: null,
       potentialDuplicates: 0,
+      messageCleanupUnavailableReason: null,
       rows: [],
     });
 
@@ -284,6 +293,7 @@ describe("stageParsedImportRows", () => {
     expect(result.review).toEqual({
       sessionId: null,
       potentialDuplicates: 0,
+      messageCleanupUnavailableReason: null,
       rows: [],
     });
     expect(db.importReviewSession.create).not.toHaveBeenCalled();
@@ -407,6 +417,86 @@ describe("stageParsedImportRows", () => {
     expect(result.summary.imported).toBe(1);
     expect(result.review.rows[0]?.categoryId).toBeNull();
     expect(result.review.rows[0]?.potentialDuplicate).toBe(false);
+  });
+
+  it("includes cleaned message suggestions when OpenAI cleanup returns results", async () => {
+    const db = createDbMock({
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "joker oslo",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Joker #1234",
+          title: "Oslo",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(
+      db,
+      {
+        accountId: "account-1",
+        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Joker #1234;Oslo;NOK;Kort`,
+      },
+      {
+        openAiApiKey: "test-key",
+        buildOpenAiMessageCleanup: vi.fn(async () => ({
+          suggestions: [{ rowNumber: 2, cleanedMessage: "Joker Oslo" }],
+          unavailableReason: null,
+        })),
+      },
+    );
+
+    expect(result.review.messageCleanupUnavailableReason).toBeNull();
+    expect(result.review.rows[0]?.cleanedMessage).toBe("Joker Oslo");
+  });
+
+  it("returns provider_error cleanup reason when cleanup service throws", async () => {
+    const db = createDbMock({
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "joker oslo",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Joker #1234",
+          title: "Oslo",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(
+      db,
+      {
+        accountId: "account-1",
+        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Joker #1234;Oslo;NOK;Kort`,
+      },
+      {
+        openAiApiKey: "test-key",
+        buildOpenAiMessageCleanup: vi.fn(async () => {
+          throw new Error("provider unavailable");
+        }),
+      },
+    );
+
+    expect(result.summary.imported).toBe(1);
+    expect(result.review.messageCleanupUnavailableReason).toBe(
+      "provider_error",
+    );
+    expect(result.review.rows[0]?.cleanedMessage).toBeNull();
   });
 
   it("flags staged rows as potential duplicates when fingerprint already exists", async () => {

@@ -171,11 +171,20 @@ export async function POST(request: Request) {
       })
     : null;
 
-  const staged = await stageParsedImportRows(prisma, {
-    accountId,
-    csvContent,
-    providerMapping,
-  });
+  const staged = await stageParsedImportRows(
+    prisma,
+    {
+      accountId,
+      csvContent,
+      providerMapping,
+    },
+    {
+      openAiCleanupEnabled:
+        process.env.OPENAI_MESSAGE_CLEANUP_ENABLED?.trim().toLowerCase() !==
+        "false",
+      openAiApiKey: process.env.OPENAI_API_KEY,
+    },
+  );
 
   return NextResponse.json({
     detection,
