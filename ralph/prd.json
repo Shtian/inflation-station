@@ -1,168 +1,158 @@
 {
   "project": "Inflation Station",
-  "branchName": "ralph/transaction-row-management",
-  "description": "Add a dedicated transaction management workflow that lets users view, edit, and remove existing transaction rows using shadcn components with account filtering and pagination.",
+  "branchName": "ralph/multi-provider-csv-import-framework",
+  "description": "Implement a multi-provider CSV import framework with provider detection, provider-managed mappings, deterministic normalization-before-dedupe, and optional per-row AI message cleanup in review.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add paginated transactions list API",
-      "description": "As a user, I want transactions fetched in pages with account filtering so that I can browse large datasets efficiently.",
+      "title": "Add provider mapping schema and Prisma models",
+      "description": "As a developer, I want provider mappings stored in the database so parse and review flows can use configurable provider definitions.",
       "acceptanceCriteria": [
-        "Add transactions list API endpoint that accepts page, pageSize, and optional accountId",
-        "Response includes rows plus pagination metadata: total, page, pageSize, totalPages",
-        "Results use deterministic ordering to keep pagination stable",
-        "Typecheck passes"
+        "Add Prisma models for import provider mapping definitions including provider name, source-to-canonical field mappings, and normalization rule payloads",
+        "Persist mapping version metadata (timestamp or version field) for diagnostics",
+        "Run Prisma generate successfully after schema change",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Add transaction update API with mutable-field validation",
-      "description": "As a user, I want to edit a transaction safely so that I can correct data without changing immutable import metadata.",
+      "title": "Implement provider detection service and parse diagnostics",
+      "description": "As a user, I want the importer to auto-detect provider from CSV headers so imports start with the right mapping.",
       "acceptanceCriteria": [
-        "Add transaction update API endpoint by id",
-        "Validation allows only user-owned mutable fields and rejects immutable import metadata updates",
-        "Successful update returns the persisted row",
-        "Typecheck passes"
+        "Add provider detection logic based on configurable header/pattern rules",
+        "Parse response includes detection diagnostics with detected provider id/name and detection confidence state",
+        "When no provider match is found, parse response marks detection as uncertain or missing",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Add transaction hard-delete API",
-      "description": "As a user, I want a delete endpoint for transactions so that confirmed row removals are persisted.",
+      "title": "Add manual provider override to import parse flow",
+      "description": "As a user, I want to manually select provider before parsing when detection is wrong or uncertain.",
       "acceptanceCriteria": [
-        "Add transaction delete API endpoint by id",
-        "Endpoint hard-deletes the transaction when id exists",
-        "Endpoint returns not-found response for missing id",
-        "Typecheck passes"
+        "Import parse endpoint accepts explicit provider override and uses it instead of auto-detection",
+        "Import UI requires provider selection when detection is uncertain or missing",
+        "User can change provider selection before parsing continues",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Create transactions route with account filter and pagination controls",
-      "description": "As a user, I want a dedicated transactions page with filters and paging controls so that I can navigate transaction history quickly.",
+      "title": "Transform provider CSV rows into canonical import rows",
+      "description": "As a user, I want provider-specific CSV data mapped to canonical importer fields so review and submit behavior stays consistent.",
       "acceptanceCriteria": [
-        "Add /transactions route and include it in primary navigation",
-        "Route includes account filter with All accounts plus specific account options",
-        "Route includes numeric page controls and page-size selector wired to list API",
+        "Parse pipeline loads selected provider mapping and transforms rows into existing canonical import row shape",
+        "Row-level validation errors are returned in structured diagnostics",
+        "Parse summary shape remains exactly: imported, duplicates, ignoredReserved, invalid",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Tests pass"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Render paginated transaction table using shadcn primitives",
-      "description": "As a user, I want a clear tabular list so that I can inspect transaction rows and current page state.",
+      "title": "Normalize payment type and merchant fields before dedupe",
+      "description": "As a user, I want duplicate detection to remain deterministic across providers.",
       "acceptanceCriteria": [
-        "Use shadcn table primitives from src/components/ui/table.tsx for transactions list",
-        "Show total count and current page information in the UI",
-        "Show empty state when no rows match active filters",
+        "Provider normalization runs before fingerprint generation",
+        "Payment-type labels normalize to Prisma PaymentType values before dedupe",
+        "Fingerprint continues using accountId, bookingDate, amountNok, normalizedMerchant, and paymentType",
+        "Duplicate warnings in review payload are based on normalized canonical values",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Tests pass"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Add transaction edit modal or drawer flow",
-      "description": "As a user, I want to edit transactions in a modal or drawer so that I can update row data without leaving the list.",
+      "title": "Add provider mapping admin APIs with validation",
+      "description": "As an admin, I want CRUD APIs for provider mappings so new providers can be configured without code edits.",
       "acceptanceCriteria": [
-        "Each row includes an Edit action that opens a shadcn modal or drawer",
-        "Edit form pre-fills current row values and submits to update API",
-        "After save, the list refreshes while keeping current filter and valid page state",
+        "Add API endpoints for create, update, list, and delete of provider mappings",
+        "Validation blocks save when required canonical fields are missing",
+        "API persists provider normalization rules and mapping version metadata",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Tests pass"
       ],
       "priority": 6,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Add transaction delete confirmation flow",
-      "description": "As a user, I want explicit delete confirmation so that I do not remove transactions by mistake.",
+      "title": "Build provider mapping admin UI",
+      "description": "As an admin, I want a UI to manage provider mappings so I can maintain import support operationally.",
       "acceptanceCriteria": [
-        "Each row includes a Delete action that opens a shadcn confirmation dialog",
-        "Confirm action calls delete API and cancel action leaves row unchanged",
-        "After delete, UI keeps pagination valid (including last-row-on-page removal)",
+        "Admin UI can create and edit provider mappings with source-column to canonical-field assignments",
+        "Admin UI surfaces validation errors for missing required canonical fields",
+        "Admin UI supports editing provider normalization rules",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Add automated coverage for transaction management behavior",
-      "description": "As a maintainer, I want tests for transaction list, edit, and delete behaviors so regressions are caught quickly.",
+      "title": "Add optional OpenAI message cleanup enrichment service",
+      "description": "As a maintainer, I want AI message cleanup to run as best-effort enrichment so imports never fail when AI is unavailable.",
       "acceptanceCriteria": [
-        "Add tests for list pagination and account filter behavior",
-        "Add tests for update API validation and persistence",
-        "Add tests for delete behavior and pagination-state edge cases where applicable",
+        "AI cleanup is executed only when OPENAI_API_KEY is configured",
+        "When key is missing or provider call fails/timeouts, parse/review/submit flows continue without failure",
+        "Review/session payload includes reason codes for unavailable suggestions (disabled, key missing, timeout, provider error)",
+        "Diagnostics avoid logging sensitive raw message content",
         "Typecheck passes",
         "Tests pass"
       ],
       "priority": 8,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-009",
-      "title": "Show transaction category in the transactions table",
-      "description": "As a user, I want to see each transaction's category in the table so I can review categorization status without opening row details.",
+      "title": "Show AI message suggestions in review with per-row selection",
+      "description": "As a user, I want to choose original or AI-cleaned message per row before submit.",
       "acceptanceCriteria": [
-        "Transactions list API response includes category data needed for table rendering",
-        "Transactions table adds a Category column and renders the category label for each row",
-        "Rows with no category are clearly shown as uncategorized",
+        "Review table shows original message and optional AI-cleaned suggestion for each row",
+        "Each row has explicit control to choose original vs AI-cleaned message",
+        "Default selection behavior is deterministic and documented in UI copy",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-010",
-      "title": "Allow category edits in transaction row edit dialog",
-      "description": "As a user, I want to change a transaction category while editing a row so I can correct categorization from the same workflow.",
+      "title": "Persist per-row message source decisions on submit",
+      "description": "As a user, I want submitted transactions to persist the exact message choice I made during review.",
       "acceptanceCriteria": [
-        "Edit dialog includes a category selector populated from available categories",
-        "Update API accepts category changes and persists categoryId updates",
-        "Submitting a category change refreshes the current paginated table view with updated category values",
+        "Submit endpoint accepts finalized per-row message selection values",
+        "Persisted transactions use chosen message text per row",
+        "Submitted review session cleanup remains atomic with transaction persistence",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Tests pass"
       ],
       "priority": 10,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-011",
-      "title": "Enforce NOK-only currency in transaction edit workflow",
-      "description": "As a user, I should not edit currency because all transactions are NOK for now.",
-      "acceptanceCriteria": [
-        "Edit dialog removes currency as an editable field",
-        "Update API no longer accepts arbitrary currency updates from this workflow",
-        "Transaction edit submissions always persist currency as NOK",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 11,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]
