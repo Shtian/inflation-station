@@ -17,6 +17,7 @@
 - Keep `pnpm test` as the full verification entry point (unit + E2E) and use `pnpm test:unit` for fast Vitest-only loops.
 - Store provider import mappings in Prisma using a parent mapping model plus child field-mapping rows, with JSON normalization/transform payloads and `mappingVersion` metadata for diagnostics.
 - For provider autodetection, read configurable `requiredHeaders`/`anyHeaders`/`headerPatterns` from mapping JSON, fall back to mapped source fields, and return parse diagnostics with a `certain`/`uncertain`/`missing` confidence state.
+- When `/api/imports/parse` detection is not `certain` and provider candidates exist, return `PROVIDER_SELECTION_REQUIRED` with diagnostics and require a follow-up parse call with explicit `providerId`.
 
 ## 2026-02-17 13:53 CET - US-001
 - What was implemented
@@ -75,4 +76,33 @@
     - CSV files without a recognizable header row should return `missing` detection diagnostics instead of forcing a low-confidence provider guess.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Detection currently informs diagnostics only; canonical row transformation is still handled by the existing parser and staging flow.
+---
+
+## 2026-02-17 14:54 CET - US-003
+- What was implemented
+  - Extended `/api/imports/parse` payload parsing to accept optional `providerId` from both multipart form-data and JSON.
+  - Updated parse flow to run provider detection first, return `409 PROVIDER_SELECTION_REQUIRED` with diagnostics when detection is `uncertain`/`missing` and candidates exist, and only stage review rows once parse is allowed.
+  - Added provider override handling in parse route: validates selected provider, uses it instead of auto-detection, and returns the selected provider in diagnostics.
+  - Updated `/import` UI to include provider selection (auto-detect + detected candidates), show detection status, and re-parse with override when required.
+  - Added Playwright E2E coverage for uncertain detection requiring manual provider selection before parsing can continue.
+- Files changed
+  - `src/app/api/imports/parse/route.ts`
+  - `src/app/import/import-uploader.tsx`
+  - `tests/e2e/us-016-import-route-upload.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep ambiguous-provider handling in the parse API contract (`PROVIDER_SELECTION_REQUIRED` + detection payload) so UI can gate progression deterministically.
+    - Keep provider override state in `/import` client state and submit it via multipart `providerId` to avoid introducing separate provider preflight endpoints.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - `/import` parse responses now require a `detection` payload; mocked API responses in E2E tests must include it to avoid runtime failures.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Existing import review/submit flow remains unchanged once parse succeeds; this story only gates parse progression when provider detection is ambiguous.
 ---

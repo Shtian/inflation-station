@@ -41,7 +41,26 @@ type ImportError = {
   message: string;
 };
 
+type ProviderDetectionState = "certain" | "uncertain" | "missing";
+
+type ProviderDetection = {
+  state: ProviderDetectionState;
+  providerId: string | null;
+  providerName: string | null;
+  score: number;
+  matchedHeaders: string[];
+  candidates: Array<{
+    providerId: string;
+    providerName: string;
+    requiredMatches: number;
+    requiredTotal: number;
+    patternMatches: number;
+    score: number;
+  }>;
+};
+
 type ParseResponse = {
+  detection: ProviderDetection;
   summary: ImportSummary;
   errors: ImportError[];
   review?: {
@@ -77,6 +96,7 @@ type Category = {
 };
 
 const UNCATEGORIZED_SELECT_VALUE = "__uncategorized__";
+const AUTO_PROVIDER_SELECT_VALUE = "__auto_provider__";
 
 function getRequestErrorMessage(body: unknown) {
   if (typeof body === "object" && body && "message" in body) {
@@ -118,6 +138,11 @@ export function ImportUploader() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [parseResult, setParseResult] = useState<ParseResponse | null>(null);
+  const [providerDetection, setProviderDetection] =
+    useState<ProviderDetection | null>(null);
+  const [selectedProviderId, setSelectedProviderId] = useState(
+    AUTO_PROVIDER_SELECT_VALUE,
+  );
   const [categoryDecisions, setCategoryDecisions] = useState<
     Record<string, string>
   >({});
@@ -195,6 +220,19 @@ export function ImportUploader() {
       ),
     [categories, selectedAccountId],
   );
+  const providerOptions = useMemo(() => {
+    const options = new Map<string, string>();
+
+    for (const candidate of providerDetection?.candidates ?? []) {
+      options.set(candidate.providerId, candidate.providerName);
+    }
+
+    if (providerDetection?.providerId && providerDetection.providerName) {
+      options.set(providerDetection.providerId, providerDetection.providerName);
+    }
+
+    return [...options.entries()].map(([id, name]) => ({ id, name }));
+  }, [providerDetection]);
 
   async function parseCsv() {
     if (!selectedAccountId) {
@@ -217,6 +255,9 @@ export function ImportUploader() {
     const formData = new FormData();
     formData.set("accountId", selectedAccountId);
     formData.set("file", selectedFile);
+    if (selectedProviderId !== AUTO_PROVIDER_SELECT_VALUE) {
+      formData.set("providerId", selectedProviderId);
+    }
 
     const response = await fetch("/api/imports/parse", {
       method: "POST",
@@ -224,6 +265,23 @@ export function ImportUploader() {
     });
 
     const body = await response.json().catch(() => null);
+
+    if (
+      response.status === 409 &&
+      body &&
+      typeof body === "object" &&
+      "error" in body &&
+      (body as { error: unknown }).error === "PROVIDER_SELECTION_REQUIRED"
+    ) {
+      const detection =
+        "detection" in body
+          ? ((body as { detection: ProviderDetection }).detection ?? null)
+          : null;
+      setProviderDetection(detection);
+      setImportError(getRequestErrorMessage(body));
+      setImportLoading(false);
+      return;
+    }
 
     if (
       !response.ok ||
@@ -236,9 +294,15 @@ export function ImportUploader() {
       return;
     }
 
-    setParseResult(body as ParseResponse);
-    const reviewRows = Array.isArray((body as ParseResponse).review?.rows)
-      ? (body as ParseResponse).review?.rows
+    const parseResponse = body as ParseResponse;
+    setParseResult(parseResponse);
+    setProviderDetection(parseResponse.detection);
+    if (parseResponse.detection.providerId) {
+      setSelectedProviderId(parseResponse.detection.providerId);
+    }
+
+    const reviewRows = Array.isArray(parseResponse.review?.rows)
+      ? parseResponse.review?.rows
       : [];
     setCategoryDecisions(
       reviewRows?.reduce<Record<string, string>>((acc, row) => {
@@ -347,6 +411,40 @@ export function ImportUploader() {
           </Select>
 
           <label
+            htmlFor="provider-select"
+            className="text-sm font-medium text-foreground"
+          >
+            Provider
+          </label>
+          <Select
+            value={selectedProviderId}
+            onValueChange={setSelectedProviderId}
+          >
+            <SelectTrigger id="provider-select" className="w-full">
+              <SelectValue placeholder="Auto-detect provider" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={AUTO_PROVIDER_SELECT_VALUE}>
+                Auto-detect provider
+              </SelectItem>
+              {providerOptions.map((provider) => (
+                <SelectItem key={provider.id} value={provider.id}>
+                  {provider.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {providerDetection ? (
+            <p className="text-xs text-muted-foreground">
+              Provider detection: {providerDetection.state}
+              {providerDetection.providerName
+                ? ` (${providerDetection.providerName})`
+                : ""}
+              .
+            </p>
+          ) : null}
+
+          <label
             htmlFor="csv-file"
             className="text-sm font-medium text-foreground"
           >
@@ -357,9 +455,14 @@ export function ImportUploader() {
             id="csv-file"
             type="file"
             accept=".csv,text/csv"
-            onChange={(event) =>
-              setSelectedFile(event.target.files?.[0] ?? null)
-            }
+            onChange={(event) => {
+              setSelectedFile(event.target.files?.[0] ?? null);
+              setParseResult(null);
+              setCategoryDecisions({});
+              setProviderDetection(null);
+              setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
+              setImportError(null);
+            }}
           />
 
           <Button

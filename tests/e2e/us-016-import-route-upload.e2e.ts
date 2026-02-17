@@ -27,6 +27,23 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
+        detection: {
+          state: "certain",
+          providerId: "provider-1",
+          providerName: "DNB",
+          score: 1,
+          matchedHeaders: ["bokforingsdato", "belop"],
+          candidates: [
+            {
+              providerId: "provider-1",
+              providerName: "DNB",
+              requiredMatches: 2,
+              requiredTotal: 2,
+              patternMatches: 0,
+              score: 1,
+            },
+          ],
+        },
         summary: {
           imported: 2,
           duplicates: 0,
@@ -169,4 +186,156 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
       { rowId: "row-2", categoryId: "cat-transport" },
     ],
   });
+});
+
+test("requires provider override when detection is uncertain and continues after manual selection", async ({
+  page,
+}) => {
+  let parseAttempt = 0;
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [
+          {
+            id: "acc-1",
+            name: "Main Account",
+            institution: "DNB",
+            isActive: true,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        categories: [],
+      }),
+    });
+  });
+
+  await page.route("**/api/imports/parse", async (route, request) => {
+    const postData = request.postData() ?? "";
+
+    if (parseAttempt === 0) {
+      expect(postData).not.toContain('name="providerId"');
+      parseAttempt += 1;
+      await route.fulfill({
+        status: 409,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: "PROVIDER_SELECTION_REQUIRED",
+          message:
+            "Provider detection is uncertain. Select a provider and parse again.",
+          detection: {
+            state: "uncertain",
+            providerId: "provider-1",
+            providerName: "Bank A",
+            score: 0.6,
+            matchedHeaders: ["dato"],
+            candidates: [
+              {
+                providerId: "provider-1",
+                providerName: "Bank A",
+                requiredMatches: 2,
+                requiredTotal: 3,
+                patternMatches: 0,
+                score: 0.6,
+              },
+              {
+                providerId: "provider-2",
+                providerName: "Bank B",
+                requiredMatches: 2,
+                requiredTotal: 3,
+                patternMatches: 0,
+                score: 0.55,
+              },
+            ],
+          },
+        }),
+      });
+      return;
+    }
+
+    expect(postData).toContain('name="providerId"');
+    expect(postData).toContain("provider-2");
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        detection: {
+          state: "certain",
+          providerId: "provider-2",
+          providerName: "Bank B",
+          score: 0.9,
+          matchedHeaders: ["dato", "belop"],
+          candidates: [
+            {
+              providerId: "provider-2",
+              providerName: "Bank B",
+              requiredMatches: 3,
+              requiredTotal: 3,
+              patternMatches: 0,
+              score: 0.9,
+            },
+          ],
+        },
+        summary: {
+          imported: 1,
+          duplicates: 0,
+          ignoredReserved: 0,
+          invalid: 0,
+        },
+        errors: [],
+        review: {
+          sessionId: "session-override",
+          potentialDuplicates: 0,
+          rows: [
+            {
+              id: "row-1",
+              rowNumber: 2,
+              bookingDate: "2026-01-01",
+              amountNok: -200,
+              currency: "NOK",
+              normalizedMerchant: "butikk",
+              paymentType: "CARD",
+              categoryId: null,
+              potentialDuplicate: false,
+            },
+          ],
+        },
+      }),
+    });
+  });
+
+  await page.goto("/import");
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "transactions.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Dato;Beløp\n01.01.2026;200,00", "utf8"),
+  });
+
+  await page.getByRole("button", { name: "Parse CSV" }).click();
+  await expect(
+    page.getByText(
+      "Provider detection is uncertain. Select a provider and parse again.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByText("Parse summary")).toHaveCount(0);
+
+  const providerSelect = page.getByRole("combobox", { name: "Provider" });
+  await providerSelect.click();
+  await page.getByRole("option", { name: "Bank B", exact: true }).click();
+
+  await page.getByRole("button", { name: "Parse CSV" }).click();
+  await expect(page.getByText("Parse summary")).toBeVisible();
+  await expect(
+    page.getByText("Provider detection: certain (Bank B)."),
+  ).toBeVisible();
 });
