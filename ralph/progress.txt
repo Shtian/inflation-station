@@ -31,6 +31,7 @@
 - Keep provider mapping admin UI state local in `src/app/import-provider-mappings/*` and submit create/update payloads as full mapping definitions (provider metadata + field mappings + normalization rules JSON) so API validation feedback stays deterministic.
 - For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
 - Keep `/api/imports/submit` payload rows carrying finalized `selectedMessage` text, and recompute `normalizedMerchant` from staged `name` + selected message before dedupe/persistence.
+- For the overview route, keep account/date filter state plus `/api/dashboard/analytics` fetch orchestration in a dedicated `src/app/overview/use-overview-dashboard.ts` hook and keep formatting/date helpers in route-local utility modules.
 
 ## 2026-02-18 15:06:31 CET - US-101
 - What was implemented
@@ -116,4 +117,33 @@
 - Biome’s `noShadowRestrictedNames` rule flags default export function names like `Error` in `error.tsx`; use explicit component names (`OverviewRouteError`, etc.).
 - Useful context
 - Existing `tests/e2e/us-016-import-route-upload.e2e.ts` was auto-formatted during this iteration to satisfy repository-wide Biome formatting checks.
+---
+
+## 2026-02-18 18:40:31 CET - US-102
+- What was implemented
+- Extracted overview dashboard state/fetch orchestration into `src/app/overview/use-overview-dashboard.ts` (accounts loading, date preset/custom range state, analytics fetch, and existing error/loading semantics).
+- Moved overview formatting/date helpers into `src/app/overview/overview-dashboard.utils.ts` and shared route types into `src/app/overview/overview-dashboard.types.ts`.
+- Updated `src/app/overview/overview-dashboard.tsx` to consume the new hook/utilities while keeping chart mapping, labels, filters, and UI behavior unchanged.
+- Updated `AGENTS.md` dashboard UI convention to reflect route-local overview hook/module ownership.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/overview/overview-dashboard.tsx`
+- `src/app/overview/overview-dashboard.types.ts`
+- `src/app/overview/overview-dashboard.utils.ts`
+- `src/app/overview/use-overview-dashboard.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep overview fetch/filter orchestration in a dedicated route-local hook so chart sections stay focused on rendering concerns.
+- Keep route-local date/currency formatting helpers outside large client components to reduce churn when chart formatting changes.
+- Gotchas encountered
+- `react-day-picker` `DateRange.from` is optional; keep an explicit guard when passing calendar ranges into typed helper functions.
+- Useful context
+- Existing dashboard E2E coverage in `tests/e2e/us-014-dashboard-ui.e2e.ts` validated that account/date filter interactions remained behaviorally equivalent after extraction.
 ---

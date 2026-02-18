@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { DateRange } from "react-day-picker";
 import {
   Bar,
@@ -35,151 +35,34 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getCategoryColor } from "@/lib/category-color";
 import { cn } from "@/lib/utils";
-
-type Account = {
-  id: string;
-  name: string;
-};
-
-type DashboardRangePreset = "30d" | "90d" | "ytd" | "custom";
-
-type DashboardAnalytics = {
-  netCashflow: Array<{
-    date: string;
-    netNok: number;
-  }>;
-  inflowOutflow: Array<{
-    date: string;
-    inflowNok: number;
-    outflowNok: number;
-  }>;
-  categoryBreakdown: Array<{
-    categoryId: string | null;
-    categoryName: string;
-    spendNok: number;
-    transactionCount: number;
-  }>;
-  accountTrend: Array<{
-    accountId: string;
-    accountName: string;
-    points: Array<{
-      date: string;
-      netNok: number;
-      cumulativeNok: number;
-    }>;
-  }>;
-};
-
-const ALL_ACCOUNTS_VALUE = "__all_accounts__";
-
-function formatNok(value: number) {
-  return new Intl.NumberFormat("nb-NO", {
-    style: "currency",
-    currency: "NOK",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function formatCompactNok(value: number) {
-  return new Intl.NumberFormat("nb-NO", {
-    style: "currency",
-    currency: "NOK",
-    notation: "compact",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
-function formatTooltipNok(value: unknown) {
-  if (typeof value === "number") {
-    return formatNok(value);
-  }
-
-  return formatNok(Number.parseFloat(String(value)) || 0);
-}
-
-function formatChartDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("nb-NO", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(date);
-}
-
-function formatFullDate(value: string) {
-  const date = fromDateInputValue(value);
-  if (!date) {
-    return "Pick a date";
-  }
-
-  return new Intl.DateTimeFormat("nb-NO", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
-}
-
-function toDateInputValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function fromDateInputValue(value: string) {
-  if (!value) {
-    return undefined;
-  }
-
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
-    return undefined;
-  }
-
-  return parsed;
-}
-
-function getPresetRange(preset: Exclude<DashboardRangePreset, "custom">) {
-  const endDate = new Date();
-  endDate.setHours(0, 0, 0, 0);
-  const startDate = new Date(endDate);
-
-  if (preset === "30d") {
-    startDate.setDate(startDate.getDate() - 29);
-  } else if (preset === "90d") {
-    startDate.setDate(startDate.getDate() - 89);
-  } else {
-    startDate.setMonth(0, 1);
-  }
-
-  return {
-    startDate: toDateInputValue(startDate),
-    endDate: toDateInputValue(endDate),
-  };
-}
+import {
+  ALL_ACCOUNTS_VALUE,
+  formatChartDate,
+  formatCompactNok,
+  formatFullDate,
+  formatNok,
+  formatTooltipNok,
+  fromDateInputValue,
+} from "./overview-dashboard.utils";
+import { useOverviewDashboard } from "./use-overview-dashboard";
 
 export function OverviewDashboard() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [dashboardAccountId, setDashboardAccountId] = useState("");
-  const [dashboardRangePreset, setDashboardRangePreset] =
-    useState<DashboardRangePreset>("30d");
-  const [dashboardStartDate, setDashboardStartDate] = useState(
-    () => getPresetRange("30d").startDate,
-  );
-  const [dashboardEndDate, setDashboardEndDate] = useState(
-    () => getPresetRange("30d").endDate,
-  );
-  const [dashboardLoading, setDashboardLoading] = useState(true);
-  const [dashboardError, setDashboardError] = useState<string | null>(null);
-  const [dashboardData, setDashboardData] = useState<DashboardAnalytics | null>(
-    null,
-  );
-  const [customDatePopoverOpen, setCustomDatePopoverOpen] = useState(false);
+  const {
+    accounts,
+    dashboardAccountId,
+    dashboardRangePreset,
+    dashboardStartDate,
+    dashboardEndDate,
+    dashboardLoading,
+    dashboardError,
+    dashboardData,
+    customDatePopoverOpen,
+    setDashboardAccountId,
+    setDashboardRangePreset,
+    setCustomDatePopoverOpen,
+    setDashboardPreset,
+    setCustomDateRange,
+  } = useOverviewDashboard();
 
   const netCashflowChartConfig = {
     netNok: { label: "Net cashflow" },
@@ -202,76 +85,6 @@ export function OverviewDashboard() {
       color: "var(--chart-1)",
     },
   };
-
-  const loadAccounts = useCallback(async () => {
-    const response = await fetch("/api/accounts");
-    const body = await response.json().catch(() => null);
-
-    if (
-      !response.ok ||
-      !body ||
-      typeof body !== "object" ||
-      !("accounts" in body) ||
-      !Array.isArray(body.accounts)
-    ) {
-      setAccounts([]);
-      return;
-    }
-
-    const nextAccounts = (body.accounts as Account[]).map((account) => ({
-      id: account.id,
-      name: account.name,
-    }));
-
-    setAccounts(nextAccounts);
-  }, []);
-
-  const loadDashboard = useCallback(async () => {
-    setDashboardLoading(true);
-    setDashboardError(null);
-
-    const params = new URLSearchParams();
-    if (dashboardAccountId) {
-      params.set("accountId", dashboardAccountId);
-    }
-    if (dashboardStartDate) {
-      params.set("startDate", dashboardStartDate);
-    }
-    if (dashboardEndDate) {
-      params.set("endDate", dashboardEndDate);
-    }
-
-    const query = params.toString();
-    const response = await fetch(
-      `/api/dashboard/analytics${query ? `?${query}` : ""}`,
-    );
-    const body = await response.json().catch(() => null);
-
-    if (!response.ok || !body || typeof body !== "object") {
-      setDashboardError("Could not load dashboard analytics.");
-      setDashboardData(null);
-      setDashboardLoading(false);
-      return;
-    }
-
-    setDashboardData(body as DashboardAnalytics);
-    setDashboardLoading(false);
-  }, [dashboardAccountId, dashboardEndDate, dashboardStartDate]);
-
-  useEffect(() => {
-    void loadAccounts();
-  }, [loadAccounts]);
-
-  useEffect(() => {
-    void loadDashboard();
-  }, [loadDashboard]);
-
-  function setDashboardPreset(preset: Exclude<DashboardRangePreset, "custom">) {
-    const range = getPresetRange(preset);
-    setDashboardRangePreset(preset);
-    setDashboardStartDate(range.startDate);
-    setDashboardEndDate(range.endDate);
-  }
 
   const topCategories = useMemo(
     () => (dashboardData ? dashboardData.categoryBreakdown.slice(0, 5) : []),
@@ -379,16 +192,7 @@ export function OverviewDashboard() {
                     if (!range?.from) {
                       return;
                     }
-
-                    setDashboardRangePreset("custom");
-                    setDashboardStartDate(toDateInputValue(range.from));
-
-                    if (range.to) {
-                      setDashboardEndDate(toDateInputValue(range.to));
-                      setCustomDatePopoverOpen(false);
-                    } else {
-                      setDashboardEndDate(toDateInputValue(range.from));
-                    }
+                    setCustomDateRange(range);
                   }}
                 />
               </PopoverContent>
