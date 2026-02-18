@@ -72,6 +72,20 @@ describe("parseTransactionUpdatePayload", () => {
     expect(parsed.data.categoryId).toBeNull();
   });
 
+  it("accepts nullable note updates", () => {
+    const parsed = parseTransactionUpdatePayload({
+      amountNok: -100.25,
+      note: null,
+    });
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      return;
+    }
+
+    expect(parsed.data.note).toBeNull();
+  });
+
   it("rejects currency updates", () => {
     const parsed = parseTransactionUpdatePayload({
       amountNok: -100.25,
@@ -97,6 +111,7 @@ describe("updateTransaction", () => {
       amountNok: -100.25,
       normalizedMerchant: "updated shop",
       paymentType: PaymentType.CARD,
+      note: "Monthly grocery refill",
     });
 
     expect(parsed.success).toBe(true);
@@ -117,6 +132,7 @@ describe("updateTransaction", () => {
         amountNok: -100.25,
         normalizedMerchant: "updated shop",
         paymentType: PaymentType.CARD,
+        note: "Monthly grocery refill",
       },
       select: {
         id: true,

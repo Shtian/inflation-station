@@ -31,6 +31,7 @@ type TransactionUpdateDbClient = {
         currency: string;
         normalizedMerchant?: string;
         paymentType?: PaymentType;
+        note?: string | null;
       };
       select: {
         id: true;
@@ -59,6 +60,7 @@ const MUTABLE_FIELD_KEYS = [
   "amountNok",
   "normalizedMerchant",
   "paymentType",
+  "note",
 ] as const;
 
 function parseIsoDate(value: string): Date | null {
@@ -102,6 +104,7 @@ const transactionUpdatePayloadSchema = z
     amountNok: z.number().finite().optional(),
     normalizedMerchant: z.string().trim().min(1).optional(),
     paymentType: z.nativeEnum(PaymentType).optional(),
+    note: z.string().nullable().optional(),
     id: z.never().optional(),
     accountId: z.never().optional(),
     createdAt: z.never().optional(),
@@ -170,6 +173,9 @@ export async function updateTransaction(
         : {}),
       ...(params.updates.paymentType !== undefined
         ? { paymentType: params.updates.paymentType }
+        : {}),
+      ...(params.updates.note !== undefined
+        ? { note: params.updates.note }
         : {}),
     },
     select: {

@@ -101,6 +101,7 @@ describe("submitImportReview", () => {
           currency: "NOK",
           normalizedMerchant: "groceries friday",
           paymentType: PaymentType.CARD,
+          note: null,
         },
       ],
     });
@@ -172,6 +173,7 @@ describe("submitImportReview", () => {
           currency: "NOK",
           normalizedMerchant: "groceries friday",
           paymentType: PaymentType.CARD,
+          note: null,
         },
       ],
     });
@@ -250,6 +252,41 @@ describe("submitImportReview", () => {
           currency: "NOK",
           normalizedMerchant: "groceries joker trondheim",
           paymentType: PaymentType.CARD,
+          note: null,
+        },
+      ],
+    });
+  });
+
+  it("persists provided row note values", async () => {
+    const db = createDbMock({
+      validCategories: [{ id: "cat-food" }],
+    });
+
+    await submitImportReview(db, {
+      sessionId: "session-1",
+      invalidCount: 0,
+      rows: [
+        {
+          rowId: "row-1",
+          categoryId: "cat-food",
+          selectedMessage: "Friday",
+          note: "Split dinner with family",
+        },
+      ],
+    });
+
+    expect(db.transaction.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          accountId: "account-1",
+          categoryId: "cat-food",
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          note: "Split dinner with family",
         },
       ],
     });

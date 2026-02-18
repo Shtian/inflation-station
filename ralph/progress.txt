@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- For optional nullable fields added to persisted models, normalize missing payload values to explicit `null` before `createMany`/`update` writes so Prisma input shapes stay deterministic across API and service layers.
 - Biome's `noArrayIndexKey` rule rejects `key={i}` in `.map()` calls — use semantic string keys (field names, column names) from a typed const array instead of `Array.from({ length: N }).map((_, i) => ...)` patterns.
 - Keep each app route `page.tsx` as a thin wrapper that renders one route-local `*-route-root.tsx` entry component, and enforce route-root size constraints with `scripts/check-route-client-size.mjs` during `pnpm lint`.
 - For major app routes, define route-local `loading.tsx` and `error.tsx` files and reuse shared fallback components for consistent recoverable-loading UX across sections.
@@ -458,4 +459,35 @@
 - Existing `tests/e2e/us-017-theme-toggle.e2e.ts` was flaky around dropdown menu-item clicks and local/system theme expectations; persistence-based assertions are more stable than direct dropdown click sequencing in this environment.
 - Useful context
 - Existing provider-mapping admin behavior coverage remains in `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts` and continued passing after component extraction.
+---
+## 2026-02-18 22:12:02 CET - US-001
+- What was implemented
+- Added nullable `note` to `Transaction` in Prisma schema and created/applied migration `20260218210956_add_transaction_note`.
+- Updated transaction update persistence (`src/lib/transactions/update.ts`) to accept and persist optional `note` values.
+- Updated import review submit persistence (`src/lib/import/review-submit.ts` + `/api/imports/submit`) to accept optional row notes and persist them on transaction creation.
+- Added/updated unit coverage for note parsing and persistence in `src/lib/transactions/update.test.ts` and `src/lib/import/review-submit.test.ts`.
+- Files changed
+- `prisma/schema.prisma`
+- `prisma/migrations/20260218210956_add_transaction_note/migration.sql`
+- `src/lib/transactions/update.ts`
+- `src/lib/transactions/update.test.ts`
+- `src/lib/import/review-submit.ts`
+- `src/lib/import/review-submit.test.ts`
+- `src/app/api/imports/submit/route.ts`
+- `src/components/ui/label.tsx`
+- `tests/e2e/us-014-dashboard-ui.e2e.ts`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered
+  - Keep note-like optional text fields nullable end-to-end and default missing request values to `null` before persistence writes.
+  - Gotchas encountered
+  - `pnpm exec tsc --noEmit` can fail on stale `.next/types` artifacts; running `pnpm build` regenerates Next type artifacts before re-running `tsc`.
+  - Useful context
+  - The dashboard E2E (`tests/e2e/us-014-dashboard-ui.e2e.ts`) should navigate to `/` for the overview workspace in current route composition.
 ---
