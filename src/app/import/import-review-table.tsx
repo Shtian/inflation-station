@@ -1,14 +1,7 @@
 "use client";
 
-import { Sparkles, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -24,7 +17,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { ImportReviewCategoryCell } from "./components/import-review-category-cell";
+import { ImportReviewMessageCell } from "./components/import-review-message-cell";
+import { ImportReviewWarningsCell } from "./components/import-review-warnings-cell";
 
 export const UNCATEGORIZED_SELECT_VALUE = "__uncategorized__";
 export const MESSAGE_SOURCE_ORIGINAL = "original" as const;
@@ -149,12 +144,6 @@ export function ImportReviewTable({
         </TableHeader>
         <TableBody>
           {rows.map((row) => {
-            const originalMessage =
-              typeof row.title === "string" && row.title.trim().length > 0
-                ? row.title
-                : typeof row.name === "string" && row.name.trim().length > 0
-                  ? row.name
-                  : "No original message";
             const hasCleanedMessage =
               typeof row.cleanedMessage === "string" &&
               row.cleanedMessage.trim().length > 0;
@@ -165,118 +154,48 @@ export function ImportReviewTable({
                 : MESSAGE_SOURCE_ORIGINAL);
             const selectedCategoryId =
               categoryDecisions[row.id] ?? row.categoryId ?? "";
-            const isUncategorized = selectedCategoryId.length === 0;
             return (
               <TableRow key={row.id}>
                 <TableCell>{row.bookingDate}</TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">
-                      {selectedMessageSource === MESSAGE_SOURCE_CLEANED
-                        ? row.cleanedMessage
-                        : originalMessage}
-                    </span>
-                    {hasCleanedMessage ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              aria-label={`Toggle message source for row ${row.rowNumber}`}
-                              onClick={() =>
-                                setMessageDecisions((current) => ({
-                                  ...current,
-                                  [row.id]:
-                                    selectedMessageSource ===
-                                    MESSAGE_SOURCE_CLEANED
-                                      ? MESSAGE_SOURCE_ORIGINAL
-                                      : MESSAGE_SOURCE_CLEANED,
-                                }))
-                              }
-                              className={cn(
-                                "shrink-0 rounded p-0.5 transition-colors hover:bg-accent",
-                                selectedMessageSource === MESSAGE_SOURCE_CLEANED
-                                  ? "text-violet-500"
-                                  : "text-muted-foreground",
-                              )}
-                            >
-                              <Sparkles
-                                className="h-3.5 w-3.5"
-                                aria-hidden="true"
-                              />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side="top"
-                            className="max-w-xs space-y-1 p-3 text-xs"
-                          >
-                            <p>
-                              <span className="font-medium">Original:</span>{" "}
-                              {originalMessage}
-                            </p>
-                            <p>
-                              <span className="font-medium">AI-cleaned:</span>{" "}
-                              {row.cleanedMessage}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : null}
-                  </div>
+                  <ImportReviewMessageCell
+                    rowId={row.id}
+                    rowNumber={row.rowNumber}
+                    title={row.title}
+                    name={row.name}
+                    cleanedMessage={row.cleanedMessage}
+                    selectedMessageSource={selectedMessageSource}
+                    onToggleMessageSource={(rowId) =>
+                      setMessageDecisions((current) => ({
+                        ...current,
+                        [rowId]:
+                          selectedMessageSource === MESSAGE_SOURCE_CLEANED
+                            ? MESSAGE_SOURCE_ORIGINAL
+                            : MESSAGE_SOURCE_CLEANED,
+                      }))
+                    }
+                  />
                 </TableCell>
                 <TableCell>{formatNok(row.amountNok)}</TableCell>
                 <TableCell>{row.paymentType}</TableCell>
                 <TableCell>
-                  <Select
-                    value={selectedCategoryId || UNCATEGORIZED_SELECT_VALUE}
-                    onValueChange={(value) =>
+                  <ImportReviewCategoryCell
+                    rowId={row.id}
+                    rowNumber={row.rowNumber}
+                    selectedCategoryId={selectedCategoryId}
+                    categories={categories}
+                    onCategoryChange={(rowId, categoryId) =>
                       setCategoryDecisions((current) => ({
                         ...current,
-                        [row.id]:
-                          value === UNCATEGORIZED_SELECT_VALUE ? "" : value,
+                        [rowId]: categoryId,
                       }))
                     }
-                  >
-                    <SelectTrigger
-                      aria-label={`Category for row ${row.rowNumber}`}
-                      className={cn(
-                        "w-[220px]",
-                        isUncategorized && "text-amber-500",
-                      )}
-                    >
-                      <SelectValue placeholder="Uncategorized" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem
-                        value={UNCATEGORIZED_SELECT_VALUE}
-                        className="text-amber-500"
-                      >
-                        Uncategorized
-                      </SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 </TableCell>
                 <TableCell>
-                  {row.potentialDuplicate ? (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <TriangleAlert
-                            className="h-4 w-4 text-amber-500"
-                            aria-label="Potential duplicate"
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          Potential duplicate
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ) : null}
+                  <ImportReviewWarningsCell
+                    potentialDuplicate={row.potentialDuplicate}
+                  />
                 </TableCell>
               </TableRow>
             );

@@ -1,19 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import { ImportReviewPhase } from "./components/import-review-phase";
 import { ImportUploadPhase } from "./components/import-upload-phase";
+import { ProviderSelectionDialog } from "./components/provider-selection-dialog";
 import { useImportWorkflow } from "./use-import-workflow";
 
 export function ImportUploader() {
@@ -113,64 +104,15 @@ export function ImportUploader() {
         />
       )}
 
-      <Dialog
+      <ProviderSelectionDialog
         open={isProviderDialogOpen}
         onOpenChange={setIsProviderDialogOpen}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Select provider</DialogTitle>
-            <DialogDescription>
-              Choose the provider that matches your CSV file format.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            {dialogProviderOptions.map((provider) => (
-              <button
-                key={provider.id}
-                type="button"
-                onClick={() => setDialogSelectedProviderId(provider.id)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent",
-                  dialogSelectedProviderId === provider.id
-                    ? "border-primary bg-primary/5"
-                    : "border-border",
-                )}
-              >
-                <div
-                  className={cn(
-                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2",
-                    dialogSelectedProviderId === provider.id
-                      ? "border-primary bg-primary"
-                      : "border-muted-foreground",
-                  )}
-                >
-                  {dialogSelectedProviderId === provider.id ? (
-                    <div className="h-2 w-2 rounded-full bg-primary-foreground" />
-                  ) : null}
-                </div>
-                <span className="text-sm font-medium">{provider.name}</span>
-              </button>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsProviderDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleProviderConfirm}
-              disabled={!dialogSelectedProviderId}
-            >
-              Confirm
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        providerOptions={dialogProviderOptions}
+        selectedProviderId={dialogSelectedProviderId}
+        onSelectProvider={setDialogSelectedProviderId}
+        onCancel={() => setIsProviderDialogOpen(false)}
+        onConfirm={handleProviderConfirm}
+      />
     </main>
   );
 }

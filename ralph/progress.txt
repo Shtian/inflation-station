@@ -8,6 +8,7 @@
 - `/api/import-provider-mappings` GET returns `{ mappings: [{ id, providerName, ... }] }` — use this to populate "all providers" in the Change dialog when `providerDetection.candidates` is empty.
 - Keep `/import` request orchestration and review-decision state in `src/app/import/use-import-workflow.ts`; keep `import-uploader.tsx` focused on rendering and local drag/drop presentation state.
 - Keep `/import` upload-phase and review-phase markup in focused components under `src/app/import/components/*`; keep `import-uploader.tsx` as the route-level composition shell plus provider dialog orchestration.
+- Keep provider-selection dialog and import-review row controls as focused components under `src/app/import/components/*`, and preserve stable row-level accessible names on controls (`Category for row N`, `Toggle message source for row N`) for Playwright/user-facing locators.
 - Keep API handlers in `src/app/api/**` and use the shared server-only Prisma client in `src/lib/prisma.ts`.
 - Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
 - For paginated table routes, keep summary metadata (`page`, `totalPages`, `total`) outside the table and keep row rendering inside table primitives.
@@ -366,4 +367,34 @@
 - New route-local UI files must still satisfy Biome import-order/format checks; running `pnpm exec biome check --write` on added files avoids failing the full lint pipeline.
 - Useful context
 - Existing Playwright coverage in `tests/e2e/us-016-import-route-upload.e2e.ts` continued to validate parse, provider-selection-required, and submit flows after the phase extraction.
+---
+
+## 2026-02-18 21:33:30 CET - US-111
+- What was implemented
+- Extracted provider selection dialog UI from `import-uploader.tsx` into a dedicated `ProviderSelectionDialog` component with typed props and unchanged selection/confirm behavior.
+- Split import review row controls into focused cell components (`ImportReviewMessageCell`, `ImportReviewCategoryCell`, `ImportReviewWarningsCell`) while preserving message-source toggling and row category decision behavior.
+- Kept accessibility labels on row controls unchanged (`Toggle message source for row N`, `Category for row N`) to preserve stable user-facing locators.
+- Updated root `AGENTS.md` with an import-review componentization convention for provider dialog + row controls.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/import-review-table.tsx`
+- `src/app/import/components/provider-selection-dialog.tsx`
+- `src/app/import/components/import-review-message-cell.tsx`
+- `src/app/import/components/import-review-category-cell.tsx`
+- `src/app/import/components/import-review-warnings-cell.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅ (first run hit known transient timeout in `tests/e2e/us-017-theme-toggle.e2e.ts`; immediate rerun passed)
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep `/import` provider-selection dialog and review-row controls as independent components so importer workflow orchestration can stay isolated in the route shell/hook.
+- Gotchas encountered
+- `tests/e2e/us-017-theme-toggle.e2e.ts` can still fail intermittently waiting for the `Light` menu item; an isolated rerun is a reliable recovery when this transient occurs.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-016-import-route-upload.e2e.ts` already validates provider override flow and row-level message/category controls, so this decomposition required no locator updates.
 ---
