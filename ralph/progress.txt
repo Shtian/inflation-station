@@ -32,6 +32,7 @@
 - For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
 - Keep `/api/imports/submit` payload rows carrying finalized `selectedMessage` text, and recompute `normalizedMerchant` from staged `name` + selected message before dedupe/persistence.
 - For the overview route, keep account/date filter state plus `/api/dashboard/analytics` fetch orchestration in a dedicated `src/app/overview/use-overview-dashboard.ts` hook and keep formatting/date helpers in route-local utility modules.
+- For overview visualizations, keep each chart card in `src/app/overview/components/*` and pass route-level loading/data slices as props from `overview-dashboard.tsx` so chart rendering changes stay isolated.
 
 ## 2026-02-18 15:06:31 CET - US-101
 - What was implemented
@@ -146,4 +147,30 @@
 - `react-day-picker` `DateRange.from` is optional; keep an explicit guard when passing calendar ranges into typed helper functions.
 - Useful context
 - Existing dashboard E2E coverage in `tests/e2e/us-014-dashboard-ui.e2e.ts` validated that account/date filter interactions remained behaviorally equivalent after extraction.
+---
+
+## 2026-02-18 18:46:11 CET - US-103
+- What was implemented
+- Split overview chart sections into focused route-local components: `NetCashflowCard`, `InflowOutflowCard`, `AccountStateTrendCard`, and `CategorySpendBreakdownCard`.
+- Updated `src/app/overview/overview-dashboard.tsx` to compose the extracted chart components while preserving existing tabs, chart mappings, labels, and loading/empty states.
+- Files changed
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/overview/overview-dashboard.tsx`
+- `src/app/overview/components/net-cashflow-card.tsx`
+- `src/app/overview/components/inflow-outflow-card.tsx`
+- `src/app/overview/components/account-state-trend-card.tsx`
+- `src/app/overview/components/category-spend-breakdown-card.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep overview chart cards as independent route-local components and pass only the needed analytics slices from the route dashboard container.
+- Gotchas encountered
+- Preserve existing loading and empty-state copy per card during extraction to keep E2E assertions and UX behavior stable.
+- Useful context
+- `tests/e2e/us-014-dashboard-ui.e2e.ts` continued to pass without locator updates, confirming the extraction preserved overview interactions.
 ---
