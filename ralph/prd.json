@@ -1,8 +1,202 @@
 {
   "project": "inflation-station",
-  "branchName": "ralph/transaction-notes",
-  "description": "Add optional plain-text transaction notes editable during import review and from transactions overview after persistence.",
+  "branchName": "ralph/import-page-ui-improvements",
+  "description": "Refactor large app route components into composable, testable modules while preserving behavior and API contracts.",
   "userStories": [
+    {
+      "id": "US-101",
+      "title": "Standardize app-route composition boundaries",
+      "description": "As a developer, I want route-local composition boundaries so page logic is predictable and maintainable.",
+      "acceptanceCriteria": [
+        "Define and apply a route-local structure for large app routes using focused component, hook, and utility modules.",
+        "Keep `page.tsx` files as thin entry wrappers that delegate to a single route feature root.",
+        "Document and enforce a practical file-size guardrail for route-level client components.",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-102",
+      "title": "Extract overview dashboard data and filter state hook",
+      "description": "As a developer, I want overview data loading and filter state moved out of the page component so chart rendering and data behavior can evolve independently.",
+      "acceptanceCriteria": [
+        "Extract account/filter/date-range state and analytics fetching into a dedicated overview hook.",
+        "Move overview formatting/date helper functions into route-local utility modules.",
+        "Keep overview API query behavior and error handling semantics unchanged.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-103",
+      "title": "Split overview charts into focused components",
+      "description": "As a developer, I want each overview visualization section isolated so chart updates do not require editing one monolithic component.",
+      "acceptanceCriteria": [
+        "Extract flow and category chart sections into focused route components (cashflow, inflow/outflow, account trend, category breakdown).",
+        "Keep existing chart data mapping, labels, and empty/loading states unchanged.",
+        "Keep tab and filter interactions behaviorally equivalent.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-104",
+      "title": "Decompose accounts manager into hook and sections",
+      "description": "As a developer, I want accounts data/mutation logic separated from forms and table rendering so account maintenance changes are localized.",
+      "acceptanceCriteria": [
+        "Extract account load/create/edit/delete behavior into a route-local accounts hook.",
+        "Extract create form and editable accounts table into focused section components.",
+        "Preserve current validation, notices, and delete confirmation behavior.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-105",
+      "title": "Split categories category-management section",
+      "description": "As a developer, I want category CRUD UI isolated from rule management so category-specific changes are easier to reason about.",
+      "acceptanceCriteria": [
+        "Extract category create/delete form and table into a dedicated category-management section component.",
+        "Move shared scope-label and category mutation error helpers into route-local utilities.",
+        "Keep existing category CRUD behavior and messaging unchanged.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-106",
+      "title": "Split categories rules-management section",
+      "description": "As a developer, I want rule CRUD form and table separated from category CRUD so rule logic can be modified safely.",
+      "acceptanceCriteria": [
+        "Extract category-rule create/delete form and rules table into a dedicated rules-management section component.",
+        "Preserve priority parsing, payment-type handling, and scope behavior for rules.",
+        "Keep existing error/notice rendering semantics unchanged.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-107",
+      "title": "Decompose transactions list and pagination concerns",
+      "description": "As a developer, I want transaction querying, filters, and table pagination separated so list behavior updates are isolated.",
+      "acceptanceCriteria": [
+        "Extract accounts/categories/transactions loading and pagination/filter state into a transactions hook.",
+        "Extract transactions table and pagination controls into a focused section component.",
+        "Keep existing account filter and page-reset behavior unchanged.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-108",
+      "title": "Extract transaction edit and delete dialog modules",
+      "description": "As a developer, I want edit/delete dialog flows isolated so mutation changes do not affect table rendering code.",
+      "acceptanceCriteria": [
+        "Extract edit transaction form dialog into a dedicated component with typed props.",
+        "Extract delete transaction confirmation dialog into a dedicated component with typed props.",
+        "Preserve existing mutation payloads, validation, and post-mutation refetch behavior.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-109",
+      "title": "Extract import workflow state and request orchestration",
+      "description": "As a developer, I want import parsing/submission workflow state extracted from the large uploader component so state transitions are explicit and testable.",
+      "acceptanceCriteria": [
+        "Extract import state transitions and request orchestration into a dedicated route hook or reducer.",
+        "Keep parse and submit request payload semantics unchanged for `/api/imports/parse` and `/api/imports/submit`.",
+        "Preserve provider detection and selection-required handling behavior.",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-110",
+      "title": "Split import upload and review phase UIs",
+      "description": "As a developer, I want upload-phase and review-phase rendering separated so each phase can evolve independently.",
+      "acceptanceCriteria": [
+        "Extract upload-phase UI into a focused component without changing file/account/provider selection behavior.",
+        "Extract review-phase UI into a focused component without changing review summaries, warnings, and submit controls.",
+        "Keep import page success/error notice behavior unchanged.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-111",
+      "title": "Decompose import provider dialog and review table row controls",
+      "description": "As a developer, I want provider selection and review-row cell controls componentized so row interactions are easier to maintain and test.",
+      "acceptanceCriteria": [
+        "Extract provider selection dialog into a dedicated component with stable selection behavior.",
+        "Split import review row controls into focused cell components while preserving accessibility labels on row controls.",
+        "Preserve message-source toggling and category-decision behavior per row.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-112",
+      "title": "Extract provider-mapping normalization and validation utilities",
+      "description": "As a developer, I want provider-mapping helper logic moved out of the manager component so form behavior is reusable and testable.",
+      "acceptanceCriteria": [
+        "Extract normalization parsing/building helpers and mapping validation helpers into route-local utility modules.",
+        "Keep required-field and duplicate-canonical-field validation behavior unchanged.",
+        "Add or update unit tests for extracted pure utility logic.",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-113",
+      "title": "Split provider-mappings add/edit forms and table actions",
+      "description": "As a developer, I want provider-mapping dialogs and table actions modularized so the largest route component becomes maintainable.",
+      "acceptanceCriteria": [
+        "Extract reusable field-mapping editor UI used by both add and edit flows.",
+        "Extract add dialog, edit dialog, and mappings table/actions into focused components.",
+        "Preserve create/update/delete payload structure and current success/error messaging behavior.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
     {
       "id": "US-001",
       "title": "Persist transaction note field",
@@ -14,7 +208,7 @@
         "Typecheck passes",
         "Tests pass"
       ],
-      "priority": 1,
+      "priority": 14,
       "passes": false,
       "notes": ""
     },
@@ -30,7 +224,7 @@
         "Tests pass",
         "Verify in browser using dev-browser skill"
       ],
-      "priority": 2,
+      "priority": 15,
       "passes": false,
       "notes": ""
     },
@@ -46,7 +240,7 @@
         "Tests pass",
         "Verify in browser using dev-browser skill"
       ],
-      "priority": 3,
+      "priority": 16,
       "passes": false,
       "notes": ""
     },
@@ -62,7 +256,7 @@
         "Tests pass",
         "Verify in browser using dev-browser skill"
       ],
-      "priority": 4,
+      "priority": 17,
       "passes": false,
       "notes": ""
     }
