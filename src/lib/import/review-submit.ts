@@ -1,4 +1,5 @@
 import type { PaymentType } from "@prisma/client";
+import { normalizeImportMerchant } from "./normalization";
 import { buildTransactionFingerprint } from "./transaction-dedupe";
 
 export type SubmitImportReviewSummary = {
@@ -121,6 +122,7 @@ type ImportReviewSubmitDbClient = {
 type SubmitReviewRow = {
   rowId: string;
   categoryId: string | null;
+  selectedMessage: string;
 };
 
 function toNormalizedInvalidCount(value: number) {
@@ -196,13 +198,29 @@ export async function submitImportReview(
     },
     {},
   );
+  const selectedMessageByRowId = params.rows.reduce<Record<string, string>>(
+    (acc, row) => {
+      acc[row.rowId] = row.selectedMessage;
+      return acc;
+    },
+    {},
+  );
 
-  const finalizedRows = session.rows.map((row) => ({
-    ...row,
-    categoryId:
-      row.id in categoryByRowId ? categoryByRowId[row.id] : row.categoryId,
-    amountNok: Number.parseFloat(row.amountNok.toString()),
-  }));
+  const finalizedRows = session.rows.map((row) => {
+    const selectedMessage =
+      row.id in selectedMessageByRowId
+        ? selectedMessageByRowId[row.id]
+        : row.title;
+
+    return {
+      ...row,
+      title: selectedMessage,
+      normalizedMerchant: normalizeImportMerchant(row.name, selectedMessage),
+      categoryId:
+        row.id in categoryByRowId ? categoryByRowId[row.id] : row.categoryId,
+      amountNok: Number.parseFloat(row.amountNok.toString()),
+    };
+  });
 
   const selectedCategoryIds = Array.from(
     new Set(

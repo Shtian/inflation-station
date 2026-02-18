@@ -1,4 +1,4 @@
-import { PaymentType } from "@prisma/client";
+import type { PaymentType } from "@prisma/client";
 import {
   buildRuleBasedSuggestions,
   type CategoryRuleCandidate,
@@ -8,6 +8,18 @@ import {
   type ParsedCsvRow,
   parseNorwegianBankCsv,
 } from "./csv-parser";
+import {
+  normalizeImportMerchant,
+  normalizeImportPaymentType,
+} from "./normalization";
+import {
+  buildOpenAiMessageCleanup,
+  type MessageCleanupUnavailableReason,
+} from "./openai-message-cleanup";
+import {
+  type ProviderCsvMapping,
+  parseProviderMappedCsv,
+} from "./provider-csv-parser";
 import { buildTransactionFingerprint } from "./transaction-dedupe";
 
 export type ReviewStageSummary = {
@@ -29,6 +41,7 @@ export type ReviewStageRow = {
   recipient: string;
   name: string;
   title: string;
+  cleanedMessage: string | null;
   categoryId: string | null;
   potentialDuplicate: boolean;
 };
@@ -39,6 +52,7 @@ export type StageParsedImportResult = {
   review: {
     sessionId: string | null;
     potentialDuplicates: number;
+    messageCleanupUnavailableReason: MessageCleanupUnavailableReason | null;
     rows: ReviewStageRow[];
   };
 };
@@ -178,39 +192,8 @@ type ValidatedStageRow = {
   title: string;
 };
 
-function normalizeToken(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]/g, " ")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
-
-function normalizePaymentType(value: string): PaymentType {
-  const normalized = normalizeToken(value);
-
-  if (["kort", "card"].includes(normalized)) {
-    return PaymentType.CARD;
-  }
-
-  if (["overforing", "overfoering", "transfer"].includes(normalized)) {
-    return PaymentType.TRANSFER;
-  }
-
-  if (["eft", "giro", "avtalegiro"].includes(normalized)) {
-    return PaymentType.EFT;
-  }
-
-  if (["cash", "kontant"].includes(normalized)) {
-    return PaymentType.CASH;
-  }
-
-  return PaymentType.OTHER;
-}
-
 function normalizeMerchant(row: ParsedCsvRow): string {
-  return normalizeToken([row.name, row.title].join(" "));
+  return normalizeImportMerchant(row.name, row.title);
 }
 
 function parseBookingDate(value: string): Date | null {
@@ -286,7 +269,7 @@ function splitValidAndInvalidRows(rows: ParsedCsvRow[]): {
       bookingDate: bookingDate.toISOString().slice(0, 10),
       amountNok: row.amountNok,
       currency: row.currency,
-      paymentType: normalizePaymentType(row.paymentType),
+      paymentType: normalizeImportPaymentType(row.paymentType),
       normalizedMerchant: normalizeMerchant(row),
       sender: row.sender,
       recipient: row.recipient,
@@ -339,6 +322,8 @@ type ExistingTransactionFingerprintSource = {
   normalizedMerchant: string;
   paymentType: PaymentType;
 };
+
+type BuildOpenAiMessageCleanup = typeof buildOpenAiMessageCleanup;
 
 async function buildPrefilledCategoryMap(
   db: ImportReviewStageDbClient,
@@ -432,9 +417,17 @@ export async function stageParsedImportRows(
   params: {
     accountId: string;
     csvContent: string;
+    providerMapping?: ProviderCsvMapping | null;
+  },
+  options?: {
+    openAiCleanupEnabled?: boolean;
+    openAiApiKey?: string | null;
+    buildOpenAiMessageCleanup?: BuildOpenAiMessageCleanup;
   },
 ): Promise<StageParsedImportResult> {
-  const parsed = parseNorwegianBankCsv(params.csvContent);
+  const parsed = params.providerMapping
+    ? parseProviderMappedCsv(params.csvContent, params.providerMapping)
+    : parseNorwegianBankCsv(params.csvContent);
 
   if (parsed.rows.length === 0) {
     return {
@@ -443,6 +436,7 @@ export async function stageParsedImportRows(
       review: {
         sessionId: null,
         potentialDuplicates: 0,
+        messageCleanupUnavailableReason: null,
         rows: [],
       },
     };
@@ -457,6 +451,7 @@ export async function stageParsedImportRows(
       review: {
         sessionId: null,
         potentialDuplicates: 0,
+        messageCleanupUnavailableReason: null,
         rows: [],
       },
     };
@@ -476,6 +471,37 @@ export async function stageParsedImportRows(
     validRows,
     existingTransactions,
   );
+
+  const resolvedOpenAiApiKey =
+    options && "openAiApiKey" in options
+      ? options.openAiApiKey
+      : process.env.OPENAI_API_KEY;
+  const openAiCleanupBuilder =
+    options?.buildOpenAiMessageCleanup ?? buildOpenAiMessageCleanup;
+
+  let cleanupUnavailableReason: MessageCleanupUnavailableReason | null = null;
+  let cleanedMessageByRowNumber = new Map<number, string>();
+  try {
+    const cleanupResult = await openAiCleanupBuilder({
+      enabled: options?.openAiCleanupEnabled ?? true,
+      apiKey: resolvedOpenAiApiKey,
+      rows: validRows.map((row) => ({
+        rowNumber: row.rowNumber,
+        message: `${row.name} ${row.title}`.trim(),
+      })),
+    });
+    cleanupUnavailableReason = cleanupResult.unavailableReason;
+    cleanedMessageByRowNumber = cleanupResult.suggestions.reduce(
+      (map, suggestion) => {
+        map.set(suggestion.rowNumber, suggestion.cleanedMessage);
+        return map;
+      },
+      new Map<number, string>(),
+    );
+  } catch {
+    cleanupUnavailableReason = "provider_error";
+    cleanedMessageByRowNumber = new Map<number, string>();
+  }
 
   let prefilledCategoryByRowNumber = new Map<number, string>();
   try {
@@ -542,6 +568,7 @@ export async function stageParsedImportRows(
     review: {
       sessionId: session.id,
       potentialDuplicates: potentialDuplicateRowNumbers.size,
+      messageCleanupUnavailableReason: cleanupUnavailableReason,
       rows: stagedRows.map((row) => ({
         id: row.id,
         rowNumber: row.rowNumber,
@@ -554,6 +581,7 @@ export async function stageParsedImportRows(
         recipient: row.recipient,
         name: row.name,
         title: row.title,
+        cleanedMessage: cleanedMessageByRowNumber.get(row.rowNumber) ?? null,
         categoryId: row.categoryId,
         potentialDuplicate: potentialDuplicateRowNumbers.has(row.rowNumber),
       })),

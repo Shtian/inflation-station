@@ -143,15 +143,17 @@ test("updates dashboard charts when account and date filters change", async ({
     page.getByRole("heading", { name: "Inflow vs Outflow" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Category Spend Breakdown" }),
-  ).toBeVisible();
-  await expect(
     page.getByRole("heading", { name: "Account State Trend" }),
   ).toBeVisible();
-  await expect(page.locator("[data-slot='chart']")).toHaveCount(4);
+  await expect(page.locator("[data-slot='chart']")).toHaveCount(3);
   await expect(page.getByText(/200,00/).first()).toBeVisible();
+  await page.getByRole("tab", { name: "Category", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Category Spend Breakdown" }),
+  ).toBeVisible();
   await expect(page.getByText(/Food:\s/)).toBeVisible();
 
+  await page.getByRole("tab", { name: "Flow", exact: true }).click();
   await page.getByRole("combobox", { name: "Account filter" }).click();
   await page
     .getByRole("option", { name: "Savings Account", exact: true })
@@ -163,5 +165,6 @@ test("updates dashboard charts when account and date filters change", async ({
     page.getByRole("button", { name: "Year to date" }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText(/960,00/).first()).toBeVisible();
+  await page.getByRole("tab", { name: "Category", exact: true }).click();
   await expect(page.getByText(/Utilities:\s/)).toBeVisible();
 });

@@ -136,3 +136,27 @@ model ImportReviewRow {
 
   @@index([sessionId, rowNumber])
 }
+
+model ImportProviderMapping {
+  id                 String                       @id @default(cuid())
+  providerName       String                       @unique
+  fieldMappings      ImportProviderFieldMapping[]
+  normalizationRules Json
+  mappingVersion     Int                          @default(1)
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+}
+
+model ImportProviderFieldMapping {
+  id               String                @id @default(cuid())
+  providerMappingId String
+  providerMapping  ImportProviderMapping @relation(fields: [providerMappingId], references: [id], onDelete: Cascade)
+  sourceField      String
+  canonicalField   String
+  transformRules   Json?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@unique([providerMappingId, canonicalField])
+  @@index([providerMappingId, sourceField])
+}

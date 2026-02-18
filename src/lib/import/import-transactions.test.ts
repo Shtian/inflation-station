@@ -134,6 +134,32 @@ describe("importTransactionsFromCsv", () => {
     });
   });
 
+  it("normalizes payment type labels before dedupe against existing transactions", async () => {
+    const db = createDbMock({
+      existingTransactions: [
+        {
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          normalizedMerchant: "baer ol",
+          paymentType: PaymentType.TRANSFER,
+        },
+      ],
+    });
+
+    const result = await importTransactionsFromCsv(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Bær;Øl;NOK;Overføring`,
+    });
+
+    expect(result.summary).toEqual({
+      imported: 0,
+      duplicates: 1,
+      ignoredReserved: 0,
+      invalid: 0,
+    });
+    expect(db.transaction.create).not.toHaveBeenCalled();
+  });
+
   it("preserves ignored and invalid counts from parser while importing valid rows", async () => {
     const db = createDbMock();
 

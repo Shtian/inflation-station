@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { AppNavigation } from "@/components/app-navigation";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/theme-toggle";
 import "./globals.css";
@@ -26,14 +27,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const links = [
-    { href: "/overview", label: "Overview" },
-    { href: "/transactions", label: "Transactions" },
-    { href: "/import", label: "Import" },
-    { href: "/accounts", label: "Accounts" },
-    { href: "/categories", label: "Categories" },
-  ];
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -52,17 +45,7 @@ export default function RootLayout({
                 <Link href="/" className="text-sm font-semibold tracking-tight">
                   Inflation Station
                 </Link>
-                <nav aria-label="Primary" className="flex flex-wrap gap-2">
-                  {links.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </nav>
+                <AppNavigation />
                 <ModeToggle />
               </div>
             </header>

@@ -1,4 +1,4 @@
-import { PaymentType } from "@prisma/client";
+import type { PaymentType } from "@prisma/client";
 import {
   buildOpenAiSuggestions as buildOpenAiSuggestionsWithApi,
   type OpenAiCategorizationSuggestion,
@@ -14,6 +14,7 @@ import {
   type ParsedCsvRow,
   parseNorwegianBankCsv,
 } from "./csv-parser";
+import { normalizeImportPaymentType } from "./normalization";
 import {
   buildTransactionFingerprint,
   dedupeParsedTransactions,
@@ -151,33 +152,6 @@ export class AccountNotFoundError extends Error {
   }
 }
 
-function normalizePaymentType(value: string): PaymentType {
-  const normalized = value
-    .trim()
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]/g, " ")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-
-  if (["kort", "card"].includes(normalized)) {
-    return PaymentType.CARD;
-  }
-
-  if (["overforing", "overfoering", "transfer"].includes(normalized)) {
-    return PaymentType.TRANSFER;
-  }
-
-  if (["eft", "giro", "avtalegiro"].includes(normalized)) {
-    return PaymentType.EFT;
-  }
-
-  if (["cash", "kontant"].includes(normalized)) {
-    return PaymentType.CASH;
-  }
-
-  return PaymentType.OTHER;
-}
-
 function parseBookingDate(value: string): Date | null {
   const trimmed = value.trim();
 
@@ -282,7 +256,7 @@ function splitValidAndInvalidRows(rows: ParsedCsvRow[]): {
     validRows.push({
       ...row,
       bookingDate: bookingDate.toISOString().slice(0, 10),
-      paymentType: normalizePaymentType(row.paymentType),
+      paymentType: normalizeImportPaymentType(row.paymentType),
     });
   }
 
@@ -378,7 +352,7 @@ export async function importTransactionsFromCsv(
           amountNok: row.amountNok,
           currency: row.currency,
           normalizedMerchant,
-          paymentType: normalizePaymentType(row.paymentType),
+          paymentType: normalizeImportPaymentType(row.paymentType),
         },
         select: {
           id: true,

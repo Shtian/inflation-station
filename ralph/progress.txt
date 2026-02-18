@@ -15,310 +15,311 @@
 - For Next.js App Router handlers, return `new Response(null, { status: 204 })` for no-content responses; `NextResponse.json` is invalid for HTTP 204.
 - Keep Playwright configured for base URL `http://127.0.0.1:3000` and use `PLAYWRIGHT_NO_WEBSERVER=1` when you need to force reuse of an already running local dev server.
 - Keep `pnpm test` as the full verification entry point (unit + E2E) and use `pnpm test:unit` for fast Vitest-only loops.
+- Store provider import mappings in Prisma using a parent mapping model plus child field-mapping rows, with JSON normalization/transform payloads and `mappingVersion` metadata for diagnostics.
+- For provider autodetection, read configurable `requiredHeaders`/`anyHeaders`/`headerPatterns` from mapping JSON, fall back to mapped source fields, and return parse diagnostics with a `certain`/`uncertain`/`missing` confidence state.
+- When `/api/imports/parse` detection is not `certain` and provider candidates exist, return `PROVIDER_SELECTION_REQUIRED` with diagnostics and require a follow-up parse call with explicit `providerId`.
+- For provider-backed parsing, transform raw CSV through provider field mappings into canonical parser rows before review staging, and keep parser summary keys exactly `imported`, `duplicates`, `ignoredReserved`, `invalid`.
+- Keep import token/payment-type normalization centralized in `src/lib/import/normalization.ts` and apply it before any fingerprint dedupe or duplicate-warning computation.
+- Keep review-stage OpenAI message cleanup best-effort and expose unavailable diagnostics with stable reason codes (`disabled`, `key_missing`, `timeout`, `provider_error`) without blocking parse staging.
+- Keep provider mapping admin CRUD in `/api/import-provider-mappings*` and reject create/update payloads that omit any required canonical field mapping.
+- Keep provider mapping admin UI state local in `src/app/import-provider-mappings/*` and submit create/update payloads as full mapping definitions (provider metadata + field mappings + normalization rules JSON) so API validation feedback stays deterministic.
+- For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
+- Keep `/api/imports/submit` payload rows carrying finalized `selectedMessage` text, and recompute `normalizedMerchant` from staged `name` + selected message before dedupe/persistence.
 
-## 2026-02-16 12:46 CET - US-001
+## 2026-02-17 13:53 CET - US-001
 - What was implemented
-  - Added `GET /api/transactions` with `page`, `pageSize`, and optional `accountId` query support, validation errors for invalid pagination params, and paginated response metadata.
-  - Added deterministic transaction pagination query logic with stable ordering (`bookingDate desc`, `id desc`) and normalized API row serialization.
-  - Added unit tests covering pagination/filter forwarding, deterministic query arguments, and row serialization.
+  - Added Prisma models for provider mapping definitions: `ImportProviderMapping` (provider name, normalization rules JSON, mapping version metadata) and `ImportProviderFieldMapping` (source-to-canonical mappings plus optional transform rules JSON).
+  - Added relational constraints/indexes for deterministic lookup and canonical-field uniqueness per provider mapping.
+  - Generated and applied migration `20260217125021_add_import_provider_mappings`, then regenerated Prisma client.
+  - Fixed pre-existing lint/typecheck/test drift required to pass repo quality gates (`src/components/ui/tabs.tsx`, `src/lib/deterministic-color.ts`, and dashboard E2E tab assertions).
 - Files changed
-  - `src/app/api/transactions/route.ts`
-  - `src/lib/transactions/list.ts`
-  - `src/lib/transactions/list.test.ts`
-  - `AGENTS.md`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-  - `src/components/ui/button-group.tsx`
-  - `src/components/ui/button.tsx`
-  - `src/components/ui/calendar.tsx`
-  - `src/components/ui/separator.tsx`
-  - `src/lib/utils.ts`
-- Quality checks run (and result)
-  - `pnpm lint` (pass; required pre-existing Biome fixes were applied first)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm test` (pass)
-  - `pnpm build` (pass)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Keep API route handlers thin: parse/validate request input in `src/app/api/**` and move deterministic data query/shape logic into `src/lib/**`.
-    - For paginated transaction lists, always include deterministic tie-break ordering after `bookingDate` to keep page boundaries stable.
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - Biome lint can fail due unrelated formatting drift already present in branch; run targeted `biome check --write` on reported files before rerunning required gates.
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - `pnpm test` runs Vitest unit tests only; Playwright E2E remains under `pnpm test:e2e`.
----
-## 2026-02-16 12:51 CET - US-002
-- What was implemented
-  - Added `PATCH /api/transactions/[transactionId]` to update mutable transaction fields (`categoryId`, `bookingDate`, `amountNok`, `currency`, `normalizedMerchant`, `paymentType`).
-  - Added strict update payload validation that rejects immutable transaction metadata fields (`id`, `accountId`, `createdAt`, `updatedAt`) and invalid booking-date formats.
-  - Added transaction update library logic to persist updates and return a stable API row shape.
-  - Added unit tests for mutable-field parsing, immutable-field rejection, and update persistence/mapping behavior.
-- Files changed
-  - `src/app/api/transactions/[transactionId]/route.ts`
-  - `src/lib/transactions/update.ts`
-  - `src/lib/transactions/update.test.ts`
-  - `AGENTS.md`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-- Quality checks run (and result)
-  - `pnpm lint` (pass)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm test` (pass)
-  - `pnpm build` (pass)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Keep transaction mutation business logic and row shaping in `src/lib/transactions/*`, with API routes limited to validation and Prisma error-to-HTTP mapping.
-    - Use strict payload schemas with explicit immutable-field rejections for edit endpoints that must protect import metadata.
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - Next.js route type generation can reject narrow `params` handler signatures; keep the signature broad and narrow route params inside the handler.
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - Transaction update responses currently reuse the list-row shape for consistency with `/api/transactions`.
----
-## 2026-02-16 13:00 CET - US-003
-- What was implemented
-  - Added transaction hard-delete library logic in `src/lib/transactions/delete.ts` and wired `DELETE /api/transactions/[transactionId]` to perform hard deletes by id.
-  - Added route-level `transactionId` validation for delete requests and returned `INVALID_TRANSACTION_ID` when params are malformed.
-  - Mapped Prisma not-found (`P2025`) to `TRANSACTION_NOT_FOUND` with HTTP 404 for delete operations.
-  - Added unit coverage for delete persistence call behavior.
-- Files changed
-  - `src/app/api/transactions/[transactionId]/route.ts`
-  - `src/lib/transactions/delete.ts`
-  - `src/lib/transactions/delete.test.ts`
-  - `AGENTS.md`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-- Quality checks run (and result)
-  - `pnpm lint` (pass)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm test` (pass)
-  - `pnpm build` (pass)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Keep transaction deletion as a dedicated helper in `src/lib/transactions/*` so API handlers remain focused on parameter validation and HTTP mapping.
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - Biome formatting checks are strict; run `pnpm exec biome check --write` on edited files if lint fails on formatting-only differences.
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - The transaction detail API route now supports both `PATCH` and `DELETE`, sharing the same guarded transaction-id parsing path.
----
-## 2026-02-16 13:43 CET - US-004
-- What was implemented
-  - Added a dedicated `/transactions` route and linked it in primary navigation.
-  - Implemented client-side account filter, page-size selector, and numeric page controls wired to `GET /api/transactions`.
-  - Added browser-level Playwright coverage for account filter and pagination control behavior on `/transactions`.
-- Files changed
-  - `src/app/layout.tsx`
-  - `src/app/transactions/page.tsx`
-  - `src/app/transactions/transactions-manager.tsx`
-  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
-  - `AGENTS.md`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-- Quality checks run (and result)
-  - `pnpm lint` (pass)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm test` (pass)
-  - `pnpm build` (pass)
-  - `pnpm exec playwright test tests/e2e/us-018-transactions-route-controls.e2e.ts` (pass)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Keep route-level state and API wiring in dedicated route manager components (for example `transactions-manager.tsx`) and keep page files as thin wrappers.
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - Playwright strict locators can collide with Next.js dev-tools UI in dev mode; use exact button-name matching when labels are short.
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - Transactions route currently renders summary + preview rows from paginated API responses; table/edit/delete flows remain for later stories.
----
-## 2026-02-16 13:51 CET - US-005
-- What was implemented
-  - Replaced transactions preview list rendering with canonical shadcn table primitives (`Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell`) on `/transactions`.
-  - Kept page metadata and total-count metadata visible while rendering paginated rows.
-  - Preserved explicit empty-state messaging when no rows match active filters.
-  - Expanded Playwright coverage to assert table headers/metadata and empty-state behavior for account-filtered results.
-- Files changed
-  - `src/app/transactions/transactions-manager.tsx`
-  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-- Quality checks run (and result)
-  - `pnpm lint` (pass; required formatting fix applied to updated E2E spec)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm test` (pass)
-  - `pnpm build` (pass)
-  - `pnpm exec playwright test tests/e2e/us-018-transactions-route-controls.e2e.ts` (pass)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - For transactions list UI, keep pagination metadata (`page`, `totalPages`, `total`) outside the table while using `src/components/ui/table.tsx` primitives for row rendering.
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - In this environment, Playwright web server startup may require escalated permissions for local port binding (`EPERM` on `0.0.0.0:3100`).
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - `tests/e2e/us-018-transactions-route-controls.e2e.ts` now covers both pagination/filter interactions and zero-row filtered state assertions.
----
-## 2026-02-16 13:58 CET - US-006
-- What was implemented
-  - Added row-level `Edit` actions on `/transactions` that open a shadcn `Dialog` with prefilled mutable transaction fields.
-  - Wired dialog submit to `PATCH /api/transactions/[transactionId]` with client-side validation for required fields and numeric amount parsing.
-  - Refreshed the paginated transaction list after successful save so the current account filter/page state is preserved.
-  - Expanded Playwright coverage to validate the modal edit flow and post-save refresh behavior on the active page.
-- Files changed
-  - `src/components/ui/dialog.tsx`
-  - `src/app/transactions/transactions-manager.tsx`
-  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
-  - `AGENTS.md`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-- Quality checks run (and result)
-  - `pnpm lint` (pass)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm test` (pass)
-  - `pnpm build` (pass)
-  - `pnpm exec playwright test tests/e2e/us-018-transactions-route-controls.e2e.ts` (pass; required escalated permissions for local web server port binding)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Keep transaction edit interactions in route-local client state and re-fetch through existing paginated query parameters after save rather than mutating table state ad hoc.
-    - Add reusable shadcn-style primitives under `src/components/ui/*` when introducing new interaction patterns (for example dialog-based editing).
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - Broad Playwright route mocks like `**/api/transactions**` can unintentionally intercept mutation calls; guard by HTTP method and fallback non-GET requests.
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - The `/transactions` edit form currently supports `bookingDate`, `amountNok`, `currency`, `normalizedMerchant`, and `paymentType` through the existing transaction update API.
----
-## 2026-02-16 14:08 CET - US-007
-- What was implemented
-  - Added row-level `Delete` actions on `/transactions` with a shadcn-style confirmation dialog.
-  - Wired confirm to `DELETE /api/transactions/[transactionId]` and cancel to close without mutation.
-  - Refetched paginated data after delete so the route falls back to a valid page when deleting the last row on the current page.
-  - Expanded Playwright coverage for cancel/confirm behavior and pagination recovery after deletion.
-- Files changed
-  - `src/components/ui/alert-dialog.tsx`
-  - `src/app/transactions/transactions-manager.tsx`
-  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
-  - `AGENTS.md`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-- Quality checks run (and result)
-  - `pnpm lint` (pass)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm test` (pass)
-  - `pnpm build` (pass)
-  - `pnpm exec playwright test tests/e2e/us-018-transactions-route-controls.e2e.ts --workers=1` (pass; required escalated permissions for local port binding)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Use route-local confirmation state for destructive row actions and reuse a shared `src/components/ui/*` primitive for consistent shadcn dialog behavior.
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - For delete-flow Playwright specs, keep GET response pagination metadata aligned with the row set being mocked; otherwise page navigation controls can be unintentionally disabled.
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - The transactions route now has both edit (`Dialog`) and delete confirmation (`AlertDialog`) flows in `src/app/transactions/transactions-manager.tsx`.
----
-## 2026-02-16 14:13 CET - US-008
-- What was implemented
-  - Added API route unit coverage for `GET /api/transactions` to verify pagination defaults/validation and account-filter forwarding.
-  - Added API route unit coverage for `PATCH`/`DELETE /api/transactions/[transactionId]` to verify route param validation, update payload validation+persistence wiring, and delete not-found mapping.
-  - Fixed `DELETE /api/transactions/[transactionId]` to return a valid 204 no-content response using `new Response(null, { status: 204 })`.
-- Files changed
-  - `src/app/api/transactions/route.test.ts`
-  - `src/app/api/transactions/[transactionId]/route.test.ts`
-  - `src/app/api/transactions/[transactionId]/route.ts`
-  - `AGENTS.md`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-- Quality checks run (and result)
-  - `pnpm lint` (pass)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm test` (pass)
-  - `pnpm build` (pass)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Add route-level tests alongside transaction lib tests when endpoint behavior includes request parsing, status mapping, or framework-specific response behavior.
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - `NextResponse.json` cannot be used with HTTP `204`; tests will fail with `Invalid response status code 204` unless the handler returns an empty `Response`.
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - Transaction API route tests now live next to handlers in `src/app/api/transactions/**/*.test.ts`, with module mocks for `@/lib/prisma` and transaction service helpers.
----
-## 2026-02-16 19:48 CET - US-009
-- What was implemented
-  - Extended `GET /api/transactions` list-row shaping to include `categoryName` from the related category relation for table rendering.
-  - Added a `Category` column in `/transactions` and rendered missing categories as explicit `Uncategorized`.
-  - Updated transaction list/update unit tests and refreshed Playwright transaction-route mocks/assertions to include category display behavior and current pagination/action-menu controls.
-- Files changed
-  - `src/lib/transactions/list.ts`
-  - `src/lib/transactions/list.test.ts`
-  - `src/lib/transactions/update.ts`
-  - `src/lib/transactions/update.test.ts`
-  - `src/app/transactions/transactions-manager.tsx`
-  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
-  - `AGENTS.md`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-- Quality checks run (and result)
-  - `pnpm lint` (pass)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm test` (pass)
-  - `pnpm build` (pass)
-  - `pnpm exec playwright test tests/e2e/us-018-transactions-route-controls.e2e.ts --workers=1` (blocked: Next dev server startup failed due existing `.next/dev/lock`, resulting in `ERR_CONNECTION_REFUSED`)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Keep transaction list row shape aligned across list and mutation mappers when adding new table-visible fields to avoid type drift in shared `TransactionListRow`.
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - Playwright webServer startup can fail with stale `.next/dev/lock`; when this happens, browser tests may fail before app routing assertions run.
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - `/transactions` now expects `categoryName` in API rows and falls back to `Uncategorized` in `src/app/transactions/transactions-manager.tsx`.
-## 2026-02-16 19:58 CET - US-010
-- What was implemented
-  - Added category loading to `/transactions` and wired the edit dialog with a category selector that supports explicit `Uncategorized` (`null`) as well as concrete categories.
-  - Extended edit submit payloads to include `categoryId`, and refreshed paginated results now reflect updated category labels in the table.
-  - Updated transaction update/API tests and transaction-route Playwright coverage to assert category edit persistence behavior.
-  - Added a permanent Playwright/local-dev workflow fix: `playwright.config.ts` now targets port `3000`, can skip managed web server via `PLAYWRIGHT_NO_WEBSERVER`, and `pnpm test` now runs full unit + E2E checks while `pnpm test:unit` remains available for quick loops.
-- Files changed
-  - `src/app/transactions/transactions-manager.tsx`
-  - `src/lib/transactions/update.test.ts`
-  - `src/app/api/transactions/[transactionId]/route.test.ts`
-  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
-  - `playwright.config.ts`
-  - `package.json`
-  - `README.md`
-  - `AGENTS.md`
-  - `ralph/prd.json`
-  - `ralph/progress.txt`
-- Quality checks run (and result)
-  - `pnpm lint` (pass)
-  - `pnpm exec tsc --noEmit` (pass)
-  - `pnpm run test:unit` (pass)
-  - `pnpm build` (pass)
-  - `PLAYWRIGHT_NO_WEBSERVER=1 pnpm test` (blocked in this sandbox: Playwright Chromium launch permission error `bootstrap_check_in ... Permission denied (1100)`)
-- **Learnings for future iterations**
-  - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Keep transaction-edit form state authoritative in `transactions-manager` and include all mutable fields (including `categoryId`) in one PATCH payload so table refreshes stay deterministic.
-    - Use `pnpm test` for full verification and `pnpm test:unit` for fast feedback while iterating on non-browser changes.
-  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - In constrained environments, Playwright browser launch can fail even when the app server is healthy; this is separate from Next.js dev-server lock issues.
-    - When `pnpm test` includes E2E, local/browser prerequisites must be available or the command fails after unit tests.
-  - Useful context (e.g., "the evaluation panel is in component X")
-    - `playwright.config.ts` now supports `PLAYWRIGHT_NO_WEBSERVER=1` to force reuse of a running dev server instead of spawning `pnpm dev`.
----
-## 2026-02-16 20:08 CET - US-011
-- What was implemented
-  - Removed editable currency from the `/transactions` edit dialog so users can no longer change currency in this workflow.
-  - Updated transaction edit submit payloads to omit `currency` and keep mutation payloads focused on supported mutable fields.
-  - Updated transaction update payload parsing to reject incoming `currency` updates and forced transaction updates to persist `currency: "NOK"`.
-  - Expanded tests to cover rejected currency updates, NOK persistence on update, and UI-level absence of a currency field in the edit dialog.
-- Files changed
-  - `src/app/transactions/transactions-manager.tsx`
-  - `src/lib/transactions/update.ts`
-  - `src/lib/transactions/update.test.ts`
-  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+  - `prisma/schema.prisma`
+  - `prisma/migrations/20260217125021_add_import_provider_mappings/migration.sql`
+  - `src/components/ui/tabs.tsx`
+  - `src/lib/deterministic-color.ts`
+  - `tests/e2e/us-012-category-review-ui.e2e.ts`
   - `tests/e2e/us-014-dashboard-ui.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm exec prisma generate` (pass)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep provider mapping schema split between provider-level metadata and per-field mapping rows so detection/parse logic can evolve without schema churn.
+    - Preserve mapping diagnostics in schema with explicit version metadata (`mappingVersion`) and timestamps.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Overview dashboard assertions in Playwright must switch tabs before expecting category-tab content; those headings/charts are not visible in the default `Flow` tab.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Prisma migration `20260217125021_add_import_provider_mappings` is now the baseline for upcoming provider detection and mapping API stories.
+---
+
+## 2026-02-17 14:28 CET - US-002
+- What was implemented
+  - Added provider detection service in `src/lib/import/provider-detection.ts` that evaluates mappings with configurable header/pattern rules and score-based confidence.
+  - Wired `/api/imports/parse` to return `detection` diagnostics with detected provider id/name, confidence state, score, matched headers, and ranked candidates.
+  - Added focused unit coverage for certain/uncertain/missing detection and source-field fallback behavior.
+- Files changed
+  - `src/lib/import/provider-detection.ts`
+  - `src/lib/import/provider-detection.test.ts`
+  - `src/app/api/imports/parse/route.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep provider detection logic in `src/lib/import/*` and keep `/api/imports/parse` focused on payload validation plus response shaping.
+    - Keep detection confidence deterministic by combining required-header coverage with optional/pattern signal and ranking candidates.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - CSV files without a recognizable header row should return `missing` detection diagnostics instead of forcing a low-confidence provider guess.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Detection currently informs diagnostics only; canonical row transformation is still handled by the existing parser and staging flow.
+---
+
+## 2026-02-17 14:54 CET - US-003
+- What was implemented
+  - Extended `/api/imports/parse` payload parsing to accept optional `providerId` from both multipart form-data and JSON.
+  - Updated parse flow to run provider detection first, return `409 PROVIDER_SELECTION_REQUIRED` with diagnostics when detection is `uncertain`/`missing` and candidates exist, and only stage review rows once parse is allowed.
+  - Added provider override handling in parse route: validates selected provider, uses it instead of auto-detection, and returns the selected provider in diagnostics.
+  - Updated `/import` UI to include provider selection (auto-detect + detected candidates), show detection status, and re-parse with override when required.
+  - Added Playwright E2E coverage for uncertain detection requiring manual provider selection before parsing can continue.
+- Files changed
+  - `src/app/api/imports/parse/route.ts`
+  - `src/app/import/import-uploader.tsx`
   - `tests/e2e/us-016-import-route-upload.e2e.ts`
   - `AGENTS.md`
   - `ralph/prd.json`
   - `ralph/progress.txt`
 - Quality checks run (and result)
-  - `pnpm lint` (pass; required applying existing Biome formatting drift in two unrelated E2E files)
+  - `pnpm lint` (pass)
   - `pnpm exec tsc --noEmit` (pass)
   - `pnpm test` (pass)
   - `pnpm build` (pass)
 - **Learnings for future iterations**
   - Patterns discovered (e.g., "this codebase uses X for Y")
-    - Keep transaction-edit payload contracts strict and workflow-specific; when a field is non-editable in UI, reject it at parse-time in API helpers.
+    - Keep ambiguous-provider handling in the parse API contract (`PROVIDER_SELECTION_REQUIRED` + detection payload) so UI can gate progression deterministically.
+    - Keep provider override state in `/import` client state and submit it via multipart `providerId` to avoid introducing separate provider preflight endpoints.
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
-    - Zod strict-object rejections for unknown keys surface as generic issues, not typed `fieldErrors` entries for that key.
+    - `/import` parse responses now require a `detection` payload; mocked API responses in E2E tests must include it to avoid runtime failures.
   - Useful context (e.g., "the evaluation panel is in component X")
-    - The transactions edit flow now relies on backend-enforced `currency: "NOK"` even if clients omit currency from PATCH requests.
+    - Existing import review/submit flow remains unchanged once parse succeeds; this story only gates parse progression when provider detection is ambiguous.
+---
+
+## 2026-02-17 15:03 CET - US-004
+- What was implemented
+  - Added provider-mapped CSV parser (`src/lib/import/provider-csv-parser.ts`) that loads configured source-to-canonical field mappings and transforms provider rows into the existing canonical import row shape.
+  - Added structured row-level diagnostics for mapped rows (invalid amount/currency and missing required mapped values) while preserving parser summary keys as `imported`, `duplicates`, `ignoredReserved`, `invalid`.
+  - Updated review staging to parse with provider mappings when available and keep existing fallback parsing for non-provider flows.
+  - Updated `/api/imports/parse` to load the selected/detected provider mapping with field mappings and pass it into staging.
+  - Added unit coverage for provider parser behavior and review-stage provider transformation path.
+- Files changed
+  - `src/lib/import/provider-csv-parser.ts`
+  - `src/lib/import/provider-csv-parser.test.ts`
+  - `src/lib/import/review-stage.ts`
+  - `src/lib/import/review-stage.test.ts`
+  - `src/app/api/imports/parse/route.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep provider CSV parsing isolated in `src/lib/import/*` and pass resolved provider mapping data from parse route into staging.
+    - Keep provider transformation output aligned with the canonical parser row contract so downstream dedupe/review logic remains unchanged.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Biome enforces `indexOf` for direct header equality lookups and sorted import specifiers in import blocks.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Provider mapping parser currently supports both semicolon and comma delimiters with quoted-cell handling.
+---
+
+## 2026-02-17 15:13 CET - US-005
+- What was implemented
+  - Added shared import normalization helpers in `src/lib/import/normalization.ts` for deterministic token folding (including Nordic characters), payment-type normalization to Prisma `PaymentType`, and merchant normalization.
+  - Updated fingerprint dedupe flow to normalize provider payment labels before fingerprint generation in `src/lib/import/transaction-dedupe.ts`.
+  - Updated import persistence (`src/lib/import/import-transactions.ts`) and review staging (`src/lib/import/review-stage.ts`) to reuse shared normalization before dedupe and duplicate-warning checks.
+  - Added focused unit coverage validating `Overføring` + Nordic merchant text normalization for both import dedupe and review duplicate-warning behavior.
+- Files changed
+  - `src/lib/import/normalization.ts`
+  - `src/lib/import/transaction-dedupe.ts`
+  - `src/lib/import/import-transactions.ts`
+  - `src/lib/import/review-stage.ts`
+  - `src/lib/import/transaction-dedupe.test.ts`
+  - `src/lib/import/import-transactions.test.ts`
+  - `src/lib/import/review-stage.test.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep import normalization logic centralized to avoid drift between parse/review/submit dedupe paths.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Running heavy checks in parallel (`pnpm test` with `pnpm build`) can cause transient Playwright timeouts; run `pnpm test` in isolation for stable E2E verification.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Duplicate warnings in review are computed from normalized fingerprint fields and intentionally mark all matching upload rows as potential duplicates.
+---
+
+## 2026-02-17 15:40 CET - US-006
+- What was implemented
+  - Added provider mapping admin CRUD APIs with validation: `GET`/`POST` at `/api/import-provider-mappings` and `PATCH`/`DELETE` at `/api/import-provider-mappings/[providerMappingId]`.
+  - Enforced payload validation for create/update flows, including duplicate canonical-field detection and required canonical-field coverage checks before persistence.
+  - Preserved provider normalization rules and `mappingVersion` metadata through create/update API paths.
+  - Added focused API route unit tests for payload validation, required-field rejection, successful create/update, and not-found delete handling.
+- Files changed
+  - `src/app/api/import-provider-mappings/route.ts`
+  - `src/app/api/import-provider-mappings/route.test.ts`
+  - `src/app/api/import-provider-mappings/[providerMappingId]/route.ts`
+  - `src/app/api/import-provider-mappings/[providerMappingId]/route.test.ts`
+  - `src/lib/import/provider-mapping-contract.ts`
+  - `src/lib/import/json-value.ts`
+  - `src/lib/import/provider-csv-parser.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep required canonical provider-field definitions centralized so provider parsing and provider-admin API validation stay aligned.
+    - Replace provider field mappings atomically on update (`deleteMany` + `create`) to keep mapping payloads deterministic.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Provider mapping JSON payloads should be validated as JSON-serializable input before Prisma writes to avoid `unknown`-typed request data leaking into typed persistence paths.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Provider mapping admin APIs are now available at `/api/import-provider-mappings*` and ready for the upcoming admin UI story.
+---
+
+## 2026-02-17 16:10 CET - US-007
+- What was implemented
+  - Added provider mapping admin route UI at `/import-provider-mappings` with create/edit/delete flows.
+  - Implemented source-column to canonical-field assignment controls with add/remove row support for both create and edit forms.
+  - Added normalization-rules JSON editing for create and edit workflows, including client-side JSON validation.
+  - Surfaced API validation failures (including `REQUIRED_CANONICAL_FIELDS_MISSING`) as user-facing feedback in the UI.
+  - Added Playwright coverage for provider mapping admin create/edit flow and validation feedback.
+- Files changed
+  - `src/app/import-provider-mappings/page.tsx`
+  - `src/app/import-provider-mappings/provider-mappings-manager.tsx`
+  - `src/app/layout.tsx`
+  - `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep provider mapping admin interactions consolidated in `src/app/import-provider-mappings/*` and rely on `/api/import-provider-mappings*` for canonical validation and persistence behavior.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Playwright `getByRole("alert")` can match Next.js route-announcer nodes; use text-specific assertions for user-visible error alerts.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Provider mapping UI now appears in primary navigation as `Providers` and supports inline edit of normalization JSON plus field mappings.
+---
+
+## 2026-02-17 16:24 CET - US-008
+- What was implemented
+  - Added a new best-effort OpenAI message cleanup service in `src/lib/import/openai-message-cleanup.ts` for review-stage enrichment.
+  - Wired review staging (`src/lib/import/review-stage.ts`) to request optional cleaned-message suggestions and return stable diagnostics via `messageCleanupUnavailableReason`.
+  - Ensured parse/review flow remains non-blocking: cleanup failures/timeouts/provider errors fall back to staged rows without interruption.
+  - Updated `/api/imports/parse` to pass cleanup runtime config (`OPENAI_API_KEY`, optional `OPENAI_MESSAGE_CLEANUP_ENABLED=false` disable switch) into staging.
+  - Added focused unit coverage for cleanup result parsing and unavailable reason handling.
+- Files changed
+  - `src/lib/import/openai-message-cleanup.ts`
+  - `src/lib/import/openai-message-cleanup.test.ts`
+  - `src/lib/import/review-stage.ts`
+  - `src/lib/import/review-stage.test.ts`
+  - `src/app/api/imports/parse/route.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep OpenAI cleanup response contracts explicit in review payloads so UI can distinguish unavailable reasons from row-level no-suggestion outcomes.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Review-stage tests should inject `openAiApiKey` explicitly to avoid environment-dependent expectations.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Cleanup diagnostics now live on parse review payload as `review.messageCleanupUnavailableReason`; row suggestions are exposed as `row.cleanedMessage`.
+---
+
+## 2026-02-17 16:30 CET - US-009
+- What was implemented
+  - Updated `/import` review table UI to show original message text and optional AI-cleaned suggestion per row.
+  - Added explicit per-row message source control (`Original message` vs `AI-cleaned message`) in review, with deterministic defaults: choose AI-cleaned when available, otherwise original.
+  - Added deterministic UI copy documenting the default selection behavior.
+  - Exposed row-level accessible names on review combobox triggers to keep row-specific controls uniquely targetable.
+  - Extended import route E2E coverage to verify message rendering, default choice behavior, and user override interaction.
+- Files changed
+  - `src/app/import/import-uploader.tsx`
+  - `tests/e2e/us-016-import-route-upload.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - In shadcn Select workflows, put row-specific accessible labels on `SelectTrigger` so Playwright can reliably target one combobox when a row has multiple selects.
+    - Keep UI-only review decisions local to `/import` state when submit payload contracts are intentionally deferred to a later story.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Broad `getByRole("combobox")` row locators become ambiguous as soon as additional row-level selects are introduced.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Review payload rows already include `title` and optional `cleanedMessage`; this story surfaces them in the table while persistence of message choice remains for `US-010`.
+---
+## 2026-02-17 18:49 CET - US-010
+- What was implemented
+  - Extended `/import` review submit payload to include per-row finalized message values as `selectedMessage`, based on each row's explicit message choice (original vs AI-cleaned suggestion).
+  - Updated `/api/imports/submit` payload validation to require and parse `rows[{ rowId, categoryId, selectedMessage }]`.
+  - Updated review submit persistence (`src/lib/import/review-submit.ts`) to apply submitted message decisions when finalizing rows by recomputing `normalizedMerchant` from staged `name` + `selectedMessage` before fingerprint dedupe and transaction insert.
+  - Kept review-session cleanup atomic after persistence and category validation.
+  - Added/updated tests to verify submit payload contract and persisted transaction behavior using selected message text.
+- Files changed
+  - `src/app/import/import-uploader.tsx`
+  - `src/app/api/imports/submit/route.ts`
+  - `src/lib/import/review-submit.ts`
+  - `src/lib/import/review-submit.test.ts`
+  - `tests/e2e/us-016-import-route-upload.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep submit-time review decisions explicit in the API contract so UI-only selection state does not get lost between parse and submit.
+    - Recompute normalized fingerprint inputs from finalized review values at submit time to ensure dedupe behavior matches user-approved edits.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - `review-submit` test fixtures should mirror staged normalization shape (`normalizedMerchant` based on `name + title`) or expectations will drift when submit logic re-normalizes from finalized message input.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Message choices are still ephemeral until submit; persistence now happens only through `rows[].selectedMessage` in `/api/imports/submit`.
 ---

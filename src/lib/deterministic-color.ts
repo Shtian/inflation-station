@@ -2,6 +2,7 @@ const HUE_RANGE = 360;
 const LIGHT_SURFACE_RGB: [number, number, number] = [255, 255, 255];
 const DARK_SURFACE_RGB: [number, number, number] = [17, 24, 39];
 const WCAG_SMALL_TEXT_CONTRAST = 7;
+const UNCATEGORIZED_LABEL = "uncategorized";
 
 type ColorProfile = {
   saturation: number;

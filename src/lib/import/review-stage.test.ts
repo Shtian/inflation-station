@@ -55,7 +55,7 @@ function createDbMock(options?: {
 }
 
 describe("stageParsedImportRows", () => {
-  it("stages valid rows and returns review payload with row identifiers", async () => {
+  it("uses provider mapping to transform provider-specific headers into canonical staged rows", async () => {
     const db = createDbMock({
       stagedRows: [
         {
@@ -77,8 +77,113 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      csvContent:
+        "Dato;Belastning;Fra;Til;Beskrivelse;Melding;Valuta;Type\n2026-01-01;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort",
+      providerMapping: {
+        id: "provider-1",
+        providerName: "Bank B",
+        normalizationRules: {},
+        fieldMappings: [
+          {
+            sourceField: "Dato",
+            canonicalField: "bookingDate",
+            transformRules: null,
+          },
+          {
+            sourceField: "Belastning",
+            canonicalField: "amount",
+            transformRules: null,
+          },
+          {
+            sourceField: "Fra",
+            canonicalField: "sender",
+            transformRules: null,
+          },
+          {
+            sourceField: "Til",
+            canonicalField: "recipient",
+            transformRules: null,
+          },
+          {
+            sourceField: "Beskrivelse",
+            canonicalField: "name",
+            transformRules: null,
+          },
+          {
+            sourceField: "Melding",
+            canonicalField: "title",
+            transformRules: null,
+          },
+          {
+            sourceField: "Valuta",
+            canonicalField: "currency",
+            transformRules: null,
+          },
+          {
+            sourceField: "Type",
+            canonicalField: "paymentType",
+            transformRules: null,
+          },
+        ],
+      },
     });
+
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+    expect(result.summary).toEqual({
+      imported: 1,
+      duplicates: 0,
+      ignoredReserved: 0,
+      invalid: 0,
+    });
+  });
+
+  it("stages valid rows and returns review payload with row identifiers", async () => {
+    const db = createDbMock({
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(
+      db,
+      {
+        accountId: "account-1",
+        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      },
+      {
+        openAiApiKey: null,
+      },
+    );
 
     expect(db.importReviewSession.create).toHaveBeenCalledWith({
       data: {
@@ -116,6 +221,7 @@ describe("stageParsedImportRows", () => {
     expect(result.review).toEqual({
       sessionId: "session-1",
       potentialDuplicates: 0,
+      messageCleanupUnavailableReason: "key_missing",
       rows: [
         {
           id: "row-1",
@@ -129,6 +235,7 @@ describe("stageParsedImportRows", () => {
           recipient: "Shop A",
           name: "Groceries",
           title: "Friday",
+          cleanedMessage: null,
           categoryId: null,
           potentialDuplicate: false,
         },
@@ -161,6 +268,7 @@ describe("stageParsedImportRows", () => {
     expect(result.review).toEqual({
       sessionId: null,
       potentialDuplicates: 0,
+      messageCleanupUnavailableReason: null,
       rows: [],
     });
 
@@ -185,6 +293,7 @@ describe("stageParsedImportRows", () => {
     expect(result.review).toEqual({
       sessionId: null,
       potentialDuplicates: 0,
+      messageCleanupUnavailableReason: null,
       rows: [],
     });
     expect(db.importReviewSession.create).not.toHaveBeenCalled();
@@ -310,6 +419,86 @@ describe("stageParsedImportRows", () => {
     expect(result.review.rows[0]?.potentialDuplicate).toBe(false);
   });
 
+  it("includes cleaned message suggestions when OpenAI cleanup returns results", async () => {
+    const db = createDbMock({
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "joker oslo",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Joker #1234",
+          title: "Oslo",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(
+      db,
+      {
+        accountId: "account-1",
+        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Joker #1234;Oslo;NOK;Kort`,
+      },
+      {
+        openAiApiKey: "test-key",
+        buildOpenAiMessageCleanup: vi.fn(async () => ({
+          suggestions: [{ rowNumber: 2, cleanedMessage: "Joker Oslo" }],
+          unavailableReason: null,
+        })),
+      },
+    );
+
+    expect(result.review.messageCleanupUnavailableReason).toBeNull();
+    expect(result.review.rows[0]?.cleanedMessage).toBe("Joker Oslo");
+  });
+
+  it("returns provider_error cleanup reason when cleanup service throws", async () => {
+    const db = createDbMock({
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "joker oslo",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Joker #1234",
+          title: "Oslo",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(
+      db,
+      {
+        accountId: "account-1",
+        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Joker #1234;Oslo;NOK;Kort`,
+      },
+      {
+        openAiApiKey: "test-key",
+        buildOpenAiMessageCleanup: vi.fn(async () => {
+          throw new Error("provider unavailable");
+        }),
+      },
+    );
+
+    expect(result.summary.imported).toBe(1);
+    expect(result.review.messageCleanupUnavailableReason).toBe(
+      "provider_error",
+    );
+    expect(result.review.rows[0]?.cleanedMessage).toBeNull();
+  });
+
   it("flags staged rows as potential duplicates when fingerprint already exists", async () => {
     const db = createDbMock({
       existingTransactions: [
@@ -343,6 +532,61 @@ describe("stageParsedImportRows", () => {
       csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
     });
 
+    expect(result.review.potentialDuplicates).toBe(1);
+    expect(result.review.rows[0]?.potentialDuplicate).toBe(true);
+  });
+
+  it("computes duplicate warnings from normalized merchant and payment type values", async () => {
+    const db = createDbMock({
+      existingTransactions: [
+        {
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          normalizedMerchant: "baer ol",
+          paymentType: PaymentType.TRANSFER,
+        },
+      ],
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "baer ol",
+          paymentType: PaymentType.TRANSFER,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Bær",
+          title: "Øl",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Bær;Øl;NOK;Overføring`,
+    });
+
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "baer ol",
+          paymentType: PaymentType.TRANSFER,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Bær",
+          title: "Øl",
+          categoryId: null,
+        },
+      ],
+    });
     expect(result.review.potentialDuplicates).toBe(1);
     expect(result.review.rows[0]?.potentialDuplicate).toBe(true);
   });

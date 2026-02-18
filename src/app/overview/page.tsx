@@ -1,9 +1,5 @@
-import { OverviewDashboard } from "./overview-dashboard";
+import { redirect } from "next/navigation";
 
 export default function OverviewPage() {
-  return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
-      <OverviewDashboard />
-    </main>
-  );
+  redirect("/");
 }

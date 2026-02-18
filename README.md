@@ -101,8 +101,8 @@ OpenAI-based categorization suggestions are optional.
 
 ## Routing
 
-- `/` redirects to `/overview` so the analytics dashboard is the default landing route.
-- Top-level navigation links are available for `/overview`, `/import`, `/accounts`, and `/categories`.
+- `/` is the analytics dashboard landing route.
+- Top-level navigation links are available for `/import`, `/transactions`, and configuration pages (`/import-provider-mappings`, `/accounts`, `/categories`).
 
 ## Theming
 

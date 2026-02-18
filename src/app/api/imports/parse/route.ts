@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { detectProviderFromCsv } from "@/lib/import/provider-detection";
 import { stageParsedImportRows } from "@/lib/import/review-stage";
 import { prisma } from "@/lib/prisma";
 
 type ParseImportPayload = {
   accountId: string;
   csvContent: string;
+  providerId: string | null;
 };
 
 function badRequest(error: string, message: string) {
@@ -24,6 +26,11 @@ async function parseImportPayload(
 
     const accountId = formData.get("accountId");
     const file = formData.get("file");
+    const providerIdValue = formData.get("providerId");
+    const providerId =
+      typeof providerIdValue === "string" && providerIdValue.trim().length > 0
+        ? providerIdValue.trim()
+        : null;
 
     if (typeof accountId !== "string") {
       return null;
@@ -47,6 +54,7 @@ async function parseImportPayload(
     return {
       accountId,
       csvContent,
+      providerId,
     };
   }
 
@@ -61,9 +69,16 @@ async function parseImportPayload(
     return null;
   }
 
+  const providerId =
+    typeof payload.providerId === "string" &&
+    payload.providerId.trim().length > 0
+      ? payload.providerId.trim()
+      : null;
+
   return {
     accountId: payload.accountId,
     csvContent: payload.csvContent,
+    providerId,
   };
 }
 
@@ -99,12 +114,80 @@ export async function POST(request: Request) {
     );
   }
 
-  const staged = await stageParsedImportRows(prisma, {
-    accountId,
-    csvContent,
-  });
+  const detectedProvider = await detectProviderFromCsv(prisma, csvContent);
+  let detection = detectedProvider;
+
+  if (payload.providerId) {
+    const selectedProvider = await prisma.importProviderMapping.findUnique({
+      where: { id: payload.providerId },
+      select: { id: true, providerName: true },
+    });
+
+    if (!selectedProvider) {
+      return badRequest(
+        "PROVIDER_NOT_FOUND",
+        "The selected provider could not be found.",
+      );
+    }
+
+    const selectedCandidate = detectedProvider.candidates.find(
+      (candidate) => candidate.providerId === selectedProvider.id,
+    );
+
+    detection = {
+      ...detectedProvider,
+      state: "certain",
+      providerId: selectedProvider.id,
+      providerName: selectedProvider.providerName,
+      score: selectedCandidate?.score ?? detectedProvider.score,
+    };
+  } else if (detection.state !== "certain" && detection.candidates.length > 0) {
+    return NextResponse.json(
+      {
+        error: "PROVIDER_SELECTION_REQUIRED",
+        message:
+          "Provider detection is uncertain. Select a provider and parse again.",
+        detection,
+      },
+      { status: 409 },
+    );
+  }
+
+  const providerMapping = detection.providerId
+    ? await prisma.importProviderMapping.findUnique({
+        where: { id: detection.providerId },
+        select: {
+          id: true,
+          providerName: true,
+          normalizationRules: true,
+          fieldMappings: {
+            select: {
+              sourceField: true,
+              canonicalField: true,
+              transformRules: true,
+            },
+          },
+        },
+      })
+    : null;
+
+  const staged = await stageParsedImportRows(
+    prisma,
+    {
+      accountId,
+      csvContent,
+      providerMapping,
+    },
+    {
+      openAiCleanupEnabled:
+        process.env.OPENAI_MESSAGE_CLEANUP_ENABLED?.trim().toLowerCase() !==
+        "false",
+      openAiApiKey: process.env.OPENAI_API_KEY,
+    },
+  );
 
   return NextResponse.json({
+    detection,
     summary: staged.summary,
     errors: staged.errors,
     review: staged.review,
