@@ -2,26 +2,6 @@
 
 import { useCallback, useState } from "react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,6 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { DeleteTransactionDialog } from "./components/delete-transaction-dialog";
+import { EditTransactionDialog } from "./components/edit-transaction-dialog";
 import { TransactionsTableSection } from "./components/transactions-table-section";
 import {
   ALL_ACCOUNTS_VALUE,
@@ -271,224 +253,60 @@ export function TransactionsManager() {
         onGoToPage={goToPage}
       />
 
-      <Dialog
+      <EditTransactionDialog
         open={editingTransaction !== null}
+        categories={categories}
+        editForm={editForm}
+        editError={editError}
+        editSaving={editSaving}
         onOpenChange={(nextOpen) => {
           if (!nextOpen && !editSaving) {
             closeEditDialog();
           }
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit transaction</DialogTitle>
-            <DialogDescription>
-              Update mutable fields and save to keep this page in sync.
-            </DialogDescription>
-          </DialogHeader>
+        onCategoryChange={(value) =>
+          setEditForm((current) =>
+            current ? { ...current, categoryId: value } : current,
+          )
+        }
+        onBookingDateChange={(value) =>
+          setEditForm((current) =>
+            current ? { ...current, bookingDate: value } : current,
+          )
+        }
+        onMerchantChange={(value) =>
+          setEditForm((current) =>
+            current ? { ...current, normalizedMerchant: value } : current,
+          )
+        }
+        onAmountChange={(value) =>
+          setEditForm((current) =>
+            current ? { ...current, amountNok: value } : current,
+          )
+        }
+        onPaymentTypeChange={(value) =>
+          setEditForm((current) =>
+            current
+              ? { ...current, paymentType: toPaymentTypeOption(value) }
+              : current,
+          )
+        }
+        onCancel={closeEditDialog}
+        onSubmit={handleEditSubmit}
+      />
 
-          {editForm ? (
-            <form className="space-y-4" onSubmit={handleEditSubmit}>
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-category-id"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Category
-                </label>
-                <Select
-                  value={editForm.categoryId}
-                  onValueChange={(value) =>
-                    setEditForm((current) =>
-                      current ? { ...current, categoryId: value } : current,
-                    )
-                  }
-                  disabled={editSaving}
-                >
-                  <SelectTrigger id="edit-category-id">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={UNCATEGORIZED_VALUE}>
-                      Uncategorized
-                    </SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-booking-date"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Date
-                </label>
-                <Input
-                  id="edit-booking-date"
-                  type="date"
-                  value={editForm.bookingDate}
-                  onChange={(event) =>
-                    setEditForm((current) =>
-                      current
-                        ? { ...current, bookingDate: event.target.value }
-                        : current,
-                    )
-                  }
-                  disabled={editSaving}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-normalized-merchant"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Merchant
-                </label>
-                <Input
-                  id="edit-normalized-merchant"
-                  value={editForm.normalizedMerchant}
-                  onChange={(event) =>
-                    setEditForm((current) =>
-                      current
-                        ? { ...current, normalizedMerchant: event.target.value }
-                        : current,
-                    )
-                  }
-                  disabled={editSaving}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-amount-nok"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Amount (NOK)
-                </label>
-                <Input
-                  id="edit-amount-nok"
-                  inputMode="decimal"
-                  value={editForm.amountNok}
-                  onChange={(event) =>
-                    setEditForm((current) =>
-                      current
-                        ? { ...current, amountNok: event.target.value }
-                        : current,
-                    )
-                  }
-                  disabled={editSaving}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label
-                  htmlFor="edit-payment-type"
-                  className="text-sm font-medium text-foreground"
-                >
-                  Payment type
-                </label>
-                <Select
-                  value={editForm.paymentType}
-                  onValueChange={(value) =>
-                    setEditForm((current) =>
-                      current
-                        ? {
-                            ...current,
-                            paymentType: toPaymentTypeOption(value),
-                          }
-                        : current,
-                    )
-                  }
-                  disabled={editSaving}
-                >
-                  <SelectTrigger id="edit-payment-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAYMENT_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {editError ? (
-                <p
-                  role="alert"
-                  className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
-                >
-                  {editError}
-                </p>
-              ) : null}
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={closeEditDialog}
-                  disabled={editSaving}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={editSaving}>
-                  {editSaving ? "Saving..." : "Save changes"}
-                </Button>
-              </DialogFooter>
-            </form>
-          ) : null}
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog
+      <DeleteTransactionDialog
         open={deletingTransaction !== null}
+        deleteError={deleteError}
+        deleteSaving={deleteSaving}
         onOpenChange={(nextOpen) => {
           if (!nextOpen && !deleteSaving) {
             closeDeleteDialog();
           }
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete transaction</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently remove the selected transaction.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          {deleteError ? (
-            <p
-              role="alert"
-              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
-            >
-              {deleteError}
-            </p>
-          ) : null}
-
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={closeDeleteDialog}
-              disabled={deleteSaving}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
-              onClick={handleDeleteConfirm}
-              disabled={deleteSaving}
-            >
-              {deleteSaving ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onCancel={closeDeleteDialog}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }

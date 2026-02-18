@@ -18,6 +18,7 @@
 - Keep transaction edit UI state local in `src/app/transactions/*` and refresh list data via the same paginated query after successful saves to preserve active filter/page context.
 - Keep the transactions edit workflow NOK-only by removing currency from edit payload parsing/UI and forcing persisted updates to `currency: "NOK"`.
 - Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
+- Keep `/transactions` dialog markup in focused components (`edit-transaction-dialog.tsx`, `delete-transaction-dialog.tsx`) and pass typed props from `transactions-manager.tsx` to isolate mutation workflows from table rendering.
 - For `/accounts`, keep network/state orchestration in `use-accounts-manager.ts` and keep create-form/table UI split into route-local section components under `src/app/accounts/components/*`.
 - For `/categories`, keep shared scope-label rendering and category/rule API error mapping in `categories-manager.utils.ts`, and keep major CRUD UI slices in route-local section components.
 - For `/categories`, keep category and rule CRUD markup split into focused section components (`category-management-section.tsx` and `rules-management-section.tsx`) while keeping fetch/mutation orchestration in `categories-manager.tsx`.
@@ -282,4 +283,31 @@
   - Patterns discovered: Keep transactions fetch/filter/pagination orchestration in a route-local hook and keep table/pagination UI in a section component to reduce churn in `transactions-manager.tsx`.
   - Gotchas encountered: Running `pnpm test` and `pnpm build` in parallel can cause occasional Playwright timeouts; rerunning `pnpm test` in isolation stabilized the suite.
   - Useful context: Existing transactions behavior coverage is in `tests/e2e/us-018-transactions-route-controls.e2e.ts` and remained green without locator updates.
+---
+
+## 2026-02-18 21:16:27 CET - US-108
+- What was implemented
+- Extracted the transaction edit form dialog into `EditTransactionDialog` with typed props and kept patch payload/validation behavior unchanged.
+- Extracted the transaction delete confirmation dialog into `DeleteTransactionDialog` with typed props and kept delete confirmation/error handling semantics unchanged.
+- Updated `TransactionsManager` to compose the new dialog components while keeping dialog state local and preserving the same post-mutation refetch flow.
+- Updated `AGENTS.md` with a reusable transactions dialog component convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/transactions/transactions-manager.tsx`
+- `src/app/transactions/components/edit-transaction-dialog.tsx`
+- `src/app/transactions/components/delete-transaction-dialog.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅ (initial run had a transient timeout in `tests/e2e/us-017-theme-toggle.e2e.ts`; rerun passed all tests)
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep `/transactions` edit/delete dialogs as standalone typed components so mutation/workflow updates do not require editing table/filter UI.
+- Gotchas encountered
+- `tests/e2e/us-017-theme-toggle.e2e.ts` can intermittently time out waiting for the `Light` menu item; a clean rerun often resolves this transient failure.
+- Useful context
+- Existing transactions dialog behavior is already covered by `tests/e2e/us-018-transactions-route-controls.e2e.ts` edit/delete scenarios, so this extraction did not require locator updates.
 ---

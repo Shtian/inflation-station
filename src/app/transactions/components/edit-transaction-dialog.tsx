@@ -1,0 +1,195 @@
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  type Category,
+  type EditFormState,
+  PAYMENT_TYPE_OPTIONS,
+  UNCATEGORIZED_VALUE,
+} from "../transactions-manager.types";
+
+type EditTransactionDialogProps = {
+  open: boolean;
+  categories: Category[];
+  editForm: EditFormState | null;
+  editError: string | null;
+  editSaving: boolean;
+  onOpenChange: (nextOpen: boolean) => void;
+  onCategoryChange: (value: string) => void;
+  onBookingDateChange: (value: string) => void;
+  onMerchantChange: (value: string) => void;
+  onAmountChange: (value: string) => void;
+  onPaymentTypeChange: (value: string) => void;
+  onCancel: () => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+};
+
+export function EditTransactionDialog({
+  open,
+  categories,
+  editForm,
+  editError,
+  editSaving,
+  onOpenChange,
+  onCategoryChange,
+  onBookingDateChange,
+  onMerchantChange,
+  onAmountChange,
+  onPaymentTypeChange,
+  onCancel,
+  onSubmit,
+}: EditTransactionDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit transaction</DialogTitle>
+          <DialogDescription>
+            Update mutable fields and save to keep this page in sync.
+          </DialogDescription>
+        </DialogHeader>
+
+        {editForm ? (
+          <form className="space-y-4" onSubmit={onSubmit}>
+            <div className="space-y-2">
+              <label
+                htmlFor="edit-category-id"
+                className="text-sm font-medium text-foreground"
+              >
+                Category
+              </label>
+              <Select
+                value={editForm.categoryId}
+                onValueChange={onCategoryChange}
+                disabled={editSaving}
+              >
+                <SelectTrigger id="edit-category-id">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={UNCATEGORIZED_VALUE}>
+                    Uncategorized
+                  </SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="edit-booking-date"
+                className="text-sm font-medium text-foreground"
+              >
+                Date
+              </label>
+              <Input
+                id="edit-booking-date"
+                type="date"
+                value={editForm.bookingDate}
+                onChange={(event) => onBookingDateChange(event.target.value)}
+                disabled={editSaving}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="edit-normalized-merchant"
+                className="text-sm font-medium text-foreground"
+              >
+                Merchant
+              </label>
+              <Input
+                id="edit-normalized-merchant"
+                value={editForm.normalizedMerchant}
+                onChange={(event) => onMerchantChange(event.target.value)}
+                disabled={editSaving}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="edit-amount-nok"
+                className="text-sm font-medium text-foreground"
+              >
+                Amount (NOK)
+              </label>
+              <Input
+                id="edit-amount-nok"
+                inputMode="decimal"
+                value={editForm.amountNok}
+                onChange={(event) => onAmountChange(event.target.value)}
+                disabled={editSaving}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="edit-payment-type"
+                className="text-sm font-medium text-foreground"
+              >
+                Payment type
+              </label>
+              <Select
+                value={editForm.paymentType}
+                onValueChange={onPaymentTypeChange}
+                disabled={editSaving}
+              >
+                <SelectTrigger id="edit-payment-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {editError ? (
+              <p
+                role="alert"
+                className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+              >
+                {editError}
+              </p>
+            ) : null}
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={editSaving}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editSaving}>
+                {editSaving ? "Saving..." : "Save changes"}
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
