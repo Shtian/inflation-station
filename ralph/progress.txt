@@ -95,3 +95,19 @@
   - Biome requires `import type { ... }` to come before the matching value import from the same module (alphabetical sort puts `type` imports first).
   - `pnpm exec biome check --write` auto-fixes both formatting and import ordering in one pass.
 ---
+
+## 2026-02-18 - US-006
+- Implemented: Restructured `import-uploader.tsx` return JSX to use a two-column layout on desktop (≥1024px).
+  - Outer wrapper changed from a single `<div className="space-y-4">` to a header block + `<div className="flex flex-col gap-6 lg:flex-row lg:items-start">` flex container.
+  - Left column (`grid gap-3 lg:w-96 lg:shrink-0 lg:sticky lg:top-6 lg:self-start`) holds: account selector, drop zone, file info row, provider detection badge, and Parse CSV button.
+  - Right column (`min-w-0 flex-1 space-y-4`) holds: all error messages, skeleton loading section, parse summary section, review table, submit button, submit error/notice.
+  - `ImportReviewTable` and `ReviewTableSkeleton` already wrap their content in `overflow-x-auto` — no extra wrapper needed in parent.
+  - On screens below lg the layout stacks as a single column, matching the previous behaviour.
+- Files changed: `src/app/import/import-uploader.tsx`
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓, `pnpm test:unit` ✓ (92 tests)
+- **Learnings for future iterations**
+  - For sticky left columns in a flex layout, apply `lg:sticky lg:top-6 lg:self-start` directly to the column div — `lg:self-start` is needed to prevent the sticky element from stretching to the flex container height.
+  - Add `min-w-0` to flex children that contain horizontally overflowing content (tables, wide grids) so the flex child can shrink below its intrinsic content width.
+  - When refactoring heading + separator from inside `space-y-4` to outside a flex layout, keep the separator inside the pre-flex header block to avoid spacing changes.
+  - `overflow-x-auto` on child components (`ImportReviewTable`, `ReviewTableSkeleton`) satisfies the "review table container has overflow-x-auto" AC without needing a duplicate wrapper in the parent.
+---
