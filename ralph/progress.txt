@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - Biome's `noArrayIndexKey` rule rejects `key={i}` in `.map()` calls — use semantic string keys (field names, column names) from a typed const array instead of `Array.from({ length: N }).map((_, i) => ...)` patterns.
+- Keep each app route `page.tsx` as a thin wrapper that renders one route-local `*-route-root.tsx` entry component, and enforce route-root size constraints with `scripts/check-route-client-size.mjs` during `pnpm lint`.
 - Keep primary app navigation in `src/app/layout.tsx`, and keep `/` redirecting to `/overview`.
 - The Badge component (`src/components/ui/badge.tsx`) only has `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` variants; use `className` overrides for custom colours (e.g. green/amber status badges).
 - When replacing a controlled state (e.g. `providerDetection`) from dialog confirm, update both the selectedId state and the detection object so the badge display updates immediately without a re-parse.
@@ -30,3 +31,42 @@
 - For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
 - Keep `/api/imports/submit` payload rows carrying finalized `selectedMessage` text, and recompute `normalizedMerchant` from staged `name` + selected message before dedupe/persistence.
 
+## 2026-02-18 15:06:31 CET - US-101
+- What was implemented
+- Standardized route composition by adding route-local `*-route-root.tsx` entry components and wiring each large route `page.tsx` to delegate to one root component.
+- Added a lint-enforced route composition guardrail (`scripts/check-route-client-size.mjs`) and integrated it into `pnpm lint` via `lint:route-structure`.
+- Documented the route-root composition guardrail in `README.md` and `AGENTS.md`.
+- Updated Playwright spec `tests/e2e/us-016-import-route-upload.e2e.ts` to align user-facing locators/assertions with the current import UI labels and provider-selection flow.
+- Files changed
+- `AGENTS.md`
+- `README.md`
+- `package.json`
+- `ralph/prd.json`
+- `scripts/check-route-client-size.mjs`
+- `src/app/page.tsx`
+- `src/app/accounts/page.tsx`
+- `src/app/accounts/accounts-route-root.tsx`
+- `src/app/categories/page.tsx`
+- `src/app/categories/categories-route-root.tsx`
+- `src/app/import/page.tsx`
+- `src/app/import/import-route-root.tsx`
+- `src/app/import-provider-mappings/page.tsx`
+- `src/app/import-provider-mappings/provider-mappings-route-root.tsx`
+- `src/app/overview/overview-route-root.tsx`
+- `src/app/transactions/page.tsx`
+- `src/app/transactions/transactions-route-root.tsx`
+- `tests/e2e/us-016-import-route-upload.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Route entry consistency is easier to preserve when each route keeps `page.tsx` server-thin and funnels route composition through a dedicated `*-route-root.tsx` module.
+- Guardrails are most reliable when attached to existing quality commands (`pnpm lint`) instead of standalone ad-hoc checks.
+- Gotchas encountered
+- Existing E2E tests under `tests/e2e/us-016-import-route-upload.e2e.ts` used stale labels (`Parse summary`, `Submit reviewed rows`, provider combobox flow); use current user-facing text (`Import Preview`, `Confirm Import`, dialog-based provider selection).
+- Useful context
+- Import provider override is currently dialog-driven (`Change` -> provider button -> `Confirm`) rather than combobox-driven.
+---
