@@ -78,3 +78,20 @@
   - `pnpm exec biome check --write` fixes import ordering automatically but won't auto-fix `noArrayIndexKey` — that requires a manual refactor.
   - Skeleton import position must respect Biome's import ordering (alphabetical within `@/components/ui/*` group); running `biome check --write` auto-corrects the position.
 ---
+
+## 2026-02-18 - US-005
+- Implemented: Extracted review table JSX from `import-uploader.tsx` into a new client component `src/app/import/import-review-table.tsx`.
+  - `ImportReviewTable` receives `rows`, `categories`, `categoryDecisions`, `messageDecisions`, `setCategoryDecisions`, `setMessageDecisions` as props.
+  - `ReviewTableSkeleton` co-located in the same file renders a Table shell with 8 rows × 6 cols of Skeleton cells.
+  - Shared constants (`MESSAGE_SOURCE_ORIGINAL`, `MESSAGE_SOURCE_CLEANED`, `UNCATEGORIZED_SELECT_VALUE`) and types (`MessageSource`, `ReviewRow`) exported from `import-review-table.tsx` and imported into `import-uploader.tsx` — removing the duplicate definitions.
+  - `formatNok` helper moved exclusively to `import-review-table.tsx` (no longer needed in parent).
+  - Loading section in `import-uploader.tsx` now uses `<ReviewTableSkeleton />` instead of inline table skeleton markup.
+  - Submit reviewed rows button moved outside the `rows.length > 0` conditional; now rendered whenever `parseResult?.review` is defined.
+- Files changed: `src/app/import/import-review-table.tsx` (new), `src/app/import/import-uploader.tsx`
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓, `pnpm test:unit` ✓ (92 tests)
+- **Learnings for future iterations**
+  - When extracting constants to a new file, check every usage site in the parent — remove any that are no longer used to avoid `noUnusedVariables` lint errors.
+  - Biome formats short `as const` arrays inline (single line) — avoid multi-line formatting for short constant arrays.
+  - Biome requires `import type { ... }` to come before the matching value import from the same module (alphabetical sort puts `type` imports first).
+  - `pnpm exec biome check --write` auto-fixes both formatting and import ordering in one pass.
+---
