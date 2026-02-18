@@ -7,14 +7,14 @@ import {
   MESSAGE_SOURCE_ORIGINAL,
 } from "./import-review-table";
 
-type Account = {
+export type Account = {
   id: string;
   name: string;
   institution: string | null;
   isActive: boolean;
 };
 
-type Category = {
+export type Category = {
   id: string;
   name: string;
   accountId: string | null;
@@ -35,7 +35,7 @@ type ImportError = {
 
 type ProviderDetectionState = "certain" | "uncertain" | "missing";
 
-type ProviderDetection = {
+export type ProviderDetection = {
   state: ProviderDetectionState;
   providerId: string | null;
   providerName: string | null;
@@ -51,7 +51,7 @@ type ProviderDetection = {
   }>;
 };
 
-type ParseResponse = {
+export type ParseResponse = {
   detection: ProviderDetection;
   summary: ImportSummary;
   errors: ImportError[];

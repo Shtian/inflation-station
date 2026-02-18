@@ -7,6 +7,7 @@
 - When replacing a controlled state (e.g. `providerDetection`) from dialog confirm, update both the selectedId state and the detection object so the badge display updates immediately without a re-parse.
 - `/api/import-provider-mappings` GET returns `{ mappings: [{ id, providerName, ... }] }` — use this to populate "all providers" in the Change dialog when `providerDetection.candidates` is empty.
 - Keep `/import` request orchestration and review-decision state in `src/app/import/use-import-workflow.ts`; keep `import-uploader.tsx` focused on rendering and local drag/drop presentation state.
+- Keep `/import` upload-phase and review-phase markup in focused components under `src/app/import/components/*`; keep `import-uploader.tsx` as the route-level composition shell plus provider dialog orchestration.
 - Keep API handlers in `src/app/api/**` and use the shared server-only Prisma client in `src/lib/prisma.ts`.
 - Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
 - For paginated table routes, keep summary metadata (`page`, `totalPages`, `total`) outside the table and keep row rendering inside table primitives.
@@ -337,4 +338,32 @@
 - `tests/e2e/us-017-theme-toggle.e2e.ts` can still fail intermittently due menu-item timing; rerunning `pnpm test` in isolation is a reliable recovery path.
 - Useful context
 - Existing Playwright coverage in `tests/e2e/us-016-import-route-upload.e2e.ts` already validates parse-submit payload behavior and provider-selection-required flow after this extraction.
+---
+
+## 2026-02-18 21:27:19 CET - US-110
+- What was implemented
+- Extracted upload-phase UI from `src/app/import/import-uploader.tsx` into `src/app/import/components/import-upload-phase.tsx` while preserving account selection, file selection/clear, drag-and-drop, provider status, parse CTA, and notice/error rendering behavior.
+- Extracted review-phase UI from `src/app/import/import-uploader.tsx` into `src/app/import/components/import-review-phase.tsx` while preserving preview loading state, provider/account summary, validation warnings, review table controls, and submit/start-over actions.
+- Kept provider selection dialog orchestration in `import-uploader.tsx` and exported workflow types from `use-import-workflow.ts` for typed component boundaries.
+- Updated `AGENTS.md` import workflow convention to document route-level orchestration in `import-uploader.tsx` and phase component rendering under `src/app/import/components/*`.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/use-import-workflow.ts`
+- `src/app/import/components/import-upload-phase.tsx`
+- `src/app/import/components/import-review-phase.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep `/import` as a small composition shell: route title + phase switching + provider dialog; move phase-specific rendering into route-local components to reduce churn.
+- Gotchas encountered
+- New route-local UI files must still satisfy Biome import-order/format checks; running `pnpm exec biome check --write` on added files avoids failing the full lint pipeline.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-016-import-route-upload.e2e.ts` continued to validate parse, provider-selection-required, and submit flows after the phase extraction.
 ---
