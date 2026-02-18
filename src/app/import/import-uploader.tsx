@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  Check,
-  Loader2,
-  Pencil,
-  Sparkles,
-  TriangleAlert,
-  Upload,
-  UploadCloud,
-  X,
-} from "lucide-react";
+import { Check, Loader2, Pencil, Upload, UploadCloud, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,21 +21,14 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import type { MessageSource, ReviewRow } from "./import-review-table";
+import {
+  ImportReviewTable,
+  MESSAGE_SOURCE_CLEANED,
+  MESSAGE_SOURCE_ORIGINAL,
+  ReviewTableSkeleton,
+} from "./import-review-table";
 
 type Account = {
   id: string;
@@ -97,20 +81,7 @@ type ParseResponse = {
       | "timeout"
       | "provider_error"
       | null;
-    rows: Array<{
-      id: string;
-      rowNumber: number;
-      bookingDate: string;
-      amountNok: number;
-      currency: "NOK";
-      normalizedMerchant: string;
-      paymentType: string;
-      name?: string;
-      title?: string;
-      cleanedMessage?: string | null;
-      categoryId: string | null;
-      potentialDuplicate: boolean;
-    }>;
+    rows: ReviewRow[];
   };
 };
 
@@ -135,14 +106,7 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const UNCATEGORIZED_SELECT_VALUE = "__uncategorized__";
 const AUTO_PROVIDER_SELECT_VALUE = "__auto_provider__";
-const MESSAGE_SOURCE_ORIGINAL = "original";
-const MESSAGE_SOURCE_CLEANED = "cleaned";
-
-type MessageSource =
-  | typeof MESSAGE_SOURCE_ORIGINAL
-  | typeof MESSAGE_SOURCE_CLEANED;
 
 function getRequestErrorMessage(body: unknown) {
   if (typeof body === "object" && body && "message" in body) {
@@ -160,15 +124,6 @@ function getRequestErrorMessage(body: unknown) {
   }
 
   return "Request failed. Please try again.";
-}
-
-function formatNok(value: number) {
-  return new Intl.NumberFormat("nb-NO", {
-    style: "currency",
-    currency: "NOK",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
 }
 
 export function ImportUploader() {
@@ -736,48 +691,7 @@ export function ImportUploader() {
                 </div>
               ))}
             </dl>
-            <div className="overflow-x-auto rounded-md border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {(
-                      [
-                        "date",
-                        "message",
-                        "amount",
-                        "type",
-                        "category",
-                        "flags",
-                      ] as const
-                    ).map((col) => (
-                      <TableHead key={col}>
-                        <Skeleton className="h-4 w-full" />
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(["r1", "r2", "r3", "r4", "r5"] as const).map((row) => (
-                    <TableRow key={row}>
-                      {(
-                        [
-                          "date",
-                          "message",
-                          "amount",
-                          "type",
-                          "category",
-                          "flags",
-                        ] as const
-                      ).map((col) => (
-                        <TableCell key={col}>
-                          <Skeleton className="h-4 w-full" />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <ReviewTableSkeleton />
           </section>
         ) : null}
 
@@ -841,202 +755,34 @@ export function ImportUploader() {
                   Default message selection uses AI-cleaned text when available.
                   Rows without a suggestion keep the original message.
                 </p>
-                <div className="overflow-x-auto rounded-md border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Message</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Payment type</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <TriangleAlert
-                                  className="h-4 w-4 text-muted-foreground"
-                                  aria-label="Warnings"
-                                />
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                Potential duplicates or other import warnings
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {parseResult.review.rows.map((row) => {
-                        const originalMessage =
-                          typeof row.title === "string" &&
-                          row.title.trim().length > 0
-                            ? row.title
-                            : typeof row.name === "string" &&
-                                row.name.trim().length > 0
-                              ? row.name
-                              : "No original message";
-                        const hasCleanedMessage =
-                          typeof row.cleanedMessage === "string" &&
-                          row.cleanedMessage.trim().length > 0;
-                        const selectedMessageSource =
-                          messageDecisions[row.id] ??
-                          (hasCleanedMessage
-                            ? MESSAGE_SOURCE_CLEANED
-                            : MESSAGE_SOURCE_ORIGINAL);
-                        const selectedCategoryId =
-                          categoryDecisions[row.id] ?? row.categoryId ?? "";
-                        const isUncategorized = selectedCategoryId.length === 0;
-                        return (
-                          <TableRow key={row.id}>
-                            <TableCell>{row.bookingDate}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">
-                                  {selectedMessageSource ===
-                                  MESSAGE_SOURCE_CLEANED
-                                    ? row.cleanedMessage
-                                    : originalMessage}
-                                </span>
-                                {hasCleanedMessage ? (
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <button
-                                          type="button"
-                                          aria-label={`Toggle message source for row ${row.rowNumber}`}
-                                          onClick={() =>
-                                            setMessageDecisions((current) => ({
-                                              ...current,
-                                              [row.id]:
-                                                selectedMessageSource ===
-                                                MESSAGE_SOURCE_CLEANED
-                                                  ? MESSAGE_SOURCE_ORIGINAL
-                                                  : MESSAGE_SOURCE_CLEANED,
-                                            }))
-                                          }
-                                          className={cn(
-                                            "shrink-0 rounded p-0.5 transition-colors hover:bg-accent",
-                                            selectedMessageSource ===
-                                              MESSAGE_SOURCE_CLEANED
-                                              ? "text-violet-500"
-                                              : "text-muted-foreground",
-                                          )}
-                                        >
-                                          <Sparkles
-                                            className="h-3.5 w-3.5"
-                                            aria-hidden="true"
-                                          />
-                                        </button>
-                                      </TooltipTrigger>
-                                      <TooltipContent
-                                        side="top"
-                                        className="max-w-xs space-y-1 p-3 text-xs"
-                                      >
-                                        <p>
-                                          <span className="font-medium">
-                                            Original:
-                                          </span>{" "}
-                                          {originalMessage}
-                                        </p>
-                                        <p>
-                                          <span className="font-medium">
-                                            AI-cleaned:
-                                          </span>{" "}
-                                          {row.cleanedMessage}
-                                        </p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                ) : null}
-                              </div>
-                            </TableCell>
-                            <TableCell>{formatNok(row.amountNok)}</TableCell>
-                            <TableCell>{row.paymentType}</TableCell>
-                            <TableCell>
-                              <Select
-                                value={
-                                  selectedCategoryId ||
-                                  UNCATEGORIZED_SELECT_VALUE
-                                }
-                                onValueChange={(value) =>
-                                  setCategoryDecisions((current) => ({
-                                    ...current,
-                                    [row.id]:
-                                      value === UNCATEGORIZED_SELECT_VALUE
-                                        ? ""
-                                        : value,
-                                  }))
-                                }
-                              >
-                                <SelectTrigger
-                                  aria-label={`Category for row ${row.rowNumber}`}
-                                  className={cn(
-                                    "w-[220px]",
-                                    isUncategorized && "text-amber-500",
-                                  )}
-                                >
-                                  <SelectValue placeholder="Uncategorized" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem
-                                    value={UNCATEGORIZED_SELECT_VALUE}
-                                    className="text-amber-500"
-                                  >
-                                    Uncategorized
-                                  </SelectItem>
-                                  {reviewCategoryOptions.map((category) => (
-                                    <SelectItem
-                                      key={category.id}
-                                      value={category.id}
-                                    >
-                                      {category.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell>
-                              {row.potentialDuplicate ? (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <TriangleAlert
-                                        className="h-4 w-4 text-amber-500"
-                                        aria-label="Potential duplicate"
-                                      />
-                                    </TooltipTrigger>
-                                    <TooltipContent side="top">
-                                      Potential duplicate
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              ) : null}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-                <Button
-                  onClick={submitReviewRows}
-                  disabled={submitLoading}
-                  className="gap-2"
-                >
-                  {submitLoading ? (
-                    "Submitting..."
-                  ) : (
-                    <>
-                      <Check className="h-4 w-4" aria-hidden="true" />
-                      Submit reviewed rows
-                    </>
-                  )}
-                </Button>
+                <ImportReviewTable
+                  rows={parseResult.review.rows}
+                  categories={reviewCategoryOptions}
+                  categoryDecisions={categoryDecisions}
+                  messageDecisions={messageDecisions}
+                  setCategoryDecisions={setCategoryDecisions}
+                  setMessageDecisions={setMessageDecisions}
+                />
               </div>
             ) : null}
           </section>
+        ) : null}
+
+        {parseResult?.review ? (
+          <Button
+            onClick={submitReviewRows}
+            disabled={submitLoading}
+            className="mt-4 gap-2"
+          >
+            {submitLoading ? (
+              "Submitting..."
+            ) : (
+              <>
+                <Check className="h-4 w-4" aria-hidden="true" />
+                Submit reviewed rows
+              </>
+            )}
+          </Button>
         ) : null}
 
         {submitError ? (
