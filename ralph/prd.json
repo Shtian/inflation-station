@@ -1,120 +1,69 @@
 {
-  "project": "Inflation Station",
-  "branchName": "ralph/import-page-ui-improvements",
-  "description": "Import page UI improvements: drag-and-drop file upload, improved provider detection UX (badge + Change dialog), skeleton loading during parse and review, and a two-column desktop layout (≥1024px).",
+  "project": "inflation-station",
+  "branchName": "ralph/transaction-notes",
+  "description": "Add optional plain-text transaction notes editable during import review and from transactions overview after persistence.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add shadcn Skeleton component",
-      "description": "As a developer, I need a Skeleton component in components/ui/ so that later stories can render animated loading placeholders.",
+      "title": "Persist transaction note field",
+      "description": "As a developer, I want transactions to store an optional note so user context is persisted and available for future features.",
       "acceptanceCriteria": [
-        "src/components/ui/skeleton.tsx exists and exports a Skeleton component",
-        "Skeleton accepts a className prop and renders a div with animate-pulse and bg-muted classes",
-        "Component follows the existing shadcn component pattern (cn utility for className merging)",
-        "Typecheck passes"
+        "Add nullable `note` field to the Transaction data model.",
+        "Generate and apply migration successfully in local development.",
+        "Create and update transaction persistence paths can store note values.",
+        "Typecheck passes",
+        "Tests pass"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Implement drag-and-drop file upload area",
-      "description": "As a user, I want to drag a CSV file onto the import page so that I don't have to use the file picker every time.",
+      "title": "Capture notes in import review and submit",
+      "description": "As a user importing transactions, I want to add a per-row note during review so context is captured before submit.",
       "acceptanceCriteria": [
-        "The plain <Input type='file' /> in import-uploader.tsx is replaced by a styled drop zone div",
-        "Drop zone has a dashed border, rounded corners, an upload icon (lucide-react UploadCloud), and the text 'Drag & drop your CSV here, or click to browse'",
-        "Drag-entering the zone sets isDraggingOver state to true and applies a highlighted style (border-primary bg-primary/5)",
-        "Drag-leaving or dropping resets isDraggingOver to false",
-        "Dropping a .csv or text/csv file sets selectedFile state; dropping any other file type does nothing",
-        "Clicking anywhere inside the drop zone triggers fileInputRef.current.click() to open the native file picker",
-        "A hidden <input type='file' accept='.csv,text/csv' /> remains for the file picker and for programmatic reset after successful import",
-        "When a file is selected (by drop or browse), a row below the drop zone shows the filename and formatted file size with an X button that clears selectedFile and resets the input ref",
-        "No new npm package is added — only native onDragOver, onDragLeave, onDrop events",
-        "Drop zone has role='button' and tabIndex={0} with an onKeyDown handler that triggers click on Enter or Space",
+        "Import review UI shows a note input for each staged row.",
+        "Per-row notes are included in `/api/imports/submit` finalized row payload.",
+        "Submitted transactions persist the provided note values.",
         "Typecheck passes",
+        "Tests pass",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Improve provider detection UX with badge and Change dialog",
-      "description": "As a user, I want to see which provider was auto-detected and be able to change it via a clear button, so I have confidence the correct mapping is used.",
+      "title": "Add/edit notes from transactions overview",
+      "description": "As a user reviewing saved transactions, I want to add or edit a note from the transactions overview editing flow so I can maintain context over time.",
       "acceptanceCriteria": [
-        "The existing <Select> provider dropdown is removed from import-uploader.tsx",
-        "Before any parse attempt the provider section is not rendered",
-        "After a successful or failed parse attempt, a provider status row is shown beneath the drop zone",
-        "When detection.state is 'certain': a green Badge shows the provider name and a ghost Button with a pencil icon labelled 'Change' appears next to it",
-        "When detection.state is 'uncertain': a yellow/amber Badge shows the provider name (or 'Unknown' if none), a 'Change' Button appears, and a helper text reads 'Detection was uncertain — please confirm'",
-        "When detection.state is 'missing': a red Badge labelled 'No provider detected' and a Button labelled 'Select provider' appear",
-        "Clicking Change or Select provider opens a shadcn Dialog (from components/ui/dialog.tsx)",
-        "The dialog lists all providers from providerDetection.candidates (or all available providers if candidates is empty) as radio-style selectable cards showing provider name",
-        "A 'Confirm' button inside the dialog updates selectedProvider state and closes the dialog",
-        "A 'Cancel' button closes the dialog without changing state",
-        "After confirming a new provider the badge immediately reflects the chosen provider name",
+        "Transactions overview edit flow includes a note field with existing value prefilled.",
+        "Clearing a note is supported and persisted according to API contract.",
+        "`/api/transactions/[transactionId]` update flow persists note edits.",
         "Typecheck passes",
+        "Tests pass",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Skeleton loading during CSV parsing",
-      "description": "As a user, I want to see skeleton placeholders while my CSV is being parsed so the page feels responsive instead of frozen.",
+      "title": "Enforce note validation across entry points",
+      "description": "As a user, I want consistent note limits and validation so behavior is predictable across import and post-import editing.",
       "acceptanceCriteria": [
-        "While importLoading is true, the area below the Parse CSV button shows a parse-summary skeleton: 4 skeleton rows (full-width Skeleton elements) mimicking the DL/DD summary list",
-        "While importLoading is true, a table skeleton of 5 rows with 6 skeleton cells each is also shown below the summary skeleton",
-        "The skeletons are shown only when importLoading is true and are not visible alongside real parse results",
-        "The Parse CSV button shows a Loader2 spinner icon (from lucide-react, animate-spin) and the label 'Parsing…' while importLoading is true",
-        "The Parse CSV button is disabled while importLoading is true",
-        "When importLoading becomes false the skeletons are removed and replaced by real content or an error message",
-        "Skeleton component from US-001 is used for all placeholders",
+        "Import submit and transaction update APIs reject notes longer than 500 characters.",
+        "UI surfaces validation feedback near note inputs in import review and transaction edit flow.",
+        "Notes remain optional plain text and valid empty/null values continue to save.",
         "Typecheck passes",
+        "Tests pass",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-005",
-      "title": "Extract review table component with skeleton fallback",
-      "description": "As a user, I want row-level skeletons to appear while the review table hydrates so there are no empty-cell flashes after parsing.",
-      "acceptanceCriteria": [
-        "The review table JSX is extracted from import-uploader.tsx into a new client component at src/app/import/import-review-table.tsx",
-        "ImportReviewTable receives rows, categories, categoryDecisions, messageDecisions, and their setter callbacks as props",
-        "A ReviewTableSkeleton component (co-located in import-review-table.tsx or import-uploader.tsx) renders a Table shell with the same 6 columns but Skeleton cells for 8 rows",
-        "In import-uploader.tsx, when importLoading is false and parseResult?.review?.rows exists, ImportReviewTable is rendered; otherwise ReviewTableSkeleton is shown while importLoading is true (reusing the skeleton from US-004)",
-        "The Submit reviewed rows button remains in import-uploader.tsx outside any conditional and is only rendered when parseResult?.review is defined",
-        "No behaviour change to category or message decision logic — only structural extraction",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-006",
-      "title": "Two-column desktop layout for import page",
-      "description": "As a desktop user (≥1024px), I want the upload controls and review table to use horizontal space so I don't have to scroll past the form to see my transactions.",
-      "acceptanceCriteria": [
-        "The outer wrapper in import-uploader.tsx uses flex flex-col lg:flex-row lg:items-start gap-6",
-        "The left column contains account selector, drop zone, provider detection badge/button, and Parse CSV button; it uses lg:w-96 lg:shrink-0",
-        "The left column has lg:sticky lg:top-6 lg:self-start so controls stay visible while scrolling the review table",
-        "The right column (flex-1 min-w-0) contains parse summary, validation errors, and the review table (ImportReviewTable)",
-        "The review table container has overflow-x-auto so the table can scroll horizontally if it overflows the column",
-        "On screens below lg (< 1024px) the layout is a single column stack, matching the previous behaviour",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 6,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]

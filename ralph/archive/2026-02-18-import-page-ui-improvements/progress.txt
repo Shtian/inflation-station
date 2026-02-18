@@ -1,0 +1,113 @@
+## Codebase Patterns
+- Biome's `noArrayIndexKey` rule rejects `key={i}` in `.map()` calls — use semantic string keys (field names, column names) from a typed const array instead of `Array.from({ length: N }).map((_, i) => ...)` patterns.
+- Keep primary app navigation in `src/app/layout.tsx`, and keep `/` redirecting to `/overview`.
+- The Badge component (`src/components/ui/badge.tsx`) only has `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` variants; use `className` overrides for custom colours (e.g. green/amber status badges).
+- When replacing a controlled state (e.g. `providerDetection`) from dialog confirm, update both the selectedId state and the detection object so the badge display updates immediately without a re-parse.
+- `/api/import-provider-mappings` GET returns `{ mappings: [{ id, providerName, ... }] }` — use this to populate "all providers" in the Change dialog when `providerDetection.candidates` is empty.
+- Keep API handlers in `src/app/api/**` and use the shared server-only Prisma client in `src/lib/prisma.ts`.
+- Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
+- For paginated table routes, keep summary metadata (`page`, `totalPages`, `total`) outside the table and keep row rendering inside table primitives.
+- Keep route page state client-side and fetch route-specific API data on filter/pagination changes.
+- Keep transactions pagination/filter query logic in `src/lib/transactions/*`, and keep `/api/transactions` handlers focused on request validation and HTTP response shaping.
+- Keep `/api/transactions/[transactionId]` handlers consistent across mutation methods by validating `transactionId` up front and mapping Prisma `P2025` to `TRANSACTION_NOT_FOUND`.
+- Keep transactions route filter state client-side in `src/app/transactions/*`, and refetch `/api/transactions` whenever account, page, or pageSize changes.
+- Keep `/api/transactions` list rows enriched with `categoryName` so `/transactions` can render category labels (or uncategorized states) without extra category lookups.
+- Keep transaction edit UI state local in `src/app/transactions/*` and refresh list data via the same paginated query after successful saves to preserve active filter/page context.
+- Keep the transactions edit workflow NOK-only by removing currency from edit payload parsing/UI and forcing persisted updates to `currency: "NOK"`.
+- Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
+- For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
+- For Next.js App Router handlers, return `new Response(null, { status: 204 })` for no-content responses; `NextResponse.json` is invalid for HTTP 204.
+- Keep Playwright configured for base URL `http://127.0.0.1:3000` and use `PLAYWRIGHT_NO_WEBSERVER=1` when you need to force reuse of an already running local dev server.
+- Keep `pnpm test` as the full verification entry point (unit + E2E) and use `pnpm test:unit` for fast Vitest-only loops.
+- Store provider import mappings in Prisma using a parent mapping model plus child field-mapping rows, with JSON normalization/transform payloads and `mappingVersion` metadata for diagnostics.
+- For provider autodetection, read configurable `requiredHeaders`/`anyHeaders`/`headerPatterns` from mapping JSON, fall back to mapped source fields, and return parse diagnostics with a `certain`/`uncertain`/`missing` confidence state.
+- When `/api/imports/parse` detection is not `certain` and provider candidates exist, return `PROVIDER_SELECTION_REQUIRED` with diagnostics and require a follow-up parse call with explicit `providerId`.
+- For provider-backed parsing, transform raw CSV through provider field mappings into canonical parser rows before review staging, and keep parser summary keys exactly `imported`, `duplicates`, `ignoredReserved`, `invalid`.
+- Keep import token/payment-type normalization centralized in `src/lib/import/normalization.ts` and apply it before any fingerprint dedupe or duplicate-warning computation.
+- Keep review-stage OpenAI message cleanup best-effort and expose unavailable diagnostics with stable reason codes (`disabled`, `key_missing`, `timeout`, `provider_error`) without blocking parse staging.
+- Keep provider mapping admin CRUD in `/api/import-provider-mappings*` and reject create/update payloads that omit any required canonical field mapping.
+- Keep provider mapping admin UI state local in `src/app/import-provider-mappings/*` and submit create/update payloads as full mapping definitions (provider metadata + field mappings + normalization rules JSON) so API validation feedback stays deterministic.
+- For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
+- Keep `/api/imports/submit` payload rows carrying finalized `selectedMessage` text, and recompute `normalizedMerchant` from staged `name` + selected message before dedupe/persistence.
+
+## 2026-02-18 - US-001
+- Implemented: Created `src/components/ui/skeleton.tsx` exporting a `Skeleton` component that accepts `className` and renders a div with `animate-pulse rounded-md bg-muted`.
+- Files changed: `src/components/ui/skeleton.tsx` (new), `tests/e2e/us-012-category-review-ui.e2e.ts` (format fix), `tests/e2e/us-016-import-route-upload.e2e.ts` (format fix)
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓
+- **Learnings for future iterations**
+  - Biome formatter enforces 2-space indentation and specific JSX formatting; always run `pnpm exec biome format --write` before committing new files.
+  - The existing test files had pre-existing format issues that needed fixing alongside the new file.
+  - shadcn UI components use `data-slot` attribute for component identification; follow this pattern.
+---
+
+## 2026-02-18 - US-003
+- Implemented: Replaced `<Select>` provider dropdown with a Badge-based provider status row and a Dialog for manual provider selection.
+  - Before any parse: provider section is not rendered.
+  - After parse (`providerDetection` is set): green/amber/red Badge shown based on `detection.state`, with a ghost "Change" (or "Select provider") Button.
+  - Dialog lists candidates from `providerDetection.candidates`, or fetches all providers from `/api/import-provider-mappings` when candidates is empty.
+  - Confirming from dialog updates `selectedProviderId` and mutates `providerDetection` to `certain` state with the chosen provider, so badge updates immediately.
+- Files changed: `src/app/import/import-uploader.tsx`
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓
+- **Learnings for future iterations**
+  - The Badge component only has built-in colour variants (default, secondary, destructive, outline, ghost, link); use `className` overrides for custom status colours.
+  - When dialog confirms a provider, update both `selectedProviderId` and `providerDetection` (setting state to `"certain"`) so the badge reflects the choice immediately without needing a re-parse.
+  - `GET /api/import-provider-mappings` returns `{ mappings: [{ id, providerName, ... }] }` — suitable for populating a full provider list.
+  - Biome multi-line import format is required for ≥ 4 named imports; run `pnpm exec biome format --write` after adding Dialog/Badge imports.
+---
+
+## 2026-02-18 - US-002
+- Implemented: Replaced plain `<Input type="file" />` in `import-uploader.tsx` with a styled drag-and-drop drop zone (`<button>` element) with dashed border, UploadCloud icon, drag highlight on hover/drag, native `onDragOver`/`onDragLeave`/`onDrop` handlers, and a file info row (name + size + X clear button) shown when a file is selected.
+- Files changed: `src/app/import/import-uploader.tsx`
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓
+- **Learnings for future iterations**
+  - Biome's `lint/a11y/useSemanticElements` rule rejects `role="button"` on `<div>` — use a `<button type="button">` element instead; native `<button>` also handles Enter/Space keyboard activation automatically.
+  - Add `aria-label` to sr-only `<input type="file">` so existing `page.getByLabel("CSV file")` Playwright locators continue working without test changes.
+  - Biome requires multi-line import format when ≥ 4 named imports from the same module; run `pnpm exec biome format --write` after adding imports.
+---
+
+## 2026-02-18 - US-004
+- Implemented: Added skeleton loading placeholders while `importLoading` is true in `import-uploader.tsx`.
+  - Parse CSV button now shows a `Loader2` spinner + "Parsing…" text (was plain text "Parsing...").
+  - A parse-summary skeleton with 4 `<div>` items (each with two `Skeleton` elements mimicking `dt`/`dd` rows) appears below the button in a `grid-cols-2` layout.
+  - A table skeleton (5 rows × 6 cells, all `Skeleton` elements) appears below the summary skeleton, wrapped in `overflow-x-auto`.
+  - Skeletons are mutually exclusive with real parse results — `importLoading` and `parseResult` can't both be non-null simultaneously.
+- Files changed: `src/app/import/import-uploader.tsx`
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓
+- **Learnings for future iterations**
+  - Biome's `noArrayIndexKey` rule rejects numeric index keys from `.map((_, i) => ...)` — use typed const string arrays (field names, column names, semantic ids) as the source of iteration to get string keys automatically.
+  - `pnpm exec biome check --write` fixes import ordering automatically but won't auto-fix `noArrayIndexKey` — that requires a manual refactor.
+  - Skeleton import position must respect Biome's import ordering (alphabetical within `@/components/ui/*` group); running `biome check --write` auto-corrects the position.
+---
+
+## 2026-02-18 - US-005
+- Implemented: Extracted review table JSX from `import-uploader.tsx` into a new client component `src/app/import/import-review-table.tsx`.
+  - `ImportReviewTable` receives `rows`, `categories`, `categoryDecisions`, `messageDecisions`, `setCategoryDecisions`, `setMessageDecisions` as props.
+  - `ReviewTableSkeleton` co-located in the same file renders a Table shell with 8 rows × 6 cols of Skeleton cells.
+  - Shared constants (`MESSAGE_SOURCE_ORIGINAL`, `MESSAGE_SOURCE_CLEANED`, `UNCATEGORIZED_SELECT_VALUE`) and types (`MessageSource`, `ReviewRow`) exported from `import-review-table.tsx` and imported into `import-uploader.tsx` — removing the duplicate definitions.
+  - `formatNok` helper moved exclusively to `import-review-table.tsx` (no longer needed in parent).
+  - Loading section in `import-uploader.tsx` now uses `<ReviewTableSkeleton />` instead of inline table skeleton markup.
+  - Submit reviewed rows button moved outside the `rows.length > 0` conditional; now rendered whenever `parseResult?.review` is defined.
+- Files changed: `src/app/import/import-review-table.tsx` (new), `src/app/import/import-uploader.tsx`
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓, `pnpm test:unit` ✓ (92 tests)
+- **Learnings for future iterations**
+  - When extracting constants to a new file, check every usage site in the parent — remove any that are no longer used to avoid `noUnusedVariables` lint errors.
+  - Biome formats short `as const` arrays inline (single line) — avoid multi-line formatting for short constant arrays.
+  - Biome requires `import type { ... }` to come before the matching value import from the same module (alphabetical sort puts `type` imports first).
+  - `pnpm exec biome check --write` auto-fixes both formatting and import ordering in one pass.
+---
+
+## 2026-02-18 - US-006
+- Implemented: Restructured `import-uploader.tsx` return JSX to use a two-column layout on desktop (≥1024px).
+  - Outer wrapper changed from a single `<div className="space-y-4">` to a header block + `<div className="flex flex-col gap-6 lg:flex-row lg:items-start">` flex container.
+  - Left column (`grid gap-3 lg:w-96 lg:shrink-0 lg:sticky lg:top-6 lg:self-start`) holds: account selector, drop zone, file info row, provider detection badge, and Parse CSV button.
+  - Right column (`min-w-0 flex-1 space-y-4`) holds: all error messages, skeleton loading section, parse summary section, review table, submit button, submit error/notice.
+  - `ImportReviewTable` and `ReviewTableSkeleton` already wrap their content in `overflow-x-auto` — no extra wrapper needed in parent.
+  - On screens below lg the layout stacks as a single column, matching the previous behaviour.
+- Files changed: `src/app/import/import-uploader.tsx`
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓, `pnpm test:unit` ✓ (92 tests)
+- **Learnings for future iterations**
+  - For sticky left columns in a flex layout, apply `lg:sticky lg:top-6 lg:self-start` directly to the column div — `lg:self-start` is needed to prevent the sticky element from stretching to the flex container height.
+  - Add `min-w-0` to flex children that contain horizontally overflowing content (tables, wide grids) so the flex child can shrink below its intrinsic content width.
+  - When refactoring heading + separator from inside `space-y-4` to outside a flex layout, keep the separator inside the pre-flex header block to avoid spacing changes.
+  - `overflow-x-auto` on child components (`ImportReviewTable`, `ReviewTableSkeleton`) satisfies the "review table container has overflow-x-auto" AC without needing a duplicate wrapper in the parent.
+---
