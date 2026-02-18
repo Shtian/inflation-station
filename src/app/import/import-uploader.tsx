@@ -446,20 +446,19 @@ export function ImportUploader() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Import
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Choose an account and CSV file to start the parse and validation
-            flow.
-          </p>
-        </div>
+      <div className="mb-4 space-y-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Import
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Choose an account and CSV file to start the parse and validation flow.
+        </p>
+      </div>
 
-        <Separator className="my-4" />
+      <Separator className="my-4" />
 
-        <div className="mt-4 grid gap-3">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div className="grid gap-3 lg:w-96 lg:shrink-0 lg:sticky lg:top-6 lg:self-start">
           <label
             htmlFor="account-select"
             className="text-sm font-medium text-foreground"
@@ -543,6 +542,7 @@ export function ImportUploader() {
               }}
             />
           </button>
+
           {selectedFile ? (
             <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
               <span className="flex-1 truncate text-foreground">
@@ -644,161 +644,166 @@ export function ImportUploader() {
           </Button>
         </div>
 
-        {accountError ? (
-          <p
-            role="alert"
-            className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {accountError}
-          </p>
-        ) : null}
+        <div className="min-w-0 flex-1 space-y-4">
+          {accountError ? (
+            <p
+              role="alert"
+              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {accountError}
+            </p>
+          ) : null}
 
-        {importError ? (
-          <p
-            role="alert"
-            className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {importError}
-          </p>
-        ) : null}
+          {importError ? (
+            <p
+              role="alert"
+              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {importError}
+            </p>
+          ) : null}
 
-        {categoryError ? (
-          <p
-            role="alert"
-            className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {categoryError}
-          </p>
-        ) : null}
+          {categoryError ? (
+            <p
+              role="alert"
+              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {categoryError}
+            </p>
+          ) : null}
 
-        {importLoading ? (
-          <section aria-busy="true" className="mt-4 space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
-              Parse summary
-            </h2>
-            <dl className="grid grid-cols-2 gap-2 text-sm">
-              {(
-                [
-                  "imported",
-                  "duplicates",
-                  "ignoredReserved",
-                  "invalid",
-                ] as const
-              ).map((field) => (
-                <div key={field}>
-                  <Skeleton className="mb-1 h-4 w-24" />
-                  <Skeleton className="h-5 w-16" />
+          {importLoading ? (
+            <section aria-busy="true" className="space-y-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                Parse summary
+              </h2>
+              <dl className="grid grid-cols-2 gap-2 text-sm">
+                {(
+                  [
+                    "imported",
+                    "duplicates",
+                    "ignoredReserved",
+                    "invalid",
+                  ] as const
+                ).map((field) => (
+                  <div key={field}>
+                    <Skeleton className="mb-1 h-4 w-24" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                ))}
+              </dl>
+              <ReviewTableSkeleton />
+            </section>
+          ) : null}
+
+          {parseResult ? (
+            <section aria-live="polite" className="space-y-4">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+                Parse summary
+              </h2>
+              <dl className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">Imported</dt>
+                  <dd className="font-semibold">
+                    {parseResult.summary.imported}
+                  </dd>
                 </div>
-              ))}
-            </dl>
-            <ReviewTableSkeleton />
-          </section>
-        ) : null}
+                <div>
+                  <dt className="text-muted-foreground">Duplicates</dt>
+                  <dd className="font-semibold">
+                    {parseResult.summary.duplicates}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Ignored reserved</dt>
+                  <dd className="font-semibold">
+                    {parseResult.summary.ignoredReserved}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Invalid</dt>
+                  <dd className="font-semibold">
+                    {parseResult.summary.invalid}
+                  </dd>
+                </div>
+              </dl>
 
-        {parseResult ? (
-          <section aria-live="polite" className="mt-4 space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
-              Parse summary
-            </h2>
-            <dl className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <dt className="text-muted-foreground">Imported</dt>
-                <dd className="font-semibold">
-                  {parseResult.summary.imported}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Duplicates</dt>
-                <dd className="font-semibold">
-                  {parseResult.summary.duplicates}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Ignored reserved</dt>
-                <dd className="font-semibold">
-                  {parseResult.summary.ignoredReserved}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Invalid</dt>
-                <dd className="font-semibold">{parseResult.summary.invalid}</dd>
-              </div>
-            </dl>
+              {parseResult.errors.length > 0 ? (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                    Validation errors
+                  </h3>
+                  <ul className="space-y-1 text-sm text-foreground">
+                    {parseResult.errors.map((error) => (
+                      <li key={`${error.rowNumber}-${error.code}`}>
+                        Row {error.rowNumber}: {error.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
 
-            {parseResult.errors.length > 0 ? (
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
-                  Validation errors
-                </h3>
-                <ul className="space-y-1 text-sm text-foreground">
-                  {parseResult.errors.map((error) => (
-                    <li key={`${error.rowNumber}-${error.code}`}>
-                      Row {error.rowNumber}: {error.message}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
+              {parseResult.review && parseResult.review.rows.length > 0 ? (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                    Review rows
+                  </h3>
+                  <p className="text-sm text-foreground">
+                    Potential duplicates:{" "}
+                    <span className="font-semibold">
+                      {parseResult.review.potentialDuplicates}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Default message selection uses AI-cleaned text when
+                    available. Rows without a suggestion keep the original
+                    message.
+                  </p>
+                  <ImportReviewTable
+                    rows={parseResult.review.rows}
+                    categories={reviewCategoryOptions}
+                    categoryDecisions={categoryDecisions}
+                    messageDecisions={messageDecisions}
+                    setCategoryDecisions={setCategoryDecisions}
+                    setMessageDecisions={setMessageDecisions}
+                  />
+                </div>
+              ) : null}
+            </section>
+          ) : null}
 
-            {parseResult.review && parseResult.review.rows.length > 0 ? (
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-foreground">
-                  Review rows
-                </h3>
-                <p className="text-sm text-foreground">
-                  Potential duplicates:{" "}
-                  <span className="font-semibold">
-                    {parseResult.review.potentialDuplicates}
-                  </span>
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Default message selection uses AI-cleaned text when available.
-                  Rows without a suggestion keep the original message.
-                </p>
-                <ImportReviewTable
-                  rows={parseResult.review.rows}
-                  categories={reviewCategoryOptions}
-                  categoryDecisions={categoryDecisions}
-                  messageDecisions={messageDecisions}
-                  setCategoryDecisions={setCategoryDecisions}
-                  setMessageDecisions={setMessageDecisions}
-                />
-              </div>
-            ) : null}
-          </section>
-        ) : null}
+          {parseResult?.review ? (
+            <Button
+              onClick={submitReviewRows}
+              disabled={submitLoading}
+              className="gap-2"
+            >
+              {submitLoading ? (
+                "Submitting..."
+              ) : (
+                <>
+                  <Check className="h-4 w-4" aria-hidden="true" />
+                  Submit reviewed rows
+                </>
+              )}
+            </Button>
+          ) : null}
 
-        {parseResult?.review ? (
-          <Button
-            onClick={submitReviewRows}
-            disabled={submitLoading}
-            className="mt-4 gap-2"
-          >
-            {submitLoading ? (
-              "Submitting..."
-            ) : (
-              <>
-                <Check className="h-4 w-4" aria-hidden="true" />
-                Submit reviewed rows
-              </>
-            )}
-          </Button>
-        ) : null}
+          {submitError ? (
+            <p
+              role="alert"
+              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {submitError}
+            </p>
+          ) : null}
 
-        {submitError ? (
-          <p
-            role="alert"
-            className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
-          >
-            {submitError}
-          </p>
-        ) : null}
-
-        {submitNotice ? (
-          <output className="mt-4 block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-            {submitNotice}
-          </output>
-        ) : null}
+          {submitNotice ? (
+            <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              {submitNotice}
+            </output>
+          ) : null}
+        </div>
       </div>
 
       <Dialog
