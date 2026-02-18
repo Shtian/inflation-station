@@ -1,5 +1,5 @@
-import { ImportRouteRoot } from "./import-route-root";
+import { ImportUploader } from "./import-uploader";
 
 export default function ImportPage() {
-  return <ImportRouteRoot />;
+  return <ImportUploader />;
 }
