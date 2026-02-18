@@ -2,6 +2,7 @@
 
 import {
   Check,
+  Loader2,
   Pencil,
   Sparkles,
   TriangleAlert,
@@ -28,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -674,7 +676,10 @@ export function ImportUploader() {
             className="gap-2"
           >
             {importLoading ? (
-              "Parsing..."
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                Parsing…
+              </>
             ) : (
               <>
                 <Upload className="h-4 w-4" aria-hidden="true" />
@@ -709,6 +714,71 @@ export function ImportUploader() {
           >
             {categoryError}
           </p>
+        ) : null}
+
+        {importLoading ? (
+          <section aria-busy="true" className="mt-4 space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+              Parse summary
+            </h2>
+            <dl className="grid grid-cols-2 gap-2 text-sm">
+              {(
+                [
+                  "imported",
+                  "duplicates",
+                  "ignoredReserved",
+                  "invalid",
+                ] as const
+              ).map((field) => (
+                <div key={field}>
+                  <Skeleton className="mb-1 h-4 w-24" />
+                  <Skeleton className="h-5 w-16" />
+                </div>
+              ))}
+            </dl>
+            <div className="overflow-x-auto rounded-md border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {(
+                      [
+                        "date",
+                        "message",
+                        "amount",
+                        "type",
+                        "category",
+                        "flags",
+                      ] as const
+                    ).map((col) => (
+                      <TableHead key={col}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(["r1", "r2", "r3", "r4", "r5"] as const).map((row) => (
+                    <TableRow key={row}>
+                      {(
+                        [
+                          "date",
+                          "message",
+                          "amount",
+                          "type",
+                          "category",
+                          "flags",
+                        ] as const
+                      ).map((col) => (
+                        <TableCell key={col}>
+                          <Skeleton className="h-4 w-full" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </section>
         ) : null}
 
         {parseResult ? (
