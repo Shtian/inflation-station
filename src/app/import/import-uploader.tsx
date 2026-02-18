@@ -2,6 +2,7 @@
 
 import {
   Check,
+  Pencil,
   Sparkles,
   TriangleAlert,
   Upload,
@@ -9,7 +10,16 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -178,6 +188,11 @@ export function ImportUploader() {
     AUTO_PROVIDER_SELECT_VALUE,
   );
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isProviderDialogOpen, setIsProviderDialogOpen] = useState(false);
+  const [dialogSelectedProviderId, setDialogSelectedProviderId] = useState("");
+  const [allProviders, setAllProviders] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [categoryDecisions, setCategoryDecisions] = useState<
     Record<string, string>
   >({});
@@ -258,19 +273,70 @@ export function ImportUploader() {
       ),
     [categories, selectedAccountId],
   );
-  const providerOptions = useMemo(() => {
-    const options = new Map<string, string>();
-
-    for (const candidate of providerDetection?.candidates ?? []) {
-      options.set(candidate.providerId, candidate.providerName);
+  const dialogProviderOptions = useMemo(() => {
+    if (
+      providerDetection?.candidates &&
+      providerDetection.candidates.length > 0
+    ) {
+      return providerDetection.candidates.map((c) => ({
+        id: c.providerId,
+        name: c.providerName,
+      }));
     }
+    return allProviders;
+  }, [providerDetection, allProviders]);
 
-    if (providerDetection?.providerId && providerDetection.providerName) {
-      options.set(providerDetection.providerId, providerDetection.providerName);
+  async function loadAllProviders() {
+    if (allProviders.length > 0) return;
+    const response = await fetch("/api/import-provider-mappings");
+    const body = await response.json().catch(() => null);
+    if (
+      body &&
+      typeof body === "object" &&
+      "mappings" in body &&
+      Array.isArray(body.mappings)
+    ) {
+      setAllProviders(
+        (body.mappings as Array<{ id: string; providerName: string }>).map(
+          (m) => ({ id: m.id, name: m.providerName }),
+        ),
+      );
     }
+  }
 
-    return [...options.entries()].map(([id, name]) => ({ id, name }));
-  }, [providerDetection]);
+  function openProviderDialog() {
+    const currentId =
+      selectedProviderId !== AUTO_PROVIDER_SELECT_VALUE
+        ? selectedProviderId
+        : (providerDetection?.providerId ?? "");
+    setDialogSelectedProviderId(currentId);
+    if ((providerDetection?.candidates ?? []).length === 0) {
+      void loadAllProviders();
+    }
+    setIsProviderDialogOpen(true);
+  }
+
+  function handleProviderConfirm() {
+    if (!dialogSelectedProviderId) {
+      setIsProviderDialogOpen(false);
+      return;
+    }
+    const chosen = dialogProviderOptions.find(
+      (p) => p.id === dialogSelectedProviderId,
+    );
+    if (chosen) {
+      setSelectedProviderId(chosen.id);
+      if (providerDetection) {
+        setProviderDetection({
+          ...providerDetection,
+          state: "certain",
+          providerId: chosen.id,
+          providerName: chosen.name,
+        });
+      }
+    }
+    setIsProviderDialogOpen(false);
+  }
 
   async function parseCsv() {
     if (!selectedAccountId) {
@@ -466,40 +532,6 @@ export function ImportUploader() {
             </SelectContent>
           </Select>
 
-          <label
-            htmlFor="provider-select"
-            className="text-sm font-medium text-foreground"
-          >
-            Provider
-          </label>
-          <Select
-            value={selectedProviderId}
-            onValueChange={setSelectedProviderId}
-          >
-            <SelectTrigger id="provider-select" className="w-full">
-              <SelectValue placeholder="Auto-detect provider" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={AUTO_PROVIDER_SELECT_VALUE}>
-                Auto-detect provider
-              </SelectItem>
-              {providerOptions.map((provider) => (
-                <SelectItem key={provider.id} value={provider.id}>
-                  {provider.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {providerDetection ? (
-            <p className="text-xs text-muted-foreground">
-              Provider detection: {providerDetection.state}
-              {providerDetection.providerName
-                ? ` (${providerDetection.providerName})`
-                : ""}
-              .
-            </p>
-          ) : null}
-
           <button
             type="button"
             className={cn(
@@ -575,6 +607,64 @@ export function ImportUploader() {
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
+            </div>
+          ) : null}
+
+          {providerDetection ? (
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                {providerDetection.state === "certain" ? (
+                  <>
+                    <Badge className="border-green-200 bg-green-100 text-green-800">
+                      {providerDetection.providerName}
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1 text-xs"
+                      onClick={openProviderDialog}
+                    >
+                      <Pencil className="h-3 w-3" aria-hidden="true" />
+                      Change
+                    </Button>
+                  </>
+                ) : providerDetection.state === "uncertain" ? (
+                  <>
+                    <Badge className="border-amber-200 bg-amber-100 text-amber-800">
+                      {providerDetection.providerName ?? "Unknown"}
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1 text-xs"
+                      onClick={openProviderDialog}
+                    >
+                      <Pencil className="h-3 w-3" aria-hidden="true" />
+                      Change
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Badge variant="destructive">No provider detected</Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1 text-xs"
+                      onClick={openProviderDialog}
+                    >
+                      Select provider
+                    </Button>
+                  </>
+                )}
+              </div>
+              {providerDetection.state === "uncertain" ? (
+                <p className="text-xs text-muted-foreground">
+                  Detection was uncertain — please confirm
+                </p>
+              ) : null}
             </div>
           ) : null}
 
@@ -894,6 +984,65 @@ export function ImportUploader() {
           </output>
         ) : null}
       </div>
+
+      <Dialog
+        open={isProviderDialogOpen}
+        onOpenChange={setIsProviderDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Select provider</DialogTitle>
+            <DialogDescription>
+              Choose the provider that matches your CSV file format.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {dialogProviderOptions.map((provider) => (
+              <button
+                key={provider.id}
+                type="button"
+                onClick={() => setDialogSelectedProviderId(provider.id)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent",
+                  dialogSelectedProviderId === provider.id
+                    ? "border-primary bg-primary/5"
+                    : "border-border",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2",
+                    dialogSelectedProviderId === provider.id
+                      ? "border-primary bg-primary"
+                      : "border-muted-foreground",
+                  )}
+                >
+                  {dialogSelectedProviderId === provider.id ? (
+                    <div className="h-2 w-2 rounded-full bg-primary-foreground" />
+                  ) : null}
+                </div>
+                <span className="text-sm font-medium">{provider.name}</span>
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsProviderDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleProviderConfirm}
+              disabled={!dialogSelectedProviderId}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
