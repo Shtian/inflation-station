@@ -1,9 +1,15 @@
 "use client";
 
-import { Check, Sparkles, TriangleAlert, Upload } from "lucide-react";
+import {
+  Check,
+  Sparkles,
+  TriangleAlert,
+  Upload,
+  UploadCloud,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -111,6 +117,12 @@ type Category = {
   accountId: string | null;
 };
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 const UNCATEGORIZED_SELECT_VALUE = "__uncategorized__";
 const AUTO_PROVIDER_SELECT_VALUE = "__auto_provider__";
 const MESSAGE_SOURCE_ORIGINAL = "original";
@@ -165,6 +177,7 @@ export function ImportUploader() {
   const [selectedProviderId, setSelectedProviderId] = useState(
     AUTO_PROVIDER_SELECT_VALUE,
   );
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [categoryDecisions, setCategoryDecisions] = useState<
     Record<string, string>
   >({});
@@ -487,19 +500,27 @@ export function ImportUploader() {
             </p>
           ) : null}
 
-          <label
-            htmlFor="csv-file"
-            className="text-sm font-medium text-foreground"
-          >
-            CSV file
-          </label>
-          <Input
-            ref={fileInputRef}
-            id="csv-file"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(event) => {
-              setSelectedFile(event.target.files?.[0] ?? null);
+          <button
+            type="button"
+            className={cn(
+              "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors",
+              isDraggingOver
+                ? "border-primary bg-primary/5"
+                : "border-muted-foreground/25 hover:border-muted-foreground/50",
+            )}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDraggingOver(true);
+            }}
+            onDragLeave={() => setIsDraggingOver(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsDraggingOver(false);
+              const file = event.dataTransfer.files?.[0];
+              if (!file) return;
+              if (file.type !== "text/csv" && !file.name.endsWith(".csv"))
+                return;
+              setSelectedFile(file);
               setParseResult(null);
               setCategoryDecisions({});
               setMessageDecisions({});
@@ -507,7 +528,55 @@ export function ImportUploader() {
               setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
               setImportError(null);
             }}
-          />
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <UploadCloud
+              className="h-8 w-8 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <p className="text-sm text-muted-foreground">
+              Drag &amp; drop your CSV here, or click to browse
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              aria-label="CSV file"
+              className="sr-only"
+              onChange={(event) => {
+                setSelectedFile(event.target.files?.[0] ?? null);
+                setParseResult(null);
+                setCategoryDecisions({});
+                setMessageDecisions({});
+                setProviderDetection(null);
+                setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
+                setImportError(null);
+              }}
+            />
+          </button>
+          {selectedFile ? (
+            <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+              <span className="flex-1 truncate text-foreground">
+                {selectedFile.name}
+              </span>
+              <span className="shrink-0 text-muted-foreground">
+                {formatFileSize(selectedFile.size)}
+              </span>
+              <button
+                type="button"
+                aria-label="Clear selected file"
+                onClick={() => {
+                  setSelectedFile(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                  }
+                }}
+                className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
 
           <Button
             onClick={parseCsv}
