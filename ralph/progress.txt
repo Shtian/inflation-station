@@ -37,6 +37,7 @@
 - Keep review-stage OpenAI message cleanup best-effort and expose unavailable diagnostics with stable reason codes (`disabled`, `key_missing`, `timeout`, `provider_error`) without blocking parse staging.
 - Keep provider mapping admin CRUD in `/api/import-provider-mappings*` and reject create/update payloads that omit any required canonical field mapping.
 - Keep provider mapping admin UI state local in `src/app/import-provider-mappings/*` and submit create/update payloads as full mapping definitions (provider metadata + field mappings + normalization rules JSON) so API validation feedback stays deterministic.
+- Keep provider mapping normalization parse/build logic and field-mapping validation in `src/app/import-provider-mappings/provider-mappings-manager.utils.ts` so manager UI orchestration can evolve without coupling to pure helper logic, and unit-test that utility module directly.
 - For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
 - Keep `/api/imports/submit` payload rows carrying finalized `selectedMessage` text, and recompute `normalizedMerchant` from staged `name` + selected message before dedupe/persistence.
 - For the overview route, keep account/date filter state plus `/api/dashboard/analytics` fetch orchestration in a dedicated `src/app/overview/use-overview-dashboard.ts` hook and keep formatting/date helpers in route-local utility modules.
@@ -397,4 +398,31 @@
 - `tests/e2e/us-017-theme-toggle.e2e.ts` can still fail intermittently waiting for the `Light` menu item; an isolated rerun is a reliable recovery when this transient occurs.
 - Useful context
 - Existing Playwright coverage in `tests/e2e/us-016-import-route-upload.e2e.ts` already validates provider override flow and row-level message/category controls, so this decomposition required no locator updates.
+---
+
+## 2026-02-18 21:40:11 CET - US-112
+- What was implemented
+- Extracted provider-mapping normalization and field-mapping validation helpers from `provider-mappings-manager.tsx` into a route-local utility module: `src/app/import-provider-mappings/provider-mappings-manager.utils.ts`.
+- Updated `ProviderMappingsManager` to consume extracted helpers while preserving create/edit payload shape, validation messages, and existing UI behavior.
+- Added unit tests for extracted pure utility logic in `src/app/import-provider-mappings/provider-mappings-manager.utils.test.ts` (normalization parse/build, mapping validation, and mappingVersion parsing).
+- Updated `AGENTS.md` with a reusable provider-mappings utility convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import-provider-mappings/provider-mappings-manager.tsx`
+- `src/app/import-provider-mappings/provider-mappings-manager.utils.ts`
+- `src/app/import-provider-mappings/provider-mappings-manager.utils.test.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep provider-mapping normalization parsing/building plus field-mapping validation in a route-local utility module so the manager component stays focused on UI orchestration and helper behavior is unit-testable.
+- Gotchas encountered
+- Vitest in this route-level context did not resolve the `@/` alias for the extracted utility import; using a workspace-relative import path from `src/app/...` to `src/lib/...` keeps utility tests stable.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts` remained green, confirming the helper extraction preserved UI behavior.
 ---
