@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- Biome's `noArrayIndexKey` rule rejects `key={i}` in `.map()` calls — use semantic string keys (field names, column names) from a typed const array instead of `Array.from({ length: N }).map((_, i) => ...)` patterns.
 - Keep primary app navigation in `src/app/layout.tsx`, and keep `/` redirecting to `/overview`.
 - The Badge component (`src/components/ui/badge.tsx`) only has `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` variants; use `className` overrides for custom colours (e.g. green/amber status badges).
 - When replacing a controlled state (e.g. `providerDetection`) from dialog confirm, update both the selectedId state and the detection object so the badge display updates immediately without a re-parse.
@@ -62,4 +63,18 @@
   - Biome's `lint/a11y/useSemanticElements` rule rejects `role="button"` on `<div>` — use a `<button type="button">` element instead; native `<button>` also handles Enter/Space keyboard activation automatically.
   - Add `aria-label` to sr-only `<input type="file">` so existing `page.getByLabel("CSV file")` Playwright locators continue working without test changes.
   - Biome requires multi-line import format when ≥ 4 named imports from the same module; run `pnpm exec biome format --write` after adding imports.
+---
+
+## 2026-02-18 - US-004
+- Implemented: Added skeleton loading placeholders while `importLoading` is true in `import-uploader.tsx`.
+  - Parse CSV button now shows a `Loader2` spinner + "Parsing…" text (was plain text "Parsing...").
+  - A parse-summary skeleton with 4 `<div>` items (each with two `Skeleton` elements mimicking `dt`/`dd` rows) appears below the button in a `grid-cols-2` layout.
+  - A table skeleton (5 rows × 6 cells, all `Skeleton` elements) appears below the summary skeleton, wrapped in `overflow-x-auto`.
+  - Skeletons are mutually exclusive with real parse results — `importLoading` and `parseResult` can't both be non-null simultaneously.
+- Files changed: `src/app/import/import-uploader.tsx`
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓
+- **Learnings for future iterations**
+  - Biome's `noArrayIndexKey` rule rejects numeric index keys from `.map((_, i) => ...)` — use typed const string arrays (field names, column names, semantic ids) as the source of iteration to get string keys automatically.
+  - `pnpm exec biome check --write` fixes import ordering automatically but won't auto-fix `noArrayIndexKey` — that requires a manual refactor.
+  - Skeleton import position must respect Biome's import ordering (alphabetical within `@/components/ui/*` group); running `biome check --write` auto-corrects the position.
 ---
