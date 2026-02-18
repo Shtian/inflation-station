@@ -18,6 +18,7 @@
 - Keep the transactions edit workflow NOK-only by removing currency from edit payload parsing/UI and forcing persisted updates to `currency: "NOK"`.
 - Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
 - For `/accounts`, keep network/state orchestration in `use-accounts-manager.ts` and keep create-form/table UI split into route-local section components under `src/app/accounts/components/*`.
+- For `/categories`, keep shared scope-label rendering and category/rule API error mapping in `categories-manager.utils.ts`, and keep major CRUD UI slices in route-local section components.
 - For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
 - For Next.js App Router handlers, return `new Response(null, { status: 204 })` for no-content responses; `NextResponse.json` is invalid for HTTP 204.
 - Keep Playwright configured for base URL `http://127.0.0.1:3000` and use `PLAYWRIGHT_NO_WEBSERVER=1` when you need to force reuse of an already running local dev server.
@@ -202,4 +203,32 @@
 - Keep account error/notice reset semantics aligned with existing actions (`create`, `startEdit`, `saveEdit`, `delete`) so E2E expectations stay stable.
 - Useful context
 - Existing coverage in `tests/e2e/us-011-account-import-ui.e2e.ts` already validates create/edit/delete feedback and remained green after extraction.
+---
+
+## 2026-02-18 20:34:28 CET - US-105
+- What was implemented
+- Extracted category create/delete form and categories table into `CategoryManagementSection`, leaving category-rule management in the parent manager.
+- Moved shared category/rule mutation error mapping and scope-label helpers into `categories-manager.utils.ts`.
+- Introduced route-local shared types in `categories-manager.types.ts` for categories manager modules.
+- Updated `AGENTS.md` with the reusable categories-route utility pattern.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/categories/categories-manager.tsx`
+- `src/app/categories/categories-manager.types.ts`
+- `src/app/categories/categories-manager.utils.ts`
+- `src/app/categories/components/category-management-section.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep category CRUD UI isolated in a route-local section component so rule-management changes can be made independently.
+- Gotchas encountered
+- Biome may leave unsafe unused-import fixes unapplied (`noUnusedImports`), so remove leftover imports manually after `pnpm lint:fix`.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-015-categories-route-management.e2e.ts` remained green with no locator updates, confirming behavior parity.
 ---

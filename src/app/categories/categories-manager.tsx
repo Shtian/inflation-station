@@ -1,6 +1,6 @@
 "use client";
 
-import type { CategoryKind, PaymentType } from "@prisma/client";
+import type { CategoryKind } from "@prisma/client";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CategoryBadge } from "@/components/category-badge";
@@ -22,78 +22,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-type Account = {
-  id: string;
-  name: string;
-  institution: string | null;
-  isActive: boolean;
-};
-
-type Category = {
-  id: string;
-  name: string;
-  kind: CategoryKind;
-  accountId: string | null;
-};
-
-type CategoryRule = {
-  id: string;
-  accountId: string | null;
-  categoryId: string;
-  merchantContains: string;
-  paymentType: PaymentType | null;
-  priority: number;
-  category: {
-    id: string;
-    name: string;
-  };
-};
-
-const GLOBAL_SCOPE_VALUE = "__global__";
-const ANY_PAYMENT_TYPE_VALUE = "__any__";
-
-function getErrorMessage(status: number, body: unknown) {
-  if (typeof body === "object" && body && "error" in body) {
-    const code = String((body as { error: unknown }).error);
-
-    if (status === 404 && code === "CATEGORY_NOT_FOUND") {
-      return "Selected category was not found.";
-    }
-
-    if (status === 404 && code === "CATEGORY_RULE_NOT_FOUND") {
-      return "Selected category rule was not found.";
-    }
-
-    if (status === 409 && code === "CATEGORY_NAME_MUST_BE_UNIQUE") {
-      return "A category with this name already exists for this scope.";
-    }
-
-    if (status === 400 && code === "INVALID_CATEGORY_PAYLOAD") {
-      return "Invalid category payload.";
-    }
-
-    if (status === 400 && code === "INVALID_CATEGORY_RULE_PAYLOAD") {
-      return "Invalid category rule payload.";
-    }
-
-    if (status === 404 && code === "CATEGORY_OR_ACCOUNT_NOT_FOUND") {
-      return "Selected category or account was not found.";
-    }
-  }
-
-  return "Request failed. Please try again.";
-}
-
-function getScopeLabel(accountId: string | null, accounts: Account[]) {
-  if (!accountId) {
-    return "Global";
-  }
-
-  return (
-    accounts.find((account) => account.id === accountId)?.name ?? "Unknown"
-  );
-}
+import type {
+  Account,
+  Category,
+  CategoryRule,
+} from "./categories-manager.types";
+import {
+  ANY_PAYMENT_TYPE_VALUE,
+  GLOBAL_SCOPE_VALUE,
+  getCategoryMutationErrorMessage,
+  getScopeLabel,
+} from "./categories-manager.utils";
+import { CategoryManagementSection } from "./components/category-management-section";
 
 export function CategoriesManager() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -213,7 +153,7 @@ export function CategoriesManager() {
     const body = await response.json().catch(() => null);
 
     if (!response.ok) {
-      setError(getErrorMessage(response.status, body));
+      setError(getCategoryMutationErrorMessage(response.status, body));
       setBusyKey(null);
       return;
     }
@@ -241,7 +181,7 @@ export function CategoriesManager() {
     const body = await response.json().catch(() => null);
 
     if (!response.ok && response.status !== 204) {
-      setError(getErrorMessage(response.status, body));
+      setError(getCategoryMutationErrorMessage(response.status, body));
       setBusyKey(null);
       return;
     }
@@ -292,7 +232,7 @@ export function CategoriesManager() {
     const body = await response.json().catch(() => null);
 
     if (!response.ok) {
-      setError(getErrorMessage(response.status, body));
+      setError(getCategoryMutationErrorMessage(response.status, body));
       setBusyKey(null);
       return;
     }
@@ -321,7 +261,7 @@ export function CategoriesManager() {
     const body = await response.json().catch(() => null);
 
     if (!response.ok && response.status !== 204) {
-      setError(getErrorMessage(response.status, body));
+      setError(getCategoryMutationErrorMessage(response.status, body));
       setBusyKey(null);
       return;
     }
@@ -344,149 +284,20 @@ export function CategoriesManager() {
 
       <Separator className="my-4" />
 
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold text-foreground">
-            Category Management
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Create and remove categories used in review and analytics.
-          </p>
-        </div>
-
-        <div className="grid gap-3">
-          <label
-            htmlFor="new-category-name"
-            className="text-sm font-medium text-foreground"
-          >
-            Category name
-          </label>
-          <Input
-            id="new-category-name"
-            value={newCategoryName}
-            onChange={(event) => setNewCategoryName(event.target.value)}
-            placeholder="Groceries"
-          />
-          <label
-            htmlFor="new-category-kind"
-            className="text-sm font-medium text-foreground"
-          >
-            Kind
-          </label>
-          <Select
-            value={newCategoryKind}
-            onValueChange={(value) => setNewCategoryKind(value as CategoryKind)}
-          >
-            <SelectTrigger id="new-category-kind" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="EXPENSE">Expense</SelectItem>
-              <SelectItem value="INCOME">Income</SelectItem>
-              <SelectItem value="TRANSFER">Transfer</SelectItem>
-            </SelectContent>
-          </Select>
-          <label
-            htmlFor="new-category-scope"
-            className="text-sm font-medium text-foreground"
-          >
-            Scope
-          </label>
-          <Select
-            value={newCategoryScope || GLOBAL_SCOPE_VALUE}
-            onValueChange={(value) =>
-              setNewCategoryScope(value === GLOBAL_SCOPE_VALUE ? "" : value)
-            }
-          >
-            <SelectTrigger id="new-category-scope" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={GLOBAL_SCOPE_VALUE}>Global</SelectItem>
-              {activeAccounts.map((account) => (
-                <SelectItem key={account.id} value={account.id}>
-                  {account.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="secondary"
-            onClick={createCategory}
-            disabled={busyKey === "new-category"}
-            className="gap-2"
-          >
-            {busyKey === "new-category" ? (
-              "Saving..."
-            ) : (
-              <>
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Add category
-              </>
-            )}
-          </Button>
-        </div>
-
-        <div className="overflow-x-auto rounded-md border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Kind</TableHead>
-                <TableHead>Scope</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={4}>Loading categories...</TableCell>
-                </TableRow>
-              ) : null}
-              {!loading && categories.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4}>No categories yet.</TableCell>
-                </TableRow>
-              ) : null}
-              {!loading
-                ? categories.map((category) => (
-                    <TableRow key={category.id}>
-                      <TableCell>
-                        <CategoryBadge label={category.name} />
-                      </TableCell>
-                      <TableCell>{category.kind}</TableCell>
-                      <TableCell>
-                        {getScopeLabel(category.accountId, accounts)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          onClick={() => deleteCategory(category.id)}
-                          disabled={
-                            busyKey !== null &&
-                            busyKey !== `delete-category-${category.id}`
-                          }
-                          className="h-8 w-8 px-0"
-                          aria-label={`Delete category ${category.name}`}
-                          title={`Delete category ${category.name}`}
-                        >
-                          {busyKey === `delete-category-${category.id}` ? (
-                            <Loader2
-                              className="h-4 w-4 animate-spin"
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <Trash2 className="h-4 w-4" aria-hidden="true" />
-                          )}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                : null}
-            </TableBody>
-          </Table>
-        </div>
-      </section>
+      <CategoryManagementSection
+        accounts={accounts}
+        categories={categories}
+        loading={loading}
+        busyKey={busyKey}
+        newCategoryName={newCategoryName}
+        newCategoryKind={newCategoryKind}
+        newCategoryScope={newCategoryScope}
+        onNewCategoryNameChange={setNewCategoryName}
+        onNewCategoryKindChange={setNewCategoryKind}
+        onNewCategoryScopeChange={setNewCategoryScope}
+        onCreateCategory={createCategory}
+        onDeleteCategory={deleteCategory}
+      />
 
       <Separator className="my-4" />
 
