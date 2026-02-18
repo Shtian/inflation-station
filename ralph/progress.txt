@@ -13,6 +13,7 @@
 - Keep transactions pagination/filter query logic in `src/lib/transactions/*`, and keep `/api/transactions` handlers focused on request validation and HTTP response shaping.
 - Keep `/api/transactions/[transactionId]` handlers consistent across mutation methods by validating `transactionId` up front and mapping Prisma `P2025` to `TRANSACTION_NOT_FOUND`.
 - Keep transactions route filter state client-side in `src/app/transactions/*`, and refetch `/api/transactions` whenever account, page, or pageSize changes.
+- Keep `/transactions` data orchestration in `src/app/transactions/use-transactions-manager.ts` and keep table/pagination rendering in `src/app/transactions/components/transactions-table-section.tsx` so list behavior and presentation evolve independently.
 - Keep `/api/transactions` list rows enriched with `categoryName` so `/transactions` can render category labels (or uncategorized states) without extra category lookups.
 - Keep transaction edit UI state local in `src/app/transactions/*` and refresh list data via the same paginated query after successful saves to preserve active filter/page context.
 - Keep the transactions edit workflow NOK-only by removing currency from edit payload parsing/UI and forcing persisted updates to `currency: "NOK"`.
@@ -257,4 +258,28 @@
 - `biome check --write` does not apply unsafe `noUnusedImports` fixes; remove unused imports manually after major JSX extraction.
 - Useful context
 - Existing Playwright coverage in `tests/e2e/us-015-categories-route-management.e2e.ts` validates category-rule create/delete flows and stayed green without locator changes.
+---
+
+## 2026-02-18 21:10:28 CET - US-107
+- What was implemented
+- Extracted `/transactions` account/category/transaction loading and filter/pagination state into `useTransactionsManager`.
+- Extracted transactions rows + pagination controls into `TransactionsTableSection` and updated `TransactionsManager` to compose the new hook/section while preserving filter reset, edit, and delete flows.
+- Updated root `AGENTS.md` transactions route convention to document the new hook-based orchestration pattern.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/transactions/transactions-manager.tsx`
+- `src/app/transactions/transactions-manager.types.ts`
+- `src/app/transactions/use-transactions-manager.ts`
+- `src/app/transactions/components/transactions-table-section.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅ (initial run had a transient timeout in `tests/e2e/us-017-theme-toggle.e2e.ts`; rerun passed all tests)
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered: Keep transactions fetch/filter/pagination orchestration in a route-local hook and keep table/pagination UI in a section component to reduce churn in `transactions-manager.tsx`.
+  - Gotchas encountered: Running `pnpm test` and `pnpm build` in parallel can cause occasional Playwright timeouts; rerunning `pnpm test` in isolation stabilized the suite.
+  - Useful context: Existing transactions behavior coverage is in `tests/e2e/us-018-transactions-route-controls.e2e.ts` and remained green without locator updates.
 ---

@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-  Ellipsis,
-  Pencil,
-  Trash2,
-} from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { CategoryBadge } from "@/components/category-badge";
+import { useCallback, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,14 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -47,87 +29,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { TransactionsTableSection } from "./components/transactions-table-section";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-type Account = {
-  id: string;
-  name: string;
-};
-
-type Category = {
-  id: string;
-  name: string;
-  accountId: string | null;
-};
-
-type TransactionRow = {
-  id: string;
-  accountId: string;
-  categoryId: string | null;
-  categoryName: string | null;
-  bookingDate: string;
-  amountNok: number;
-  currency: string;
-  normalizedMerchant: string;
-  paymentType: string;
-};
-
-type TransactionsResponse = {
-  rows: TransactionRow[];
-  pagination: {
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-  };
-};
-
-type EditFormState = {
-  categoryId: string;
-  bookingDate: string;
-  amountNok: string;
-  normalizedMerchant: string;
-  paymentType: PaymentTypeOption;
-};
-
-const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"] as const;
-const ALL_ACCOUNTS_VALUE = "__all_accounts__";
-const UNCATEGORIZED_VALUE = "__uncategorized__";
-const PAYMENT_TYPE_OPTIONS = [
-  "CARD",
-  "TRANSFER",
-  "EFT",
-  "CASH",
-  "OTHER",
-] as const;
-type PaymentTypeOption = (typeof PAYMENT_TYPE_OPTIONS)[number];
-
-function formatNok(value: number) {
-  return new Intl.NumberFormat("nb-NO", {
-    style: "currency",
-    currency: "NOK",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function getTransactionsErrorMessage(body: unknown) {
-  if (typeof body === "object" && body && "message" in body) {
-    const message = (body as { message: unknown }).message;
-    if (typeof message === "string" && message.length > 0) {
-      return message;
-    }
-  }
-
-  return "Could not load transactions.";
-}
+  ALL_ACCOUNTS_VALUE,
+  type EditFormState,
+  PAYMENT_TYPE_OPTIONS,
+  type PaymentTypeOption,
+  type TransactionRow,
+  UNCATEGORIZED_VALUE,
+} from "./transactions-manager.types";
+import { useTransactionsManager } from "./use-transactions-manager";
 
 function getMutationErrorMessage(body: unknown, fallback: string) {
   if (typeof body === "object" && body && "message" in body) {
@@ -166,16 +77,20 @@ function toEditFormState(row: TransactionRow): EditFormState {
 }
 
 export function TransactionsManager() {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [accountId, setAccountId] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [transactions, setTransactions] = useState<TransactionsResponse | null>(
-    null,
-  );
+  const {
+    accounts,
+    categories,
+    accountId,
+    pageSize,
+    loading,
+    error,
+    transactions,
+    loadTransactions,
+    goToPage,
+    setAccountFilter,
+    setPageSizeFilter,
+  } = useTransactionsManager();
+
   const [editingTransaction, setEditingTransaction] =
     useState<TransactionRow | null>(null);
   const [editForm, setEditForm] = useState<EditFormState | null>(null);
@@ -209,118 +124,6 @@ export function TransactionsManager() {
     setDeletingTransaction(row);
     setDeleteError(null);
   }, []);
-
-  const loadAccounts = useCallback(async () => {
-    const response = await fetch("/api/accounts");
-    const body = await response.json().catch(() => null);
-
-    if (
-      !response.ok ||
-      !body ||
-      typeof body !== "object" ||
-      !("accounts" in body) ||
-      !Array.isArray(body.accounts)
-    ) {
-      setAccounts([]);
-      return;
-    }
-
-    setAccounts(
-      (body.accounts as Array<{ id: string; name: string }>).map((next) => ({
-        id: next.id,
-        name: next.name,
-      })),
-    );
-  }, []);
-
-  const loadCategories = useCallback(async () => {
-    const response = await fetch("/api/categories");
-    const body = await response.json().catch(() => null);
-
-    if (
-      !response.ok ||
-      !body ||
-      typeof body !== "object" ||
-      !("categories" in body) ||
-      !Array.isArray(body.categories)
-    ) {
-      setCategories([]);
-      return;
-    }
-
-    setCategories(
-      (
-        body.categories as Array<{
-          id: string;
-          name: string;
-          accountId: string | null;
-        }>
-      ).map((next) => ({
-        id: next.id,
-        name: next.name,
-        accountId: next.accountId,
-      })),
-    );
-  }, []);
-
-  const loadTransactions = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    const params = new URLSearchParams();
-    params.set("page", String(page));
-    params.set("pageSize", String(pageSize));
-    if (accountId) {
-      params.set("accountId", accountId);
-    }
-
-    const response = await fetch(`/api/transactions?${params.toString()}`);
-    const body = await response.json().catch(() => null);
-
-    if (
-      !response.ok ||
-      !body ||
-      typeof body !== "object" ||
-      !("rows" in body) ||
-      !("pagination" in body)
-    ) {
-      setTransactions(null);
-      setError(getTransactionsErrorMessage(body));
-      setLoading(false);
-      return;
-    }
-
-    const parsed = body as TransactionsResponse;
-    const totalPages = Math.max(1, parsed.pagination.totalPages || 1);
-    const nextPage = Math.min(page, totalPages);
-
-    if (nextPage !== page) {
-      setPage(nextPage);
-      setLoading(false);
-      return;
-    }
-
-    setTransactions(parsed);
-    setLoading(false);
-  }, [accountId, page, pageSize]);
-
-  useEffect(() => {
-    void loadAccounts();
-  }, [loadAccounts]);
-
-  useEffect(() => {
-    void loadCategories();
-  }, [loadCategories]);
-
-  useEffect(() => {
-    void loadTransactions();
-  }, [loadTransactions]);
-
-  function goToPage(nextPage: number) {
-    const max = Math.max(1, transactions?.pagination.totalPages ?? 1);
-    const clamped = Math.min(Math.max(1, nextPage), max);
-    setPage(clamped);
-  }
 
   async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -428,10 +231,9 @@ export function TransactionsManager() {
           </label>
           <Select
             value={accountId || ALL_ACCOUNTS_VALUE}
-            onValueChange={(value) => {
-              setAccountId(value === ALL_ACCOUNTS_VALUE ? "" : value);
-              setPage(1);
-            }}
+            onValueChange={(value) =>
+              setAccountFilter(value === ALL_ACCOUNTS_VALUE ? "" : value)
+            }
           >
             <SelectTrigger id="transactions-account-filter" className="w-full">
               <SelectValue />
@@ -459,193 +261,15 @@ export function TransactionsManager() {
 
       <Separator className="my-4" />
 
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading transactions...</p>
-      ) : null}
-
-      {!loading && transactions ? (
-        <section className="space-y-2" aria-live="polite">
-          <p className="text-sm text-muted-foreground">
-            {transactions.pagination.total} total transactions.
-          </p>
-
-          {transactions.rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No transactions found for the selected filters.
-            </p>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Merchant</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Payment type</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="w-0 text-right">
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.rows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>{row.bookingDate}</TableCell>
-                      <TableCell>
-                        {row.normalizedMerchant || "Unknown"}
-                      </TableCell>
-                      <TableCell>
-                        <CategoryBadge
-                          label={row.categoryName ?? "Uncategorized"}
-                        />
-                      </TableCell>
-                      <TableCell>{row.paymentType}</TableCell>
-                      <TableCell className="text-right">
-                        {formatNok(row.amountNok)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon-sm"
-                              aria-label={`Actions for transaction from ${row.bookingDate}`}
-                              title={`Actions for transaction from ${row.bookingDate}`}
-                            >
-                              <Ellipsis
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                              />
-                              <span className="sr-only">Actions</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuGroup>
-                              <DropdownMenuItem
-                                onSelect={() => openEditDialog(row)}
-                              >
-                                <Pencil
-                                  className="h-4 w-4"
-                                  aria-hidden="true"
-                                />
-                                Edit
-                              </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuGroup>
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onSelect={() => openDeleteDialog(row)}
-                              >
-                                <Trash2
-                                  className="h-4 w-4"
-                                  aria-hidden="true"
-                                />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuGroup>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              <div className="flex w-full justify-center sm:justify-end">
-                <div className="flex flex-col items-center gap-2 text-sm text-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">
-                      Rows per page:
-                    </span>
-                    <Select
-                      value={String(pageSize)}
-                      onValueChange={(value) => {
-                        setPageSize(Number.parseInt(value, 10));
-                        setPage(1);
-                      }}
-                    >
-                      <SelectTrigger
-                        id="transactions-rows-per-page"
-                        className="h-8 w-[84px]"
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PAGE_SIZE_OPTIONS.map((option) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <span>
-                    Page {transactions.pagination.page} of{" "}
-                    {Math.max(1, transactions.pagination.totalPages)}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label="Go to first page"
-                      onClick={() => goToPage(1)}
-                      disabled={loading || transactions.pagination.page <= 1}
-                    >
-                      <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label="Go to previous page"
-                      onClick={() => goToPage(transactions.pagination.page - 1)}
-                      disabled={loading || transactions.pagination.page <= 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label="Go to next page"
-                      onClick={() => goToPage(transactions.pagination.page + 1)}
-                      disabled={
-                        loading ||
-                        transactions.pagination.page >=
-                          Math.max(1, transactions.pagination.totalPages)
-                      }
-                    >
-                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon-sm"
-                      aria-label="Go to last page"
-                      onClick={() =>
-                        goToPage(
-                          Math.max(1, transactions.pagination.totalPages),
-                        )
-                      }
-                      disabled={
-                        loading ||
-                        transactions.pagination.page >=
-                          Math.max(1, transactions.pagination.totalPages)
-                      }
-                    >
-                      <ChevronsRight className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </section>
-      ) : null}
+      <TransactionsTableSection
+        loading={loading}
+        transactions={transactions}
+        onEdit={openEditDialog}
+        onDelete={openDeleteDialog}
+        pageSize={pageSize}
+        onPageSizeChange={setPageSizeFilter}
+        onGoToPage={goToPage}
+      />
 
       <Dialog
         open={editingTransaction !== null}
