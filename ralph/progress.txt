@@ -1,5 +1,8 @@
 ## Codebase Patterns
 - Keep primary app navigation in `src/app/layout.tsx`, and keep `/` redirecting to `/overview`.
+- The Badge component (`src/components/ui/badge.tsx`) only has `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` variants; use `className` overrides for custom colours (e.g. green/amber status badges).
+- When replacing a controlled state (e.g. `providerDetection`) from dialog confirm, update both the selectedId state and the detection object so the badge display updates immediately without a re-parse.
+- `/api/import-provider-mappings` GET returns `{ mappings: [{ id, providerName, ... }] }` — use this to populate "all providers" in the Change dialog when `providerDetection.candidates` is empty.
 - Keep API handlers in `src/app/api/**` and use the shared server-only Prisma client in `src/lib/prisma.ts`.
 - Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
 - For paginated table routes, keep summary metadata (`page`, `totalPages`, `total`) outside the table and keep row rendering inside table primitives.
@@ -34,6 +37,21 @@
   - Biome formatter enforces 2-space indentation and specific JSX formatting; always run `pnpm exec biome format --write` before committing new files.
   - The existing test files had pre-existing format issues that needed fixing alongside the new file.
   - shadcn UI components use `data-slot` attribute for component identification; follow this pattern.
+---
+
+## 2026-02-18 - US-003
+- Implemented: Replaced `<Select>` provider dropdown with a Badge-based provider status row and a Dialog for manual provider selection.
+  - Before any parse: provider section is not rendered.
+  - After parse (`providerDetection` is set): green/amber/red Badge shown based on `detection.state`, with a ghost "Change" (or "Select provider") Button.
+  - Dialog lists candidates from `providerDetection.candidates`, or fetches all providers from `/api/import-provider-mappings` when candidates is empty.
+  - Confirming from dialog updates `selectedProviderId` and mutates `providerDetection` to `certain` state with the chosen provider, so badge updates immediately.
+- Files changed: `src/app/import/import-uploader.tsx`
+- Quality checks: `pnpm lint` ✓, `pnpm exec tsc --noEmit` ✓
+- **Learnings for future iterations**
+  - The Badge component only has built-in colour variants (default, secondary, destructive, outline, ghost, link); use `className` overrides for custom status colours.
+  - When dialog confirms a provider, update both `selectedProviderId` and `providerDetection` (setting state to `"certain"`) so the badge reflects the choice immediately without needing a re-parse.
+  - `GET /api/import-provider-mappings` returns `{ mappings: [{ id, providerName, ... }] }` — suitable for populating a full provider list.
+  - Biome multi-line import format is required for ≥ 4 named imports; run `pnpm exec biome format --write` after adding Dialog/Badge imports.
 ---
 
 ## 2026-02-18 - US-002
