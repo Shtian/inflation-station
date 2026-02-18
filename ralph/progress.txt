@@ -6,6 +6,7 @@
 - The Badge component (`src/components/ui/badge.tsx`) only has `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` variants; use `className` overrides for custom colours (e.g. green/amber status badges).
 - When replacing a controlled state (e.g. `providerDetection`) from dialog confirm, update both the selectedId state and the detection object so the badge display updates immediately without a re-parse.
 - `/api/import-provider-mappings` GET returns `{ mappings: [{ id, providerName, ... }] }` — use this to populate "all providers" in the Change dialog when `providerDetection.candidates` is empty.
+- Keep `/import` request orchestration and review-decision state in `src/app/import/use-import-workflow.ts`; keep `import-uploader.tsx` focused on rendering and local drag/drop presentation state.
 - Keep API handlers in `src/app/api/**` and use the shared server-only Prisma client in `src/lib/prisma.ts`.
 - Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
 - For paginated table routes, keep summary metadata (`page`, `totalPages`, `total`) outside the table and keep row rendering inside table primitives.
@@ -310,4 +311,30 @@
 - `tests/e2e/us-017-theme-toggle.e2e.ts` can intermittently time out waiting for the `Light` menu item; a clean rerun often resolves this transient failure.
 - Useful context
 - Existing transactions dialog behavior is already covered by `tests/e2e/us-018-transactions-route-controls.e2e.ts` edit/delete scenarios, so this extraction did not require locator updates.
+---
+
+## 2026-02-18 21:21:55 CET - US-109
+- What was implemented
+- Extracted `/import` parse/submit request orchestration and review-state transitions into `src/app/import/use-import-workflow.ts` (accounts/categories/providers loading, provider-selection flow, parse/submit calls, decision defaults, and reset semantics).
+- Updated `src/app/import/import-uploader.tsx` to consume the new hook and keep the component focused on upload/review rendering plus local drag/drop visual state.
+- Preserved `/api/imports/parse` and `/api/imports/submit` request payload semantics, including provider override handling and per-row `selectedMessage`/`categoryId` submission behavior.
+- Updated `AGENTS.md` with the reusable import workflow hook convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/use-import-workflow.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅ (first run had a transient timeout in `tests/e2e/us-017-theme-toggle.e2e.ts`; immediate rerun passed all tests)
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep import workflow orchestration in a route-local hook so upload/review UI composition can evolve without touching request/state transition logic.
+- Gotchas encountered
+- `tests/e2e/us-017-theme-toggle.e2e.ts` can still fail intermittently due menu-item timing; rerunning `pnpm test` in isolation is a reliable recovery path.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-016-import-route-upload.e2e.ts` already validates parse-submit payload behavior and provider-selection-required flow after this extraction.
 ---
