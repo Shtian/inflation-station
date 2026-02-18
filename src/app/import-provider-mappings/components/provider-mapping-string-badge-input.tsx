@@ -2,6 +2,7 @@ import { X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   mergeStringList,
   removeStringListValue,
@@ -43,9 +44,9 @@ export function ProviderMappingStringBadgeInput(props: {
 
   return (
     <div className="space-y-2">
-      <label htmlFor={props.id} className="text-sm font-medium text-foreground">
+      <Label htmlFor={props.id} className="text-sm font-medium text-foreground">
         {props.label}
-      </label>
+      </Label>
       <Input
         id={props.id}
         aria-label={props.inputAriaLabel}

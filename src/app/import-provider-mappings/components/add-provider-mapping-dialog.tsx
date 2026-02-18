@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type {
   EditableFieldMapping,
   MerchantSignalCanonicalField,
@@ -52,24 +53,24 @@ export function AddProviderMappingDialog(props: {
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-2">
-          <label
+          <Label
             htmlFor="new-provider-name"
             className="text-sm font-medium text-foreground"
           >
             Provider name
-          </label>
+          </Label>
           <Input
             id="new-provider-name"
             value={props.providerName}
             onChange={(event) => props.onProviderNameChange(event.target.value)}
             placeholder="Bank A"
           />
-          <label
+          <Label
             htmlFor="new-mapping-version"
             className="text-sm font-medium text-foreground"
           >
             Mapping version (optional)
-          </label>
+          </Label>
           <Input
             id="new-mapping-version"
             value={props.mappingVersion}

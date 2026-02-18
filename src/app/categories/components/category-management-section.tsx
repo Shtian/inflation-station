@@ -3,6 +3,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { CategoryBadge } from "@/components/category-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -64,24 +65,24 @@ export function CategoryManagementSection({
       </div>
 
       <div className="grid gap-3">
-        <label
+        <Label
           htmlFor="new-category-name"
           className="text-sm font-medium text-foreground"
         >
           Category name
-        </label>
+        </Label>
         <Input
           id="new-category-name"
           value={newCategoryName}
           onChange={(event) => onNewCategoryNameChange(event.target.value)}
           placeholder="Groceries"
         />
-        <label
+        <Label
           htmlFor="new-category-kind"
           className="text-sm font-medium text-foreground"
         >
           Kind
-        </label>
+        </Label>
         <Select
           value={newCategoryKind}
           onValueChange={(value) =>
@@ -97,12 +98,12 @@ export function CategoryManagementSection({
             <SelectItem value="TRANSFER">Transfer</SelectItem>
           </SelectContent>
         </Select>
-        <label
+        <Label
           htmlFor="new-category-scope"
           className="text-sm font-medium text-foreground"
         >
           Scope
-        </label>
+        </Label>
         <Select
           value={newCategoryScope || GLOBAL_SCOPE_VALUE}
           onValueChange={(value) =>

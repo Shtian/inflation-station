@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -205,12 +206,12 @@ export function TransactionsManager() {
 
       <div className="grid gap-3 md:grid-cols-3">
         <div className="space-y-2">
-          <label
+          <Label
             htmlFor="transactions-account-filter"
             className="block text-sm font-medium text-foreground"
           >
             Account
-          </label>
+          </Label>
           <Select
             value={accountId || ALL_ACCOUNTS_VALUE}
             onValueChange={(value) =>

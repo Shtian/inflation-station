@@ -9,6 +9,7 @@ import {
 import type { RefObject } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -88,12 +89,12 @@ export function ImportUploadPhase({
 
         <div className="space-y-5">
           <div className="space-y-1.5">
-            <label
+            <Label
               htmlFor="account-select"
               className="text-sm font-medium text-foreground"
             >
               Bank Account
-            </label>
+            </Label>
             <Select
               value={selectedAccountId}
               onValueChange={setSelectedAccountId}
@@ -130,12 +131,12 @@ export function ImportUploadPhase({
           <Separator />
 
           <div className="space-y-1.5">
-            <label
+            <Label
               htmlFor="csv-file"
               className="text-sm font-medium text-foreground"
             >
               CSV File
-            </label>
+            </Label>
 
             <input
               name="csv-file"

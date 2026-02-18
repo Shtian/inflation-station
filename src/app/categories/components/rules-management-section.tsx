@@ -2,6 +2,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { CategoryBadge } from "@/components/category-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -82,12 +83,12 @@ export function RulesManagementSection({
       </div>
 
       <div className="grid gap-3">
-        <label
+        <Label
           htmlFor="rule-category"
           className="text-sm font-medium text-foreground"
         >
           Category
-        </label>
+        </Label>
         <Select
           value={ruleCategoryId}
           onValueChange={onRuleCategoryIdChange}
@@ -111,12 +112,12 @@ export function RulesManagementSection({
           </SelectContent>
         </Select>
 
-        <label
+        <Label
           htmlFor="rule-merchant"
           className="text-sm font-medium text-foreground"
         >
           Merchant contains
-        </label>
+        </Label>
         <Input
           id="rule-merchant"
           value={ruleMerchantContains}
@@ -124,12 +125,12 @@ export function RulesManagementSection({
           placeholder="joker"
         />
 
-        <label
+        <Label
           htmlFor="rule-payment-type"
           className="text-sm font-medium text-foreground"
         >
           Payment type (optional)
-        </label>
+        </Label>
         <Select
           value={rulePaymentType || ANY_PAYMENT_TYPE_VALUE}
           onValueChange={(value) =>
@@ -151,12 +152,12 @@ export function RulesManagementSection({
           </SelectContent>
         </Select>
 
-        <label
+        <Label
           htmlFor="rule-priority"
           className="text-sm font-medium text-foreground"
         >
           Priority
-        </label>
+        </Label>
         <Input
           id="rule-priority"
           type="number"
@@ -165,12 +166,12 @@ export function RulesManagementSection({
           min={0}
         />
 
-        <label
+        <Label
           htmlFor="rule-scope"
           className="text-sm font-medium text-foreground"
         >
           Scope
-        </label>
+        </Label>
         <Select
           value={ruleScope || GLOBAL_SCOPE_VALUE}
           onValueChange={(value) =>

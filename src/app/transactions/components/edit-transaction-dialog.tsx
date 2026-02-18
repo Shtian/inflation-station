@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -66,12 +67,12 @@ export function EditTransactionDialog({
         {editForm ? (
           <form className="space-y-4" onSubmit={onSubmit}>
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="edit-category-id"
                 className="text-sm font-medium text-foreground"
               >
                 Category
-              </label>
+              </Label>
               <Select
                 value={editForm.categoryId}
                 onValueChange={onCategoryChange}
@@ -94,12 +95,12 @@ export function EditTransactionDialog({
             </div>
 
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="edit-booking-date"
                 className="text-sm font-medium text-foreground"
               >
                 Date
-              </label>
+              </Label>
               <Input
                 id="edit-booking-date"
                 type="date"
@@ -110,12 +111,12 @@ export function EditTransactionDialog({
             </div>
 
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="edit-normalized-merchant"
                 className="text-sm font-medium text-foreground"
               >
                 Merchant
-              </label>
+              </Label>
               <Input
                 id="edit-normalized-merchant"
                 value={editForm.normalizedMerchant}
@@ -125,12 +126,12 @@ export function EditTransactionDialog({
             </div>
 
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="edit-amount-nok"
                 className="text-sm font-medium text-foreground"
               >
                 Amount (NOK)
-              </label>
+              </Label>
               <Input
                 id="edit-amount-nok"
                 inputMode="decimal"
@@ -141,12 +142,12 @@ export function EditTransactionDialog({
             </div>
 
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="edit-payment-type"
                 className="text-sm font-medium text-foreground"
               >
                 Payment type
-              </label>
+              </Label>
               <Select
                 value={editForm.paymentType}
                 onValueChange={onPaymentTypeChange}

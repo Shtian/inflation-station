@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type {
   EditableFieldMapping,
   MerchantSignalCanonicalField,
@@ -49,24 +50,24 @@ export function EditProviderMappingDialog(props: {
           <DialogTitle>Edit provider mapping</DialogTitle>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-2">
-          <label
+          <Label
             htmlFor="edit-provider-name"
             className="text-sm font-medium text-foreground"
           >
             Provider name
-          </label>
+          </Label>
           <Input
             id="edit-provider-name"
             aria-label="Edit provider name"
             value={props.providerName}
             onChange={(event) => props.onProviderNameChange(event.target.value)}
           />
-          <label
+          <Label
             htmlFor="edit-mapping-version"
             className="text-sm font-medium text-foreground"
           >
             Mapping version (optional)
-          </label>
+          </Label>
           <Input
             id="edit-mapping-version"
             aria-label="Edit mapping version"

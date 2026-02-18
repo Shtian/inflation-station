@@ -5,6 +5,7 @@ import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Calendar } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
@@ -76,12 +77,12 @@ export function OverviewDashboard() {
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div className="space-y-2">
-          <label
+          <Label
             htmlFor="dashboard-account-filter"
             className="block text-sm font-medium text-foreground"
           >
             Account filter
-          </label>
+          </Label>
           <Select
             value={dashboardAccountId || ALL_ACCOUNTS_VALUE}
             onValueChange={(value) =>

@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type CreateAccountSectionProps = {
   busyAccountId: string | null;
@@ -21,24 +22,24 @@ export function CreateAccountSection({
 }: CreateAccountSectionProps) {
   return (
     <div className="grid gap-3">
-      <label
+      <Label
         htmlFor="new-account-name"
         className="text-sm font-medium text-foreground"
       >
         Account name
-      </label>
+      </Label>
       <Input
         id="new-account-name"
         value={newAccountName}
         onChange={(event) => onNameChange(event.target.value)}
         placeholder="Spending Account"
       />
-      <label
+      <Label
         htmlFor="new-account-institution"
         className="text-sm font-medium text-foreground"
       >
         Institution (optional)
-      </label>
+      </Label>
       <Input
         id="new-account-institution"
         value={newAccountInstitution}
