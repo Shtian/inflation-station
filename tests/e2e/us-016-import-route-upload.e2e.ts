@@ -168,7 +168,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     ),
   ).toBeVisible();
   // Row 1 (rowNumber 2): defaults to AI-cleaned message
-  await expect(page.getByText("Joker Trondheim", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Joker Trondheim", { exact: true }),
+  ).toBeVisible();
   // Row 2 (rowNumber 3): shows original message (no AI-cleaned alternative)
   await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();
   // Toggle button available for row 1 which has an AI-cleaned message
@@ -184,7 +186,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await expect(page.getByLabel("Potential duplicate")).toBeVisible();
   // Switch row 1 to use original message
   await toggleRow1.click();
-  await expect(page.getByText("JOKER TRONDHEIM", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("JOKER TRONDHEIM", { exact: true }),
+  ).toBeVisible();
 
   const rowTwoCategory = page.getByRole("combobox", {
     name: "Category for row 2",
