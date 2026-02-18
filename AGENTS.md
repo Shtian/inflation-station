@@ -52,7 +52,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 - Import review duplicate convention: compute potential duplicate warnings from the transaction fingerprint fields (`accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, `paymentType`) and surface warnings in review payloads without dropping rows.
 - Import review row-control convention: for per-row review controls in `/import`, set accessible names on `SelectTrigger` (not just `Select`) so Playwright/user-facing locators can uniquely target row-specific comboboxes.
 - Provider mapping convention: store provider definitions in `ImportProviderMapping` with child `ImportProviderFieldMapping` rows, keep normalization/transform payloads in JSON fields, and persist `mappingVersion` metadata for diagnostics.
-- Account route convention: keep account CRUD interactions and user-facing success/error feedback in `src/app/accounts/*`, while other routes consume `/api/accounts` only for selection/filtering.
+- Account route convention: keep account load/create/edit/delete orchestration in `src/app/accounts/use-accounts-manager.ts`, keep forms/tables in route-local section components under `src/app/accounts/components/*`, and keep user-facing success/error feedback local to the accounts route.
 - Categories route convention: keep category/category-rule CRUD interactions and user-facing success/error feedback in `src/app/categories/*`, backed by `/api/categories` and `/api/category-rules` handlers.
 - E2E testing convention: keep Playwright specs under `tests/e2e/*.e2e.ts` and run them via Playwright CLI (`pnpm test:e2e`); use `pnpm test:unit` for Vitest-only loops when `pnpm test` runs full unit+E2E checks.
 - Task artifacts/specs: `tasks/`, `ralph/`, `prompt.md`

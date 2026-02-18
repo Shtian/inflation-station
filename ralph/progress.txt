@@ -17,6 +17,7 @@
 - Keep transaction edit UI state local in `src/app/transactions/*` and refresh list data via the same paginated query after successful saves to preserve active filter/page context.
 - Keep the transactions edit workflow NOK-only by removing currency from edit payload parsing/UI and forcing persisted updates to `currency: "NOK"`.
 - Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
+- For `/accounts`, keep network/state orchestration in `use-accounts-manager.ts` and keep create-form/table UI split into route-local section components under `src/app/accounts/components/*`.
 - For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
 - For Next.js App Router handlers, return `new Response(null, { status: 204 })` for no-content responses; `NextResponse.json` is invalid for HTTP 204.
 - Keep Playwright configured for base URL `http://127.0.0.1:3000` and use `PLAYWRIGHT_NO_WEBSERVER=1` when you need to force reuse of an already running local dev server.
@@ -173,4 +174,32 @@
 - Preserve existing loading and empty-state copy per card during extraction to keep E2E assertions and UX behavior stable.
 - Useful context
 - `tests/e2e/us-014-dashboard-ui.e2e.ts` continued to pass without locator updates, confirming the extraction preserved overview interactions.
+---
+
+## 2026-02-18 20:28:37 CET - US-104
+- What was implemented
+- Extracted account load/create/edit/delete orchestration into a dedicated route-local hook: `src/app/accounts/use-accounts-manager.ts`.
+- Split accounts UI into focused sections: `CreateAccountSection` for create form controls and `AccountsTableSection` for editable rows/actions.
+- Updated `src/app/accounts/accounts-manager.tsx` to compose the hook + sections while preserving existing notices, validation errors, and delete-confirmation behavior.
+- Updated `AGENTS.md` account-route convention to capture the new hook/section split pattern.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/accounts/accounts-manager.tsx`
+- `src/app/accounts/use-accounts-manager.ts`
+- `src/app/accounts/components/create-account-section.tsx`
+- `src/app/accounts/components/accounts-table-section.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- For `/accounts`, keep fetch/mutation state orchestration in a route-local hook and keep form/table rendering in separate section components to limit churn.
+- Gotchas encountered
+- Keep account error/notice reset semantics aligned with existing actions (`create`, `startEdit`, `saveEdit`, `delete`) so E2E expectations stay stable.
+- Useful context
+- Existing coverage in `tests/e2e/us-011-account-import-ui.e2e.ts` already validates create/edit/delete feedback and remained green after extraction.
 ---
