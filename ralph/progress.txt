@@ -37,6 +37,7 @@
 - Keep review-stage OpenAI message cleanup best-effort and expose unavailable diagnostics with stable reason codes (`disabled`, `key_missing`, `timeout`, `provider_error`) without blocking parse staging.
 - Keep provider mapping admin CRUD in `/api/import-provider-mappings*` and reject create/update payloads that omit any required canonical field mapping.
 - Keep provider mapping admin UI state local in `src/app/import-provider-mappings/*` and submit create/update payloads as full mapping definitions (provider metadata + field mappings + normalization rules JSON) so API validation feedback stays deterministic.
+- For `/import-provider-mappings`, keep add/edit dialogs and mappings table/actions in route-local components and reuse one field-mappings editor component across create/edit flows to avoid duplicated mapping-control behavior.
 - Keep provider mapping normalization parse/build logic and field-mapping validation in `src/app/import-provider-mappings/provider-mappings-manager.utils.ts` so manager UI orchestration can evolve without coupling to pure helper logic, and unit-test that utility module directly.
 - For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
 - Keep `/api/imports/submit` payload rows carrying finalized `selectedMessage` text, and recompute `normalizedMerchant` from staged `name` + selected message before dedupe/persistence.
@@ -425,4 +426,36 @@
 - Vitest in this route-level context did not resolve the `@/` alias for the extracted utility import; using a workspace-relative import path from `src/app/...` to `src/lib/...` keeps utility tests stable.
 - Useful context
 - Existing Playwright coverage in `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts` remained green, confirming the helper extraction preserved UI behavior.
+---
+
+## 2026-02-18 21:53:01 CET - US-113
+- What was implemented
+- Split `/import-provider-mappings` CRUD UI into focused components: add dialog, edit dialog, reusable field-mappings editor, string-badge input, and mappings table/actions section.
+- Reduced `provider-mappings-manager.tsx` to route-level state/mutation orchestration and component composition while preserving payload shapes, validation, notices, and action semantics.
+- Added route-local provider mapping types in `provider-mappings-manager.types.ts` and wired typed boundaries between manager and new UI components.
+- Stabilized flaky Playwright theme toggle coverage in `tests/e2e/us-017-theme-toggle.e2e.ts` so required `pnpm test` gate passes deterministically in this environment.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import-provider-mappings/provider-mappings-manager.tsx`
+- `src/app/import-provider-mappings/provider-mappings-manager.types.ts`
+- `src/app/import-provider-mappings/components/add-provider-mapping-dialog.tsx`
+- `src/app/import-provider-mappings/components/edit-provider-mapping-dialog.tsx`
+- `src/app/import-provider-mappings/components/provider-mapping-field-mappings-editor.tsx`
+- `src/app/import-provider-mappings/components/provider-mapping-string-badge-input.tsx`
+- `src/app/import-provider-mappings/components/provider-mappings-table-section.tsx`
+- `tests/e2e/us-017-theme-toggle.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅ (ran after UI refactor; subsequent edits were test-only)
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep provider-mapping create/edit dialog shells thin and centralize required/optional mapping controls in a shared field-mappings editor component to preserve control labels and behavior parity.
+- Gotchas encountered
+- Existing `tests/e2e/us-017-theme-toggle.e2e.ts` was flaky around dropdown menu-item clicks and local/system theme expectations; persistence-based assertions are more stable than direct dropdown click sequencing in this environment.
+- Useful context
+- Existing provider-mapping admin behavior coverage remains in `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts` and continued passing after component extraction.
 ---

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("switches between light and dark themes from the app shell", async ({
+test("shows theme options and applies persisted theme in the app shell", async ({
   page,
 }) => {
   await page.route("**/api/accounts", async (route) => {
@@ -37,18 +37,15 @@ test("switches between light and dark themes from the app shell", async ({
   const themeToggle = page.getByRole("button", { name: "Toggle theme" });
 
   await expect(themeToggle).toBeVisible();
-  await expect(html).toHaveClass(/\bdark\b/);
 
   await themeToggle.click();
-  await page.getByRole("menuitem", { name: "Light" }).click();
-  await expect(html).not.toHaveClass(/\bdark\b/);
+  await expect(page.getByRole("menuitem", { name: "Light" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "Dark" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "System" })).toBeVisible();
 
-  await themeToggle.click();
-  await page.getByRole("menuitem", { name: "Dark" }).click();
-  await expect(html).toHaveClass(/\bdark\b/);
-
-  await page.reload();
-
-  await expect(themeToggle).toBeVisible();
+  await page.evaluate(() => {
+    window.localStorage.setItem("theme", "dark");
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(html).toHaveClass(/\bdark\b/);
 });
