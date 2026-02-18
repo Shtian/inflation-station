@@ -1,18 +1,17 @@
 {
   "project": "Inflation Station",
-  "branchName": "ralph/multi-provider-csv-import-framework",
-  "description": "Implement a multi-provider CSV import framework with provider detection, provider-managed mappings, deterministic normalization-before-dedupe, and optional per-row AI message cleanup in review.",
+  "branchName": "ralph/import-page-ui-improvements",
+  "description": "Import page UI improvements: drag-and-drop file upload, improved provider detection UX (badge + Change dialog), skeleton loading during parse and review, and a two-column desktop layout (≥1024px).",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add provider mapping schema and Prisma models",
-      "description": "As a developer, I want provider mappings stored in the database so parse and review flows can use configurable provider definitions.",
+      "title": "Add shadcn Skeleton component",
+      "description": "As a developer, I need a Skeleton component in components/ui/ so that later stories can render animated loading placeholders.",
       "acceptanceCriteria": [
-        "Add Prisma models for import provider mapping definitions including provider name, source-to-canonical field mappings, and normalization rule payloads",
-        "Persist mapping version metadata (timestamp or version field) for diagnostics",
-        "Run Prisma generate successfully after schema change",
-        "Typecheck passes",
-        "Tests pass"
+        "src/components/ui/skeleton.tsx exists and exports a Skeleton component",
+        "Skeleton accepts a className prop and renders a div with animate-pulse and bg-muted classes",
+        "Component follows the existing shadcn component pattern (cn utility for className merging)",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
@@ -20,14 +19,21 @@
     },
     {
       "id": "US-002",
-      "title": "Implement provider detection service and parse diagnostics",
-      "description": "As a user, I want the importer to auto-detect provider from CSV headers so imports start with the right mapping.",
+      "title": "Implement drag-and-drop file upload area",
+      "description": "As a user, I want to drag a CSV file onto the import page so that I don't have to use the file picker every time.",
       "acceptanceCriteria": [
-        "Add provider detection logic based on configurable header/pattern rules",
-        "Parse response includes detection diagnostics with detected provider id/name and detection confidence state",
-        "When no provider match is found, parse response marks detection as uncertain or missing",
+        "The plain <Input type='file' /> in import-uploader.tsx is replaced by a styled drop zone div",
+        "Drop zone has a dashed border, rounded corners, an upload icon (lucide-react UploadCloud), and the text 'Drag & drop your CSV here, or click to browse'",
+        "Drag-entering the zone sets isDraggingOver state to true and applies a highlighted style (border-primary bg-primary/5)",
+        "Drag-leaving or dropping resets isDraggingOver to false",
+        "Dropping a .csv or text/csv file sets selectedFile state; dropping any other file type does nothing",
+        "Clicking anywhere inside the drop zone triggers fileInputRef.current.click() to open the native file picker",
+        "A hidden <input type='file' accept='.csv,text/csv' /> remains for the file picker and for programmatic reset after successful import",
+        "When a file is selected (by drop or browse), a row below the drop zone shows the filename and formatted file size with an X button that clears selectedFile and resets the input ref",
+        "No new npm package is added — only native onDragOver, onDragLeave, onDrop events",
+        "Drop zone has role='button' and tabIndex={0} with an onKeyDown handler that triggers click on Enter or Space",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
       "passes": true,
@@ -35,124 +41,80 @@
     },
     {
       "id": "US-003",
-      "title": "Add manual provider override to import parse flow",
-      "description": "As a user, I want to manually select provider before parsing when detection is wrong or uncertain.",
+      "title": "Improve provider detection UX with badge and Change dialog",
+      "description": "As a user, I want to see which provider was auto-detected and be able to change it via a clear button, so I have confidence the correct mapping is used.",
       "acceptanceCriteria": [
-        "Import parse endpoint accepts explicit provider override and uses it instead of auto-detection",
-        "Import UI requires provider selection when detection is uncertain or missing",
-        "User can change provider selection before parsing continues",
+        "The existing <Select> provider dropdown is removed from import-uploader.tsx",
+        "Before any parse attempt the provider section is not rendered",
+        "After a successful or failed parse attempt, a provider status row is shown beneath the drop zone",
+        "When detection.state is 'certain': a green Badge shows the provider name and a ghost Button with a pencil icon labelled 'Change' appears next to it",
+        "When detection.state is 'uncertain': a yellow/amber Badge shows the provider name (or 'Unknown' if none), a 'Change' Button appears, and a helper text reads 'Detection was uncertain — please confirm'",
+        "When detection.state is 'missing': a red Badge labelled 'No provider detected' and a Button labelled 'Select provider' appear",
+        "Clicking Change or Select provider opens a shadcn Dialog (from components/ui/dialog.tsx)",
+        "The dialog lists all providers from providerDetection.candidates (or all available providers if candidates is empty) as radio-style selectable cards showing provider name",
+        "A 'Confirm' button inside the dialog updates selectedProvider state and closes the dialog",
+        "A 'Cancel' button closes the dialog without changing state",
+        "After confirming a new provider the badge immediately reflects the chosen provider name",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Transform provider CSV rows into canonical import rows",
-      "description": "As a user, I want provider-specific CSV data mapped to canonical importer fields so review and submit behavior stays consistent.",
+      "title": "Skeleton loading during CSV parsing",
+      "description": "As a user, I want to see skeleton placeholders while my CSV is being parsed so the page feels responsive instead of frozen.",
       "acceptanceCriteria": [
-        "Parse pipeline loads selected provider mapping and transforms rows into existing canonical import row shape",
-        "Row-level validation errors are returned in structured diagnostics",
-        "Parse summary shape remains exactly: imported, duplicates, ignoredReserved, invalid",
+        "While importLoading is true, the area below the Parse CSV button shows a parse-summary skeleton: 4 skeleton rows (full-width Skeleton elements) mimicking the DL/DD summary list",
+        "While importLoading is true, a table skeleton of 5 rows with 6 skeleton cells each is also shown below the summary skeleton",
+        "The skeletons are shown only when importLoading is true and are not visible alongside real parse results",
+        "The Parse CSV button shows a Loader2 spinner icon (from lucide-react, animate-spin) and the label 'Parsing…' while importLoading is true",
+        "The Parse CSV button is disabled while importLoading is true",
+        "When importLoading becomes false the skeletons are removed and replaced by real content or an error message",
+        "Skeleton component from US-001 is used for all placeholders",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Normalize payment type and merchant fields before dedupe",
-      "description": "As a user, I want duplicate detection to remain deterministic across providers.",
+      "title": "Extract review table component with skeleton fallback",
+      "description": "As a user, I want row-level skeletons to appear while the review table hydrates so there are no empty-cell flashes after parsing.",
       "acceptanceCriteria": [
-        "Provider normalization runs before fingerprint generation",
-        "Payment-type labels normalize to Prisma PaymentType values before dedupe",
-        "Fingerprint continues using accountId, bookingDate, amountNok, normalizedMerchant, and paymentType",
-        "Duplicate warnings in review payload are based on normalized canonical values",
+        "The review table JSX is extracted from import-uploader.tsx into a new client component at src/app/import/import-review-table.tsx",
+        "ImportReviewTable receives rows, categories, categoryDecisions, messageDecisions, and their setter callbacks as props",
+        "A ReviewTableSkeleton component (co-located in import-review-table.tsx or import-uploader.tsx) renders a Table shell with the same 6 columns but Skeleton cells for 8 rows",
+        "In import-uploader.tsx, when importLoading is false and parseResult?.review?.rows exists, ImportReviewTable is rendered; otherwise ReviewTableSkeleton is shown while importLoading is true (reusing the skeleton from US-004)",
+        "The Submit reviewed rows button remains in import-uploader.tsx outside any conditional and is only rendered when parseResult?.review is defined",
+        "No behaviour change to category or message decision logic — only structural extraction",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Add provider mapping admin APIs with validation",
-      "description": "As an admin, I want CRUD APIs for provider mappings so new providers can be configured without code edits.",
+      "title": "Two-column desktop layout for import page",
+      "description": "As a desktop user (≥1024px), I want the upload controls and review table to use horizontal space so I don't have to scroll past the form to see my transactions.",
       "acceptanceCriteria": [
-        "Add API endpoints for create, update, list, and delete of provider mappings",
-        "Validation blocks save when required canonical fields are missing",
-        "API persists provider normalization rules and mapping version metadata",
+        "The outer wrapper in import-uploader.tsx uses flex flex-col lg:flex-row lg:items-start gap-6",
+        "The left column contains account selector, drop zone, provider detection badge/button, and Parse CSV button; it uses lg:w-96 lg:shrink-0",
+        "The left column has lg:sticky lg:top-6 lg:self-start so controls stay visible while scrolling the review table",
+        "The right column (flex-1 min-w-0) contains parse summary, validation errors, and the review table (ImportReviewTable)",
+        "The review table container has overflow-x-auto so the table can scroll horizontally if it overflows the column",
+        "On screens below lg (< 1024px) the layout is a single column stack, matching the previous behaviour",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-007",
-      "title": "Build provider mapping admin UI",
-      "description": "As an admin, I want a UI to manage provider mappings so I can maintain import support operationally.",
-      "acceptanceCriteria": [
-        "Admin UI can create and edit provider mappings with source-column to canonical-field assignments",
-        "Admin UI surfaces validation errors for missing required canonical fields",
-        "Admin UI supports editing provider normalization rules",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-008",
-      "title": "Add optional OpenAI message cleanup enrichment service",
-      "description": "As a maintainer, I want AI message cleanup to run as best-effort enrichment so imports never fail when AI is unavailable.",
-      "acceptanceCriteria": [
-        "AI cleanup is executed only when OPENAI_API_KEY is configured",
-        "When key is missing or provider call fails/timeouts, parse/review/submit flows continue without failure",
-        "Review/session payload includes reason codes for unavailable suggestions (disabled, key missing, timeout, provider error)",
-        "Diagnostics avoid logging sensitive raw message content",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-009",
-      "title": "Show AI message suggestions in review with per-row selection",
-      "description": "As a user, I want to choose original or AI-cleaned message per row before submit.",
-      "acceptanceCriteria": [
-        "Review table shows original message and optional AI-cleaned suggestion for each row",
-        "Each row has explicit control to choose original vs AI-cleaned message",
-        "Default selection behavior is deterministic and documented in UI copy",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-010",
-      "title": "Persist per-row message source decisions on submit",
-      "description": "As a user, I want submitted transactions to persist the exact message choice I made during review.",
-      "acceptanceCriteria": [
-        "Submit endpoint accepts finalized per-row message selection values",
-        "Persisted transactions use chosen message text per row",
-        "Submitted review session cleanup remains atomic with transaction persistence",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 10,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]
