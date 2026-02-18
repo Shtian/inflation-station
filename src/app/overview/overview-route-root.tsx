@@ -1,5 +1,3 @@
-"use client";
-
 import { OverviewDashboard } from "./overview-dashboard";
 
 export function OverviewRouteRoot() {

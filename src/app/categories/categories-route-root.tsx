@@ -1,5 +1,3 @@
-"use client";
-
 import { CategoriesManager } from "./categories-manager";
 
 export function CategoriesRouteRoot() {

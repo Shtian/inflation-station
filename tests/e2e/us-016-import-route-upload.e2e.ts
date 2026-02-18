@@ -160,7 +160,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
       'Row 4: Row 4 has invalid amount "abc". Expected Norwegian decimal format like 123,45.',
     ),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Confirm Import" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Confirm Import" }),
+  ).toBeVisible();
   await expect(
     page.getByText(
       "1 potential duplicate detected. Default message selection uses AI-cleaned text when available.",
@@ -373,8 +375,6 @@ test("requires provider override when detection is uncertain and continues after
 
   await page.getByRole("button", { name: /Parse/ }).click();
   await expect(page.getByText("Import Preview")).toBeVisible();
-  await expect(
-    page.getByText("Detected provider:"),
-  ).toBeVisible();
+  await expect(page.getByText("Detected provider:")).toBeVisible();
   await expect(page.getByText("Bank B")).toBeVisible();
 });

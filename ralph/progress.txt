@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - Biome's `noArrayIndexKey` rule rejects `key={i}` in `.map()` calls — use semantic string keys (field names, column names) from a typed const array instead of `Array.from({ length: N }).map((_, i) => ...)` patterns.
 - Keep each app route `page.tsx` as a thin wrapper that renders one route-local `*-route-root.tsx` entry component, and enforce route-root size constraints with `scripts/check-route-client-size.mjs` during `pnpm lint`.
+- For major app routes, define route-local `loading.tsx` and `error.tsx` files and reuse shared fallback components for consistent recoverable-loading UX across sections.
 - Keep primary app navigation in `src/app/layout.tsx`, and keep `/` redirecting to `/overview`.
 - The Badge component (`src/components/ui/badge.tsx`) only has `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` variants; use `className` overrides for custom colours (e.g. green/amber status badges).
 - When replacing a controlled state (e.g. `providerDetection`) from dialog confirm, update both the selectedId state and the detection object so the badge display updates immediately without a re-parse.
@@ -69,4 +70,50 @@
 - Existing E2E tests under `tests/e2e/us-016-import-route-upload.e2e.ts` used stale labels (`Parse summary`, `Submit reviewed rows`, provider combobox flow); use current user-facing text (`Import Preview`, `Confirm Import`, dialog-based provider selection).
 - Useful context
 - Import provider override is currently dialog-driven (`Change` -> provider button -> `Confirm`) rather than combobox-driven.
+---
+
+## 2026-02-18 16:44:55 CET - US-101
+- What was implemented
+- Converted route-root wrappers in `src/app/*/*-route-root.tsx` to Server Components (removed redundant `"use client"`), keeping interactivity in downstream manager components.
+- Added reusable route fallback components: `src/components/route-loading-state.tsx` and `src/components/route-error-state.tsx`.
+- Added route-level loading/error boundaries for major routes: `/overview`, `/import`, `/transactions`, `/accounts`, `/categories`, `/import-provider-mappings`.
+- Updated `AGENTS.md` with a reusable route resilience convention for `loading.tsx`/`error.tsx`.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/components/route-loading-state.tsx`
+- `src/components/route-error-state.tsx`
+- `src/app/accounts/accounts-route-root.tsx`
+- `src/app/accounts/loading.tsx`
+- `src/app/accounts/error.tsx`
+- `src/app/categories/categories-route-root.tsx`
+- `src/app/categories/loading.tsx`
+- `src/app/categories/error.tsx`
+- `src/app/import/import-route-root.tsx`
+- `src/app/import/loading.tsx`
+- `src/app/import/error.tsx`
+- `src/app/import-provider-mappings/provider-mappings-route-root.tsx`
+- `src/app/import-provider-mappings/loading.tsx`
+- `src/app/import-provider-mappings/error.tsx`
+- `src/app/overview/overview-route-root.tsx`
+- `src/app/overview/loading.tsx`
+- `src/app/overview/error.tsx`
+- `src/app/transactions/transactions-route-root.tsx`
+- `src/app/transactions/loading.tsx`
+- `src/app/transactions/error.tsx`
+- `tests/e2e/us-016-import-route-upload.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Route roots can stay server-first while nesting client managers, which keeps `page.tsx`/route wrappers lightweight without changing client behavior.
+- Shared fallback components reduce duplication across route-level `loading.tsx` and `error.tsx` while keeping wording route-specific.
+- Gotchas encountered
+- Biome’s `noShadowRestrictedNames` rule flags default export function names like `Error` in `error.tsx`; use explicit component names (`OverviewRouteError`, etc.).
+- Useful context
+- Existing `tests/e2e/us-016-import-route-upload.e2e.ts` was auto-formatted during this iteration to satisfy repository-wide Biome formatting checks.
 ---

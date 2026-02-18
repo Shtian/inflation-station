@@ -1,5 +1,3 @@
-"use client";
-
 import { TransactionsManager } from "./transactions-manager";
 
 export function TransactionsRouteRoot() {

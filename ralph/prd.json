@@ -1,16 +1,18 @@
 {
   "project": "inflation-station",
   "branchName": "ralph/import-page-ui-improvements",
-  "description": "Refactor large app route components into composable, testable modules while preserving behavior and API contracts.",
+  "description": "Refactor app routes into server-first, composable modules with explicit client boundaries, suspense/error handling, and preserved behavior/API contracts.",
   "userStories": [
     {
       "id": "US-101",
-      "title": "Standardize app-route composition boundaries",
-      "description": "As a developer, I want route-local composition boundaries so page logic is predictable and maintainable.",
+      "title": "Standardize App Router architecture boundaries",
+      "description": "As a developer, I want server/client boundaries to be explicit so routes stay performant, resilient, and maintainable.",
       "acceptanceCriteria": [
-        "Define and apply a route-local structure for large app routes using focused component, hook, and utility modules.",
-        "Keep `page.tsx` files as thin entry wrappers that delegate to a single route feature root.",
-        "Document and enforce a practical file-size guardrail for route-level client components.",
+        "Define and apply a route-local structure that defaults `page.tsx` and non-interactive sections to Server Components.",
+        "Use Client Components only for interactive islands (forms, controls, local UI state), with clear prop boundaries from server parents.",
+        "Add route-level or section-level suspense boundaries for async data regions (`loading.tsx` and/or `Suspense` fallbacks) where they improve UX.",
+        "Add route-level error boundaries (`error.tsx`) or equivalent scoped handling for recoverable failures in major routes.",
+        "Break large route features into focused components/hooks/utilities without mandating a single `*-route-root.tsx` wrapper pattern.",
         "Typecheck passes"
       ],
       "priority": 1,

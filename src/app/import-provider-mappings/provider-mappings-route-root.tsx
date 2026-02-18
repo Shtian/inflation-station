@@ -1,5 +1,3 @@
-"use client";
-
 import { ProviderMappingsManager } from "./provider-mappings-manager";
 
 export function ProviderMappingsRouteRoot() {

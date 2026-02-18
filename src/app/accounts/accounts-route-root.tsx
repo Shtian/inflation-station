@@ -1,5 +1,3 @@
-"use client";
-
 import { AccountsManager } from "./accounts-manager";
 
 export function AccountsRouteRoot() {
