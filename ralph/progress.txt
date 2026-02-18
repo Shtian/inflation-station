@@ -19,6 +19,7 @@
 - Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
 - For `/accounts`, keep network/state orchestration in `use-accounts-manager.ts` and keep create-form/table UI split into route-local section components under `src/app/accounts/components/*`.
 - For `/categories`, keep shared scope-label rendering and category/rule API error mapping in `categories-manager.utils.ts`, and keep major CRUD UI slices in route-local section components.
+- For `/categories`, keep category and rule CRUD markup split into focused section components (`category-management-section.tsx` and `rules-management-section.tsx`) while keeping fetch/mutation orchestration in `categories-manager.tsx`.
 - For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
 - For Next.js App Router handlers, return `new Response(null, { status: 204 })` for no-content responses; `NextResponse.json` is invalid for HTTP 204.
 - Keep Playwright configured for base URL `http://127.0.0.1:3000` and use `PLAYWRIGHT_NO_WEBSERVER=1` when you need to force reuse of an already running local dev server.
@@ -231,4 +232,29 @@
 - Biome may leave unsafe unused-import fixes unapplied (`noUnusedImports`), so remove leftover imports manually after `pnpm lint:fix`.
 - Useful context
 - Existing Playwright coverage in `tests/e2e/us-015-categories-route-management.e2e.ts` remained green with no locator updates, confirming behavior parity.
+---
+
+## 2026-02-18 21:04:19 CET - US-106
+- What was implemented
+- Extracted category-rule create/delete form and rules table into `RulesManagementSection`.
+- Updated `src/app/categories/categories-manager.tsx` to compose the new rules section component while preserving existing rule validation, scope handling, payment-type handling, and success/error notices.
+- Updated `AGENTS.md` categories route convention to document the category/rules section split pattern.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/categories/categories-manager.tsx`
+- `src/app/categories/components/rules-management-section.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep `/categories` CRUD UI split into dedicated section components and pass only state handlers/data slices from `categories-manager.tsx`.
+- Gotchas encountered
+- `biome check --write` does not apply unsafe `noUnusedImports` fixes; remove unused imports manually after major JSX extraction.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-015-categories-route-management.e2e.ts` validates category-rule create/delete flows and stayed green without locator changes.
 ---
