@@ -19,6 +19,11 @@ const primaryLinks = [
 
 const configurationLinks = [
   {
+    href: "/monthly-review/settings",
+    label: "Monthly Review Settings",
+    description: "Edit AI system prompt defaults for monthly reviews.",
+  },
+  {
     href: "/import-provider-mappings",
     label: "Providers",
     description: "Manage CSV provider mappings and field transforms.",

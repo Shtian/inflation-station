@@ -4,49 +4,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
   page,
 }) => {
   const generateRequests: Array<{ monthStart?: string }> = [];
-  const promptUpdateRequests: Array<{ promptText?: string }> = [];
-  let systemPromptResponse = {
-    promptText: "Start with top deltas and concentration signals.",
-    resolvedPrompt: "Start with top deltas and concentration signals.",
-    usesDefaultPrompt: false,
-  };
-
-  await page.route("**/api/monthly-review/system-prompt", async (route) => {
-    const request = route.request();
-
-    if (request.method() === "GET") {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(systemPromptResponse),
-      });
-      return;
-    }
-
-    if (request.method() === "PUT") {
-      const payload = request.postDataJSON() as { promptText?: string };
-      promptUpdateRequests.push(payload ?? {});
-
-      const nextPromptText = payload?.promptText ?? "";
-      systemPromptResponse = {
-        promptText: nextPromptText.trim().length === 0 ? "" : nextPromptText,
-        resolvedPrompt:
-          nextPromptText.trim().length === 0
-            ? "You are a financial review assistant."
-            : nextPromptText,
-        usesDefaultPrompt: nextPromptText.trim().length === 0,
-      };
-
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(systemPromptResponse),
-      });
-      return;
-    }
-
-    await route.fallback();
-  });
 
   await page.route("**/api/monthly-review/timeline", async (route) => {
     await route.fulfill({
@@ -146,31 +103,7 @@ test("renders monthly review timeline cards with deterministic overview data", a
     page.getByRole("heading", { name: "Monthly Review" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "System prompt settings" }),
-  ).toBeVisible();
-  const systemPromptTextbox = page.getByLabel("Monthly review system prompt");
-  await expect(systemPromptTextbox).toHaveValue(
-    "Start with top deltas and concentration signals.",
-  );
-
-  await systemPromptTextbox.fill("Focus on anomalies and recurring spend.");
-  await page.getByRole("button", { name: "Save prompt" }).click();
-
-  await expect.poll(() => promptUpdateRequests.length).toBe(1);
-  expect(promptUpdateRequests[0]).toEqual({
-    promptText: "Focus on anomalies and recurring spend.",
-  });
-  await expect(page.getByText("System prompt saved.")).toBeVisible();
-
-  await systemPromptTextbox.fill("   ");
-  await page.getByRole("button", { name: "Save prompt" }).click();
-
-  await expect.poll(() => promptUpdateRequests.length).toBe(2);
-  expect(promptUpdateRequests[1]).toEqual({
-    promptText: "   ",
-  });
-  await expect(
-    page.getByText("Using fallback default prompt for generation."),
+    page.getByRole("link", { name: "Open monthly review settings" }),
   ).toBeVisible();
 
   const monthHeadings = page.locator("article h2");
@@ -257,4 +190,110 @@ test("renders monthly review timeline cards with deterministic overview data", a
     ),
   ).toBeVisible();
   expect(generateRequests).toHaveLength(1);
+});
+
+test("opens monthly review settings from header configuration and monthly review cog", async ({
+  page,
+}) => {
+  const promptUpdateRequests: Array<{ promptText?: string }> = [];
+  let systemPromptResponse = {
+    promptText: "Start with top deltas and concentration signals.",
+    resolvedPrompt: "Start with top deltas and concentration signals.",
+    usesDefaultPrompt: false,
+  };
+
+  await page.route("**/api/monthly-review/system-prompt", async (route) => {
+    const request = route.request();
+
+    if (request.method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(systemPromptResponse),
+      });
+      return;
+    }
+
+    if (request.method() === "PUT") {
+      const payload = request.postDataJSON() as { promptText?: string };
+      promptUpdateRequests.push(payload ?? {});
+
+      const nextPromptText = payload?.promptText ?? "";
+      systemPromptResponse = {
+        promptText: nextPromptText.trim().length === 0 ? "" : nextPromptText,
+        resolvedPrompt:
+          nextPromptText.trim().length === 0
+            ? "You are a financial review assistant."
+            : nextPromptText,
+        usesDefaultPrompt: nextPromptText.trim().length === 0,
+      };
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(systemPromptResponse),
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+
+  await page.route("**/api/monthly-review/timeline", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ rows: [] }),
+    });
+  });
+
+  await page.goto("/monthly-review");
+  await page
+    .getByRole("link", { name: "Open monthly review settings" })
+    .click();
+
+  await expect(
+    page.getByRole("heading", { name: "Monthly Review Settings" }),
+  ).toBeVisible();
+
+  const systemPromptTextbox = page.getByLabel("Monthly review system prompt");
+  await expect(systemPromptTextbox).toHaveValue(
+    "Start with top deltas and concentration signals.",
+  );
+
+  await systemPromptTextbox.fill("Focus on anomalies and recurring spend.");
+  await page.getByRole("button", { name: "Save prompt" }).click();
+
+  await expect.poll(() => promptUpdateRequests.length).toBe(1);
+  expect(promptUpdateRequests[0]).toEqual({
+    promptText: "Focus on anomalies and recurring spend.",
+  });
+  await expect(page.getByText("System prompt saved.")).toBeVisible();
+
+  await page.getByRole("link", { name: "Back to monthly review" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Monthly Review" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Configuration" }).click();
+  await page
+    .locator('[data-slot="navigation-menu-content"]')
+    .getByRole("link", { name: /Monthly Review Settings/ })
+    .click();
+
+  await expect(
+    page.getByRole("heading", { name: "Monthly Review Settings" }),
+  ).toBeVisible();
+
+  await systemPromptTextbox.fill("   ");
+  await page.getByRole("button", { name: "Save prompt" }).click();
+
+  await expect.poll(() => promptUpdateRequests.length).toBe(2);
+  expect(promptUpdateRequests[1]).toEqual({
+    promptText: "   ",
+  });
+  await expect(
+    page.getByText("Using fallback default prompt for generation."),
+  ).toBeVisible();
 });
