@@ -9,7 +9,7 @@
 - `/api/import-provider-mappings` GET returns `{ mappings: [{ id, providerName, ... }] }` — use this to populate "all providers" in the Change dialog when `providerDetection.candidates` is empty.
 - Keep `/import` request orchestration and review-decision state in `src/app/import/use-import-workflow.ts`; keep `import-uploader.tsx` focused on rendering and local drag/drop presentation state.
 - Keep `/import` upload-phase and review-phase markup in focused components under `src/app/import/components/*`; keep `import-uploader.tsx` as the route-level composition shell plus provider dialog orchestration.
-- Keep provider-selection dialog and import-review row controls as focused components under `src/app/import/components/*`, and preserve stable row-level accessible names on controls (`Category for row N`, `Toggle message source for row N`) for Playwright/user-facing locators.
+- Keep provider-selection dialog and import-review row controls as focused components under `src/app/import/components/*`, and preserve stable row-level accessible names on controls (`Category for row N`, `Toggle message source for row N`, `Note for row N`) for Playwright/user-facing locators.
 - Keep API handlers in `src/app/api/**` and use the shared server-only Prisma client in `src/lib/prisma.ts`.
 - Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
 - For paginated table routes, keep summary metadata (`page`, `totalPages`, `total`) outside the table and keep row rendering inside table primitives.
@@ -490,4 +490,33 @@
   - `pnpm exec tsc --noEmit` can fail on stale `.next/types` artifacts; running `pnpm build` regenerates Next type artifacts before re-running `tsc`.
   - Useful context
   - The dashboard E2E (`tests/e2e/us-014-dashboard-ui.e2e.ts`) should navigate to `/` for the overview workspace in current route composition.
+---
+## 2026-02-19 08:46:44 CET - US-002
+- What was implemented
+- Added per-row note inputs to `/import` review table via a focused `ImportReviewNoteCell` component, with stable accessible labels (`Note for row N`).
+- Extended import workflow state to track per-row note decisions and include `note` in `/api/imports/submit` row payloads.
+- Updated import route E2E coverage to fill a row note and assert submitted payload includes row-level note values (`string` and `null`).
+- Updated root `AGENTS.md` and `ralph/progress.txt` Codebase Patterns to include row note control accessibility naming guidance.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/use-import-workflow.ts`
+- `src/app/import/import-review-table.tsx`
+- `src/app/import/components/import-review-phase.tsx`
+- `src/app/import/components/import-review-note-cell.tsx`
+- `tests/e2e/us-016-import-route-upload.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered
+  - Keep import-review row note controls as dedicated components with stable row-specific accessible names so Playwright/user-facing locators remain deterministic.
+  - Gotchas encountered
+  - `use-import-workflow.ts` reset paths must clear all per-row decision maps (`categoryDecisions`, `messageDecisions`, `noteDecisions`) together to avoid stale data across parse/reparse/submit flows.
+  - Useful context
+  - `tests/e2e/us-016-import-route-upload.e2e.ts` now validates note capture in the submit payload and is the primary end-to-end coverage for this story.
 ---

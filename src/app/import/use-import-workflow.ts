@@ -126,6 +126,9 @@ export function useImportWorkflow() {
   const [messageDecisions, setMessageDecisions] = useState<
     Record<string, MessageSource>
   >({});
+  const [noteDecisions, setNoteDecisions] = useState<Record<string, string>>(
+    {},
+  );
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadAccounts = useCallback(async () => {
@@ -244,6 +247,7 @@ export function useImportWorkflow() {
     setParseResult(null);
     setCategoryDecisions({});
     setMessageDecisions({});
+    setNoteDecisions({});
     setProviderDetection(null);
     setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
     setImportError(null);
@@ -320,6 +324,7 @@ export function useImportWorkflow() {
     setParseResult(null);
     setCategoryDecisions({});
     setMessageDecisions({});
+    setNoteDecisions({});
 
     const formData = new FormData();
     formData.set("accountId", selectedAccountId);
@@ -395,6 +400,8 @@ export function useImportWorkflow() {
       }, {}),
     );
 
+    setNoteDecisions({});
+
     setImportLoading(false);
   }, [selectedAccountId, selectedFile, selectedProviderId]);
 
@@ -404,6 +411,7 @@ export function useImportWorkflow() {
     setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
     setCategoryDecisions({});
     setMessageDecisions({});
+    setNoteDecisions({});
     setImportError(null);
     setSubmitError(null);
     setSubmitNotice(null);
@@ -436,6 +444,7 @@ export function useImportWorkflow() {
               : row.title,
           rowId: row.id,
           categoryId: categoryDecisions[row.id] ?? row.categoryId,
+          note: noteDecisions[row.id] ?? null,
         })),
       }),
     });
@@ -460,6 +469,7 @@ export function useImportWorkflow() {
     setParseResult(null);
     setCategoryDecisions({});
     setMessageDecisions({});
+    setNoteDecisions({});
     setSelectedFile(null);
 
     if (fileInputRef.current) {
@@ -467,7 +477,7 @@ export function useImportWorkflow() {
     }
 
     setSubmitLoading(false);
-  }, [parseResult, messageDecisions, categoryDecisions]);
+  }, [parseResult, messageDecisions, categoryDecisions, noteDecisions]);
 
   return {
     accountError,
@@ -483,6 +493,7 @@ export function useImportWorkflow() {
     importLoading,
     isProviderDialogOpen,
     messageDecisions,
+    noteDecisions,
     onFileSelected,
     clearSelectedFile,
     openProviderDialog,
@@ -498,6 +509,7 @@ export function useImportWorkflow() {
     setDialogSelectedProviderId,
     setIsProviderDialogOpen,
     setMessageDecisions,
+    setNoteDecisions,
     setSelectedAccountId,
     submitError,
     submitLoading,

@@ -199,6 +199,11 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await page.getByRole("option", { name: "Food", exact: true }).click();
   await expect(rowTwoCategory).toHaveText("Food");
 
+  const rowOneNote = page.getByRole("textbox", {
+    name: "Note for row 2",
+  });
+  await rowOneNote.fill("Split groceries with roommate");
+
   await page.getByRole("button", { name: "Confirm Import" }).click();
 
   await expect(
@@ -216,11 +221,13 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
         rowId: "row-1",
         categoryId: "cat-food",
         selectedMessage: "JOKER TRONDHEIM",
+        note: "Split groceries with roommate",
       },
       {
         rowId: "row-2",
         categoryId: "cat-transport",
         selectedMessage: "RUTER BILLETT",
+        note: null,
       },
     ],
   });

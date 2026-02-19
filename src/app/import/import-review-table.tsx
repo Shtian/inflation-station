@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ImportReviewCategoryCell } from "./components/import-review-category-cell";
 import { ImportReviewMessageCell } from "./components/import-review-message-cell";
+import { ImportReviewNoteCell } from "./components/import-review-note-cell";
 import { ImportReviewWarningsCell } from "./components/import-review-warnings-cell";
 
 export const UNCATEGORIZED_SELECT_VALUE = "__uncategorized__";
@@ -66,6 +67,7 @@ const TABLE_COLS = [
   "amount",
   "type",
   "category",
+  "note",
   "flags",
 ] as const;
 
@@ -102,8 +104,10 @@ type ImportReviewTableProps = {
   rows: ReviewRow[];
   categories: Category[];
   categoryDecisions: Record<string, string>;
+  noteDecisions: Record<string, string>;
   messageDecisions: Record<string, MessageSource>;
   setCategoryDecisions: Dispatch<SetStateAction<Record<string, string>>>;
+  setNoteDecisions: Dispatch<SetStateAction<Record<string, string>>>;
   setMessageDecisions: Dispatch<SetStateAction<Record<string, MessageSource>>>;
 };
 
@@ -111,8 +115,10 @@ export function ImportReviewTable({
   rows,
   categories,
   categoryDecisions,
+  noteDecisions,
   messageDecisions,
   setCategoryDecisions,
+  setNoteDecisions,
   setMessageDecisions,
 }: ImportReviewTableProps) {
   return (
@@ -125,6 +131,7 @@ export function ImportReviewTable({
             <TableHead>Amount</TableHead>
             <TableHead>Payment type</TableHead>
             <TableHead>Category</TableHead>
+            <TableHead>Note</TableHead>
             <TableHead>
               <TooltipProvider>
                 <Tooltip>
@@ -188,6 +195,19 @@ export function ImportReviewTable({
                       setCategoryDecisions((current) => ({
                         ...current,
                         [rowId]: categoryId,
+                      }))
+                    }
+                  />
+                </TableCell>
+                <TableCell>
+                  <ImportReviewNoteCell
+                    rowId={row.id}
+                    rowNumber={row.rowNumber}
+                    value={noteDecisions[row.id] ?? ""}
+                    onNoteChange={(rowId, note) =>
+                      setNoteDecisions((current) => ({
+                        ...current,
+                        [rowId]: note,
                       }))
                     }
                   />

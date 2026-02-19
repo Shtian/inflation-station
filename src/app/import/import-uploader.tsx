@@ -14,6 +14,7 @@ export function ImportUploader() {
     activeAccounts,
     allProviders,
     categoryDecisions,
+    noteDecisions,
     categoryError,
     clearSelectedFile,
     dialogProviderOptions,
@@ -38,6 +39,7 @@ export function ImportUploader() {
     setDialogSelectedProviderId,
     setIsProviderDialogOpen,
     setMessageDecisions,
+    setNoteDecisions,
     setSelectedAccountId,
     submitError,
     submitLoading,
@@ -63,6 +65,7 @@ export function ImportUploader() {
           accountError={accountError}
           activeAccounts={activeAccounts}
           categoryDecisions={categoryDecisions}
+          noteDecisions={noteDecisions}
           categoryError={categoryError}
           importError={importError}
           importLoading={importLoading}
@@ -75,6 +78,7 @@ export function ImportUploader() {
           selectedAccountId={selectedAccountId}
           setCategoryDecisions={setCategoryDecisions}
           setMessageDecisions={setMessageDecisions}
+          setNoteDecisions={setNoteDecisions}
           submitError={submitError}
           submitLoading={submitLoading}
           submitNotice={submitNotice}

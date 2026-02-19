@@ -37,6 +37,7 @@ type ImportReviewPhaseProps = {
   accountError: string | null;
   activeAccounts: AccountSummary[];
   categoryDecisions: Record<string, string>;
+  noteDecisions: Record<string, string>;
   categoryError: string | null;
   importError: string | null;
   importLoading: boolean;
@@ -48,6 +49,7 @@ type ImportReviewPhaseProps = {
   reviewCategoryOptions: Category[];
   selectedAccountId: string;
   setCategoryDecisions: Dispatch<SetStateAction<Record<string, string>>>;
+  setNoteDecisions: Dispatch<SetStateAction<Record<string, string>>>;
   setMessageDecisions: Dispatch<SetStateAction<Record<string, MessageSource>>>;
   submitError: string | null;
   submitLoading: boolean;
@@ -66,6 +68,7 @@ export function ImportReviewPhase({
   accountError,
   activeAccounts,
   categoryDecisions,
+  noteDecisions,
   categoryError,
   importError,
   importLoading,
@@ -77,6 +80,7 @@ export function ImportReviewPhase({
   reviewCategoryOptions,
   selectedAccountId,
   setCategoryDecisions,
+  setNoteDecisions,
   setMessageDecisions,
   submitError,
   submitLoading,
@@ -291,8 +295,10 @@ export function ImportReviewPhase({
             rows={reviewRows}
             categories={reviewCategoryOptions}
             categoryDecisions={categoryDecisions}
+            noteDecisions={noteDecisions}
             messageDecisions={messageDecisions}
             setCategoryDecisions={setCategoryDecisions}
+            setNoteDecisions={setNoteDecisions}
             setMessageDecisions={setMessageDecisions}
           />
         </div>
