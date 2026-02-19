@@ -139,9 +139,7 @@ type ImportReviewStageDbClient = {
         title: true;
         categoryId: true;
       };
-      orderBy: {
-        rowNumber: "asc";
-      };
+      orderBy: [{ bookingDate: "desc" }, { rowNumber: "asc" }];
     }): Promise<
       Array<{
         id: string;
@@ -229,6 +227,13 @@ function parseBookingDate(value: string): Date | null {
     return buildUtcDate(year, month, day);
   }
 
+  const norwegianShortYearDate = /^(\d{2})\.(\d{2})\.(\d{2})$/.exec(trimmed);
+  if (norwegianShortYearDate) {
+    const [, day, month, year] = norwegianShortYearDate;
+    const fullYear = (2000 + Number.parseInt(year, 10)).toString();
+    return buildUtcDate(fullYear, month, day);
+  }
+
   const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
   if (isoDate) {
     const [, year, month, day] = isoDate;
@@ -259,7 +264,7 @@ function splitValidAndInvalidRows(rows: ParsedCsvRow[]): {
       invalidRows.push({
         rowNumber,
         code: "INVALID_BOOKING_DATE",
-        message: `Row ${rowNumber} has unsupported booking date "${row.bookingDate}". Expected formats DD.MM.YYYY, YYYY-MM-DD, or YYYY/MM/DD.`,
+        message: `Row ${rowNumber} has unsupported booking date "${row.bookingDate}". Expected formats DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD, or YYYY/MM/DD.`,
       });
       continue;
     }
@@ -553,9 +558,7 @@ export async function stageParsedImportRows(
       title: true,
       categoryId: true,
     },
-    orderBy: {
-      rowNumber: "asc",
-    },
+    orderBy: [{ bookingDate: "desc" }, { rowNumber: "asc" }],
   });
 
   return {

@@ -185,6 +185,13 @@ function parseBookingDate(value: string): Date | null {
     return buildUtcDate(year, month, day);
   }
 
+  const norwegianShortYearDate = /^(\d{2})\.(\d{2})\.(\d{2})$/.exec(trimmed);
+  if (norwegianShortYearDate) {
+    const [, day, month, year] = norwegianShortYearDate;
+    const fullYear = (2000 + Number.parseInt(year, 10)).toString();
+    return buildUtcDate(fullYear, month, day);
+  }
+
   const isoDate = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
   if (isoDate) {
     const [, year, month, day] = isoDate;
@@ -248,7 +255,7 @@ function splitValidAndInvalidRows(rows: ParsedCsvRow[]): {
       invalidRows.push({
         rowNumber: index + 2,
         code: "INVALID_BOOKING_DATE",
-        message: `Row ${index + 2} has unsupported booking date "${row.bookingDate}". Expected formats DD.MM.YYYY, YYYY-MM-DD, or YYYY/MM/DD.`,
+        message: `Row ${index + 2} has unsupported booking date "${row.bookingDate}". Expected formats DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD, or YYYY/MM/DD.`,
       });
       continue;
     }

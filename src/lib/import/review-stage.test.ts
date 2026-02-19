@@ -146,6 +146,11 @@ describe("stageParsedImportRows", () => {
         },
       ],
     });
+    expect(db.importReviewRow.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ bookingDate: "desc" }, { rowNumber: "asc" }],
+      }),
+    );
     expect(result.summary).toEqual({
       imported: 1,
       duplicates: 0,
@@ -262,7 +267,7 @@ describe("stageParsedImportRows", () => {
         rowNumber: 2,
         code: "INVALID_BOOKING_DATE",
         message:
-          'Row 2 has unsupported booking date "32.01.2026". Expected formats DD.MM.YYYY, YYYY-MM-DD, or YYYY/MM/DD.',
+          'Row 2 has unsupported booking date "32.01.2026". Expected formats DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD, or YYYY/MM/DD.',
       },
     ]);
     expect(result.review).toEqual({
@@ -274,6 +279,58 @@ describe("stageParsedImportRows", () => {
 
     expect(db.importReviewSession.create).not.toHaveBeenCalled();
     expect(db.importReviewRow.createMany).not.toHaveBeenCalled();
+  });
+
+  it("accepts booking dates in DD.MM.YY format", async () => {
+    const db = createDbMock({
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-03T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      csvContent: `${HEADER}\n03.01.26;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+    });
+
+    expect(result.summary).toEqual({
+      imported: 1,
+      duplicates: 0,
+      ignoredReserved: 0,
+      invalid: 0,
+    });
+    expect(result.errors).toHaveLength(0);
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-03T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
   });
 
   it("returns parser diagnostics and skips staging when CSV has no data rows", async () => {
