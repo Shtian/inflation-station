@@ -60,7 +60,7 @@ function getReviewStateTone(
     return {
       badgeVariant: "default",
       dotClassName:
-        "border-emerald-500/60 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+        "border-emerald-500/60 text-emerald-600 dark:text-emerald-400",
       label: "Generated",
     };
   }
@@ -68,8 +68,7 @@ function getReviewStateTone(
   if (reviewState === "GENERATING") {
     return {
       badgeVariant: "secondary",
-      dotClassName:
-        "border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400",
+      dotClassName: "border-amber-500/60 text-amber-600 dark:text-amber-400",
       label: "Generating",
     };
   }
@@ -77,14 +76,14 @@ function getReviewStateTone(
   if (reviewState === "FAILED") {
     return {
       badgeVariant: "destructive",
-      dotClassName: "border-destructive/60 bg-destructive/10 text-destructive",
+      dotClassName: "border-destructive/60 text-destructive",
       label: "Failed",
     };
   }
 
   return {
     badgeVariant: "outline",
-    dotClassName: "border-border bg-muted text-muted-foreground",
+    dotClassName: "border-border text-muted-foreground",
     label: "Not generated",
   };
 }
@@ -324,7 +323,7 @@ export function MonthlyReviewManager() {
           return (
             <article key={row.monthStart} className="relative md:pl-14">
               <div
-                className={`absolute left-0 top-2 hidden h-10 w-10 items-center justify-center rounded-full border text-sm md:flex ${stateTone.dotClassName}`}
+                className={`absolute left-0 top-2 z-10 hidden h-10 w-10 items-center justify-center rounded-full border bg-background text-sm md:flex ${stateTone.dotClassName}`}
                 aria-hidden
               >
                 {row.reviewState === "GENERATED" ? (
