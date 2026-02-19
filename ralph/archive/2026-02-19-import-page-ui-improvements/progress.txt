@@ -1,0 +1,616 @@
+## Codebase Patterns
+- For optional nullable fields added to persisted models, normalize missing payload values to explicit `null` before `createMany`/`update` writes so Prisma input shapes stay deterministic across API and service layers.
+- Biome's `noArrayIndexKey` rule rejects `key={i}` in `.map()` calls — use semantic string keys (field names, column names) from a typed const array instead of `Array.from({ length: N }).map((_, i) => ...)` patterns.
+- Keep each app route `page.tsx` as a thin wrapper that renders one route-local `*-route-root.tsx` entry component, and enforce route-root size constraints with `scripts/check-route-client-size.mjs` during `pnpm lint`.
+- For major app routes, define route-local `loading.tsx` and `error.tsx` files and reuse shared fallback components for consistent recoverable-loading UX across sections.
+- Keep primary app navigation in `src/app/layout.tsx`, and keep `/` redirecting to `/overview`.
+- The Badge component (`src/components/ui/badge.tsx`) only has `default`, `secondary`, `destructive`, `outline`, `ghost`, `link` variants; use `className` overrides for custom colours (e.g. green/amber status badges).
+- When replacing a controlled state (e.g. `providerDetection`) from dialog confirm, update both the selectedId state and the detection object so the badge display updates immediately without a re-parse.
+- `/api/import-provider-mappings` GET returns `{ mappings: [{ id, providerName, ... }] }` — use this to populate "all providers" in the Change dialog when `providerDetection.candidates` is empty.
+- Keep `/import` request orchestration and review-decision state in `src/app/import/use-import-workflow.ts`; keep `import-uploader.tsx` focused on rendering and local drag/drop presentation state.
+- Keep `/import` upload-phase and review-phase markup in focused components under `src/app/import/components/*`; keep `import-uploader.tsx` as the route-level composition shell plus provider dialog orchestration.
+- Keep provider-selection dialog and import-review row controls as focused components under `src/app/import/components/*`, and preserve stable row-level accessible names on controls (`Category for row N`, `Toggle message source for row N`, `Note for row N`) for Playwright/user-facing locators.
+- Keep transaction/import note length limits centralized in `src/lib/transactions/note.ts` and apply the same max-length rule in both API payload validation and inline UI validation messages.
+- Keep API handlers in `src/app/api/**` and use the shared server-only Prisma client in `src/lib/prisma.ts`.
+- Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
+- For paginated table routes, keep summary metadata (`page`, `totalPages`, `total`) outside the table and keep row rendering inside table primitives.
+- Keep route page state client-side and fetch route-specific API data on filter/pagination changes.
+- Keep transactions pagination/filter query logic in `src/lib/transactions/*`, and keep `/api/transactions` handlers focused on request validation and HTTP response shaping.
+- Keep `/api/transactions/[transactionId]` handlers consistent across mutation methods by validating `transactionId` up front and mapping Prisma `P2025` to `TRANSACTION_NOT_FOUND`.
+- Keep transactions route filter state client-side in `src/app/transactions/*`, and refetch `/api/transactions` whenever account, page, or pageSize changes.
+- Keep `/transactions` data orchestration in `src/app/transactions/use-transactions-manager.ts` and keep table/pagination rendering in `src/app/transactions/components/transactions-table-section.tsx` so list behavior and presentation evolve independently.
+- Keep `/api/transactions` list rows enriched with `categoryName` so `/transactions` can render category labels (or uncategorized states) without extra category lookups.
+- Keep transaction edit UI state local in `src/app/transactions/*` and refresh list data via the same paginated query after successful saves to preserve active filter/page context.
+- Include `note` in `/api/transactions` list rows so the `/transactions` edit dialog can prefill note values without extra detail fetches.
+- In `/transactions` table rendering, keep a dedicated note column with explicit empty-state text (for example `No note`) so note visibility and row alignment remain stable.
+- Keep the transactions edit workflow NOK-only by removing currency from edit payload parsing/UI and forcing persisted updates to `currency: "NOK"`.
+- Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
+- Keep `/transactions` dialog markup in focused components (`edit-transaction-dialog.tsx`, `delete-transaction-dialog.tsx`) and pass typed props from `transactions-manager.tsx` to isolate mutation workflows from table rendering.
+- For `/accounts`, keep network/state orchestration in `use-accounts-manager.ts` and keep create-form/table UI split into route-local section components under `src/app/accounts/components/*`.
+- For `/categories`, keep shared scope-label rendering and category/rule API error mapping in `categories-manager.utils.ts`, and keep major CRUD UI slices in route-local section components.
+- For `/categories`, keep category and rule CRUD markup split into focused section components (`category-management-section.tsx` and `rules-management-section.tsx`) while keeping fetch/mutation orchestration in `categories-manager.tsx`.
+- For Next.js dynamic API routes, accept `params` as `Promise<unknown>` in the handler signature and narrow locally before using route ids.
+- For Next.js App Router handlers, return `new Response(null, { status: 204 })` for no-content responses; `NextResponse.json` is invalid for HTTP 204.
+- Keep Playwright configured for base URL `http://127.0.0.1:3000` and use `PLAYWRIGHT_NO_WEBSERVER=1` when you need to force reuse of an already running local dev server.
+- Keep `pnpm test` as the full verification entry point (unit + E2E) and use `pnpm test:unit` for fast Vitest-only loops.
+- Store provider import mappings in Prisma using a parent mapping model plus child field-mapping rows, with JSON normalization/transform payloads and `mappingVersion` metadata for diagnostics.
+- For provider autodetection, read configurable `requiredHeaders`/`anyHeaders`/`headerPatterns` from mapping JSON, fall back to mapped source fields, and return parse diagnostics with a `certain`/`uncertain`/`missing` confidence state.
+- When `/api/imports/parse` detection is not `certain` and provider candidates exist, return `PROVIDER_SELECTION_REQUIRED` with diagnostics and require a follow-up parse call with explicit `providerId`.
+- For provider-backed parsing, transform raw CSV through provider field mappings into canonical parser rows before review staging, and keep parser summary keys exactly `imported`, `duplicates`, `ignoredReserved`, `invalid`.
+- Keep import token/payment-type normalization centralized in `src/lib/import/normalization.ts` and apply it before any fingerprint dedupe or duplicate-warning computation.
+- Keep review-stage OpenAI message cleanup best-effort and expose unavailable diagnostics with stable reason codes (`disabled`, `key_missing`, `timeout`, `provider_error`) without blocking parse staging.
+- Keep provider mapping admin CRUD in `/api/import-provider-mappings*` and reject create/update payloads that omit any required canonical field mapping.
+- Keep provider mapping admin UI state local in `src/app/import-provider-mappings/*` and submit create/update payloads as full mapping definitions (provider metadata + field mappings + normalization rules JSON) so API validation feedback stays deterministic.
+- For `/import-provider-mappings`, keep add/edit dialogs and mappings table/actions in route-local components and reuse one field-mappings editor component across create/edit flows to avoid duplicated mapping-control behavior.
+- Keep provider mapping normalization parse/build logic and field-mapping validation in `src/app/import-provider-mappings/provider-mappings-manager.utils.ts` so manager UI orchestration can evolve without coupling to pure helper logic, and unit-test that utility module directly.
+- For shadcn select-based row controls, set `aria-label` on `SelectTrigger` so per-row Playwright locators stay unambiguous when multiple comboboxes exist in the same table row.
+- Keep `/api/imports/submit` payload rows carrying finalized `selectedMessage` text, and recompute `normalizedMerchant` from staged `name` + selected message before dedupe/persistence.
+- For the overview route, keep account/date filter state plus `/api/dashboard/analytics` fetch orchestration in a dedicated `src/app/overview/use-overview-dashboard.ts` hook and keep formatting/date helpers in route-local utility modules.
+- For overview visualizations, keep each chart card in `src/app/overview/components/*` and pass route-level loading/data slices as props from `overview-dashboard.tsx` so chart rendering changes stay isolated.
+
+## 2026-02-18 15:06:31 CET - US-101
+- What was implemented
+- Standardized route composition by adding route-local `*-route-root.tsx` entry components and wiring each large route `page.tsx` to delegate to one root component.
+- Added a lint-enforced route composition guardrail (`scripts/check-route-client-size.mjs`) and integrated it into `pnpm lint` via `lint:route-structure`.
+- Documented the route-root composition guardrail in `README.md` and `AGENTS.md`.
+- Updated Playwright spec `tests/e2e/us-016-import-route-upload.e2e.ts` to align user-facing locators/assertions with the current import UI labels and provider-selection flow.
+- Files changed
+- `AGENTS.md`
+- `README.md`
+- `package.json`
+- `ralph/prd.json`
+- `scripts/check-route-client-size.mjs`
+- `src/app/page.tsx`
+- `src/app/accounts/page.tsx`
+- `src/app/accounts/accounts-route-root.tsx`
+- `src/app/categories/page.tsx`
+- `src/app/categories/categories-route-root.tsx`
+- `src/app/import/page.tsx`
+- `src/app/import/import-route-root.tsx`
+- `src/app/import-provider-mappings/page.tsx`
+- `src/app/import-provider-mappings/provider-mappings-route-root.tsx`
+- `src/app/overview/overview-route-root.tsx`
+- `src/app/transactions/page.tsx`
+- `src/app/transactions/transactions-route-root.tsx`
+- `tests/e2e/us-016-import-route-upload.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Route entry consistency is easier to preserve when each route keeps `page.tsx` server-thin and funnels route composition through a dedicated `*-route-root.tsx` module.
+- Guardrails are most reliable when attached to existing quality commands (`pnpm lint`) instead of standalone ad-hoc checks.
+- Gotchas encountered
+- Existing E2E tests under `tests/e2e/us-016-import-route-upload.e2e.ts` used stale labels (`Parse summary`, `Submit reviewed rows`, provider combobox flow); use current user-facing text (`Import Preview`, `Confirm Import`, dialog-based provider selection).
+- Useful context
+- Import provider override is currently dialog-driven (`Change` -> provider button -> `Confirm`) rather than combobox-driven.
+---
+
+## 2026-02-18 16:44:55 CET - US-101
+- What was implemented
+- Converted route-root wrappers in `src/app/*/*-route-root.tsx` to Server Components (removed redundant `"use client"`), keeping interactivity in downstream manager components.
+- Added reusable route fallback components: `src/components/route-loading-state.tsx` and `src/components/route-error-state.tsx`.
+- Added route-level loading/error boundaries for major routes: `/overview`, `/import`, `/transactions`, `/accounts`, `/categories`, `/import-provider-mappings`.
+- Updated `AGENTS.md` with a reusable route resilience convention for `loading.tsx`/`error.tsx`.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/components/route-loading-state.tsx`
+- `src/components/route-error-state.tsx`
+- `src/app/accounts/accounts-route-root.tsx`
+- `src/app/accounts/loading.tsx`
+- `src/app/accounts/error.tsx`
+- `src/app/categories/categories-route-root.tsx`
+- `src/app/categories/loading.tsx`
+- `src/app/categories/error.tsx`
+- `src/app/import/import-route-root.tsx`
+- `src/app/import/loading.tsx`
+- `src/app/import/error.tsx`
+- `src/app/import-provider-mappings/provider-mappings-route-root.tsx`
+- `src/app/import-provider-mappings/loading.tsx`
+- `src/app/import-provider-mappings/error.tsx`
+- `src/app/overview/overview-route-root.tsx`
+- `src/app/overview/loading.tsx`
+- `src/app/overview/error.tsx`
+- `src/app/transactions/transactions-route-root.tsx`
+- `src/app/transactions/loading.tsx`
+- `src/app/transactions/error.tsx`
+- `tests/e2e/us-016-import-route-upload.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Route roots can stay server-first while nesting client managers, which keeps `page.tsx`/route wrappers lightweight without changing client behavior.
+- Shared fallback components reduce duplication across route-level `loading.tsx` and `error.tsx` while keeping wording route-specific.
+- Gotchas encountered
+- Biome’s `noShadowRestrictedNames` rule flags default export function names like `Error` in `error.tsx`; use explicit component names (`OverviewRouteError`, etc.).
+- Useful context
+- Existing `tests/e2e/us-016-import-route-upload.e2e.ts` was auto-formatted during this iteration to satisfy repository-wide Biome formatting checks.
+---
+
+## 2026-02-18 18:40:31 CET - US-102
+- What was implemented
+- Extracted overview dashboard state/fetch orchestration into `src/app/overview/use-overview-dashboard.ts` (accounts loading, date preset/custom range state, analytics fetch, and existing error/loading semantics).
+- Moved overview formatting/date helpers into `src/app/overview/overview-dashboard.utils.ts` and shared route types into `src/app/overview/overview-dashboard.types.ts`.
+- Updated `src/app/overview/overview-dashboard.tsx` to consume the new hook/utilities while keeping chart mapping, labels, filters, and UI behavior unchanged.
+- Updated `AGENTS.md` dashboard UI convention to reflect route-local overview hook/module ownership.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/overview/overview-dashboard.tsx`
+- `src/app/overview/overview-dashboard.types.ts`
+- `src/app/overview/overview-dashboard.utils.ts`
+- `src/app/overview/use-overview-dashboard.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep overview fetch/filter orchestration in a dedicated route-local hook so chart sections stay focused on rendering concerns.
+- Keep route-local date/currency formatting helpers outside large client components to reduce churn when chart formatting changes.
+- Gotchas encountered
+- `react-day-picker` `DateRange.from` is optional; keep an explicit guard when passing calendar ranges into typed helper functions.
+- Useful context
+- Existing dashboard E2E coverage in `tests/e2e/us-014-dashboard-ui.e2e.ts` validated that account/date filter interactions remained behaviorally equivalent after extraction.
+---
+
+## 2026-02-18 18:46:11 CET - US-103
+- What was implemented
+- Split overview chart sections into focused route-local components: `NetCashflowCard`, `InflowOutflowCard`, `AccountStateTrendCard`, and `CategorySpendBreakdownCard`.
+- Updated `src/app/overview/overview-dashboard.tsx` to compose the extracted chart components while preserving existing tabs, chart mappings, labels, and loading/empty states.
+- Files changed
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/overview/overview-dashboard.tsx`
+- `src/app/overview/components/net-cashflow-card.tsx`
+- `src/app/overview/components/inflow-outflow-card.tsx`
+- `src/app/overview/components/account-state-trend-card.tsx`
+- `src/app/overview/components/category-spend-breakdown-card.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep overview chart cards as independent route-local components and pass only the needed analytics slices from the route dashboard container.
+- Gotchas encountered
+- Preserve existing loading and empty-state copy per card during extraction to keep E2E assertions and UX behavior stable.
+- Useful context
+- `tests/e2e/us-014-dashboard-ui.e2e.ts` continued to pass without locator updates, confirming the extraction preserved overview interactions.
+---
+
+## 2026-02-18 20:28:37 CET - US-104
+- What was implemented
+- Extracted account load/create/edit/delete orchestration into a dedicated route-local hook: `src/app/accounts/use-accounts-manager.ts`.
+- Split accounts UI into focused sections: `CreateAccountSection` for create form controls and `AccountsTableSection` for editable rows/actions.
+- Updated `src/app/accounts/accounts-manager.tsx` to compose the hook + sections while preserving existing notices, validation errors, and delete-confirmation behavior.
+- Updated `AGENTS.md` account-route convention to capture the new hook/section split pattern.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/accounts/accounts-manager.tsx`
+- `src/app/accounts/use-accounts-manager.ts`
+- `src/app/accounts/components/create-account-section.tsx`
+- `src/app/accounts/components/accounts-table-section.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- For `/accounts`, keep fetch/mutation state orchestration in a route-local hook and keep form/table rendering in separate section components to limit churn.
+- Gotchas encountered
+- Keep account error/notice reset semantics aligned with existing actions (`create`, `startEdit`, `saveEdit`, `delete`) so E2E expectations stay stable.
+- Useful context
+- Existing coverage in `tests/e2e/us-011-account-import-ui.e2e.ts` already validates create/edit/delete feedback and remained green after extraction.
+---
+
+## 2026-02-18 20:34:28 CET - US-105
+- What was implemented
+- Extracted category create/delete form and categories table into `CategoryManagementSection`, leaving category-rule management in the parent manager.
+- Moved shared category/rule mutation error mapping and scope-label helpers into `categories-manager.utils.ts`.
+- Introduced route-local shared types in `categories-manager.types.ts` for categories manager modules.
+- Updated `AGENTS.md` with the reusable categories-route utility pattern.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/categories/categories-manager.tsx`
+- `src/app/categories/categories-manager.types.ts`
+- `src/app/categories/categories-manager.utils.ts`
+- `src/app/categories/components/category-management-section.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep category CRUD UI isolated in a route-local section component so rule-management changes can be made independently.
+- Gotchas encountered
+- Biome may leave unsafe unused-import fixes unapplied (`noUnusedImports`), so remove leftover imports manually after `pnpm lint:fix`.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-015-categories-route-management.e2e.ts` remained green with no locator updates, confirming behavior parity.
+---
+
+## 2026-02-18 21:04:19 CET - US-106
+- What was implemented
+- Extracted category-rule create/delete form and rules table into `RulesManagementSection`.
+- Updated `src/app/categories/categories-manager.tsx` to compose the new rules section component while preserving existing rule validation, scope handling, payment-type handling, and success/error notices.
+- Updated `AGENTS.md` categories route convention to document the category/rules section split pattern.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/categories/categories-manager.tsx`
+- `src/app/categories/components/rules-management-section.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep `/categories` CRUD UI split into dedicated section components and pass only state handlers/data slices from `categories-manager.tsx`.
+- Gotchas encountered
+- `biome check --write` does not apply unsafe `noUnusedImports` fixes; remove unused imports manually after major JSX extraction.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-015-categories-route-management.e2e.ts` validates category-rule create/delete flows and stayed green without locator changes.
+---
+
+## 2026-02-18 21:10:28 CET - US-107
+- What was implemented
+- Extracted `/transactions` account/category/transaction loading and filter/pagination state into `useTransactionsManager`.
+- Extracted transactions rows + pagination controls into `TransactionsTableSection` and updated `TransactionsManager` to compose the new hook/section while preserving filter reset, edit, and delete flows.
+- Updated root `AGENTS.md` transactions route convention to document the new hook-based orchestration pattern.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/transactions/transactions-manager.tsx`
+- `src/app/transactions/transactions-manager.types.ts`
+- `src/app/transactions/use-transactions-manager.ts`
+- `src/app/transactions/components/transactions-table-section.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅ (initial run had a transient timeout in `tests/e2e/us-017-theme-toggle.e2e.ts`; rerun passed all tests)
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered: Keep transactions fetch/filter/pagination orchestration in a route-local hook and keep table/pagination UI in a section component to reduce churn in `transactions-manager.tsx`.
+  - Gotchas encountered: Running `pnpm test` and `pnpm build` in parallel can cause occasional Playwright timeouts; rerunning `pnpm test` in isolation stabilized the suite.
+  - Useful context: Existing transactions behavior coverage is in `tests/e2e/us-018-transactions-route-controls.e2e.ts` and remained green without locator updates.
+---
+
+## 2026-02-18 21:16:27 CET - US-108
+- What was implemented
+- Extracted the transaction edit form dialog into `EditTransactionDialog` with typed props and kept patch payload/validation behavior unchanged.
+- Extracted the transaction delete confirmation dialog into `DeleteTransactionDialog` with typed props and kept delete confirmation/error handling semantics unchanged.
+- Updated `TransactionsManager` to compose the new dialog components while keeping dialog state local and preserving the same post-mutation refetch flow.
+- Updated `AGENTS.md` with a reusable transactions dialog component convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/transactions/transactions-manager.tsx`
+- `src/app/transactions/components/edit-transaction-dialog.tsx`
+- `src/app/transactions/components/delete-transaction-dialog.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅ (initial run had a transient timeout in `tests/e2e/us-017-theme-toggle.e2e.ts`; rerun passed all tests)
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep `/transactions` edit/delete dialogs as standalone typed components so mutation/workflow updates do not require editing table/filter UI.
+- Gotchas encountered
+- `tests/e2e/us-017-theme-toggle.e2e.ts` can intermittently time out waiting for the `Light` menu item; a clean rerun often resolves this transient failure.
+- Useful context
+- Existing transactions dialog behavior is already covered by `tests/e2e/us-018-transactions-route-controls.e2e.ts` edit/delete scenarios, so this extraction did not require locator updates.
+---
+
+## 2026-02-18 21:21:55 CET - US-109
+- What was implemented
+- Extracted `/import` parse/submit request orchestration and review-state transitions into `src/app/import/use-import-workflow.ts` (accounts/categories/providers loading, provider-selection flow, parse/submit calls, decision defaults, and reset semantics).
+- Updated `src/app/import/import-uploader.tsx` to consume the new hook and keep the component focused on upload/review rendering plus local drag/drop visual state.
+- Preserved `/api/imports/parse` and `/api/imports/submit` request payload semantics, including provider override handling and per-row `selectedMessage`/`categoryId` submission behavior.
+- Updated `AGENTS.md` with the reusable import workflow hook convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/use-import-workflow.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅ (first run had a transient timeout in `tests/e2e/us-017-theme-toggle.e2e.ts`; immediate rerun passed all tests)
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep import workflow orchestration in a route-local hook so upload/review UI composition can evolve without touching request/state transition logic.
+- Gotchas encountered
+- `tests/e2e/us-017-theme-toggle.e2e.ts` can still fail intermittently due menu-item timing; rerunning `pnpm test` in isolation is a reliable recovery path.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-016-import-route-upload.e2e.ts` already validates parse-submit payload behavior and provider-selection-required flow after this extraction.
+---
+
+## 2026-02-18 21:27:19 CET - US-110
+- What was implemented
+- Extracted upload-phase UI from `src/app/import/import-uploader.tsx` into `src/app/import/components/import-upload-phase.tsx` while preserving account selection, file selection/clear, drag-and-drop, provider status, parse CTA, and notice/error rendering behavior.
+- Extracted review-phase UI from `src/app/import/import-uploader.tsx` into `src/app/import/components/import-review-phase.tsx` while preserving preview loading state, provider/account summary, validation warnings, review table controls, and submit/start-over actions.
+- Kept provider selection dialog orchestration in `import-uploader.tsx` and exported workflow types from `use-import-workflow.ts` for typed component boundaries.
+- Updated `AGENTS.md` import workflow convention to document route-level orchestration in `import-uploader.tsx` and phase component rendering under `src/app/import/components/*`.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/use-import-workflow.ts`
+- `src/app/import/components/import-upload-phase.tsx`
+- `src/app/import/components/import-review-phase.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep `/import` as a small composition shell: route title + phase switching + provider dialog; move phase-specific rendering into route-local components to reduce churn.
+- Gotchas encountered
+- New route-local UI files must still satisfy Biome import-order/format checks; running `pnpm exec biome check --write` on added files avoids failing the full lint pipeline.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-016-import-route-upload.e2e.ts` continued to validate parse, provider-selection-required, and submit flows after the phase extraction.
+---
+
+## 2026-02-18 21:33:30 CET - US-111
+- What was implemented
+- Extracted provider selection dialog UI from `import-uploader.tsx` into a dedicated `ProviderSelectionDialog` component with typed props and unchanged selection/confirm behavior.
+- Split import review row controls into focused cell components (`ImportReviewMessageCell`, `ImportReviewCategoryCell`, `ImportReviewWarningsCell`) while preserving message-source toggling and row category decision behavior.
+- Kept accessibility labels on row controls unchanged (`Toggle message source for row N`, `Category for row N`) to preserve stable user-facing locators.
+- Updated root `AGENTS.md` with an import-review componentization convention for provider dialog + row controls.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/import-review-table.tsx`
+- `src/app/import/components/provider-selection-dialog.tsx`
+- `src/app/import/components/import-review-message-cell.tsx`
+- `src/app/import/components/import-review-category-cell.tsx`
+- `src/app/import/components/import-review-warnings-cell.tsx`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅ (first run hit known transient timeout in `tests/e2e/us-017-theme-toggle.e2e.ts`; immediate rerun passed)
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep `/import` provider-selection dialog and review-row controls as independent components so importer workflow orchestration can stay isolated in the route shell/hook.
+- Gotchas encountered
+- `tests/e2e/us-017-theme-toggle.e2e.ts` can still fail intermittently waiting for the `Light` menu item; an isolated rerun is a reliable recovery when this transient occurs.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-016-import-route-upload.e2e.ts` already validates provider override flow and row-level message/category controls, so this decomposition required no locator updates.
+---
+
+## 2026-02-18 21:40:11 CET - US-112
+- What was implemented
+- Extracted provider-mapping normalization and field-mapping validation helpers from `provider-mappings-manager.tsx` into a route-local utility module: `src/app/import-provider-mappings/provider-mappings-manager.utils.ts`.
+- Updated `ProviderMappingsManager` to consume extracted helpers while preserving create/edit payload shape, validation messages, and existing UI behavior.
+- Added unit tests for extracted pure utility logic in `src/app/import-provider-mappings/provider-mappings-manager.utils.test.ts` (normalization parse/build, mapping validation, and mappingVersion parsing).
+- Updated `AGENTS.md` with a reusable provider-mappings utility convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import-provider-mappings/provider-mappings-manager.tsx`
+- `src/app/import-provider-mappings/provider-mappings-manager.utils.ts`
+- `src/app/import-provider-mappings/provider-mappings-manager.utils.test.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep provider-mapping normalization parsing/building plus field-mapping validation in a route-local utility module so the manager component stays focused on UI orchestration and helper behavior is unit-testable.
+- Gotchas encountered
+- Vitest in this route-level context did not resolve the `@/` alias for the extracted utility import; using a workspace-relative import path from `src/app/...` to `src/lib/...` keeps utility tests stable.
+- Useful context
+- Existing Playwright coverage in `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts` remained green, confirming the helper extraction preserved UI behavior.
+---
+
+## 2026-02-18 21:53:01 CET - US-113
+- What was implemented
+- Split `/import-provider-mappings` CRUD UI into focused components: add dialog, edit dialog, reusable field-mappings editor, string-badge input, and mappings table/actions section.
+- Reduced `provider-mappings-manager.tsx` to route-level state/mutation orchestration and component composition while preserving payload shapes, validation, notices, and action semantics.
+- Added route-local provider mapping types in `provider-mappings-manager.types.ts` and wired typed boundaries between manager and new UI components.
+- Stabilized flaky Playwright theme toggle coverage in `tests/e2e/us-017-theme-toggle.e2e.ts` so required `pnpm test` gate passes deterministically in this environment.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import-provider-mappings/provider-mappings-manager.tsx`
+- `src/app/import-provider-mappings/provider-mappings-manager.types.ts`
+- `src/app/import-provider-mappings/components/add-provider-mapping-dialog.tsx`
+- `src/app/import-provider-mappings/components/edit-provider-mapping-dialog.tsx`
+- `src/app/import-provider-mappings/components/provider-mapping-field-mappings-editor.tsx`
+- `src/app/import-provider-mappings/components/provider-mapping-string-badge-input.tsx`
+- `src/app/import-provider-mappings/components/provider-mappings-table-section.tsx`
+- `tests/e2e/us-017-theme-toggle.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅ (ran after UI refactor; subsequent edits were test-only)
+- **Learnings for future iterations**
+- Patterns discovered
+- Keep provider-mapping create/edit dialog shells thin and centralize required/optional mapping controls in a shared field-mappings editor component to preserve control labels and behavior parity.
+- Gotchas encountered
+- Existing `tests/e2e/us-017-theme-toggle.e2e.ts` was flaky around dropdown menu-item clicks and local/system theme expectations; persistence-based assertions are more stable than direct dropdown click sequencing in this environment.
+- Useful context
+- Existing provider-mapping admin behavior coverage remains in `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts` and continued passing after component extraction.
+---
+## 2026-02-18 22:12:02 CET - US-001
+- What was implemented
+- Added nullable `note` to `Transaction` in Prisma schema and created/applied migration `20260218210956_add_transaction_note`.
+- Updated transaction update persistence (`src/lib/transactions/update.ts`) to accept and persist optional `note` values.
+- Updated import review submit persistence (`src/lib/import/review-submit.ts` + `/api/imports/submit`) to accept optional row notes and persist them on transaction creation.
+- Added/updated unit coverage for note parsing and persistence in `src/lib/transactions/update.test.ts` and `src/lib/import/review-submit.test.ts`.
+- Files changed
+- `prisma/schema.prisma`
+- `prisma/migrations/20260218210956_add_transaction_note/migration.sql`
+- `src/lib/transactions/update.ts`
+- `src/lib/transactions/update.test.ts`
+- `src/lib/import/review-submit.ts`
+- `src/lib/import/review-submit.test.ts`
+- `src/app/api/imports/submit/route.ts`
+- `src/components/ui/label.tsx`
+- `tests/e2e/us-014-dashboard-ui.e2e.ts`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered
+  - Keep note-like optional text fields nullable end-to-end and default missing request values to `null` before persistence writes.
+  - Gotchas encountered
+  - `pnpm exec tsc --noEmit` can fail on stale `.next/types` artifacts; running `pnpm build` regenerates Next type artifacts before re-running `tsc`.
+  - Useful context
+  - The dashboard E2E (`tests/e2e/us-014-dashboard-ui.e2e.ts`) should navigate to `/` for the overview workspace in current route composition.
+---
+## 2026-02-19 08:46:44 CET - US-002
+- What was implemented
+- Added per-row note inputs to `/import` review table via a focused `ImportReviewNoteCell` component, with stable accessible labels (`Note for row N`).
+- Extended import workflow state to track per-row note decisions and include `note` in `/api/imports/submit` row payloads.
+- Updated import route E2E coverage to fill a row note and assert submitted payload includes row-level note values (`string` and `null`).
+- Updated root `AGENTS.md` and `ralph/progress.txt` Codebase Patterns to include row note control accessibility naming guidance.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/use-import-workflow.ts`
+- `src/app/import/import-review-table.tsx`
+- `src/app/import/components/import-review-phase.tsx`
+- `src/app/import/components/import-review-note-cell.tsx`
+- `tests/e2e/us-016-import-route-upload.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered
+  - Keep import-review row note controls as dedicated components with stable row-specific accessible names so Playwright/user-facing locators remain deterministic.
+  - Gotchas encountered
+  - `use-import-workflow.ts` reset paths must clear all per-row decision maps (`categoryDecisions`, `messageDecisions`, `noteDecisions`) together to avoid stale data across parse/reparse/submit flows.
+  - Useful context
+  - `tests/e2e/us-016-import-route-upload.e2e.ts` now validates note capture in the submit payload and is the primary end-to-end coverage for this story.
+---
+## 2026-02-19 08:51:40 CET - US-003
+- What was implemented
+- Added `note` to `/api/transactions` list row mapping (`src/lib/transactions/list.ts`) so transactions edit dialogs can prefill the current note value.
+- Extended `/transactions` edit dialog state and UI to include a note input prefilled from the selected row, and submit note updates through `PATCH /api/transactions/[transactionId]`.
+- Normalized cleared/empty note input to `null` before PATCH submission so note removal persists deterministically.
+- Updated transaction list/update unit tests and transactions route E2E coverage to verify note prefill and clearing behavior.
+- Updated root `AGENTS.md` with a reusable transactions note-edit convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/lib/transactions/list.ts`
+- `src/lib/transactions/list.test.ts`
+- `src/lib/transactions/update.ts`
+- `src/lib/transactions/update.test.ts`
+- `src/app/transactions/transactions-manager.types.ts`
+- `src/app/transactions/transactions-manager.tsx`
+- `src/app/transactions/components/edit-transaction-dialog.tsx`
+- `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered
+  - Transactions edit flows that require prefilled optional metadata (like notes) should keep that field in list-row API payloads to avoid extra request coupling.
+  - Gotchas encountered
+  - After extending E2E PATCH payload shapes, update local request payload type assertions in the test to avoid TypeScript failures.
+  - Useful context
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts` now validates both note prefill in the edit dialog and note clearing persistence (`note: null` in PATCH payload).
+---
+## 2026-02-19 09:02:09 CET - US-004
+- What was implemented
+- Enforced max 500-character note validation in both entry-point APIs: `/api/imports/submit` payload parsing and `/api/transactions/[transactionId]` update payload parsing.
+- Centralized note length constants/messages in `src/lib/transactions/note.ts` and reused them across API + UI layers.
+- Added inline note validation feedback near note inputs in `/import` review rows and `/transactions` edit dialog, and blocked submit/save until invalid notes are corrected.
+- Added test coverage for note-length validation in unit and E2E paths.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/lib/transactions/note.ts`
+- `src/lib/transactions/update.ts`
+- `src/lib/transactions/update.test.ts`
+- `src/app/api/imports/submit/route.ts`
+- `src/app/api/imports/submit/route.test.ts`
+- `src/app/import/use-import-workflow.ts`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/import-review-table.tsx`
+- `src/app/import/components/import-review-phase.tsx`
+- `src/app/import/components/import-review-note-cell.tsx`
+- `src/app/transactions/transactions-manager.tsx`
+- `src/app/transactions/components/edit-transaction-dialog.tsx`
+- `tests/e2e/us-016-import-route-upload.e2e.ts`
+- `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered: Keep note-length validation constants centralized and shared across API validators and client-side inline feedback to prevent drift between entry points.
+  - Gotchas encountered: New Vitest route tests for `src/app/api/**` may require explicit mocks for aliased shared modules used by the route under test.
+  - Useful context: `/import` validation now blocks `Confirm Import` client-side when any per-row note exceeds 500 chars and renders row-level errors using the existing `Note for row N` controls.
+---
+## 2026-02-19 09:20:46 CET - US-005
+- What was implemented
+- Added a dedicated `Note` column to `/transactions` table rows and rendered note text inline when present.
+- Added explicit empty-state rendering (`No note`) for rows without notes so table alignment stays stable.
+- Updated transactions route Playwright coverage to assert note-column visibility and both note-present / note-empty row states.
+- Updated root `AGENTS.md` with a reusable transactions note-display convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/transactions/components/transactions-table-section.tsx`
+- `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered
+  - For `/transactions`, keep note visibility in-table with an explicit null-note placeholder so users do not need dialog opens to inspect context.
+  - Gotchas encountered
+  - Broad `getByText("...")` assertions can collide when note text contains existing labels; prefer exact matching when asserting repeated words.
+  - Useful context
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts` now validates note-column behavior alongside existing filters/pagination/edit/delete flows.
+---
