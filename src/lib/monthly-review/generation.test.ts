@@ -113,16 +113,28 @@ describe("generateMonthlyReview", () => {
           async () =>
             new Response(
               JSON.stringify({
+                id: "chatcmpl-test",
+                object: "chat.completion",
+                created: 1_738_780_800,
+                model: "gpt-4o-mini",
                 choices: [
                   {
+                    index: 0,
                     message: {
+                      role: "assistant",
                       content: JSON.stringify({
                         reviewText:
                           "## February\nSpend increased mainly in food.",
                       }),
                     },
+                    finish_reason: "stop",
                   },
                 ],
+                usage: {
+                  prompt_tokens: 123,
+                  completion_tokens: 45,
+                  total_tokens: 168,
+                },
               }),
               { status: 200 },
             ),

@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Settings, Sparkles } from "lucide-react";
+import { Calendar, RotateCw, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -13,7 +13,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,6 +20,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { CategorySpendBar } from "./components/category-spend-bar";
 import type { MonthlyReviewTimelineRow } from "./monthly-review-manager.types";
@@ -52,13 +56,11 @@ function getReviewPreview(reviewText: string, maxLength = 220): string {
 function getReviewStateTone(
   reviewState: MonthlyReviewTimelineRow["reviewState"],
 ): {
-  badgeVariant: "default" | "secondary" | "destructive" | "outline";
   dotClassName: string;
   label: string;
 } {
   if (reviewState === "GENERATED") {
     return {
-      badgeVariant: "default",
       dotClassName:
         "border-emerald-500/60 text-emerald-600 dark:text-emerald-400",
       label: "Generated",
@@ -67,7 +69,6 @@ function getReviewStateTone(
 
   if (reviewState === "GENERATING") {
     return {
-      badgeVariant: "secondary",
       dotClassName: "border-amber-500/60 text-amber-600 dark:text-amber-400",
       label: "Generating",
     };
@@ -75,14 +76,12 @@ function getReviewStateTone(
 
   if (reviewState === "FAILED") {
     return {
-      badgeVariant: "destructive",
       dotClassName: "border-destructive/60 text-destructive",
       label: "Failed",
     };
   }
 
   return {
-    badgeVariant: "outline",
     dotClassName: "border-border text-muted-foreground",
     label: "Not generated",
   };
@@ -217,12 +216,6 @@ export function MonthlyReviewManager() {
     setGenerateError(null);
   }
 
-  function toggleExpandedReview(monthStart: string) {
-    setExpandedReviewMonthStart((currentMonthStart) =>
-      currentMonthStart === monthStart ? null : monthStart,
-    );
-  }
-
   function handleGenerateDialogOpenChange(nextOpen: boolean) {
     if (nextOpen) {
       return;
@@ -326,11 +319,7 @@ export function MonthlyReviewManager() {
                 className={`absolute left-0 top-2 z-10 hidden h-10 w-10 items-center justify-center rounded-full border bg-background text-sm md:flex ${stateTone.dotClassName}`}
                 aria-hidden
               >
-                {row.reviewState === "GENERATED" ? (
-                  "OK"
-                ) : (
-                  <Calendar className="size-4" aria-hidden />
-                )}
+                <Calendar className="size-4" aria-hidden />
               </div>
 
               <div className="space-y-4 pb-3">
@@ -340,11 +329,6 @@ export function MonthlyReviewManager() {
                       <h2 className="text-xl font-semibold text-foreground">
                         {formatMonthStartLabel(row.monthStart)}
                       </h2>
-                      {row.reviewState !== "NOT_GENERATED" ? (
-                        <Badge variant={stateTone.badgeVariant}>
-                          {stateTone.label}
-                        </Badge>
-                      ) : null}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {row.transactionCount} spending transaction
@@ -420,7 +404,15 @@ export function MonthlyReviewManager() {
                   ) : null}
 
                   {row.reviewState === "GENERATED" && row.reviewText ? (
-                    <div className="space-y-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
+                    <Collapsible
+                      open={expandedReviewMonthStart === row.monthStart}
+                      onOpenChange={(nextOpen) => {
+                        setExpandedReviewMonthStart(
+                          nextOpen ? row.monthStart : null,
+                        );
+                      }}
+                      className="space-y-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3"
+                    >
                       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         AI insight
                       </p>
@@ -429,16 +421,13 @@ export function MonthlyReviewManager() {
                       </p>
 
                       <div className="flex flex-wrap gap-2 pt-1">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleExpandedReview(row.monthStart)}
-                        >
-                          {expandedReviewMonthStart === row.monthStart
-                            ? "Hide full review"
-                            : "View full review"}
-                        </Button>
+                        <CollapsibleTrigger asChild>
+                          <Button type="button" size="sm" variant="outline">
+                            {expandedReviewMonthStart === row.monthStart
+                              ? "Hide full review"
+                              : "View full review"}
+                          </Button>
+                        </CollapsibleTrigger>
                         <Button
                           type="button"
                           size="sm"
@@ -448,16 +437,17 @@ export function MonthlyReviewManager() {
                           }
                           disabled={generateSavingMonthStart !== null}
                         >
+                          <RotateCw className="size-4" aria-hidden />
                           Regenerate review
                         </Button>
                       </div>
 
-                      {expandedReviewMonthStart === row.monthStart ? (
-                        <p className="whitespace-pre-wrap rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
+                      <CollapsibleContent>
+                        <p className="whitespace-pre-wrap px-3 py-2 text-sm text-foreground">
                           {row.reviewText}
                         </p>
-                      ) : null}
-                    </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   ) : null}
                 </div>
               </div>

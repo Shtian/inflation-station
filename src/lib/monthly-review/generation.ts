@@ -1,4 +1,7 @@
+import { createOpenAI } from "@ai-sdk/openai";
+import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { MonthlyReviewStatus, type PaymentType } from "@prisma/client";
+import { generateText } from "ai";
 import {
   buildMonthlyReviewGenerationInput,
   type MonthlyReviewGenerationInput,
@@ -6,7 +9,7 @@ import {
 
 const MONTH_START_PATTERN = /^\d{4}-\d{2}-01$/;
 const DEFAULT_PROVIDER_TIMEOUT_MS = 20_000;
-const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+const DEFAULT_OPENAI_MODEL: OpenAIChatModelId = "gpt-5.2";
 
 export type MonthlyReviewGenerationUnavailableReason =
   | "key_missing"
@@ -124,25 +127,88 @@ type MonthlyReviewGenerationDbClient = {
   };
 };
 
-type ChatCompletionsResponse = {
-  choices?: Array<{
-    message?: {
-      content?: string | null;
-    };
-  }>;
-};
-
 type MonthlyReviewProviderPayload = {
   reviewText?: string;
 };
 
 class MonthlyReviewProviderError extends Error {
   readonly reason: MonthlyReviewGenerationUnavailableReason;
+  readonly detail: string | null;
 
-  constructor(reason: MonthlyReviewGenerationUnavailableReason) {
-    super(reason);
+  constructor(
+    reason: MonthlyReviewGenerationUnavailableReason,
+    options?: {
+      detail?: string;
+      cause?: unknown;
+    },
+  ) {
+    const detail = options?.detail?.trim();
+    super(detail ? `${reason}: ${detail}` : reason, {
+      cause: options?.cause,
+    });
     this.name = "MonthlyReviewProviderError";
     this.reason = reason;
+    this.detail = detail ?? null;
+  }
+}
+
+function readErrorProperty(error: unknown, key: string): unknown {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+
+  if (!(key in error)) {
+    return undefined;
+  }
+
+  return (error as Record<string, unknown>)[key];
+}
+
+function asDetailFragment(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  return null;
+}
+
+function buildProviderErrorDetail(error: unknown): string {
+  if (error instanceof Error) {
+    const direct = [error.name, error.message]
+      .filter(Boolean)
+      .join(": ")
+      .trim();
+    const code = asDetailFragment(readErrorProperty(error, "code"));
+    const statusCode = asDetailFragment(readErrorProperty(error, "statusCode"));
+    const statusText = asDetailFragment(readErrorProperty(error, "statusText"));
+    const responseBody = asDetailFragment(
+      readErrorProperty(error, "responseBody"),
+    );
+
+    const fragments = [
+      direct || "Unknown error",
+      code ? `code=${code}` : null,
+      statusCode ? `statusCode=${statusCode}` : null,
+      statusText ? `statusText=${statusText}` : null,
+      responseBody ? `responseBody=${responseBody.slice(0, 300)}` : null,
+    ].filter((fragment): fragment is string => Boolean(fragment));
+
+    return fragments.join(" | ");
+  }
+
+  if (typeof error === "string") {
+    return error.trim() || "Unknown provider error";
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return "Unknown provider error";
   }
 }
 
@@ -199,14 +265,18 @@ function toResult(
 function parseReviewText(content: string): string {
   const trimmedContent = content.trim();
   if (!trimmedContent) {
-    throw new MonthlyReviewProviderError("provider_error");
+    throw new MonthlyReviewProviderError("provider_error", {
+      detail: "Provider returned an empty response body.",
+    });
   }
 
   try {
     const parsed = JSON.parse(trimmedContent) as MonthlyReviewProviderPayload;
     const reviewText = parsed.reviewText?.trim();
     if (!reviewText) {
-      throw new MonthlyReviewProviderError("provider_error");
+      throw new MonthlyReviewProviderError("provider_error", {
+        detail: "Provider JSON response is missing reviewText.",
+      });
     }
 
     return reviewText;
@@ -237,16 +307,18 @@ async function buildReviewText(params: {
   const userPrompt = JSON.stringify(
     {
       instructions: [
-        "Write a concise monthly spending review in markdown.",
+        "Write a concise monthly spending review in plain text (no markdown).",
         "Use only the provided data and avoid inventing facts.",
         "Call out notable category, merchant, and month-over-month signals.",
         "Keep practical suggestions concrete and short.",
+        "Use a natural, human tone while staying clear and professional.",
+        "Organize the response with short labeled sections like Overview, What Stood Out, and Next Steps.",
       ],
       monthStart: params.input.monthStart,
       metrics: params.input.metrics,
       transactions: params.input.transactions,
       outputFormat: {
-        reviewText: "markdown summary",
+        reviewText: "plain text summary with labeled sections",
       },
     },
     null,
@@ -254,54 +326,51 @@ async function buildReviewText(params: {
   );
 
   try {
-    const response = await fetchImpl(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${params.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: params.model ?? DEFAULT_OPENAI_MODEL,
-          temperature: 0,
-          response_format: { type: "json_object" },
-          messages: [
-            {
-              role: "system",
-              content: params.input.systemPrompt,
-            },
-            {
-              role: "user",
-              content: userPrompt,
-            },
-          ],
-        }),
-        signal: controller.signal,
-      },
-    );
+    const openai = createOpenAI({
+      apiKey: params.apiKey,
+      fetch: fetchImpl,
+    });
 
-    if (!response.ok) {
-      throw new MonthlyReviewProviderError("provider_error");
+    const result = await generateText({
+      model: openai.chat(params.model ?? DEFAULT_OPENAI_MODEL),
+      temperature: 0,
+      maxRetries: 0,
+      system: params.input.systemPrompt,
+      prompt: userPrompt,
+      abortSignal: controller.signal,
+    });
+
+    if (!result.text) {
+      throw new MonthlyReviewProviderError("provider_error", {
+        detail: "Provider completed without returning text output.",
+      });
     }
 
-    const payload = (await response.json()) as ChatCompletionsResponse;
-    const content = payload.choices?.[0]?.message?.content;
-    if (!content) {
-      throw new MonthlyReviewProviderError("provider_error");
-    }
-
-    return parseReviewText(content);
+    return parseReviewText(result.text);
   } catch (error) {
     if (error instanceof MonthlyReviewProviderError) {
       throw error;
     }
 
     if (isAbortError(error)) {
-      throw new MonthlyReviewProviderError("timeout");
+      throw new MonthlyReviewProviderError("timeout", {
+        detail: `Provider request exceeded timeout (${timeoutMs}ms).`,
+        cause: error,
+      });
     }
 
-    throw new MonthlyReviewProviderError("provider_error");
+    const detail = buildProviderErrorDetail(error);
+    console.error("Monthly review provider request failed", {
+      monthStart: params.input.monthStart,
+      model: params.model ?? DEFAULT_OPENAI_MODEL,
+      timeoutMs,
+      detail,
+    });
+
+    throw new MonthlyReviewProviderError("provider_error", {
+      detail,
+      cause: error,
+    });
   } finally {
     clearTimeout(timeoutId);
   }
@@ -412,6 +481,19 @@ export async function generateMonthlyReview(
 
     return toResult(generated, null);
   } catch (error) {
+    if (error instanceof MonthlyReviewProviderError) {
+      console.error("Error generating monthly review", {
+        monthStart: normalizedMonthStart,
+        reason: error.reason,
+        detail: error.detail,
+      });
+    } else {
+      console.error(
+        "Error generating monthly review for",
+        normalizedMonthStart,
+        error,
+      );
+    }
     if (
       error instanceof MonthlyReviewProviderError &&
       error.reason === "timeout"
