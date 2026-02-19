@@ -9,7 +9,7 @@ type MonthlyReviewSystemPromptRecord = {
   promptText: string | null;
 };
 
-type MonthlyReviewSystemPromptDbClient = {
+type MonthlyReviewSystemPromptReadDbClient = {
   monthlyReviewSystemPrompt: {
     findUnique(args: {
       where: {
@@ -19,6 +19,11 @@ type MonthlyReviewSystemPromptDbClient = {
         promptText: true;
       };
     }): Promise<MonthlyReviewSystemPromptRecord | null>;
+  };
+};
+
+type MonthlyReviewSystemPromptWriteDbClient = {
+  monthlyReviewSystemPrompt: {
     upsert(args: {
       where: {
         id: string;
@@ -36,6 +41,9 @@ type MonthlyReviewSystemPromptDbClient = {
     }): Promise<MonthlyReviewSystemPromptRecord>;
   };
 };
+
+type MonthlyReviewSystemPromptDbClient = MonthlyReviewSystemPromptReadDbClient &
+  MonthlyReviewSystemPromptWriteDbClient;
 
 export type MonthlyReviewSystemPromptResult = {
   prompt: string;
@@ -63,7 +71,7 @@ function normalizePromptText(promptText: string): string | null {
 }
 
 export async function getMonthlyReviewSystemPrompt(
-  db: MonthlyReviewSystemPromptDbClient,
+  db: MonthlyReviewSystemPromptReadDbClient,
 ): Promise<MonthlyReviewSystemPromptResult> {
   const record = await db.monthlyReviewSystemPrompt.findUnique({
     where: {

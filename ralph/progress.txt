@@ -3,6 +3,7 @@
 - Persist monthly-review system prompt in a singleton table row with a fixed key, and resolve blank/missing prompt text to a default prompt in the backend service layer.
 - Keep monthly timeline aggregation in a route-independent service (`src/lib/monthly-review/overview.ts`) that computes spend from negative transactions, includes review-only months, and calculates MoM deltas only when the immediate prior calendar month exists.
 - Compose monthly timeline API rows in `src/lib/monthly-review/timeline.ts` so every month includes an explicit review state (`NOT_GENERATED`, `GENERATING`, `GENERATED`, `FAILED`) with review metadata merged onto deterministic overview metrics.
+- Build monthly-review AI generation payloads in a dedicated backend service (`src/lib/monthly-review/generation-input.ts`) that validates `monthStart`, resolves prompt fallback centrally, and returns precomputed spend/category/merchant/MoM metrics plus minimal transaction fields.
 
 ## 2026-02-19 13:34:03 CET - US-001
 - What was implemented
@@ -109,4 +110,32 @@
     - Overview-derived month-over-month deltas can be non-null for months without review rows when the immediate prior month has spend totals.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Route tests for the new endpoint are in `src/app/api/monthly-review/timeline/route.test.ts`; timeline merge behavior tests are in `src/lib/monthly-review/timeline.test.ts`.
+---
+## 2026-02-19 14:07:45 CET - US-005
+- What was implemented
+  - Added `src/lib/monthly-review/generation-input.ts` to build month-scoped AI generation input with validated `monthStart`, resolved system prompt (stored or default), and deterministic precomputed metrics.
+  - Included required precomputed metrics in payload output: monthly spend totals, category totals with shares, merchant concentration indicators (top merchants + concentration shares), and month-over-month deltas when immediate prior month rows exist.
+  - Returned full selected-month transaction payload rows with minimal required fields (`bookingDate`, `amountNok`, `normalizedMerchant`, `paymentType`, `categoryName`) and deterministic ordering.
+  - Adjusted `src/lib/monthly-review/system-prompt.ts` typing to allow read-only prompt clients for generation input builders.
+  - Added unit coverage in `src/lib/monthly-review/generation-input.test.ts` for prompt fallback, metrics shape, MoM behavior, minimal transaction payload shape, and invalid month validation.
+- Files changed
+  - `src/lib/monthly-review/generation-input.ts`
+  - `src/lib/monthly-review/generation-input.test.ts`
+  - `src/lib/monthly-review/system-prompt.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass: unit + Playwright E2E)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep monthly AI generation payload building route-independent and deterministic so generation APIs can remain thin orchestration layers.
+    - Reuse month key validation (`YYYY-MM-01`) and UTC month boundaries in one place to avoid off-by-one and locale-timezone regressions.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - `getMonthlyReviewSystemPrompt` should accept read-only DB clients; requiring write-capable clients creates unnecessary coupling for pure payload builders.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Generation payload tests are localized to `src/lib/monthly-review/generation-input.test.ts` and cover metric arithmetic and payload field minimization.
 ---
