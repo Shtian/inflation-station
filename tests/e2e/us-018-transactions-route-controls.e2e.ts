@@ -248,12 +248,14 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   let updatedMerchant = "Corner Shop";
   let updatedCategoryId: string | null = null;
   let updatedCategoryName = "Uncategorized";
+  let updatedNote: string | null = "Legacy reminder";
   let lastPatchPayload: null | {
     categoryId: string | null;
     bookingDate: string;
     amountNok: number;
     normalizedMerchant: string;
     paymentType: string;
+    note: string | null;
   } = null;
 
   await page.route("**/api/accounts", async (route) => {
@@ -301,6 +303,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
       amountNok: number;
       normalizedMerchant: string;
       paymentType: string;
+      note: string | null;
     };
 
     lastPatchPayload = payload;
@@ -308,6 +311,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     updatedCategoryId = payload.categoryId;
     updatedCategoryName =
       payload.categoryId === "cat-food" ? "Food" : "Uncategorized";
+    updatedNote = payload.note;
 
     await route.fulfill({
       status: 200,
@@ -322,6 +326,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
           currency: "NOK",
           normalizedMerchant: payload.normalizedMerchant,
           paymentType: payload.paymentType,
+          note: payload.note,
           createdAt: "2026-01-15T08:00:00.000Z",
           updatedAt: "2026-02-16T12:00:00.000Z",
         },
@@ -355,6 +360,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
               currency: "NOK",
               normalizedMerchant: updatedMerchant,
               paymentType: "CARD",
+              note: updatedNote,
               createdAt: "2026-01-15T08:00:00.000Z",
               updatedAt: "2026-01-15T08:00:00.000Z",
             },
@@ -385,6 +391,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
             currency: "NOK",
             normalizedMerchant: "Supermarket",
             paymentType: "CARD",
+            note: null,
             createdAt: "2026-02-05T09:00:00.000Z",
             updatedAt: "2026-02-05T09:00:00.000Z",
           },
@@ -413,8 +420,10 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     page.getByRole("heading", { name: "Edit transaction" }),
   ).toBeVisible();
   await expect(page.getByLabel("Currency")).toHaveCount(0);
+  await expect(page.getByLabel("Note")).toHaveValue("Legacy reminder");
 
   await page.getByLabel("Merchant").fill("Updated Corner Shop");
+  await page.getByLabel("Note").fill("");
   await page.getByLabel("Category").click();
   await page.getByRole("option", { name: "Food" }).click();
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -429,6 +438,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   await expect
     .poll(() => lastPatchPayload?.normalizedMerchant)
     .toBe("Updated Corner Shop");
+  await expect.poll(() => lastPatchPayload?.note).toBeNull();
 });
 
 test("confirms transaction deletion and keeps pagination valid after last-row removal", async ({

@@ -12,6 +12,7 @@ type TransactionListRecord = {
   currency: string;
   normalizedMerchant: string;
   paymentType: string;
+  note: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -41,6 +42,7 @@ type TransactionListDbClient = {
         currency: true;
         normalizedMerchant: true;
         paymentType: true;
+        note: true;
         createdAt: true;
         updatedAt: true;
       };
@@ -67,6 +69,7 @@ export type TransactionListRow = {
   currency: string;
   normalizedMerchant: string;
   paymentType: string;
+  note: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -111,6 +114,7 @@ export async function getTransactionsPage(
       currency: true,
       normalizedMerchant: true,
       paymentType: true,
+      note: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -129,6 +133,7 @@ export async function getTransactionsPage(
     currency: record.currency,
     normalizedMerchant: record.normalizedMerchant,
     paymentType: record.paymentType,
+    note: record.note,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   }));

@@ -19,6 +19,7 @@ export type TransactionRow = {
   currency: string;
   normalizedMerchant: string;
   paymentType: string;
+  note: string | null;
 };
 
 export type TransactionsResponse = {
@@ -49,4 +50,5 @@ export type EditFormState = {
   amountNok: string;
   normalizedMerchant: string;
   paymentType: PaymentTypeOption;
+  note: string;
 };

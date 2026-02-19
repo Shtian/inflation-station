@@ -17,6 +17,7 @@ function createUpdateDbMock() {
         currency: "NOK",
         normalizedMerchant: "updated shop",
         paymentType: PaymentType.CARD,
+        note: "Monthly grocery refill",
         createdAt: new Date("2026-02-01T10:00:00.000Z"),
         updatedAt: new Date("2026-02-06T09:00:00.000Z"),
       })),
@@ -148,6 +149,7 @@ describe("updateTransaction", () => {
         currency: true,
         normalizedMerchant: true,
         paymentType: true,
+        note: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -162,6 +164,7 @@ describe("updateTransaction", () => {
       currency: "NOK",
       normalizedMerchant: "updated shop",
       paymentType: PaymentType.CARD,
+      note: "Monthly grocery refill",
       createdAt: "2026-02-01T10:00:00.000Z",
       updatedAt: "2026-02-06T09:00:00.000Z",
     });

@@ -56,6 +56,7 @@ function toEditFormState(row: TransactionRow): EditFormState {
     amountNok: row.amountNok.toFixed(2),
     normalizedMerchant: row.normalizedMerchant,
     paymentType: toPaymentTypeOption(row.paymentType),
+    note: row.note ?? "",
   };
 }
 
@@ -123,6 +124,7 @@ export function TransactionsManager() {
 
     const bookingDate = editForm.bookingDate.trim();
     const normalizedMerchant = editForm.normalizedMerchant.trim();
+    const note = editForm.note.trim();
 
     if (!bookingDate || !normalizedMerchant) {
       setEditError("Date and merchant are required.");
@@ -146,6 +148,7 @@ export function TransactionsManager() {
         amountNok,
         normalizedMerchant,
         paymentType: editForm.paymentType,
+        note: note.length > 0 ? note : null,
       }),
     });
 
@@ -290,6 +293,11 @@ export function TransactionsManager() {
             current
               ? { ...current, paymentType: toPaymentTypeOption(value) }
               : current,
+          )
+        }
+        onNoteChange={(value) =>
+          setEditForm((current) =>
+            current ? { ...current, note: value } : current,
           )
         }
         onCancel={closeEditDialog}

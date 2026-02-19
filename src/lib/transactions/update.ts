@@ -16,6 +16,7 @@ type TransactionUpdateRecord = {
   currency: string;
   normalizedMerchant: string;
   paymentType: PaymentType;
+  note: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -47,6 +48,7 @@ type TransactionUpdateDbClient = {
         currency: true;
         normalizedMerchant: true;
         paymentType: true;
+        note: true;
         createdAt: true;
         updatedAt: true;
       };
@@ -139,6 +141,7 @@ function toTransactionListRow(
     currency: record.currency,
     normalizedMerchant: record.normalizedMerchant,
     paymentType: record.paymentType,
+    note: record.note,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
@@ -192,6 +195,7 @@ export async function updateTransaction(
       currency: true,
       normalizedMerchant: true,
       paymentType: true,
+      note: true,
       createdAt: true,
       updatedAt: true,
     },

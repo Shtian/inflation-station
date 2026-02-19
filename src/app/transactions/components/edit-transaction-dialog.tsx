@@ -35,6 +35,7 @@ type EditTransactionDialogProps = {
   onMerchantChange: (value: string) => void;
   onAmountChange: (value: string) => void;
   onPaymentTypeChange: (value: string) => void;
+  onNoteChange: (value: string) => void;
   onCancel: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 };
@@ -51,6 +52,7 @@ export function EditTransactionDialog({
   onMerchantChange,
   onAmountChange,
   onPaymentTypeChange,
+  onNoteChange,
   onCancel,
   onSubmit,
 }: EditTransactionDialogProps) {
@@ -164,6 +166,21 @@ export function EditTransactionDialog({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="edit-note"
+                className="text-sm font-medium text-foreground"
+              >
+                Note
+              </Label>
+              <Input
+                id="edit-note"
+                value={editForm.note}
+                onChange={(event) => onNoteChange(event.target.value)}
+                disabled={editSaving}
+              />
             </div>
 
             {editError ? (

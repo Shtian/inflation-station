@@ -20,6 +20,7 @@
 - Keep `/transactions` data orchestration in `src/app/transactions/use-transactions-manager.ts` and keep table/pagination rendering in `src/app/transactions/components/transactions-table-section.tsx` so list behavior and presentation evolve independently.
 - Keep `/api/transactions` list rows enriched with `categoryName` so `/transactions` can render category labels (or uncategorized states) without extra category lookups.
 - Keep transaction edit UI state local in `src/app/transactions/*` and refresh list data via the same paginated query after successful saves to preserve active filter/page context.
+- Include `note` in `/api/transactions` list rows so the `/transactions` edit dialog can prefill note values without extra detail fetches.
 - Keep the transactions edit workflow NOK-only by removing currency from edit payload parsing/UI and forcing persisted updates to `currency: "NOK"`.
 - Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
 - Keep `/transactions` dialog markup in focused components (`edit-transaction-dialog.tsx`, `delete-transaction-dialog.tsx`) and pass typed props from `transactions-manager.tsx` to isolate mutation workflows from table rendering.
@@ -519,4 +520,36 @@
   - `use-import-workflow.ts` reset paths must clear all per-row decision maps (`categoryDecisions`, `messageDecisions`, `noteDecisions`) together to avoid stale data across parse/reparse/submit flows.
   - Useful context
   - `tests/e2e/us-016-import-route-upload.e2e.ts` now validates note capture in the submit payload and is the primary end-to-end coverage for this story.
+---
+## 2026-02-19 08:51:40 CET - US-003
+- What was implemented
+- Added `note` to `/api/transactions` list row mapping (`src/lib/transactions/list.ts`) so transactions edit dialogs can prefill the current note value.
+- Extended `/transactions` edit dialog state and UI to include a note input prefilled from the selected row, and submit note updates through `PATCH /api/transactions/[transactionId]`.
+- Normalized cleared/empty note input to `null` before PATCH submission so note removal persists deterministically.
+- Updated transaction list/update unit tests and transactions route E2E coverage to verify note prefill and clearing behavior.
+- Updated root `AGENTS.md` with a reusable transactions note-edit convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/lib/transactions/list.ts`
+- `src/lib/transactions/list.test.ts`
+- `src/lib/transactions/update.ts`
+- `src/lib/transactions/update.test.ts`
+- `src/app/transactions/transactions-manager.types.ts`
+- `src/app/transactions/transactions-manager.tsx`
+- `src/app/transactions/components/edit-transaction-dialog.tsx`
+- `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered
+  - Transactions edit flows that require prefilled optional metadata (like notes) should keep that field in list-row API payloads to avoid extra request coupling.
+  - Gotchas encountered
+  - After extending E2E PATCH payload shapes, update local request payload type assertions in the test to avoid TypeScript failures.
+  - Useful context
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts` now validates both note prefill in the edit dialog and note clearing persistence (`note: null` in PATCH payload).
 ---
