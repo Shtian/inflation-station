@@ -14,6 +14,7 @@ import {
 const primaryLinks = [
   { href: "/transactions", label: "Transactions" },
   { href: "/import", label: "Import" },
+  { href: "/monthly-review", label: "Monthly Review" },
 ];
 
 const configurationLinks = [
