@@ -178,3 +178,10 @@ model MonthlyReview {
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 }
+
+model MonthlyReviewSystemPrompt {
+  id         String   @id
+  promptText String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
