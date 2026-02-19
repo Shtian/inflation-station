@@ -4,6 +4,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Ellipsis,
+  FileText,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -32,6 +33,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   PAGE_SIZE_OPTIONS,
   type TransactionRow,
@@ -93,9 +100,11 @@ export function TransactionsTableSection({
               <TableRow>
                 <TableHead>Date</TableHead>
                 <TableHead>Merchant</TableHead>
+                <TableHead className="w-0">
+                  <span className="sr-only">Note</span>
+                </TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Payment type</TableHead>
-                <TableHead>Note</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="w-0 text-right">
                   <span className="sr-only">Actions</span>
@@ -107,24 +116,40 @@ export function TransactionsTableSection({
                 <TableRow key={row.id}>
                   <TableCell>{row.bookingDate}</TableCell>
                   <TableCell>{row.normalizedMerchant || "Unknown"}</TableCell>
+                  <TableCell className="w-0">
+                    {row.note ? (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="h-6 w-6"
+                              aria-label={`View memo for transaction from ${row.bookingDate}`}
+                            >
+                              <FileText
+                                className="size-4 shrink-0"
+                                aria-hidden="true"
+                              />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="top"
+                            className="max-w-xs whitespace-pre-wrap wrap-break-word"
+                          >
+                            {row.note}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ) : null}
+                  </TableCell>
                   <TableCell>
                     <CategoryBadge
                       label={row.categoryName ?? "Uncategorized"}
                     />
                   </TableCell>
                   <TableCell>{row.paymentType}</TableCell>
-                  <TableCell>
-                    {row.note ? (
-                      <span
-                        className="block max-w-64 truncate"
-                        title={row.note}
-                      >
-                        {row.note}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">No note</span>
-                    )}
-                  </TableCell>
                   <TableCell className="text-right">
                     {formatNok(row.amountNok)}
                   </TableCell>
@@ -179,7 +204,7 @@ export function TransactionsTableSection({
                 >
                   <SelectTrigger
                     id="transactions-rows-per-page"
-                    className="h-8 w-[84px]"
+                    className="h-8 w-21"
                   >
                     <SelectValue />
                   </SelectTrigger>

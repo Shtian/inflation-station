@@ -211,19 +211,26 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(
     page.getByRole("columnheader", { name: "Amount" }),
   ).toBeVisible();
-  await expect(page.getByRole("columnheader", { name: "Note" })).toBeVisible();
   await expect(page.getByText("Page 1 of 2")).toBeVisible();
   await expect(page.getByText("35 total transactions.")).toBeVisible();
   await expect(page.getByText("Supermarket")).toBeVisible();
   await expect(page.getByText("Groceries", { exact: true })).toBeVisible();
-  await expect(page.getByText("Weekly groceries")).toBeVisible();
+  await expect(
+    page.getByLabel("View memo for transaction from 2026-02-05"),
+  ).toBeVisible();
+  await page.getByLabel("View memo for transaction from 2026-02-05").hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Weekly groceries");
 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "Savings Account" }).click();
   await expect(page.getByText("Page 1 of 1")).toBeVisible();
   await expect(page.getByText("Savings Transfer")).toBeVisible();
   await expect(page.getByText("Uncategorized")).toBeVisible();
-  await expect(page.getByText("Monthly transfer")).toBeVisible();
+  await expect(
+    page.getByLabel("View memo for transaction from 2026-02-01"),
+  ).toBeVisible();
+  await page.getByLabel("View memo for transaction from 2026-02-01").hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Monthly transfer");
 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "All accounts" }).click();
@@ -232,14 +239,20 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.getByText("Corner Shop")).toBeVisible();
   await expect(page.getByText("Food")).toBeVisible();
-  await expect(page.getByText("No note")).toBeVisible();
+  await expect(
+    page.getByLabel("View memo for transaction from 2026-01-15"),
+  ).toHaveCount(0);
 
   await page.locator("#transactions-rows-per-page").click();
   await page.getByRole("option", { name: "10", exact: true }).click();
   await expect(page.getByText("Page 1 of 4")).toBeVisible();
   await expect(page.getByText("Metro Kiosk")).toBeVisible();
   await expect(page.getByText("Uncategorized")).toBeVisible();
-  await expect(page.getByText("Train ticket")).toBeVisible();
+  await expect(
+    page.getByLabel("View memo for transaction from 2026-01-20"),
+  ).toBeVisible();
+  await page.getByLabel("View memo for transaction from 2026-01-20").hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Train ticket");
 
   await page.locator("#transactions-rows-per-page").click();
   await page.getByRole("option", { name: "25", exact: true }).click();
