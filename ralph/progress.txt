@@ -5,7 +5,7 @@
 - Compose monthly timeline API rows in `src/lib/monthly-review/timeline.ts` so every month includes an explicit review state (`NOT_GENERATED`, `GENERATING`, `GENERATED`, `FAILED`) with review metadata merged onto deterministic overview metrics.
 - Build monthly-review AI generation payloads in a dedicated backend service (`src/lib/monthly-review/generation-input.ts`) that validates `monthStart`, resolves prompt fallback centrally, and returns precomputed spend/category/merchant/MoM metrics plus minimal transaction fields.
 - For month-level review generation, always persist replace semantics by resetting the month row to `GENERATING` before provider calls and then persisting either `GENERATED` output or `FAILED` with stable unavailable reasons (`key_missing`, `timeout`, `provider_error`).
-- Build major app routes as thin `page.tsx` entries backed by route-local `*-route-root.tsx` and route-local manager modules, with `loading.tsx` and `error.tsx` using shared route fallback primitives.
+- For major routes, keep route state orchestration in focused route-local modules and use route-level `loading.tsx` and `error.tsx` with shared fallback primitives.
 
 ## 2026-02-19 13:34:03 CET - US-001
 - What was implemented
@@ -170,14 +170,13 @@
 ---
 ## 2026-02-19 14:56:12 CET - US-007
 - What was implemented
-  - Added a dedicated `/monthly-review` route using `page.tsx` + `monthly-review-route-root.tsx` and route-local `loading.tsx` / `error.tsx` boundaries.
+  - Added a dedicated `/monthly-review` route with route-local `loading.tsx` / `error.tsx` boundaries.
   - Implemented a route-local monthly timeline manager that fetches `/api/monthly-review/timeline`, renders month cards in descending month order, and displays deterministic overview metrics (`totalSpendNok`, `transactionCount`, `topCategory`, `monthOverMonthSpendDeltaNok`).
   - Added explicit per-month empty-state copy (`No review generated for this month yet.`) when review state is `NOT_GENERATED`.
   - Added app-shell navigation link for `Monthly Review`.
   - Added Playwright E2E coverage for timeline rendering, descending month order, and no-review empty-state visibility.
 - Files changed
   - `src/app/monthly-review/page.tsx`
-  - `src/app/monthly-review/monthly-review-route-root.tsx`
   - `src/app/monthly-review/monthly-review-manager.tsx`
   - `src/app/monthly-review/monthly-review-manager.types.ts`
   - `src/app/monthly-review/monthly-review-manager.utils.ts`

@@ -1,5 +1,9 @@
-import { MonthlyReviewRouteRoot } from "./monthly-review-route-root";
+import { MonthlyReviewManager } from "./monthly-review-manager";
 
 export default function MonthlyReviewPage() {
-  return <MonthlyReviewRouteRoot />;
+  return (
+    <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
+      <MonthlyReviewManager />
+    </main>
+  );
 }

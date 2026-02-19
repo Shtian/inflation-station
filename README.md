@@ -104,12 +104,6 @@ OpenAI-based categorization suggestions are optional.
 - `/` is the analytics dashboard landing route.
 - Top-level navigation links are available for `/import`, `/transactions`, and configuration pages (`/import-provider-mappings`, `/accounts`, `/categories`).
 
-## Route Composition Guardrail
-
-- Keep each route `page.tsx` as a thin server entry that delegates to one route-local `*-route-root.tsx` component.
-- For large client routes, keep stateful composition in the route root and move detailed UI/state helpers into route-local modules (`components/`, `hooks/`, `utils/`) over time.
-- `pnpm lint` enforces a route-root client file-size guardrail (`src/app/**/**-route-root.tsx`) with a default maximum of 160 lines (`MAX_ROUTE_CLIENT_LINES` can override).
-
 ## Theming
 
 - Global semantic theme tokens are defined in `src/app/globals.css` using shadcn-compatible names (`background`, `foreground`, `card`, `muted`, `primary`, `accent`, `destructive`, `border`, `input`, `ring`).
