@@ -2,6 +2,7 @@
 - For replaceable month-scoped AI outputs, model a single row per month with a unique `monthStart` and persisted lifecycle metadata (`status`, `generatedAt`, `errorMessage`, `reviewText`).
 - Persist monthly-review system prompt in a singleton table row with a fixed key, and resolve blank/missing prompt text to a default prompt in the backend service layer.
 - Keep monthly timeline aggregation in a route-independent service (`src/lib/monthly-review/overview.ts`) that computes spend from negative transactions, includes review-only months, and calculates MoM deltas only when the immediate prior calendar month exists.
+- Compose monthly timeline API rows in `src/lib/monthly-review/timeline.ts` so every month includes an explicit review state (`NOT_GENERATED`, `GENERATING`, `GENERATED`, `FAILED`) with review metadata merged onto deterministic overview metrics.
 
 ## 2026-02-19 13:34:03 CET - US-001
 - What was implemented
@@ -81,4 +82,31 @@
     - Month-over-month deltas should only be emitted when the immediate prior calendar month exists in the dataset; otherwise return `null`.
   - Useful context (e.g., "the evaluation panel is in component X")
     - The new service is route-independent and ready for the upcoming timeline API story to compose review state metadata on top.
+---
+## 2026-02-19 13:57:52 CET - US-004
+- What was implemented
+  - Added `src/lib/monthly-review/timeline.ts` to compose deterministic monthly overview rows with persisted monthly-review metadata and explicit review states (`NOT_GENERATED`, `GENERATING`, `GENERATED`, `FAILED`).
+  - Added `/api/monthly-review/timeline` read endpoint with optional `limit` validation and stable HTTP error mapping for invalid input and server failures.
+  - Added unit coverage for timeline composition/state mapping and API route validation/error behavior.
+- Files changed
+  - `src/lib/monthly-review/timeline.ts`
+  - `src/lib/monthly-review/timeline.test.ts`
+  - `src/app/api/monthly-review/timeline/route.ts`
+  - `src/app/api/monthly-review/timeline/route.test.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass: unit + Playwright E2E)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep monthly timeline route handlers thin by delegating merge logic (overview + review state) to `src/lib/monthly-review/timeline.ts`.
+    - Normalize month identity to `YYYY-MM-01` keys when joining overview rows and `MonthlyReview` records.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Overview-derived month-over-month deltas can be non-null for months without review rows when the immediate prior month has spend totals.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Route tests for the new endpoint are in `src/app/api/monthly-review/timeline/route.test.ts`; timeline merge behavior tests are in `src/lib/monthly-review/timeline.test.ts`.
 ---
