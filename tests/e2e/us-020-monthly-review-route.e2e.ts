@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 test("renders monthly review timeline cards with deterministic overview data", async ({
   page,
 }) => {
+  const generateRequests: Array<{ monthStart?: string }> = [];
+
   await page.route("**/api/monthly-review/timeline", async (route) => {
     await route.fulfill({
       status: 200,
@@ -44,6 +46,26 @@ test("renders monthly review timeline cards with deterministic overview data", a
     });
   });
 
+  await page.route("**/api/monthly-review/generate", async (route) => {
+    const payload = route.request().postDataJSON() as
+      | { monthStart?: string }
+      | undefined;
+    generateRequests.push(payload ?? {});
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        monthStart: payload?.monthStart ?? null,
+        status: "GENERATING",
+        generatedAt: null,
+        errorMessage: null,
+        reviewText: null,
+        unavailableReason: null,
+      }),
+    });
+  });
+
   await page.goto("/monthly-review");
 
   await expect(
@@ -63,5 +85,47 @@ test("renders monthly review timeline cards with deterministic overview data", a
 
   await expect(
     page.getByText("No review generated for this month yet."),
+  ).toBeVisible();
+
+  await page
+    .locator("article")
+    .filter({ has: page.getByRole("heading", { name: "January 2026" }) })
+    .getByRole("button", { name: "Generate review" })
+    .click();
+
+  await expect(
+    page.getByRole("heading", { name: "Generate monthly review?" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("This will generate a monthly AI review for January 2026."),
+  ).toBeVisible();
+  expect(generateRequests).toHaveLength(0);
+
+  await page.getByRole("button", { name: "Cancel" }).click();
+  expect(generateRequests).toHaveLength(0);
+
+  await page
+    .locator("article")
+    .filter({ has: page.getByRole("heading", { name: "January 2026" }) })
+    .getByRole("button", { name: "Generate review" })
+    .click();
+  await page.getByRole("button", { name: "Generate now" }).click();
+
+  await expect.poll(() => generateRequests.length).toBe(1);
+  expect(generateRequests[0]).toEqual({ monthStart: "2026-01-01" });
+
+  await page
+    .locator("article")
+    .filter({ has: page.getByRole("heading", { name: "February 2026" }) })
+    .getByRole("button", { name: "Regenerate review" })
+    .click();
+
+  await expect(
+    page.getByRole("heading", { name: "Regenerate monthly review?" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "This will replace the existing review text for February 2026.",
+    ),
   ).toBeVisible();
 });

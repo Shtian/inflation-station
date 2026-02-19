@@ -6,6 +6,7 @@
 - Build monthly-review AI generation payloads in a dedicated backend service (`src/lib/monthly-review/generation-input.ts`) that validates `monthStart`, resolves prompt fallback centrally, and returns precomputed spend/category/merchant/MoM metrics plus minimal transaction fields.
 - For month-level review generation, always persist replace semantics by resetting the month row to `GENERATING` before provider calls and then persisting either `GENERATED` output or `FAILED` with stable unavailable reasons (`key_missing`, `timeout`, `provider_error`).
 - For major routes, keep route state orchestration in focused route-local modules and use route-level `loading.tsx` and `error.tsx` with shared fallback primitives.
+- For monthly review actions in UI, open a mandatory confirmation AlertDialog before calling `/api/monthly-review/generate`, and use mode-specific copy for first-time generate vs replace/regenerate flows.
 
 ## 2026-02-19 13:34:03 CET - US-001
 - What was implemented
@@ -200,4 +201,30 @@
     - Broad text locators in Playwright can collide with shared descriptive text; use tighter/regex locators for card-value assertions.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Timeline route UI is in `src/app/monthly-review/monthly-review-manager.tsx`; UI coverage is in `tests/e2e/us-020-monthly-review-route.e2e.ts`.
+---
+## 2026-02-19 15:10:50 CET - US-008
+- What was implemented
+  - Added per-month `Generate review` / `Regenerate review` actions in the monthly timeline cards based on review state.
+  - Added a mandatory confirmation AlertDialog before every generation request, with mode-specific copy for first-time generate vs regenerate/replace.
+  - Wired confirmation action to `POST /api/monthly-review/generate` and refreshed timeline data after successful requests.
+  - Expanded Playwright coverage to assert confirmation gating, copy differentiation, and generate payload dispatch.
+- Files changed
+  - `src/app/monthly-review/monthly-review-manager.tsx`
+  - `tests/e2e/us-020-monthly-review-route.e2e.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass: unit + Playwright E2E)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Monthly review generation actions should be card-local and mode-aware (`generate` vs `regenerate`) while reusing one shared confirmation dialog state.
+    - For mutation flows on timeline pages, refresh data by reloading the timeline after successful mutation rather than optimistic row patching.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Confirmation behavior should be tested by asserting no POST request is sent before dialog confirmation; otherwise regressions can bypass the mandatory prompt.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Monthly review action/dialog logic is in `src/app/monthly-review/monthly-review-manager.tsx`; UI verification updates are in `tests/e2e/us-020-monthly-review-route.e2e.ts`.
 ---
