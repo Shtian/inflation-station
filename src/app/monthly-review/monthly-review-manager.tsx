@@ -1,6 +1,6 @@
 "use client";
 
-import { Settings } from "lucide-react";
+import { Calendar, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -17,18 +17,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { CategorySpendBar } from "./components/category-spend-bar";
 import type { MonthlyReviewTimelineRow } from "./monthly-review-manager.types";
 import {
-  formatGeneratedAt,
   formatMonthStartLabel,
   formatNok,
-  getReviewStateLabel,
 } from "./monthly-review-manager.utils";
 
 type TimelineResponse = {
@@ -51,20 +49,58 @@ function getReviewPreview(reviewText: string, maxLength = 220): string {
   return `${normalized.slice(0, maxLength).trimEnd()}...`;
 }
 
-function getBadgeVariant(reviewState: MonthlyReviewTimelineRow["reviewState"]) {
+function getReviewStateTone(
+  reviewState: MonthlyReviewTimelineRow["reviewState"],
+): {
+  badgeVariant: "default" | "secondary" | "destructive" | "outline";
+  dotClassName: string;
+  label: string;
+} {
   if (reviewState === "GENERATED") {
-    return "default";
+    return {
+      badgeVariant: "default",
+      dotClassName:
+        "border-emerald-500/60 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+      label: "Generated",
+    };
   }
 
   if (reviewState === "GENERATING") {
-    return "secondary";
+    return {
+      badgeVariant: "secondary",
+      dotClassName:
+        "border-amber-500/60 bg-amber-500/15 text-amber-600 dark:text-amber-400",
+      label: "Generating",
+    };
   }
 
   if (reviewState === "FAILED") {
-    return "destructive";
+    return {
+      badgeVariant: "destructive",
+      dotClassName: "border-destructive/60 bg-destructive/10 text-destructive",
+      label: "Failed",
+    };
   }
 
-  return "outline";
+  return {
+    badgeVariant: "outline",
+    dotClassName: "border-border bg-muted text-muted-foreground",
+    label: "Not generated",
+  };
+}
+
+function formatDeltaPercent(row: MonthlyReviewTimelineRow): string | null {
+  if (row.monthOverMonthSpendDeltaNok === null) {
+    return null;
+  }
+
+  const previousSpend = row.totalSpendNok - row.monthOverMonthSpendDeltaNok;
+  if (previousSpend <= 0) {
+    return null;
+  }
+
+  const percent = (row.monthOverMonthSpendDeltaNok / previousSpend) * 100;
+  return `${percent > 0 ? "+" : ""}${percent.toFixed(1)}%`;
 }
 
 function isTimelineResponse(value: unknown): value is TimelineResponse {
@@ -121,6 +157,23 @@ export function MonthlyReviewManager() {
 
     return formatMonthStartLabel(generateDialogState.monthStart);
   }, [generateDialogState]);
+
+  const averageSpendNok = useMemo(() => {
+    if (rows.length === 0) {
+      return 0;
+    }
+
+    const totalSpend = rows.reduce((sum, row) => sum + row.totalSpendNok, 0);
+    return totalSpend / rows.length;
+  }, [rows]);
+
+  const latestTrendRow = rows.find(
+    (row) => row.monthOverMonthSpendDeltaNok !== null,
+  );
+
+  const generatedCount = rows.filter(
+    (row) => row.reviewState === "GENERATED",
+  ).length;
 
   async function handleConfirmGenerate() {
     if (!generateDialogState || generateSavingMonthStart) {
@@ -182,15 +235,15 @@ export function MonthlyReviewManager() {
   const hasRows = rows.length > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Monthly Review
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+            Financial Timeline
           </h1>
           <p className="text-sm text-muted-foreground">
-            Browse deterministic monthly spend summaries and current review
-            status.
+            Monthly spending overview with deterministic insights and optional
+            AI reviews.
           </p>
         </div>
         <Button type="button" variant="outline" size="icon" asChild>
@@ -201,6 +254,41 @@ export function MonthlyReviewManager() {
             <Settings aria-hidden />
           </Link>
         </Button>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Avg. monthly spend</CardDescription>
+            <CardTitle className="text-2xl">
+              {formatNok(averageSpendNok)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Trending</CardDescription>
+            <CardTitle className="text-2xl">
+              {latestTrendRow
+                ? formatNok(latestTrendRow.monthOverMonthSpendDeltaNok ?? 0)
+                : "No change data"}
+            </CardTitle>
+            <CardDescription>
+              {latestTrendRow && formatDeltaPercent(latestTrendRow)
+                ? `${formatDeltaPercent(latestTrendRow)} vs previous month`
+                : "Waiting for at least two month entries"}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>AI review coverage</CardDescription>
+            <CardTitle className="text-2xl">
+              {generatedCount} of {rows.length} months
+            </CardTitle>
+            <CardDescription>Generated monthly review entries</CardDescription>
+          </CardHeader>
+        </Card>
       </div>
 
       <Separator className="my-4" />
@@ -224,111 +312,70 @@ export function MonthlyReviewManager() {
         </p>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {rows.map((row) => (
-          <article key={row.monthStart}>
-            <Card>
-              <CardHeader className="space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <CardTitle>
-                      <h2 className="text-lg">
+      <div className="relative space-y-6">
+        {!loading && !error && hasRows ? (
+          <div className="absolute bottom-0 left-5 top-1 hidden w-px bg-border md:block" />
+        ) : null}
+
+        {rows.map((row) => {
+          const stateTone = getReviewStateTone(row.reviewState);
+          const deltaPercent = formatDeltaPercent(row);
+
+          return (
+            <article key={row.monthStart} className="relative md:pl-14">
+              <div
+                className={`absolute left-0 top-2 hidden h-10 w-10 items-center justify-center rounded-full border text-sm md:flex ${stateTone.dotClassName}`}
+                aria-hidden
+              >
+                {row.reviewState === "GENERATED" ? (
+                  "OK"
+                ) : (
+                  <Calendar className="size-4" aria-hidden />
+                )}
+              </div>
+
+              <div className="space-y-4 pb-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold text-foreground">
                         {formatMonthStartLabel(row.monthStart)}
                       </h2>
-                    </CardTitle>
-                    <CardDescription>{row.monthStart}</CardDescription>
+                      {row.reviewState !== "NOT_GENERATED" ? (
+                        <Badge variant={stateTone.badgeVariant}>
+                          {stateTone.label}
+                        </Badge>
+                      ) : null}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {row.transactionCount} spending transaction
+                      {row.transactionCount === 1 ? "" : "s"}
+                    </p>
                   </div>
-                  <Badge variant={getBadgeVariant(row.reviewState)}>
-                    {getReviewStateLabel(row.reviewState)}
-                  </Badge>
-                </div>
-                <CardDescription>
-                  Last updated: {formatGeneratedAt(row.generatedAt)}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <dl className="space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <dt className="text-muted-foreground">Total spend</dt>
-                    <dd className="font-medium text-foreground">
+
+                  <div className="text-right">
+                    <p className="text-3xl font-semibold tracking-tight text-foreground">
                       {formatNok(row.totalSpendNok)}
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <dt className="text-muted-foreground">Transactions</dt>
-                    <dd className="font-medium text-foreground">
-                      {row.transactionCount}
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <dt className="text-muted-foreground">Top category</dt>
-                    <dd className="font-medium text-foreground">
-                      {row.topCategory
-                        ? `${row.topCategory.categoryName} (${formatNok(row.topCategory.spendNok)})`
-                        : "No spend categories"}
-                    </dd>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <dt className="text-muted-foreground">MoM spend delta</dt>
-                    <dd className="font-medium text-foreground">
+                    </p>
+                    <p className="text-sm text-muted-foreground">
                       {row.monthOverMonthSpendDeltaNok === null
-                        ? "Not available"
-                        : formatNok(row.monthOverMonthSpendDeltaNok)}
-                    </dd>
+                        ? "No previous-month data"
+                        : `${row.monthOverMonthSpendDeltaNok > 0 ? "Up" : "Down"} ${formatNok(Math.abs(row.monthOverMonthSpendDeltaNok))}${deltaPercent ? ` (${deltaPercent})` : ""}`}
+                    </p>
                   </div>
-                </dl>
+                </div>
 
-                {row.reviewState === "NOT_GENERATED" ? (
-                  <p className="text-muted-foreground">
-                    No review generated for this month yet.
-                  </p>
-                ) : null}
-
-                {row.reviewState === "GENERATING" ? (
-                  <p className="text-muted-foreground">
-                    Review generation is in progress for this month.
-                  </p>
-                ) : null}
-
-                {row.reviewState === "FAILED" ? (
-                  <p
-                    role="alert"
-                    className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-                  >
-                    {row.errorMessage
-                      ? `Generation failed: ${row.errorMessage}`
-                      : "Generation failed. Try regenerate review to retry."}
-                  </p>
-                ) : null}
-
-                {row.reviewState === "GENERATED" && row.reviewText ? (
-                  <div className="space-y-2">
+                <div className="space-y-4 text-sm">
+                  <div className="space-y-2 rounded-md border border-border/70 bg-muted/20 p-3">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Review preview
+                      Category spend
                     </p>
-                    <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm text-foreground">
-                      {getReviewPreview(row.reviewText)}
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => toggleExpandedReview(row.monthStart)}
-                    >
-                      {expandedReviewMonthStart === row.monthStart
-                        ? "Hide full review"
-                        : "View full review"}
-                    </Button>
-
-                    {expandedReviewMonthStart === row.monthStart ? (
-                      <p className="whitespace-pre-wrap rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
-                        {row.reviewText}
-                      </p>
-                    ) : null}
+                    <CategorySpendBar
+                      categories={row.categorySpendBreakdown}
+                      total={row.totalSpendNok}
+                    />
                   </div>
-                ) : null}
 
-                <div className="pt-1">
                   {row.reviewState === "NOT_GENERATED" ? (
                     <Button
                       type="button"
@@ -338,29 +385,86 @@ export function MonthlyReviewManager() {
                       }
                       disabled={generateSavingMonthStart !== null}
                     >
-                      Generate review
+                      <Sparkles className="size-4" aria-hidden />
+                      Get AI review
                     </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() =>
-                        openGenerateDialog(row.monthStart, "regenerate")
-                      }
-                      disabled={
-                        generateSavingMonthStart !== null ||
-                        row.reviewState === "GENERATING"
-                      }
-                    >
-                      Regenerate review
-                    </Button>
-                  )}
+                  ) : null}
+
+                  {row.reviewState === "GENERATING" ? (
+                    <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-muted-foreground">
+                      Review generation is currently in progress for this month.
+                    </div>
+                  ) : null}
+
+                  {row.reviewState === "FAILED" ? (
+                    <div className="space-y-3">
+                      <p
+                        role="alert"
+                        className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                      >
+                        {row.errorMessage
+                          ? `Generation failed: ${row.errorMessage}`
+                          : "Generation failed. Try regenerate review to retry."}
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() =>
+                          openGenerateDialog(row.monthStart, "regenerate")
+                        }
+                        disabled={generateSavingMonthStart !== null}
+                      >
+                        Regenerate review
+                      </Button>
+                    </div>
+                  ) : null}
+
+                  {row.reviewState === "GENERATED" && row.reviewText ? (
+                    <div className="space-y-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        AI insight
+                      </p>
+                      <p className="text-sm text-foreground">
+                        {getReviewPreview(row.reviewText)}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleExpandedReview(row.monthStart)}
+                        >
+                          {expandedReviewMonthStart === row.monthStart
+                            ? "Hide full review"
+                            : "View full review"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            openGenerateDialog(row.monthStart, "regenerate")
+                          }
+                          disabled={generateSavingMonthStart !== null}
+                        >
+                          Regenerate review
+                        </Button>
+                      </div>
+
+                      {expandedReviewMonthStart === row.monthStart ? (
+                        <p className="whitespace-pre-wrap rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
+                          {row.reviewText}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
-              </CardContent>
-            </Card>
-          </article>
-        ))}
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       <AlertDialog

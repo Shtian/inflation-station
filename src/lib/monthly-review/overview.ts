@@ -47,11 +47,18 @@ export type MonthlyOverviewTopCategory = {
   spendNok: number;
 };
 
+export type MonthlyOverviewCategorySpend = {
+  categoryId: string | null;
+  categoryName: string;
+  spendNok: number;
+};
+
 export type MonthlyOverviewRow = {
   monthStart: string;
   totalSpendNok: number;
   transactionCount: number;
   topCategory: MonthlyOverviewTopCategory | null;
+  categorySpendBreakdown: MonthlyOverviewCategorySpend[];
   monthOverMonthSpendDeltaNok: number | null;
 };
 
@@ -116,6 +123,29 @@ function toTopCategory(
     categoryName: winner.categoryName,
     spendNok: winner.spendNok,
   };
+}
+
+function toCategorySpendBreakdown(
+  categoryTotals: Map<string, MutableCategoryTotal>,
+): MonthlyOverviewCategorySpend[] {
+  return [...categoryTotals.values()]
+    .sort((a, b) => {
+      if (b.spendNok !== a.spendNok) {
+        return b.spendNok - a.spendNok;
+      }
+
+      const byName = a.categoryName.localeCompare(b.categoryName);
+      if (byName !== 0) {
+        return byName;
+      }
+
+      return (a.categoryId ?? "").localeCompare(b.categoryId ?? "");
+    })
+    .map((category) => ({
+      categoryId: category.categoryId,
+      categoryName: category.categoryName,
+      spendNok: category.spendNok,
+    }));
 }
 
 export async function getMonthlyOverview(
@@ -196,6 +226,9 @@ export async function getMonthlyOverview(
       totalSpendNok,
       transactionCount: totals?.transactionCount ?? 0,
       topCategory: totals ? toTopCategory(totals.categoryTotals) : null,
+      categorySpendBreakdown: totals
+        ? toCategorySpendBreakdown(totals.categoryTotals)
+        : [],
       monthOverMonthSpendDeltaNok: previousMonthTotals
         ? totalSpendNok - previousMonthTotals.totalSpendNok
         : null,

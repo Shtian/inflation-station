@@ -72,6 +72,13 @@ describe("monthly overview", () => {
           categoryName: "Uncategorized",
           spendNok: 100,
         },
+        categorySpendBreakdown: [
+          {
+            categoryId: null,
+            categoryName: "Uncategorized",
+            spendNok: 100,
+          },
+        ],
         monthOverMonthSpendDeltaNok: -400,
       },
       {
@@ -83,6 +90,13 @@ describe("monthly overview", () => {
           categoryName: "Travel",
           spendNok: 500,
         },
+        categorySpendBreakdown: [
+          {
+            categoryId: "cat-travel",
+            categoryName: "Travel",
+            spendNok: 500,
+          },
+        ],
         monthOverMonthSpendDeltaNok: 200,
       },
       {
@@ -94,6 +108,13 @@ describe("monthly overview", () => {
           categoryName: "Food",
           spendNok: 300,
         },
+        categorySpendBreakdown: [
+          {
+            categoryId: "cat-food",
+            categoryName: "Food",
+            spendNok: 300,
+          },
+        ],
         monthOverMonthSpendDeltaNok: null,
       },
     ]);
@@ -113,6 +134,7 @@ describe("monthly overview", () => {
         totalSpendNok: 0,
         transactionCount: 0,
         topCategory: null,
+        categorySpendBreakdown: [],
         monthOverMonthSpendDeltaNok: null,
       },
     ]);
@@ -141,6 +163,19 @@ describe("monthly overview", () => {
       categoryName: "Alpha",
       spendNok: 200,
     });
+
+    expect(row.categorySpendBreakdown).toEqual([
+      {
+        categoryId: "cat-a",
+        categoryName: "Alpha",
+        spendNok: 200,
+      },
+      {
+        categoryId: "cat-z",
+        categoryName: "Zeta",
+        spendNok: 200,
+      },
+    ]);
   });
 
   it("queries transactions and monthly reviews with deterministic ordering", async () => {

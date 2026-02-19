@@ -65,6 +65,13 @@ describe("getMonthlyTimeline", () => {
           categoryName: "Rent",
           spendNok: 400,
         },
+        categorySpendBreakdown: [
+          {
+            categoryId: "cat-rent",
+            categoryName: "Rent",
+            spendNok: 400,
+          },
+        ],
         monthOverMonthSpendDeltaNok: 200,
         reviewState: MONTHLY_TIMELINE_REVIEW_STATE.NOT_GENERATED,
         generatedAt: null,
@@ -80,6 +87,13 @@ describe("getMonthlyTimeline", () => {
           categoryName: "Food",
           spendNok: 200,
         },
+        categorySpendBreakdown: [
+          {
+            categoryId: "cat-food",
+            categoryName: "Food",
+            spendNok: 200,
+          },
+        ],
         monthOverMonthSpendDeltaNok: null,
         reviewState: MONTHLY_TIMELINE_REVIEW_STATE.GENERATED,
         generatedAt: "2026-02-15T10:00:00.000Z",
@@ -91,6 +105,7 @@ describe("getMonthlyTimeline", () => {
         totalSpendNok: 0,
         transactionCount: 0,
         topCategory: null,
+        categorySpendBreakdown: [],
         monthOverMonthSpendDeltaNok: null,
         reviewState: MONTHLY_TIMELINE_REVIEW_STATE.FAILED,
         generatedAt: null,
