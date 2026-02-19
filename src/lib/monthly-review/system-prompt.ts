@@ -50,6 +50,12 @@ export type MonthlyReviewSystemPromptResult = {
   isDefault: boolean;
 };
 
+export type MonthlyReviewSystemPromptSettingsResult = {
+  storedPromptText: string | null;
+  resolvedPrompt: string;
+  isDefault: boolean;
+};
+
 function resolvePrompt(
   promptText: string | null,
 ): MonthlyReviewSystemPromptResult {
@@ -70,6 +76,18 @@ function normalizePromptText(promptText: string): string | null {
   return promptText.trim().length === 0 ? null : promptText;
 }
 
+function toSettingsResult(
+  promptText: string | null,
+): MonthlyReviewSystemPromptSettingsResult {
+  const resolved = resolvePrompt(promptText);
+
+  return {
+    storedPromptText: promptText,
+    resolvedPrompt: resolved.prompt,
+    isDefault: resolved.isDefault,
+  };
+}
+
 export async function getMonthlyReviewSystemPrompt(
   db: MonthlyReviewSystemPromptReadDbClient,
 ): Promise<MonthlyReviewSystemPromptResult> {
@@ -83,6 +101,21 @@ export async function getMonthlyReviewSystemPrompt(
   });
 
   return resolvePrompt(record?.promptText ?? null);
+}
+
+export async function getMonthlyReviewSystemPromptSettings(
+  db: MonthlyReviewSystemPromptReadDbClient,
+): Promise<MonthlyReviewSystemPromptSettingsResult> {
+  const record = await db.monthlyReviewSystemPrompt.findUnique({
+    where: {
+      id: MONTHLY_REVIEW_SYSTEM_PROMPT_ID,
+    },
+    select: {
+      promptText: true,
+    },
+  });
+
+  return toSettingsResult(record?.promptText ?? null);
 }
 
 export async function updateMonthlyReviewSystemPrompt(
@@ -106,4 +139,27 @@ export async function updateMonthlyReviewSystemPrompt(
   });
 
   return resolvePrompt(record.promptText);
+}
+
+export async function updateMonthlyReviewSystemPromptSettings(
+  db: MonthlyReviewSystemPromptDbClient,
+  promptText: string,
+): Promise<MonthlyReviewSystemPromptSettingsResult> {
+  const record = await db.monthlyReviewSystemPrompt.upsert({
+    where: {
+      id: MONTHLY_REVIEW_SYSTEM_PROMPT_ID,
+    },
+    create: {
+      id: MONTHLY_REVIEW_SYSTEM_PROMPT_ID,
+      promptText: normalizePromptText(promptText),
+    },
+    update: {
+      promptText: normalizePromptText(promptText),
+    },
+    select: {
+      promptText: true,
+    },
+  });
+
+  return toSettingsResult(record.promptText);
 }

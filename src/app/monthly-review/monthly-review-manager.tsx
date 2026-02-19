@@ -33,6 +33,12 @@ type TimelineResponse = {
   rows: MonthlyReviewTimelineRow[];
 };
 
+type SystemPromptResponse = {
+  promptText: string;
+  resolvedPrompt: string;
+  usesDefaultPrompt: boolean;
+};
+
 type GenerateMode = "generate" | "regenerate";
 
 type GenerateDialogState = {
@@ -73,6 +79,27 @@ function isTimelineResponse(value: unknown): value is TimelineResponse {
   return Array.isArray((value as { rows: unknown }).rows);
 }
 
+function isSystemPromptResponse(value: unknown): value is SystemPromptResponse {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  if (!("promptText" in value) || typeof value.promptText !== "string") {
+    return false;
+  }
+
+  if (
+    !("resolvedPrompt" in value) ||
+    typeof value.resolvedPrompt !== "string"
+  ) {
+    return false;
+  }
+
+  return (
+    "usesDefaultPrompt" in value && typeof value.usesDefaultPrompt === "boolean"
+  );
+}
+
 export function MonthlyReviewManager() {
   const [rows, setRows] = useState<MonthlyReviewTimelineRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,6 +113,13 @@ export function MonthlyReviewManager() {
   const [expandedReviewMonthStart, setExpandedReviewMonthStart] = useState<
     string | null
   >(null);
+  const [promptText, setPromptText] = useState("");
+  const [resolvedPrompt, setResolvedPrompt] = useState("");
+  const [usesDefaultPrompt, setUsesDefaultPrompt] = useState(false);
+  const [promptLoading, setPromptLoading] = useState(true);
+  const [promptSaving, setPromptSaving] = useState(false);
+  const [promptError, setPromptError] = useState<string | null>(null);
+  const [promptSuccess, setPromptSuccess] = useState<string | null>(null);
 
   const loadTimeline = useCallback(async () => {
     setLoading(true);
@@ -108,9 +142,32 @@ export function MonthlyReviewManager() {
     setLoading(false);
   }, []);
 
+  const loadSystemPrompt = useCallback(async () => {
+    setPromptLoading(true);
+    setPromptError(null);
+
+    const response = await fetch("/api/monthly-review/system-prompt");
+    const body: unknown = await response.json().catch(() => null);
+
+    if (!response.ok || !isSystemPromptResponse(body)) {
+      setPromptText("");
+      setResolvedPrompt("");
+      setUsesDefaultPrompt(true);
+      setPromptError("Could not load monthly review system prompt.");
+      setPromptLoading(false);
+      return;
+    }
+
+    setPromptText(body.promptText);
+    setResolvedPrompt(body.resolvedPrompt);
+    setUsesDefaultPrompt(body.usesDefaultPrompt);
+    setPromptLoading(false);
+  }, []);
+
   useEffect(() => {
     void loadTimeline();
-  }, [loadTimeline]);
+    void loadSystemPrompt();
+  }, [loadTimeline, loadSystemPrompt]);
 
   const selectedMonthLabel = useMemo(() => {
     if (!generateDialogState) {
@@ -177,6 +234,40 @@ export function MonthlyReviewManager() {
     closeGenerateDialog();
   }
 
+  async function handleSaveSystemPrompt() {
+    if (promptSaving) {
+      return;
+    }
+
+    setPromptSaving(true);
+    setPromptError(null);
+    setPromptSuccess(null);
+
+    const response = await fetch("/api/monthly-review/system-prompt", {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ promptText }),
+    });
+
+    const body: unknown = await response.json().catch(() => null);
+
+    if (!response.ok || !isSystemPromptResponse(body)) {
+      setPromptSaving(false);
+      setPromptError(
+        "Could not save monthly review system prompt. Please try again.",
+      );
+      return;
+    }
+
+    setPromptText(body.promptText);
+    setResolvedPrompt(body.resolvedPrompt);
+    setUsesDefaultPrompt(body.usesDefaultPrompt);
+    setPromptSaving(false);
+    setPromptSuccess("System prompt saved.");
+  }
+
   const hasRows = rows.length > 0;
 
   return (
@@ -190,6 +281,84 @@ export function MonthlyReviewManager() {
           status.
         </p>
       </div>
+
+      <Card>
+        <CardHeader className="space-y-1">
+          <CardTitle>
+            <h2 className="text-lg">System prompt settings</h2>
+          </CardTitle>
+          <CardDescription>
+            Configure baseline AI instructions for future month review
+            generation.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {promptLoading ? (
+            <p className="text-sm text-muted-foreground">Loading prompt...</p>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <label
+                  htmlFor="monthly-review-system-prompt"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Monthly review system prompt
+                </label>
+                <textarea
+                  id="monthly-review-system-prompt"
+                  value={promptText}
+                  onChange={(event) => {
+                    setPromptText(event.target.value);
+                    setPromptSuccess(null);
+                  }}
+                  rows={8}
+                  placeholder="Leave empty to use default prompt."
+                  className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 dark:bg-input/30 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  {usesDefaultPrompt
+                    ? "Using fallback default prompt for generation."
+                    : "Using saved custom prompt for generation."}
+                </p>
+                {usesDefaultPrompt ? (
+                  <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                    {resolvedPrompt}
+                  </p>
+                ) : null}
+              </div>
+
+              {promptError ? (
+                <p
+                  role="alert"
+                  className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                >
+                  {promptError}
+                </p>
+              ) : null}
+
+              {promptSuccess ? (
+                <p className="rounded-md border border-emerald-300/60 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200">
+                  {promptSuccess}
+                </p>
+              ) : null}
+
+              <div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSaveSystemPrompt}
+                  disabled={promptSaving}
+                >
+                  {promptSaving ? "Saving..." : "Save prompt"}
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <Separator className="my-4" />
 

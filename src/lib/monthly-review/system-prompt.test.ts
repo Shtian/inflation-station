@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
   getMonthlyReviewSystemPrompt,
+  getMonthlyReviewSystemPromptSettings,
   updateMonthlyReviewSystemPrompt,
+  updateMonthlyReviewSystemPromptSettings,
 } from "./system-prompt";
 
 function createSystemPromptDbMock(promptText: string | null = null) {
@@ -42,6 +44,18 @@ describe("monthly review system prompt", () => {
     expect(result).toEqual({
       prompt: "Use structured bullet points.",
       isDefault: false,
+    });
+  });
+
+  it("returns settings view with stored and resolved prompt values", async () => {
+    const db = createSystemPromptDbMock();
+
+    const result = await getMonthlyReviewSystemPromptSettings(db);
+
+    expect(result).toEqual({
+      storedPromptText: null,
+      resolvedPrompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
+      isDefault: true,
     });
   });
 
@@ -89,6 +103,18 @@ describe("monthly review system prompt", () => {
         promptText: null,
       },
       select: { promptText: true },
+    });
+  });
+
+  it("returns settings response after update with blank prompt", async () => {
+    const db = createSystemPromptDbMock("Existing prompt.");
+
+    const result = await updateMonthlyReviewSystemPromptSettings(db, " ");
+
+    expect(result).toEqual({
+      storedPromptText: null,
+      resolvedPrompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
+      isDefault: true,
     });
   });
 });
