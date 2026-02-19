@@ -4,6 +4,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   page,
 }) => {
   let submitRequestBody: unknown = null;
+  let submitRequestCount = 0;
 
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
@@ -121,6 +122,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   });
 
   await page.route("**/api/imports/submit", async (route, request) => {
+    submitRequestCount += 1;
     submitRequestBody = request.postDataJSON();
     await route.fulfill({
       status: 200,
@@ -138,10 +140,12 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
 
   await page.goto("/import");
 
-  await expect(page.getByRole("heading", { name: "Import" })).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Account" })).toHaveText(
-    "Main Account",
-  );
+  await expect(
+    page.getByRole("heading", { name: "Import", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Bank Account", exact: true }),
+  ).toHaveText("Main Account");
 
   await page.getByLabel("CSV file").setInputFiles({
     name: "transactions.csv",
@@ -149,26 +153,27 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;123,45", "utf8"),
   });
 
-  await page.getByRole("button", { name: "Parse CSV" }).click();
+  await page.getByRole("button", { name: /Parse/ }).click();
 
-  await expect(page.getByText("Parse summary")).toBeVisible();
-  await expect(page.getByText("Imported")).toBeVisible();
-  await expect(page.getByText("Ignored reserved")).toBeVisible();
+  await expect(page.getByText("Import Preview")).toBeVisible();
   await expect(page.getByText("Validation errors")).toBeVisible();
   await expect(
     page.getByText(
       'Row 4: Row 4 has invalid amount "abc". Expected Norwegian decimal format like 123,45.',
     ),
   ).toBeVisible();
-  await expect(page.getByText("Review rows")).toBeVisible();
-  await expect(page.getByText("Potential duplicates:")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Confirm Import" }),
+  ).toBeVisible();
   await expect(
     page.getByText(
-      "Default message selection uses AI-cleaned text when available. Rows without a suggestion keep the original message.",
+      "1 potential duplicate detected. Default message selection uses AI-cleaned text when available.",
     ),
   ).toBeVisible();
   // Row 1 (rowNumber 2): defaults to AI-cleaned message
-  await expect(page.getByText("Joker Trondheim", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Joker Trondheim", { exact: true }),
+  ).toBeVisible();
   // Row 2 (rowNumber 3): shows original message (no AI-cleaned alternative)
   await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();
   // Toggle button available for row 1 which has an AI-cleaned message
@@ -184,7 +189,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await expect(page.getByLabel("Potential duplicate")).toBeVisible();
   // Switch row 1 to use original message
   await toggleRow1.click();
-  await expect(page.getByText("JOKER TRONDHEIM", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("JOKER TRONDHEIM", { exact: true }),
+  ).toBeVisible();
 
   const rowTwoCategory = page.getByRole("combobox", {
     name: "Category for row 2",
@@ -194,16 +201,30 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await page.getByRole("option", { name: "Food", exact: true }).click();
   await expect(rowTwoCategory).toHaveText("Food");
 
-  await page.getByRole("button", { name: "Submit reviewed rows" }).click();
+  const rowOneNote = page.getByRole("textbox", {
+    name: "Note for row 2",
+  });
+  await rowOneNote.fill("x".repeat(501));
+  await page.getByRole("button", { name: "Confirm Import" }).click();
+  await expect(
+    page.getByText("Fix note validation errors before confirming import."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Note must be 500 characters or fewer."),
+  ).toBeVisible();
+  expect(submitRequestCount).toBe(0);
+  await rowOneNote.fill("Split groceries with roommate");
+
+  await page.getByRole("button", { name: "Confirm Import" }).click();
 
   await expect(
     page.getByText(
       "Import complete. Imported 2, skipped 0, potential duplicates 1, invalid 1.",
     ),
   ).toBeVisible();
-  await expect(page.getByText("Review rows")).toHaveCount(0);
-  await expect(page.getByText("Parse summary")).toHaveCount(0);
+  await expect(page.getByText("Import Preview")).toHaveCount(0);
   await expect(page.getByLabel("CSV file")).toHaveValue("");
+  expect(submitRequestCount).toBe(1);
   expect(submitRequestBody).toEqual({
     sessionId: "session-1",
     invalidCount: 1,
@@ -212,11 +233,13 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
         rowId: "row-1",
         categoryId: "cat-food",
         selectedMessage: "JOKER TRONDHEIM",
+        note: "Split groceries with roommate",
       },
       {
         rowId: "row-2",
         categoryId: "cat-transport",
         selectedMessage: "RUTER BILLETT",
+        note: null,
       },
     ],
   });
@@ -359,21 +382,18 @@ test("requires provider override when detection is uncertain and continues after
     buffer: Buffer.from("Dato;Beløp\n01.01.2026;200,00", "utf8"),
   });
 
-  await page.getByRole("button", { name: "Parse CSV" }).click();
+  await page.getByRole("button", { name: /Parse/ }).click();
   await expect(
     page.getByText(
       "Provider detection is uncertain. Select a provider and parse again.",
     ),
   ).toBeVisible();
-  await expect(page.getByText("Parse summary")).toHaveCount(0);
+  await page.getByRole("button", { name: "Change" }).click();
+  await page.getByRole("button", { name: "Bank B", exact: true }).click();
+  await page.getByRole("button", { name: "Confirm", exact: true }).click();
 
-  const providerSelect = page.getByRole("combobox", { name: "Provider" });
-  await providerSelect.click();
-  await page.getByRole("option", { name: "Bank B", exact: true }).click();
-
-  await page.getByRole("button", { name: "Parse CSV" }).click();
-  await expect(page.getByText("Parse summary")).toBeVisible();
-  await expect(
-    page.getByText("Provider detection: certain (Bank B)."),
-  ).toBeVisible();
+  await page.getByRole("button", { name: /Parse/ }).click();
+  await expect(page.getByText("Import Preview")).toBeVisible();
+  await expect(page.getByText("Detected provider:")).toBeVisible();
+  await expect(page.getByText("Bank B")).toBeVisible();
 });

@@ -64,6 +64,7 @@ model Transaction {
   currency         String
   normalizedMerchant String
   paymentType      PaymentType                @default(OTHER)
+  note             String?
   suggestions      CategorizationSuggestion[]
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt

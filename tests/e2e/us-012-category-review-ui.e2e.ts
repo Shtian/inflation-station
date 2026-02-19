@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("renders overview dashboard sections at /", async ({
-  page,
-}) => {
+test("renders overview dashboard sections at /", async ({ page }) => {
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
       status: 200,

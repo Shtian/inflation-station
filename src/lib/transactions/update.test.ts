@@ -1,5 +1,6 @@
 import { PaymentType } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
+import { MAX_TRANSACTION_NOTE_LENGTH } from "./note";
 import { parseTransactionUpdatePayload, updateTransaction } from "./update";
 
 function createUpdateDbMock() {
@@ -17,6 +18,7 @@ function createUpdateDbMock() {
         currency: "NOK",
         normalizedMerchant: "updated shop",
         paymentType: PaymentType.CARD,
+        note: "Monthly grocery refill",
         createdAt: new Date("2026-02-01T10:00:00.000Z"),
         updatedAt: new Date("2026-02-06T09:00:00.000Z"),
       })),
@@ -72,6 +74,34 @@ describe("parseTransactionUpdatePayload", () => {
     expect(parsed.data.categoryId).toBeNull();
   });
 
+  it("accepts nullable note updates", () => {
+    const parsed = parseTransactionUpdatePayload({
+      amountNok: -100.25,
+      note: null,
+    });
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) {
+      return;
+    }
+
+    expect(parsed.data.note).toBeNull();
+  });
+
+  it("rejects note updates longer than 500 characters", () => {
+    const parsed = parseTransactionUpdatePayload({
+      amountNok: -100.25,
+      note: "x".repeat(MAX_TRANSACTION_NOTE_LENGTH + 1),
+    });
+
+    expect(parsed.success).toBe(false);
+    if (parsed.success) {
+      return;
+    }
+
+    expect(parsed.error.flatten().fieldErrors.note).toBeDefined();
+  });
+
   it("rejects currency updates", () => {
     const parsed = parseTransactionUpdatePayload({
       amountNok: -100.25,
@@ -97,6 +127,7 @@ describe("updateTransaction", () => {
       amountNok: -100.25,
       normalizedMerchant: "updated shop",
       paymentType: PaymentType.CARD,
+      note: "Monthly grocery refill",
     });
 
     expect(parsed.success).toBe(true);
@@ -117,6 +148,7 @@ describe("updateTransaction", () => {
         amountNok: -100.25,
         normalizedMerchant: "updated shop",
         paymentType: PaymentType.CARD,
+        note: "Monthly grocery refill",
       },
       select: {
         id: true,
@@ -132,6 +164,7 @@ describe("updateTransaction", () => {
         currency: true,
         normalizedMerchant: true,
         paymentType: true,
+        note: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -146,6 +179,7 @@ describe("updateTransaction", () => {
       currency: "NOK",
       normalizedMerchant: "updated shop",
       paymentType: PaymentType.CARD,
+      note: "Monthly grocery refill",
       createdAt: "2026-02-01T10:00:00.000Z",
       updatedAt: "2026-02-06T09:00:00.000Z",
     });

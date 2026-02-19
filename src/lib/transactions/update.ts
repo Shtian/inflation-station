@@ -1,6 +1,10 @@
 import { PaymentType } from "@prisma/client";
 import { z } from "zod";
 import type { TransactionListRow } from "./list";
+import {
+  MAX_TRANSACTION_NOTE_LENGTH,
+  MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
+} from "./note";
 
 type DecimalLike = { toString(): string } | number;
 
@@ -16,6 +20,7 @@ type TransactionUpdateRecord = {
   currency: string;
   normalizedMerchant: string;
   paymentType: PaymentType;
+  note: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -31,6 +36,7 @@ type TransactionUpdateDbClient = {
         currency: string;
         normalizedMerchant?: string;
         paymentType?: PaymentType;
+        note?: string | null;
       };
       select: {
         id: true;
@@ -46,6 +52,7 @@ type TransactionUpdateDbClient = {
         currency: true;
         normalizedMerchant: true;
         paymentType: true;
+        note: true;
         createdAt: true;
         updatedAt: true;
       };
@@ -59,6 +66,7 @@ const MUTABLE_FIELD_KEYS = [
   "amountNok",
   "normalizedMerchant",
   "paymentType",
+  "note",
 ] as const;
 
 function parseIsoDate(value: string): Date | null {
@@ -102,6 +110,11 @@ const transactionUpdatePayloadSchema = z
     amountNok: z.number().finite().optional(),
     normalizedMerchant: z.string().trim().min(1).optional(),
     paymentType: z.nativeEnum(PaymentType).optional(),
+    note: z
+      .string()
+      .max(MAX_TRANSACTION_NOTE_LENGTH, MAX_TRANSACTION_NOTE_LENGTH_MESSAGE)
+      .nullable()
+      .optional(),
     id: z.never().optional(),
     accountId: z.never().optional(),
     createdAt: z.never().optional(),
@@ -136,6 +149,7 @@ function toTransactionListRow(
     currency: record.currency,
     normalizedMerchant: record.normalizedMerchant,
     paymentType: record.paymentType,
+    note: record.note,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
@@ -171,6 +185,9 @@ export async function updateTransaction(
       ...(params.updates.paymentType !== undefined
         ? { paymentType: params.updates.paymentType }
         : {}),
+      ...(params.updates.note !== undefined
+        ? { note: params.updates.note }
+        : {}),
     },
     select: {
       id: true,
@@ -186,6 +203,7 @@ export async function updateTransaction(
       currency: true,
       normalizedMerchant: true,
       paymentType: true,
+      note: true,
       createdAt: true,
       updatedAt: true,
     },

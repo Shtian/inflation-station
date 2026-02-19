@@ -114,6 +114,7 @@ type ImportReviewSubmitDbClient = {
         currency: "NOK";
         normalizedMerchant: string;
         paymentType: PaymentType;
+        note: string | null;
       }>;
     }): Promise<{ count: number }>;
   };
@@ -123,6 +124,7 @@ type SubmitReviewRow = {
   rowId: string;
   categoryId: string | null;
   selectedMessage: string;
+  note?: string | null;
 };
 
 function toNormalizedInvalidCount(value: number) {
@@ -205,6 +207,13 @@ export async function submitImportReview(
     },
     {},
   );
+  const noteByRowId = params.rows.reduce<Record<string, string | null>>(
+    (acc, row) => {
+      acc[row.rowId] = row.note ?? null;
+      return acc;
+    },
+    {},
+  );
 
   const finalizedRows = session.rows.map((row) => {
     const selectedMessage =
@@ -219,6 +228,7 @@ export async function submitImportReview(
       categoryId:
         row.id in categoryByRowId ? categoryByRowId[row.id] : row.categoryId,
       amountNok: Number.parseFloat(row.amountNok.toString()),
+      note: row.id in noteByRowId ? noteByRowId[row.id] : null,
     };
   });
 
@@ -332,6 +342,7 @@ export async function submitImportReview(
         currency: "NOK",
         normalizedMerchant: row.normalizedMerchant,
         paymentType: row.paymentType,
+        note: row.note,
       })),
     });
   }

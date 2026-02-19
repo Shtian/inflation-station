@@ -133,7 +133,7 @@ test("updates dashboard charts when account and date filters change", async ({
     });
   });
 
-  await page.goto("/overview");
+  await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expect(

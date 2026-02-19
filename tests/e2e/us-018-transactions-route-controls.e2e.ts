@@ -66,6 +66,7 @@ test("manages transactions filters and pagination controls from /transactions", 
               currency: "NOK",
               normalizedMerchant: "Savings Transfer",
               paymentType: "TRANSFER",
+              note: "Monthly transfer",
               createdAt: "2026-02-01T12:00:00.000Z",
               updatedAt: "2026-02-01T12:00:00.000Z",
             },
@@ -114,6 +115,7 @@ test("manages transactions filters and pagination controls from /transactions", 
               currency: "NOK",
               normalizedMerchant: "Corner Shop",
               paymentType: "CARD",
+              note: null,
               createdAt: "2026-01-15T08:00:00.000Z",
               updatedAt: "2026-01-15T08:00:00.000Z",
             },
@@ -145,6 +147,7 @@ test("manages transactions filters and pagination controls from /transactions", 
               currency: "NOK",
               normalizedMerchant: "Metro Kiosk",
               paymentType: "CARD",
+              note: "Train ticket",
               createdAt: "2026-01-20T10:00:00.000Z",
               updatedAt: "2026-01-20T10:00:00.000Z",
             },
@@ -175,6 +178,7 @@ test("manages transactions filters and pagination controls from /transactions", 
             currency: "NOK",
             normalizedMerchant: "Supermarket",
             paymentType: "CARD",
+            note: "Weekly groceries",
             createdAt: "2026-02-05T09:00:00.000Z",
             updatedAt: "2026-02-05T09:00:00.000Z",
           },
@@ -210,13 +214,23 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(page.getByText("Page 1 of 2")).toBeVisible();
   await expect(page.getByText("35 total transactions.")).toBeVisible();
   await expect(page.getByText("Supermarket")).toBeVisible();
-  await expect(page.getByText("Groceries")).toBeVisible();
+  await expect(page.getByText("Groceries", { exact: true })).toBeVisible();
+  await expect(
+    page.getByLabel("View memo for transaction from 2026-02-05"),
+  ).toBeVisible();
+  await page.getByLabel("View memo for transaction from 2026-02-05").hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Weekly groceries");
 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "Savings Account" }).click();
   await expect(page.getByText("Page 1 of 1")).toBeVisible();
   await expect(page.getByText("Savings Transfer")).toBeVisible();
   await expect(page.getByText("Uncategorized")).toBeVisible();
+  await expect(
+    page.getByLabel("View memo for transaction from 2026-02-01"),
+  ).toBeVisible();
+  await page.getByLabel("View memo for transaction from 2026-02-01").hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Monthly transfer");
 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "All accounts" }).click();
@@ -225,12 +239,20 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.getByText("Corner Shop")).toBeVisible();
   await expect(page.getByText("Food")).toBeVisible();
+  await expect(
+    page.getByLabel("View memo for transaction from 2026-01-15"),
+  ).toHaveCount(0);
 
   await page.locator("#transactions-rows-per-page").click();
   await page.getByRole("option", { name: "10", exact: true }).click();
   await expect(page.getByText("Page 1 of 4")).toBeVisible();
   await expect(page.getByText("Metro Kiosk")).toBeVisible();
   await expect(page.getByText("Uncategorized")).toBeVisible();
+  await expect(
+    page.getByLabel("View memo for transaction from 2026-01-20"),
+  ).toBeVisible();
+  await page.getByLabel("View memo for transaction from 2026-01-20").hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Train ticket");
 
   await page.locator("#transactions-rows-per-page").click();
   await page.getByRole("option", { name: "25", exact: true }).click();
@@ -248,12 +270,14 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   let updatedMerchant = "Corner Shop";
   let updatedCategoryId: string | null = null;
   let updatedCategoryName = "Uncategorized";
+  let updatedNote: string | null = "Legacy reminder";
   let lastPatchPayload: null | {
     categoryId: string | null;
     bookingDate: string;
     amountNok: number;
     normalizedMerchant: string;
     paymentType: string;
+    note: string | null;
   } = null;
 
   await page.route("**/api/accounts", async (route) => {
@@ -301,6 +325,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
       amountNok: number;
       normalizedMerchant: string;
       paymentType: string;
+      note: string | null;
     };
 
     lastPatchPayload = payload;
@@ -308,6 +333,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     updatedCategoryId = payload.categoryId;
     updatedCategoryName =
       payload.categoryId === "cat-food" ? "Food" : "Uncategorized";
+    updatedNote = payload.note;
 
     await route.fulfill({
       status: 200,
@@ -322,6 +348,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
           currency: "NOK",
           normalizedMerchant: payload.normalizedMerchant,
           paymentType: payload.paymentType,
+          note: payload.note,
           createdAt: "2026-01-15T08:00:00.000Z",
           updatedAt: "2026-02-16T12:00:00.000Z",
         },
@@ -355,6 +382,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
               currency: "NOK",
               normalizedMerchant: updatedMerchant,
               paymentType: "CARD",
+              note: updatedNote,
               createdAt: "2026-01-15T08:00:00.000Z",
               updatedAt: "2026-01-15T08:00:00.000Z",
             },
@@ -385,6 +413,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
             currency: "NOK",
             normalizedMerchant: "Supermarket",
             paymentType: "CARD",
+            note: null,
             createdAt: "2026-02-05T09:00:00.000Z",
             updatedAt: "2026-02-05T09:00:00.000Z",
           },
@@ -413,8 +442,17 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     page.getByRole("heading", { name: "Edit transaction" }),
   ).toBeVisible();
   await expect(page.getByLabel("Currency")).toHaveCount(0);
+  await expect(page.getByLabel("Note")).toHaveValue("Legacy reminder");
+  await page.getByLabel("Note").fill("x".repeat(501));
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByLabel("Note")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByRole("alert")).toHaveText(
+    "Note must be 500 characters or fewer.",
+  );
+  await expect.poll(() => lastPatchPayload).toBeNull();
 
   await page.getByLabel("Merchant").fill("Updated Corner Shop");
+  await page.getByLabel("Note").fill("");
   await page.getByLabel("Category").click();
   await page.getByRole("option", { name: "Food" }).click();
   await page.getByRole("button", { name: "Save changes" }).click();
@@ -429,6 +467,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   await expect
     .poll(() => lastPatchPayload?.normalizedMerchant)
     .toBe("Updated Corner Shop");
+  await expect.poll(() => lastPatchPayload?.note).toBeNull();
 });
 
 test("confirms transaction deletion and keeps pagination valid after last-row removal", async ({
@@ -501,6 +540,7 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
               currency: "NOK",
               normalizedMerchant: "Corner Shop",
               paymentType: "CARD",
+              note: null,
               createdAt: "2026-01-15T08:00:00.000Z",
               updatedAt: "2026-01-15T08:00:00.000Z",
             },
@@ -548,6 +588,7 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
             currency: "NOK",
             normalizedMerchant: "Supermarket",
             paymentType: "CARD",
+            note: null,
             createdAt: "2026-02-05T09:00:00.000Z",
             updatedAt: "2026-02-05T09:00:00.000Z",
           },

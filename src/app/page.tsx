@@ -1,4 +1,4 @@
-import { OverviewDashboard } from "./overview/overview-dashboard";
+import { OverviewDashboard } from "./(overview)/overview-dashboard";
 
 export default function Home() {
   return (

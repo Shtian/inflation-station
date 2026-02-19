@@ -1,46 +1,47 @@
 {
-  "project": "Inflation Station",
-  "branchName": "ralph/multi-provider-csv-import-framework",
-  "description": "Implement a multi-provider CSV import framework with provider detection, provider-managed mappings, deterministic normalization-before-dedupe, and optional per-row AI message cleanup in review.",
+  "project": "inflation-station",
+  "branchName": "ralph/import-page-ui-improvements",
+  "description": "Refactor app routes into server-first, composable modules with explicit client boundaries, suspense/error handling, and preserved behavior/API contracts.",
   "userStories": [
     {
-      "id": "US-001",
-      "title": "Add provider mapping schema and Prisma models",
-      "description": "As a developer, I want provider mappings stored in the database so parse and review flows can use configurable provider definitions.",
+      "id": "US-101",
+      "title": "Standardize App Router architecture boundaries",
+      "description": "As a developer, I want server/client boundaries to be explicit so routes stay performant, resilient, and maintainable.",
       "acceptanceCriteria": [
-        "Add Prisma models for import provider mapping definitions including provider name, source-to-canonical field mappings, and normalization rule payloads",
-        "Persist mapping version metadata (timestamp or version field) for diagnostics",
-        "Run Prisma generate successfully after schema change",
-        "Typecheck passes",
-        "Tests pass"
+        "Define and apply a route-local structure that defaults `page.tsx` and non-interactive sections to Server Components.",
+        "Use Client Components only for interactive islands (forms, controls, local UI state), with clear prop boundaries from server parents.",
+        "Add route-level or section-level suspense boundaries for async data regions (`loading.tsx` and/or `Suspense` fallbacks) where they improve UX.",
+        "Add route-level error boundaries (`error.tsx`) or equivalent scoped handling for recoverable failures in major routes.",
+        "Break large route features into focused components/hooks/utilities without mandating a single `*-route-root.tsx` wrapper pattern.",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
       "notes": ""
     },
     {
-      "id": "US-002",
-      "title": "Implement provider detection service and parse diagnostics",
-      "description": "As a user, I want the importer to auto-detect provider from CSV headers so imports start with the right mapping.",
+      "id": "US-102",
+      "title": "Extract overview dashboard data and filter state hook",
+      "description": "As a developer, I want overview data loading and filter state moved out of the page component so chart rendering and data behavior can evolve independently.",
       "acceptanceCriteria": [
-        "Add provider detection logic based on configurable header/pattern rules",
-        "Parse response includes detection diagnostics with detected provider id/name and detection confidence state",
-        "When no provider match is found, parse response marks detection as uncertain or missing",
+        "Extract account/filter/date-range state and analytics fetching into a dedicated overview hook.",
+        "Move overview formatting/date helper functions into route-local utility modules.",
+        "Keep overview API query behavior and error handling semantics unchanged.",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
       "passes": true,
       "notes": ""
     },
     {
-      "id": "US-003",
-      "title": "Add manual provider override to import parse flow",
-      "description": "As a user, I want to manually select provider before parsing when detection is wrong or uncertain.",
+      "id": "US-103",
+      "title": "Split overview charts into focused components",
+      "description": "As a developer, I want each overview visualization section isolated so chart updates do not require editing one monolithic component.",
       "acceptanceCriteria": [
-        "Import parse endpoint accepts explicit provider override and uses it instead of auto-detection",
-        "Import UI requires provider selection when detection is uncertain or missing",
-        "User can change provider selection before parsing continues",
+        "Extract flow and category chart sections into focused route components (cashflow, inflow/outflow, account trend, category breakdown).",
+        "Keep existing chart data mapping, labels, and empty/loading states unchanged.",
+        "Keep tab and filter interactions behaviorally equivalent.",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
@@ -49,59 +50,58 @@
       "notes": ""
     },
     {
-      "id": "US-004",
-      "title": "Transform provider CSV rows into canonical import rows",
-      "description": "As a user, I want provider-specific CSV data mapped to canonical importer fields so review and submit behavior stays consistent.",
+      "id": "US-104",
+      "title": "Decompose accounts manager into hook and sections",
+      "description": "As a developer, I want accounts data/mutation logic separated from forms and table rendering so account maintenance changes are localized.",
       "acceptanceCriteria": [
-        "Parse pipeline loads selected provider mapping and transforms rows into existing canonical import row shape",
-        "Row-level validation errors are returned in structured diagnostics",
-        "Parse summary shape remains exactly: imported, duplicates, ignoredReserved, invalid",
+        "Extract account load/create/edit/delete behavior into a route-local accounts hook.",
+        "Extract create form and editable accounts table into focused section components.",
+        "Preserve current validation, notices, and delete confirmation behavior.",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
       "passes": true,
       "notes": ""
     },
     {
-      "id": "US-005",
-      "title": "Normalize payment type and merchant fields before dedupe",
-      "description": "As a user, I want duplicate detection to remain deterministic across providers.",
+      "id": "US-105",
+      "title": "Split categories category-management section",
+      "description": "As a developer, I want category CRUD UI isolated from rule management so category-specific changes are easier to reason about.",
       "acceptanceCriteria": [
-        "Provider normalization runs before fingerprint generation",
-        "Payment-type labels normalize to Prisma PaymentType values before dedupe",
-        "Fingerprint continues using accountId, bookingDate, amountNok, normalizedMerchant, and paymentType",
-        "Duplicate warnings in review payload are based on normalized canonical values",
+        "Extract category create/delete form and table into a dedicated category-management section component.",
+        "Move shared scope-label and category mutation error helpers into route-local utilities.",
+        "Keep existing category CRUD behavior and messaging unchanged.",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
       "passes": true,
       "notes": ""
     },
     {
-      "id": "US-006",
-      "title": "Add provider mapping admin APIs with validation",
-      "description": "As an admin, I want CRUD APIs for provider mappings so new providers can be configured without code edits.",
+      "id": "US-106",
+      "title": "Split categories rules-management section",
+      "description": "As a developer, I want rule CRUD form and table separated from category CRUD so rule logic can be modified safely.",
       "acceptanceCriteria": [
-        "Add API endpoints for create, update, list, and delete of provider mappings",
-        "Validation blocks save when required canonical fields are missing",
-        "API persists provider normalization rules and mapping version metadata",
+        "Extract category-rule create/delete form and rules table into a dedicated rules-management section component.",
+        "Preserve priority parsing, payment-type handling, and scope behavior for rules.",
+        "Keep existing error/notice rendering semantics unchanged.",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
       "passes": true,
       "notes": ""
     },
     {
-      "id": "US-007",
-      "title": "Build provider mapping admin UI",
-      "description": "As an admin, I want a UI to manage provider mappings so I can maintain import support operationally.",
+      "id": "US-107",
+      "title": "Decompose transactions list and pagination concerns",
+      "description": "As a developer, I want transaction querying, filters, and table pagination separated so list behavior updates are isolated.",
       "acceptanceCriteria": [
-        "Admin UI can create and edit provider mappings with source-column to canonical-field assignments",
-        "Admin UI surfaces validation errors for missing required canonical fields",
-        "Admin UI supports editing provider normalization rules",
+        "Extract accounts/categories/transactions loading and pagination/filter state into a transactions hook.",
+        "Extract transactions table and pagination controls into a focused section component.",
+        "Keep existing account filter and page-reset behavior unchanged.",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
@@ -110,48 +110,171 @@
       "notes": ""
     },
     {
-      "id": "US-008",
-      "title": "Add optional OpenAI message cleanup enrichment service",
-      "description": "As a maintainer, I want AI message cleanup to run as best-effort enrichment so imports never fail when AI is unavailable.",
+      "id": "US-108",
+      "title": "Extract transaction edit and delete dialog modules",
+      "description": "As a developer, I want edit/delete dialog flows isolated so mutation changes do not affect table rendering code.",
       "acceptanceCriteria": [
-        "AI cleanup is executed only when OPENAI_API_KEY is configured",
-        "When key is missing or provider call fails/timeouts, parse/review/submit flows continue without failure",
-        "Review/session payload includes reason codes for unavailable suggestions (disabled, key missing, timeout, provider error)",
-        "Diagnostics avoid logging sensitive raw message content",
+        "Extract edit transaction form dialog into a dedicated component with typed props.",
+        "Extract delete transaction confirmation dialog into a dedicated component with typed props.",
+        "Preserve existing mutation payloads, validation, and post-mutation refetch behavior.",
         "Typecheck passes",
-        "Tests pass"
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
       "passes": true,
       "notes": ""
     },
     {
-      "id": "US-009",
-      "title": "Show AI message suggestions in review with per-row selection",
-      "description": "As a user, I want to choose original or AI-cleaned message per row before submit.",
+      "id": "US-109",
+      "title": "Extract import workflow state and request orchestration",
+      "description": "As a developer, I want import parsing/submission workflow state extracted from the large uploader component so state transitions are explicit and testable.",
       "acceptanceCriteria": [
-        "Review table shows original message and optional AI-cleaned suggestion for each row",
-        "Each row has explicit control to choose original vs AI-cleaned message",
-        "Default selection behavior is deterministic and documented in UI copy",
+        "Extract import state transitions and request orchestration into a dedicated route hook or reducer.",
+        "Keep parse and submit request payload semantics unchanged for `/api/imports/parse` and `/api/imports/submit`.",
+        "Preserve provider detection and selection-required handling behavior.",
         "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "Tests pass"
       ],
       "priority": 9,
       "passes": true,
       "notes": ""
     },
     {
-      "id": "US-010",
-      "title": "Persist per-row message source decisions on submit",
-      "description": "As a user, I want submitted transactions to persist the exact message choice I made during review.",
+      "id": "US-110",
+      "title": "Split import upload and review phase UIs",
+      "description": "As a developer, I want upload-phase and review-phase rendering separated so each phase can evolve independently.",
       "acceptanceCriteria": [
-        "Submit endpoint accepts finalized per-row message selection values",
-        "Persisted transactions use chosen message text per row",
-        "Submitted review session cleanup remains atomic with transaction persistence",
+        "Extract upload-phase UI into a focused component without changing file/account/provider selection behavior.",
+        "Extract review-phase UI into a focused component without changing review summaries, warnings, and submit controls.",
+        "Keep import page success/error notice behavior unchanged.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-111",
+      "title": "Decompose import provider dialog and review table row controls",
+      "description": "As a developer, I want provider selection and review-row cell controls componentized so row interactions are easier to maintain and test.",
+      "acceptanceCriteria": [
+        "Extract provider selection dialog into a dedicated component with stable selection behavior.",
+        "Split import review row controls into focused cell components while preserving accessibility labels on row controls.",
+        "Preserve message-source toggling and category-decision behavior per row.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-112",
+      "title": "Extract provider-mapping normalization and validation utilities",
+      "description": "As a developer, I want provider-mapping helper logic moved out of the manager component so form behavior is reusable and testable.",
+      "acceptanceCriteria": [
+        "Extract normalization parsing/building helpers and mapping validation helpers into route-local utility modules.",
+        "Keep required-field and duplicate-canonical-field validation behavior unchanged.",
+        "Add or update unit tests for extracted pure utility logic.",
         "Typecheck passes",
         "Tests pass"
       ],
-      "priority": 10,
+      "priority": 12,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-113",
+      "title": "Split provider-mappings add/edit forms and table actions",
+      "description": "As a developer, I want provider-mapping dialogs and table actions modularized so the largest route component becomes maintainable.",
+      "acceptanceCriteria": [
+        "Extract reusable field-mapping editor UI used by both add and edit flows.",
+        "Extract add dialog, edit dialog, and mappings table/actions into focused components.",
+        "Preserve create/update/delete payload structure and current success/error messaging behavior.",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-001",
+      "title": "Persist transaction note field",
+      "description": "As a developer, I want transactions to store an optional note so user context is persisted and available for future features.",
+      "acceptanceCriteria": [
+        "Add nullable `note` field to the Transaction data model.",
+        "Generate and apply migration successfully in local development.",
+        "Create and update transaction persistence paths can store note values.",
+        "Typecheck passes",
+        "Tests pass"
+      ],
+      "priority": 14,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Capture notes in import review and submit",
+      "description": "As a user importing transactions, I want to add a per-row note during review so context is captured before submit.",
+      "acceptanceCriteria": [
+        "Import review UI shows a note input for each staged row.",
+        "Per-row notes are included in `/api/imports/submit` finalized row payload.",
+        "Submitted transactions persist the provided note values.",
+        "Typecheck passes",
+        "Tests pass",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 15,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Add/edit notes from transactions overview",
+      "description": "As a user reviewing saved transactions, I want to add or edit a note from the transactions overview editing flow so I can maintain context over time.",
+      "acceptanceCriteria": [
+        "Transactions overview edit flow includes a note field with existing value prefilled.",
+        "Clearing a note is supported and persisted according to API contract.",
+        "`/api/transactions/[transactionId]` update flow persists note edits.",
+        "Typecheck passes",
+        "Tests pass",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Enforce note validation across entry points",
+      "description": "As a user, I want consistent note limits and validation so behavior is predictable across import and post-import editing.",
+      "acceptanceCriteria": [
+        "Import submit and transaction update APIs reject notes longer than 500 characters.",
+        "UI surfaces validation feedback near note inputs in import review and transaction edit flow.",
+        "Notes remain optional plain text and valid empty/null values continue to save.",
+        "Typecheck passes",
+        "Tests pass",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 17,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Show notes in transactions list",
+      "description": "As a user reviewing transactions, I want to see whether a transaction has a note directly in the list so context is visible without opening edit dialogs.",
+      "acceptanceCriteria": [
+        "Transactions list shows note presence/content in-row (for example icon with tooltip or inline text) for rows with notes.",
+        "Rows without notes render a clear empty state without breaking table alignment.",
+        "Existing transactions list loading, pagination, and edit/delete behavior remains unchanged.",
+        "Typecheck passes",
+        "Tests pass",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 18,
       "passes": true,
       "notes": ""
     }
