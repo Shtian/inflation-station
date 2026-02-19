@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_PROVIDER_MAPPING_PAYLOAD",
-        details: parsed.error.flatten(),
+        details: z.treeifyError(parsed.error),
       },
       { status: 400 },
     );
