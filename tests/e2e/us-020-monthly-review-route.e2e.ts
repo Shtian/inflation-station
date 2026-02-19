@@ -12,6 +12,36 @@ test("renders monthly review timeline cards with deterministic overview data", a
       body: JSON.stringify({
         rows: [
           {
+            monthStart: "2026-04-01",
+            totalSpendNok: 1850,
+            transactionCount: 9,
+            topCategory: {
+              categoryId: "cat-groceries",
+              categoryName: "Groceries",
+              spendNok: 820,
+            },
+            monthOverMonthSpendDeltaNok: 100,
+            reviewState: "GENERATING",
+            generatedAt: null,
+            errorMessage: null,
+            reviewText: null,
+          },
+          {
+            monthStart: "2026-03-01",
+            totalSpendNok: 1725,
+            transactionCount: 8,
+            topCategory: {
+              categoryId: "cat-utilities",
+              categoryName: "Utilities",
+              spendNok: 760,
+            },
+            monthOverMonthSpendDeltaNok: -125,
+            reviewState: "FAILED",
+            generatedAt: "2026-03-28T14:00:00.000Z",
+            errorMessage: "provider_error",
+            reviewText: null,
+          },
+          {
             monthStart: "2026-01-01",
             totalSpendNok: 1400,
             transactionCount: 6,
@@ -39,7 +69,8 @@ test("renders monthly review timeline cards with deterministic overview data", a
             reviewState: "GENERATED",
             generatedAt: "2026-02-15T10:00:00.000Z",
             errorMessage: null,
-            reviewText: "Spending increased due to rent and utilities.",
+            reviewText:
+              "Spending increased due to rent and utilities. Dining out was also higher than last month, while transport costs stayed stable.",
           },
         ],
       }),
@@ -73,15 +104,42 @@ test("renders monthly review timeline cards with deterministic overview data", a
   ).toBeVisible();
 
   const monthHeadings = page.locator("article h2");
-  await expect(monthHeadings).toHaveCount(2);
-  await expect(monthHeadings.nth(0)).toHaveText("February 2026");
-  await expect(monthHeadings.nth(1)).toHaveText("January 2026");
+  await expect(monthHeadings).toHaveCount(4);
+  await expect(monthHeadings.nth(0)).toHaveText("April 2026");
+  await expect(monthHeadings.nth(1)).toHaveText("March 2026");
+  await expect(monthHeadings.nth(2)).toHaveText("February 2026");
+  await expect(monthHeadings.nth(3)).toHaveText("January 2026");
 
   await expect(page.getByText("Total spend").first()).toBeVisible();
   await expect(page.getByText(/1\s?600,00/).first()).toBeVisible();
   await expect(page.getByText("Transactions").first()).toBeVisible();
-  await expect(page.getByText("7").first()).toBeVisible();
+  await expect(page.getByText("9").first()).toBeVisible();
   await expect(page.getByText(/Rent \(/)).toBeVisible();
+  await expect(
+    page.getByText("Review generation is in progress for this month."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Generation failed: provider_error"),
+  ).toBeVisible();
+
+  const generatedMonthCard = page
+    .locator("article")
+    .filter({ has: page.getByRole("heading", { name: "February 2026" }) });
+  await expect(generatedMonthCard.getByText("Review preview")).toBeVisible();
+  await expect(
+    generatedMonthCard.getByText(
+      /Spending increased due to rent and utilities/,
+    ),
+  ).toBeVisible();
+  await generatedMonthCard
+    .getByRole("button", { name: "View full review" })
+    .click();
+  await expect(
+    generatedMonthCard.locator("p.whitespace-pre-wrap"),
+  ).toBeVisible();
+  await generatedMonthCard
+    .getByRole("button", { name: "Hide full review" })
+    .click();
 
   await expect(
     page.getByText("No review generated for this month yet."),
