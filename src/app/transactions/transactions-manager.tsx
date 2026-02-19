@@ -10,6 +10,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import {
+  MAX_TRANSACTION_NOTE_LENGTH,
+  MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
+} from "@/lib/transactions/note";
 import { DeleteTransactionDialog } from "./components/delete-transaction-dialog";
 import { EditTransactionDialog } from "./components/edit-transaction-dialog";
 import { TransactionsTableSection } from "./components/transactions-table-section";
@@ -84,6 +88,10 @@ export function TransactionsManager() {
     useState<TransactionRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
+  const noteError =
+    editForm && editForm.note.trim().length > MAX_TRANSACTION_NOTE_LENGTH
+      ? MAX_TRANSACTION_NOTE_LENGTH_MESSAGE
+      : null;
 
   const closeEditDialog = useCallback(() => {
     setEditingTransaction(null);
@@ -128,6 +136,11 @@ export function TransactionsManager() {
 
     if (!bookingDate || !normalizedMerchant) {
       setEditError("Date and merchant are required.");
+      return;
+    }
+
+    if (note.length > MAX_TRANSACTION_NOTE_LENGTH) {
+      setEditError(MAX_TRANSACTION_NOTE_LENGTH_MESSAGE);
       return;
     }
 
@@ -262,6 +275,7 @@ export function TransactionsManager() {
         categories={categories}
         editForm={editForm}
         editError={editError}
+        noteError={noteError}
         editSaving={editSaving}
         onOpenChange={(nextOpen) => {
           if (!nextOpen && !editSaving) {

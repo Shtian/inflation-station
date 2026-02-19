@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  MAX_TRANSACTION_NOTE_LENGTH,
+  MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
+} from "@/lib/transactions/note";
 import type { MessageSource, ReviewRow } from "./import-review-table";
 import {
   MESSAGE_SOURCE_CLEANED,
@@ -129,6 +133,9 @@ export function useImportWorkflow() {
   const [noteDecisions, setNoteDecisions] = useState<Record<string, string>>(
     {},
   );
+  const [noteValidationErrors, setNoteValidationErrors] = useState<
+    Record<string, string>
+  >({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadAccounts = useCallback(async () => {
@@ -248,6 +255,7 @@ export function useImportWorkflow() {
     setCategoryDecisions({});
     setMessageDecisions({});
     setNoteDecisions({});
+    setNoteValidationErrors({});
     setProviderDetection(null);
     setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
     setImportError(null);
@@ -325,6 +333,7 @@ export function useImportWorkflow() {
     setCategoryDecisions({});
     setMessageDecisions({});
     setNoteDecisions({});
+    setNoteValidationErrors({});
 
     const formData = new FormData();
     formData.set("accountId", selectedAccountId);
@@ -401,6 +410,7 @@ export function useImportWorkflow() {
     );
 
     setNoteDecisions({});
+    setNoteValidationErrors({});
 
     setImportLoading(false);
   }, [selectedAccountId, selectedFile, selectedProviderId]);
@@ -412,9 +422,26 @@ export function useImportWorkflow() {
     setCategoryDecisions({});
     setMessageDecisions({});
     setNoteDecisions({});
+    setNoteValidationErrors({});
     setImportError(null);
     setSubmitError(null);
     setSubmitNotice(null);
+  }, []);
+
+  const setNoteDecision = useCallback((rowId: string, note: string) => {
+    setNoteDecisions((current) => ({
+      ...current,
+      [rowId]: note,
+    }));
+    setNoteValidationErrors((current) => {
+      if (!(rowId in current)) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[rowId];
+      return next;
+    });
   }, []);
 
   const submitReviewRows = useCallback(async () => {
@@ -423,9 +450,38 @@ export function useImportWorkflow() {
       return;
     }
 
+    const rows = parseResult.review.rows.map((row) => ({
+      selectedMessage:
+        messageDecisions[row.id] === MESSAGE_SOURCE_CLEANED &&
+        typeof row.cleanedMessage === "string" &&
+        row.cleanedMessage.trim().length > 0
+          ? row.cleanedMessage
+          : row.title,
+      rowId: row.id,
+      categoryId: categoryDecisions[row.id] ?? row.categoryId,
+      note: noteDecisions[row.id] ?? null,
+    }));
+
+    const rowNoteErrors = rows.reduce<Record<string, string>>((acc, row) => {
+      if (
+        typeof row.note === "string" &&
+        row.note.length > MAX_TRANSACTION_NOTE_LENGTH
+      ) {
+        acc[row.rowId] = MAX_TRANSACTION_NOTE_LENGTH_MESSAGE;
+      }
+      return acc;
+    }, {});
+
+    if (Object.keys(rowNoteErrors).length > 0) {
+      setNoteValidationErrors(rowNoteErrors);
+      setSubmitError("Fix note validation errors before confirming import.");
+      return;
+    }
+
     setSubmitLoading(true);
     setSubmitError(null);
     setSubmitNotice(null);
+    setNoteValidationErrors({});
 
     const response = await fetch("/api/imports/submit", {
       method: "POST",
@@ -435,17 +491,7 @@ export function useImportWorkflow() {
       body: JSON.stringify({
         sessionId: parseResult.review.sessionId,
         invalidCount: parseResult.summary.invalid,
-        rows: parseResult.review.rows.map((row) => ({
-          selectedMessage:
-            messageDecisions[row.id] === MESSAGE_SOURCE_CLEANED &&
-            typeof row.cleanedMessage === "string" &&
-            row.cleanedMessage.trim().length > 0
-              ? row.cleanedMessage
-              : row.title,
-          rowId: row.id,
-          categoryId: categoryDecisions[row.id] ?? row.categoryId,
-          note: noteDecisions[row.id] ?? null,
-        })),
+        rows,
       }),
     });
 
@@ -470,6 +516,7 @@ export function useImportWorkflow() {
     setCategoryDecisions({});
     setMessageDecisions({});
     setNoteDecisions({});
+    setNoteValidationErrors({});
     setSelectedFile(null);
 
     if (fileInputRef.current) {
@@ -493,6 +540,7 @@ export function useImportWorkflow() {
     importLoading,
     isProviderDialogOpen,
     messageDecisions,
+    noteValidationErrors,
     noteDecisions,
     onFileSelected,
     clearSelectedFile,
@@ -509,6 +557,7 @@ export function useImportWorkflow() {
     setDialogSelectedProviderId,
     setIsProviderDialogOpen,
     setMessageDecisions,
+    setNoteDecision,
     setNoteDecisions,
     setSelectedAccountId,
     submitError,

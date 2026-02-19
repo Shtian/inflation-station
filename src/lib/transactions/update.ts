@@ -1,6 +1,10 @@
 import { PaymentType } from "@prisma/client";
 import { z } from "zod";
 import type { TransactionListRow } from "./list";
+import {
+  MAX_TRANSACTION_NOTE_LENGTH,
+  MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
+} from "./note";
 
 type DecimalLike = { toString(): string } | number;
 
@@ -106,7 +110,11 @@ const transactionUpdatePayloadSchema = z
     amountNok: z.number().finite().optional(),
     normalizedMerchant: z.string().trim().min(1).optional(),
     paymentType: z.nativeEnum(PaymentType).optional(),
-    note: z.string().nullable().optional(),
+    note: z
+      .string()
+      .max(MAX_TRANSACTION_NOTE_LENGTH, MAX_TRANSACTION_NOTE_LENGTH_MESSAGE)
+      .nullable()
+      .optional(),
     id: z.never().optional(),
     accountId: z.never().optional(),
     createdAt: z.never().optional(),

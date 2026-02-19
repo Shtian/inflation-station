@@ -5,6 +5,10 @@ import {
   submitImportReview,
 } from "@/lib/import/review-submit";
 import { prisma } from "@/lib/prisma";
+import {
+  MAX_TRANSACTION_NOTE_LENGTH,
+  MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
+} from "@/lib/transactions/note";
 
 type SubmitImportPayload = {
   sessionId: string;
@@ -74,6 +78,13 @@ function parsePayload(payload: unknown): SubmitImportPayload | null {
         return null;
       }
 
+      if (
+        typeof row.note === "string" &&
+        row.note.length > MAX_TRANSACTION_NOTE_LENGTH
+      ) {
+        return null;
+      }
+
       return {
         rowId: row.rowId,
         categoryId: row.categoryId,
@@ -109,7 +120,7 @@ export async function POST(request: Request) {
   if (!payload) {
     return badRequest(
       "INVALID_IMPORT_REVIEW_SUBMIT_PAYLOAD",
-      "Expected sessionId, invalidCount, and rows [{ rowId, categoryId, selectedMessage, note? }] in request body.",
+      `Expected sessionId, invalidCount, and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. ${MAX_TRANSACTION_NOTE_LENGTH_MESSAGE}`,
     );
   }
 

@@ -421,6 +421,13 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   ).toBeVisible();
   await expect(page.getByLabel("Currency")).toHaveCount(0);
   await expect(page.getByLabel("Note")).toHaveValue("Legacy reminder");
+  await page.getByLabel("Note").fill("x".repeat(501));
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByLabel("Note")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByRole("alert")).toHaveText(
+    "Note must be 500 characters or fewer.",
+  );
+  await expect.poll(() => lastPatchPayload).toBeNull();
 
   await page.getByLabel("Merchant").fill("Updated Corner Shop");
   await page.getByLabel("Note").fill("");

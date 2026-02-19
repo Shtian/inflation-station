@@ -4,6 +4,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   page,
 }) => {
   let submitRequestBody: unknown = null;
+  let submitRequestCount = 0;
 
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
@@ -121,6 +122,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   });
 
   await page.route("**/api/imports/submit", async (route, request) => {
+    submitRequestCount += 1;
     submitRequestBody = request.postDataJSON();
     await route.fulfill({
       status: 200,
@@ -202,6 +204,15 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   const rowOneNote = page.getByRole("textbox", {
     name: "Note for row 2",
   });
+  await rowOneNote.fill("x".repeat(501));
+  await page.getByRole("button", { name: "Confirm Import" }).click();
+  await expect(
+    page.getByText("Fix note validation errors before confirming import."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Note must be 500 characters or fewer."),
+  ).toBeVisible();
+  expect(submitRequestCount).toBe(0);
   await rowOneNote.fill("Split groceries with roommate");
 
   await page.getByRole("button", { name: "Confirm Import" }).click();
@@ -213,6 +224,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   ).toBeVisible();
   await expect(page.getByText("Import Preview")).toHaveCount(0);
   await expect(page.getByLabel("CSV file")).toHaveValue("");
+  expect(submitRequestCount).toBe(1);
   expect(submitRequestBody).toEqual({
     sessionId: "session-1",
     invalidCount: 1,

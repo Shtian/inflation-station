@@ -1,5 +1,6 @@
 import { PaymentType } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
+import { MAX_TRANSACTION_NOTE_LENGTH } from "./note";
 import { parseTransactionUpdatePayload, updateTransaction } from "./update";
 
 function createUpdateDbMock() {
@@ -85,6 +86,20 @@ describe("parseTransactionUpdatePayload", () => {
     }
 
     expect(parsed.data.note).toBeNull();
+  });
+
+  it("rejects note updates longer than 500 characters", () => {
+    const parsed = parseTransactionUpdatePayload({
+      amountNok: -100.25,
+      note: "x".repeat(MAX_TRANSACTION_NOTE_LENGTH + 1),
+    });
+
+    expect(parsed.success).toBe(false);
+    if (parsed.success) {
+      return;
+    }
+
+    expect(parsed.error.flatten().fieldErrors.note).toBeDefined();
   });
 
   it("rejects currency updates", () => {

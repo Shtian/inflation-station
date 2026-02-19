@@ -10,6 +10,7 @@
 - Keep `/import` request orchestration and review-decision state in `src/app/import/use-import-workflow.ts`; keep `import-uploader.tsx` focused on rendering and local drag/drop presentation state.
 - Keep `/import` upload-phase and review-phase markup in focused components under `src/app/import/components/*`; keep `import-uploader.tsx` as the route-level composition shell plus provider dialog orchestration.
 - Keep provider-selection dialog and import-review row controls as focused components under `src/app/import/components/*`, and preserve stable row-level accessible names on controls (`Category for row N`, `Toggle message source for row N`, `Note for row N`) for Playwright/user-facing locators.
+- Keep transaction/import note length limits centralized in `src/lib/transactions/note.ts` and apply the same max-length rule in both API payload validation and inline UI validation messages.
 - Keep API handlers in `src/app/api/**` and use the shared server-only Prisma client in `src/lib/prisma.ts`.
 - Use shadcn table primitives from `src/components/ui/table.tsx` for tabular UI instead of ad-hoc table markup.
 - For paginated table routes, keep summary metadata (`page`, `totalPages`, `total`) outside the table and keep row rendering inside table primitives.
@@ -552,4 +553,38 @@
   - After extending E2E PATCH payload shapes, update local request payload type assertions in the test to avoid TypeScript failures.
   - Useful context
   - `tests/e2e/us-018-transactions-route-controls.e2e.ts` now validates both note prefill in the edit dialog and note clearing persistence (`note: null` in PATCH payload).
+---
+## 2026-02-19 09:02:09 CET - US-004
+- What was implemented
+- Enforced max 500-character note validation in both entry-point APIs: `/api/imports/submit` payload parsing and `/api/transactions/[transactionId]` update payload parsing.
+- Centralized note length constants/messages in `src/lib/transactions/note.ts` and reused them across API + UI layers.
+- Added inline note validation feedback near note inputs in `/import` review rows and `/transactions` edit dialog, and blocked submit/save until invalid notes are corrected.
+- Added test coverage for note-length validation in unit and E2E paths.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/lib/transactions/note.ts`
+- `src/lib/transactions/update.ts`
+- `src/lib/transactions/update.test.ts`
+- `src/app/api/imports/submit/route.ts`
+- `src/app/api/imports/submit/route.test.ts`
+- `src/app/import/use-import-workflow.ts`
+- `src/app/import/import-uploader.tsx`
+- `src/app/import/import-review-table.tsx`
+- `src/app/import/components/import-review-phase.tsx`
+- `src/app/import/components/import-review-note-cell.tsx`
+- `src/app/transactions/transactions-manager.tsx`
+- `src/app/transactions/components/edit-transaction-dialog.tsx`
+- `tests/e2e/us-016-import-route-upload.e2e.ts`
+- `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered: Keep note-length validation constants centralized and shared across API validators and client-side inline feedback to prevent drift between entry points.
+  - Gotchas encountered: New Vitest route tests for `src/app/api/**` may require explicit mocks for aliased shared modules used by the route under test.
+  - Useful context: `/import` validation now blocks `Confirm Import` client-side when any per-row note exceeds 500 chars and renders row-level errors using the existing `Note for row N` controls.
 ---

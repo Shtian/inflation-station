@@ -105,9 +105,10 @@ type ImportReviewTableProps = {
   categories: Category[];
   categoryDecisions: Record<string, string>;
   noteDecisions: Record<string, string>;
+  noteValidationErrors: Record<string, string>;
   messageDecisions: Record<string, MessageSource>;
   setCategoryDecisions: Dispatch<SetStateAction<Record<string, string>>>;
-  setNoteDecisions: Dispatch<SetStateAction<Record<string, string>>>;
+  setNoteDecision: (rowId: string, note: string) => void;
   setMessageDecisions: Dispatch<SetStateAction<Record<string, MessageSource>>>;
 };
 
@@ -116,9 +117,10 @@ export function ImportReviewTable({
   categories,
   categoryDecisions,
   noteDecisions,
+  noteValidationErrors,
   messageDecisions,
   setCategoryDecisions,
-  setNoteDecisions,
+  setNoteDecision,
   setMessageDecisions,
 }: ImportReviewTableProps) {
   return (
@@ -204,12 +206,8 @@ export function ImportReviewTable({
                     rowId={row.id}
                     rowNumber={row.rowNumber}
                     value={noteDecisions[row.id] ?? ""}
-                    onNoteChange={(rowId, note) =>
-                      setNoteDecisions((current) => ({
-                        ...current,
-                        [rowId]: note,
-                      }))
-                    }
+                    errorMessage={noteValidationErrors[row.id] ?? null}
+                    onNoteChange={setNoteDecision}
                   />
                 </TableCell>
                 <TableCell>

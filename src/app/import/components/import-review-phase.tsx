@@ -42,6 +42,7 @@ type ImportReviewPhaseProps = {
   importError: string | null;
   importLoading: boolean;
   messageDecisions: Record<string, MessageSource>;
+  noteValidationErrors: Record<string, string>;
   openProviderDialog: () => void;
   parseResult: ParseResponse | null;
   providerDetection: ProviderDetection | null;
@@ -49,7 +50,7 @@ type ImportReviewPhaseProps = {
   reviewCategoryOptions: Category[];
   selectedAccountId: string;
   setCategoryDecisions: Dispatch<SetStateAction<Record<string, string>>>;
-  setNoteDecisions: Dispatch<SetStateAction<Record<string, string>>>;
+  setNoteDecision: (rowId: string, note: string) => void;
   setMessageDecisions: Dispatch<SetStateAction<Record<string, MessageSource>>>;
   submitError: string | null;
   submitLoading: boolean;
@@ -73,6 +74,7 @@ export function ImportReviewPhase({
   importError,
   importLoading,
   messageDecisions,
+  noteValidationErrors,
   openProviderDialog,
   parseResult,
   providerDetection,
@@ -80,7 +82,7 @@ export function ImportReviewPhase({
   reviewCategoryOptions,
   selectedAccountId,
   setCategoryDecisions,
-  setNoteDecisions,
+  setNoteDecision,
   setMessageDecisions,
   submitError,
   submitLoading,
@@ -296,9 +298,10 @@ export function ImportReviewPhase({
             categories={reviewCategoryOptions}
             categoryDecisions={categoryDecisions}
             noteDecisions={noteDecisions}
+            noteValidationErrors={noteValidationErrors}
             messageDecisions={messageDecisions}
             setCategoryDecisions={setCategoryDecisions}
-            setNoteDecisions={setNoteDecisions}
+            setNoteDecision={setNoteDecision}
             setMessageDecisions={setMessageDecisions}
           />
         </div>
