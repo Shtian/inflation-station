@@ -22,6 +22,7 @@
 - Keep `/api/transactions` list rows enriched with `categoryName` so `/transactions` can render category labels (or uncategorized states) without extra category lookups.
 - Keep transaction edit UI state local in `src/app/transactions/*` and refresh list data via the same paginated query after successful saves to preserve active filter/page context.
 - Include `note` in `/api/transactions` list rows so the `/transactions` edit dialog can prefill note values without extra detail fetches.
+- In `/transactions` table rendering, keep a dedicated note column with explicit empty-state text (for example `No note`) so note visibility and row alignment remain stable.
 - Keep the transactions edit workflow NOK-only by removing currency from edit payload parsing/UI and forcing persisted updates to `currency: "NOK"`.
 - Keep transaction delete confirmation state local in `src/app/transactions/*` and refetch the paginated list after delete so the UI can recover from last-row-on-page removals.
 - Keep `/transactions` dialog markup in focused components (`edit-transaction-dialog.tsx`, `delete-transaction-dialog.tsx`) and pass typed props from `transactions-manager.tsx` to isolate mutation workflows from table rendering.
@@ -587,4 +588,29 @@
   - Patterns discovered: Keep note-length validation constants centralized and shared across API validators and client-side inline feedback to prevent drift between entry points.
   - Gotchas encountered: New Vitest route tests for `src/app/api/**` may require explicit mocks for aliased shared modules used by the route under test.
   - Useful context: `/import` validation now blocks `Confirm Import` client-side when any per-row note exceeds 500 chars and renders row-level errors using the existing `Note for row N` controls.
+---
+## 2026-02-19 09:20:46 CET - US-005
+- What was implemented
+- Added a dedicated `Note` column to `/transactions` table rows and rendered note text inline when present.
+- Added explicit empty-state rendering (`No note`) for rows without notes so table alignment stays stable.
+- Updated transactions route Playwright coverage to assert note-column visibility and both note-present / note-empty row states.
+- Updated root `AGENTS.md` with a reusable transactions note-display convention.
+- Files changed
+- `AGENTS.md`
+- `ralph/prd.json`
+- `ralph/progress.txt`
+- `src/app/transactions/components/transactions-table-section.tsx`
+- `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+- Quality checks run (and result)
+- `pnpm lint` ✅
+- `pnpm exec tsc --noEmit` ✅
+- `pnpm test` ✅
+- `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered
+  - For `/transactions`, keep note visibility in-table with an explicit null-note placeholder so users do not need dialog opens to inspect context.
+  - Gotchas encountered
+  - Broad `getByText("...")` assertions can collide when note text contains existing labels; prefer exact matching when asserting repeated words.
+  - Useful context
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts` now validates note-column behavior alongside existing filters/pagination/edit/delete flows.
 ---

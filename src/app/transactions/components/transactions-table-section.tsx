@@ -95,6 +95,7 @@ export function TransactionsTableSection({
                 <TableHead>Merchant</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Payment type</TableHead>
+                <TableHead>Note</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="w-0 text-right">
                   <span className="sr-only">Actions</span>
@@ -112,6 +113,18 @@ export function TransactionsTableSection({
                     />
                   </TableCell>
                   <TableCell>{row.paymentType}</TableCell>
+                  <TableCell>
+                    {row.note ? (
+                      <span
+                        className="block max-w-64 truncate"
+                        title={row.note}
+                      >
+                        {row.note}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">No note</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     {formatNok(row.amountNok)}
                   </TableCell>

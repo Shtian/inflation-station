@@ -261,6 +261,22 @@
       "priority": 17,
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Show notes in transactions list",
+      "description": "As a user reviewing transactions, I want to see whether a transaction has a note directly in the list so context is visible without opening edit dialogs.",
+      "acceptanceCriteria": [
+        "Transactions list shows note presence/content in-row (for example icon with tooltip or inline text) for rows with notes.",
+        "Rows without notes render a clear empty state without breaking table alignment.",
+        "Existing transactions list loading, pagination, and edit/delete behavior remains unchanged.",
+        "Typecheck passes",
+        "Tests pass",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 18,
+      "passes": true,
+      "notes": ""
     }
   ]
 }
