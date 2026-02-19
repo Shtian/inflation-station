@@ -25,6 +25,12 @@ enum SuggestionSource {
   OPENAI
 }
 
+enum MonthlyReviewStatus {
+  GENERATING
+  GENERATED
+  FAILED
+}
+
 model Account {
   id          String         @id @default(cuid())
   name        String         @unique
@@ -160,4 +166,15 @@ model ImportProviderFieldMapping {
 
   @@unique([providerMappingId, canonicalField])
   @@index([providerMappingId, sourceField])
+}
+
+model MonthlyReview {
+  id           String              @id @default(cuid())
+  monthStart   DateTime            @unique
+  status       MonthlyReviewStatus @default(GENERATING)
+  reviewText   String?
+  errorMessage String?
+  generatedAt  DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 }
