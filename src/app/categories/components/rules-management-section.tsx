@@ -1,5 +1,6 @@
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { CategoryBadge } from "@/components/category-badge";
+import { CategoryCombobox } from "@/components/category-combobox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -89,28 +90,20 @@ export function RulesManagementSection({
         >
           Category
         </Label>
-        <Select
+        <CategoryCombobox
           value={ruleCategoryId}
+          categories={categories}
           onValueChange={onRuleCategoryIdChange}
+          id="rule-category"
+          placeholder={
+            categories.length === 0
+              ? "No categories available"
+              : "Select category"
+          }
+          emptyLabel="No matching categories."
           disabled={categories.length === 0}
-        >
-          <SelectTrigger id="rule-category" className="w-full">
-            <SelectValue
-              placeholder={
-                categories.length === 0
-                  ? "No categories available"
-                  : "Select category"
-              }
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          showClear
+        />
 
         <Label
           htmlFor="rule-merchant"

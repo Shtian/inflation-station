@@ -1,3 +1,4 @@
+import { CategoryCombobox } from "@/components/category-combobox";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -78,25 +79,22 @@ export function EditTransactionDialog({
               >
                 Category
               </Label>
-              <Select
-                value={editForm.categoryId}
-                onValueChange={onCategoryChange}
+              <CategoryCombobox
+                value={
+                  editForm.categoryId === UNCATEGORIZED_VALUE
+                    ? ""
+                    : editForm.categoryId
+                }
+                categories={categories}
+                onValueChange={(value) =>
+                  onCategoryChange(value || UNCATEGORIZED_VALUE)
+                }
+                id="edit-category-id"
+                placeholder="Uncategorized"
+                emptyLabel="No matching categories."
                 disabled={editSaving}
-              >
-                <SelectTrigger id="edit-category-id">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UNCATEGORIZED_VALUE}>
-                    Uncategorized
-                  </SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                showClear
+              />
             </div>
 
             <div className="space-y-2">
