@@ -2,7 +2,7 @@
 
 import type { CategoryKind } from "@prisma/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   Account,
   Category,
@@ -309,51 +309,60 @@ export function CategoriesManager() {
         </p>
       </div>
 
-      <Separator className="my-4" />
+      <Tabs defaultValue="category-management" className="space-y-4">
+        <TabsList variant="line">
+          <TabsTrigger value="category-management">
+            Category management
+          </TabsTrigger>
+          <TabsTrigger value="category-rules">Category rules</TabsTrigger>
+        </TabsList>
 
-      <CategoryManagementSection
-        accounts={accounts}
-        categories={categories}
-        loading={loading}
-        busyKey={busyKey}
-        newCategoryName={newCategoryName}
-        newCategoryKind={newCategoryKind}
-        newCategoryScope={newCategoryScope}
-        onNewCategoryNameChange={setNewCategoryName}
-        onNewCategoryKindChange={setNewCategoryKind}
-        onNewCategoryScopeChange={setNewCategoryScope}
-        editingCategoryId={editingCategoryId}
-        editCategoryName={editCategoryName}
-        onCreateCategory={createCategory}
-        onDeleteCategory={deleteCategory}
-        onStartRenameCategory={startRenameCategory}
-        onCancelRenameCategory={cancelRenameCategory}
-        onEditCategoryNameChange={setEditCategoryName}
-        onRenameCategory={renameCategory}
-      />
+        <TabsContent value="category-management">
+          <CategoryManagementSection
+            accounts={accounts}
+            categories={categories}
+            loading={loading}
+            busyKey={busyKey}
+            newCategoryName={newCategoryName}
+            newCategoryKind={newCategoryKind}
+            newCategoryScope={newCategoryScope}
+            onNewCategoryNameChange={setNewCategoryName}
+            onNewCategoryKindChange={setNewCategoryKind}
+            onNewCategoryScopeChange={setNewCategoryScope}
+            editingCategoryId={editingCategoryId}
+            editCategoryName={editCategoryName}
+            onCreateCategory={createCategory}
+            onDeleteCategory={deleteCategory}
+            onStartRenameCategory={startRenameCategory}
+            onCancelRenameCategory={cancelRenameCategory}
+            onEditCategoryNameChange={setEditCategoryName}
+            onRenameCategory={renameCategory}
+          />
+        </TabsContent>
 
-      <Separator className="my-4" />
-
-      <RulesManagementSection
-        accounts={accounts}
-        activeAccounts={activeAccounts}
-        categories={categories}
-        categoryRules={categoryRules}
-        loading={loading}
-        busyKey={busyKey}
-        ruleCategoryId={ruleCategoryId}
-        ruleMerchantContains={ruleMerchantContains}
-        rulePaymentType={rulePaymentType}
-        rulePriority={rulePriority}
-        ruleScope={ruleScope}
-        onRuleCategoryIdChange={setRuleCategoryId}
-        onRuleMerchantContainsChange={setRuleMerchantContains}
-        onRulePaymentTypeChange={setRulePaymentType}
-        onRulePriorityChange={setRulePriority}
-        onRuleScopeChange={setRuleScope}
-        onCreateRule={createRule}
-        onDeleteRule={deleteRule}
-      />
+        <TabsContent value="category-rules">
+          <RulesManagementSection
+            accounts={accounts}
+            activeAccounts={activeAccounts}
+            categories={categories}
+            categoryRules={categoryRules}
+            loading={loading}
+            busyKey={busyKey}
+            ruleCategoryId={ruleCategoryId}
+            ruleMerchantContains={ruleMerchantContains}
+            rulePaymentType={rulePaymentType}
+            rulePriority={rulePriority}
+            ruleScope={ruleScope}
+            onRuleCategoryIdChange={setRuleCategoryId}
+            onRuleMerchantContainsChange={setRuleMerchantContains}
+            onRulePaymentTypeChange={setRulePaymentType}
+            onRulePriorityChange={setRulePriority}
+            onRuleScopeChange={setRuleScope}
+            onCreateRule={createRule}
+            onDeleteRule={deleteRule}
+          />
+        </TabsContent>
+      </Tabs>
 
       {error ? (
         <p
