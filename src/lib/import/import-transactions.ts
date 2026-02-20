@@ -1,11 +1,5 @@
 import type { PaymentType } from "@prisma/client";
 import {
-  buildOpenAiSuggestions as buildOpenAiSuggestionsWithApi,
-  type OpenAiCategorizationSuggestion,
-  type OpenAiSuggestionCategory,
-  type OpenAiSuggestionTransaction,
-} from "../categorization/openai-suggestions";
-import {
   buildRuleBasedSuggestions,
   type CategoryRuleCandidate,
 } from "../categorization/rule-engine";
@@ -72,26 +66,6 @@ type ImportTransactionsDbClient = {
       orderBy: [{ priority: "asc" }, { id: "asc" }];
     }): Promise<CategoryRuleCandidate[]>;
   };
-  category: {
-    findMany(args: {
-      where: {
-        OR: Array<
-          | {
-              accountId: string;
-            }
-          | {
-              accountId: null;
-            }
-        >;
-      };
-      select: {
-        id: true;
-        name: true;
-        kind: true;
-      };
-      orderBy: [{ name: "asc" }, { id: "asc" }];
-    }): Promise<OpenAiSuggestionCategory[]>;
-  };
   transaction: {
     findMany(args: {
       where: { accountId: string };
@@ -137,7 +111,7 @@ type ImportTransactionsDbClient = {
       data: Array<{
         transactionId: string;
         suggestedCategoryId: string;
-        source: "RULE" | "OPENAI";
+        source: "RULE";
         confidence: number;
         reasoning: string;
       }>;
@@ -276,14 +250,6 @@ export async function importTransactionsFromCsv(
     accountId: string;
     csvContent: string;
   },
-  options?: {
-    openAiApiKey?: string | null;
-    buildOpenAiSuggestions?: (params: {
-      apiKey: string | null | undefined;
-      categories: OpenAiSuggestionCategory[];
-      transactions: OpenAiSuggestionTransaction[];
-    }) => Promise<OpenAiCategorizationSuggestion[]>;
-  },
 ): Promise<ImportTransactionsResult> {
   const account = await db.account.findUnique({
     where: { id: params.accountId },
@@ -374,42 +340,7 @@ export async function importTransactionsFromCsv(
     insertedTransactions,
     categoryRules,
   );
-  const suggestedByRule = new Set(
-    ruleSuggestions.map((suggestion) => suggestion.transactionId),
-  );
-  const unresolvedTransactions = insertedTransactions.filter(
-    (transaction) => !suggestedByRule.has(transaction.id),
-  );
-
-  const categories = await db.category.findMany({
-    where: {
-      OR: [{ accountId: params.accountId }, { accountId: null }],
-    },
-    select: {
-      id: true,
-      name: true,
-      kind: true,
-    },
-    orderBy: [{ name: "asc" }, { id: "asc" }],
-  });
-  const openAiSuggestionsBuilder =
-    options?.buildOpenAiSuggestions ?? buildOpenAiSuggestionsWithApi;
-  const resolvedOpenAiApiKey =
-    options && "openAiApiKey" in options
-      ? options.openAiApiKey
-      : process.env.OPENAI_API_KEY;
-  let openAiSuggestions: OpenAiCategorizationSuggestion[] = [];
-  try {
-    openAiSuggestions = await openAiSuggestionsBuilder({
-      apiKey: resolvedOpenAiApiKey,
-      categories,
-      transactions: unresolvedTransactions,
-    });
-  } catch {
-    openAiSuggestions = [];
-  }
-
-  const suggestions = [...ruleSuggestions, ...openAiSuggestions];
+  const suggestions = ruleSuggestions;
 
   if (suggestions.length > 0) {
     await db.categorizationSuggestion.createMany({
