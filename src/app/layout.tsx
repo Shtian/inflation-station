@@ -40,7 +40,7 @@ export default function RootLayout({
           storageKey="inflation-station-theme"
         >
           <div className="min-h-screen">
-            <header className="border-b border-border bg-background/95 backdrop-blur">
+            <header className="relative z-nav-header border-b border-border bg-background/95 backdrop-blur">
               <div className="mx-auto flex w-full max-w-6xl items-center gap-6 px-5 py-3 md:px-10">
                 <Link href="/" className="text-sm font-semibold tracking-tight">
                   Inflation Station
