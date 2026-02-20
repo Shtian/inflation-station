@@ -1,5 +1,4 @@
 import { Input } from "@/components/ui/input";
-import { MAX_TRANSACTION_NOTE_LENGTH } from "@/lib/transactions/note";
 
 type ImportReviewNoteCellProps = {
   rowId: string;
@@ -28,13 +27,9 @@ export function ImportReviewNoteCell({
         aria-invalid={isInvalid}
         className="h-8 text-xs"
       />
-      <p
-        className={`text-[11px] ${isInvalid ? "text-red-700" : "text-muted-foreground"}`}
-      >
-        {isInvalid
-          ? errorMessage
-          : `${value.length}/${MAX_TRANSACTION_NOTE_LENGTH} characters`}
-      </p>
+      {isInvalid ? (
+        <p className="text-[11px] text-red-700">{errorMessage}</p>
+      ) : null}
     </div>
   );
 }
