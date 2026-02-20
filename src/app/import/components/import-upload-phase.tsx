@@ -314,7 +314,6 @@ export function ImportUploadPhase({
         <Button
           onClick={parseCsv}
           disabled={!hasActiveAccounts || importLoading}
-          variant="secondary"
           className="mt-6 w-full gap-2"
         >
           {importLoading ? (
