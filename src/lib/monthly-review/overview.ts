@@ -7,6 +7,7 @@ type MonthlyOverviewTransactionRecord = {
   category: {
     id: string;
     name: string;
+    kind: string;
   } | null;
 };
 
@@ -25,6 +26,7 @@ type MonthlyOverviewDbClient = {
           select: {
             id: true;
             name: true;
+            kind: true;
           };
         };
       };
@@ -76,6 +78,7 @@ type MutableMonthTotals = {
 
 const UNCATEGORIZED_KEY = "__uncategorized__";
 const UNCATEGORIZED_NAME = "Uncategorized";
+const TRANSFER_CATEGORY_KIND = "TRANSFER";
 
 function toNumber(value: DecimalLike): number {
   return Number.parseFloat(value.toString());
@@ -161,6 +164,7 @@ export async function getMonthlyOverview(
           select: {
             id: true,
             name: true,
+            kind: true,
           },
         },
       },
@@ -187,6 +191,10 @@ export async function getMonthlyOverview(
 
     const amount = toNumber(transaction.amountNok);
     if (amount >= 0) {
+      continue;
+    }
+
+    if (transaction.category?.kind === TRANSFER_CATEGORY_KIND) {
       continue;
     }
 

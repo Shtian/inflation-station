@@ -55,6 +55,7 @@ type MonthlyTimelineDbClient = {
           select: {
             id: true;
             name: true;
+            kind: true;
           };
         };
       };
@@ -67,6 +68,7 @@ type MonthlyTimelineDbClient = {
         category: {
           id: string;
           name: string;
+          kind: string;
         } | null;
       }>
     >;
