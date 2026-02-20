@@ -269,7 +269,6 @@ async function buildReviewText(params: {
 
     const result = await generateText({
       model: openai.chat(params.model ?? DEFAULT_OPENAI_MODEL),
-      temperature: 0,
       maxRetries: 0,
       system: params.input.systemPrompt,
       prompt: userPrompt,
