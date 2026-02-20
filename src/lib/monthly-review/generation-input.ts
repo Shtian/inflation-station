@@ -13,6 +13,7 @@ type MonthlyReviewGenerationTransactionRecord = {
   category: {
     id: string;
     name: string;
+    kind: string;
   } | null;
 };
 
@@ -35,6 +36,7 @@ type MonthlyReviewGenerationDbClient = {
           select: {
             id: true;
             name: true;
+            kind: true;
           };
         };
       };
@@ -123,6 +125,7 @@ type MutableMerchantTotal = {
 const MONTH_KEY_PATTERN = /^\d{4}-\d{2}-01$/;
 const UNCATEGORIZED_NAME = "Uncategorized";
 const UNKNOWN_MERCHANT_NAME = "Unknown merchant";
+const TRANSFER_CATEGORY_KIND = "TRANSFER";
 
 function toNumber(value: DecimalLike): number {
   return Number.parseFloat(value.toString());
@@ -169,7 +172,9 @@ function toSpendTransactions(
   transactions: MonthlyReviewGenerationTransactionRecord[],
 ) {
   return transactions.filter(
-    (transaction) => toNumber(transaction.amountNok) < 0,
+    (transaction) =>
+      toNumber(transaction.amountNok) < 0 &&
+      transaction.category?.kind !== TRANSFER_CATEGORY_KIND,
   );
 }
 
@@ -292,6 +297,7 @@ export async function buildMonthlyReviewGenerationInput(
             select: {
               id: true,
               name: true,
+              kind: true,
             },
           },
         },
@@ -314,6 +320,7 @@ export async function buildMonthlyReviewGenerationInput(
             select: {
               id: true,
               name: true,
+              kind: true,
             },
           },
         },

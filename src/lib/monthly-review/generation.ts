@@ -65,6 +65,7 @@ type MonthlyReviewGenerationDbClient = {
           select: {
             id: true;
             name: true;
+            kind: true;
           };
         };
       };
@@ -79,6 +80,7 @@ type MonthlyReviewGenerationDbClient = {
         category: {
           id: string;
           name: string;
+          kind: string;
         } | null;
       }>
     >;

@@ -15,6 +15,7 @@ function createGenerationInputDbMock(params?: {
     category: {
       id: string;
       name: string;
+      kind: string;
     } | null;
   }>;
   previousMonthTransactions?: Array<{
@@ -26,6 +27,7 @@ function createGenerationInputDbMock(params?: {
     category: {
       id: string;
       name: string;
+      kind: string;
     } | null;
   }>;
 }) {
@@ -64,7 +66,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
           amountNok: -700,
           normalizedMerchant: "REMA 1000",
           paymentType: PaymentType.CARD,
-          category: { id: "cat-food", name: "Food" },
+          category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
         },
         {
           id: "tx-feb-2",
@@ -72,7 +74,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
           amountNok: -300,
           normalizedMerchant: "REMA 1000",
           paymentType: PaymentType.CARD,
-          category: { id: "cat-food", name: "Food" },
+          category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
         },
         {
           id: "tx-feb-3",
@@ -80,7 +82,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
           amountNok: -500,
           normalizedMerchant: "VY",
           paymentType: PaymentType.CARD,
-          category: { id: "cat-travel", name: "Travel" },
+          category: { id: "cat-travel", name: "Travel", kind: "EXPENSE" },
         },
         {
           id: "tx-feb-4",
@@ -88,7 +90,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
           amountNok: 34000,
           normalizedMerchant: "EMPLOYER",
           paymentType: PaymentType.TRANSFER,
-          category: { id: "cat-income", name: "Income" },
+          category: { id: "cat-income", name: "Income", kind: "INCOME" },
         },
       ],
       previousMonthTransactions: [
@@ -98,7 +100,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
           amountNok: -1000,
           normalizedMerchant: "REMA 1000",
           paymentType: PaymentType.CARD,
-          category: { id: "cat-food", name: "Food" },
+          category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
         },
       ],
     });
@@ -244,5 +246,99 @@ describe("buildMonthlyReviewGenerationInput", () => {
         monthStart: "2026-02-15",
       }),
     ).rejects.toThrow("MONTH_START_INVALID");
+  });
+
+  it("excludes transfer-category spend from metrics while keeping uncategorized spend included", async () => {
+    const db = createGenerationInputDbMock({
+      monthTransactions: [
+        {
+          id: "tx-feb-transfer",
+          bookingDate: new Date("2026-02-03T10:00:00.000Z"),
+          amountNok: -450,
+          normalizedMerchant: "TRANSFER OUT",
+          paymentType: PaymentType.TRANSFER,
+          category: { id: "cat-transfer", name: "Transfer", kind: "TRANSFER" },
+        },
+        {
+          id: "tx-feb-grocery",
+          bookingDate: new Date("2026-02-04T10:00:00.000Z"),
+          amountNok: -300,
+          normalizedMerchant: "REMA 1000",
+          paymentType: PaymentType.CARD,
+          category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
+        },
+        {
+          id: "tx-feb-uncategorized",
+          bookingDate: new Date("2026-02-05T10:00:00.000Z"),
+          amountNok: -200,
+          normalizedMerchant: "UNKNOWN",
+          paymentType: PaymentType.CARD,
+          category: null,
+        },
+      ],
+      previousMonthTransactions: [
+        {
+          id: "tx-jan-transfer",
+          bookingDate: new Date("2026-01-06T10:00:00.000Z"),
+          amountNok: -100,
+          normalizedMerchant: "TRANSFER OUT",
+          paymentType: PaymentType.TRANSFER,
+          category: { id: "cat-transfer", name: "Transfer", kind: "TRANSFER" },
+        },
+        {
+          id: "tx-jan-grocery",
+          bookingDate: new Date("2026-01-07T10:00:00.000Z"),
+          amountNok: -400,
+          normalizedMerchant: "REMA 1000",
+          paymentType: PaymentType.CARD,
+          category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
+        },
+      ],
+    });
+
+    const result = await buildMonthlyReviewGenerationInput(db, {
+      monthStart: "2026-02-01",
+    });
+
+    expect(result.metrics.monthlyTotals).toEqual({
+      totalSpendNok: 500,
+      spendTransactionCount: 2,
+    });
+    expect(result.metrics.categoryTotals).toEqual([
+      {
+        categoryId: "cat-food",
+        categoryName: "Food",
+        spendNok: 300,
+        spendShare: 0.6,
+        transactionCount: 1,
+      },
+      {
+        categoryId: null,
+        categoryName: "Uncategorized",
+        spendNok: 200,
+        spendShare: 0.4,
+        transactionCount: 1,
+      },
+    ]);
+    expect(result.metrics.merchantConcentration.topMerchants).toEqual([
+      {
+        normalizedMerchant: "REMA 1000",
+        spendNok: 300,
+        spendShare: 0.6,
+        transactionCount: 1,
+      },
+      {
+        normalizedMerchant: "UNKNOWN",
+        spendNok: 200,
+        spendShare: 0.4,
+        transactionCount: 1,
+      },
+    ]);
+    expect(result.metrics.monthOverMonth).toEqual({
+      previousMonthStart: "2026-01-01",
+      previousMonthTotalSpendNok: 400,
+      spendDeltaNok: 100,
+      spendDeltaPercent: 0.25,
+    });
   });
 });

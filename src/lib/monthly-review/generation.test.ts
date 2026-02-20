@@ -36,6 +36,7 @@ function createGenerationDbMock() {
               category: {
                 id: "cat-food",
                 name: "Food",
+                kind: "EXPENSE",
               },
             },
           ];

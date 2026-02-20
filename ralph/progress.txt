@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - In Overview analytics (`src/lib/dashboard/analytics.ts`), exclude transactions with `category.kind = TRANSFER` from `netCashflow`, `inflowOutflow`, and `categoryBreakdown`, while still counting uncategorized rows.
 - In Monthly Review overview aggregation (`src/lib/monthly-review/overview.ts`), exclude `category.kind = TRANSFER` from spend totals/counts/category breakdown and MoM calculations while still including uncategorized rows.
+- In Monthly Review generation input (`src/lib/monthly-review/generation-input.ts`), compute spend-side metrics from negative transactions excluding `category.kind = TRANSFER`, while preserving uncategorized spend rows.
 
 ## 2026-02-20 18:22 CET - US-001
 - Implemented transfer-category exclusion in Overview analytics aggregation for net cashflow, inflow/outflow, and spend breakdown.
@@ -22,4 +23,15 @@
   - Patterns discovered: Timeline wrappers that proxy `getMonthlyOverview` must keep the transaction select shape aligned with overview requirements (including nested category fields).
   - Gotchas encountered: Tight TypeScript contract between `overview.ts` and `timeline.ts` will fail typecheck immediately when nested select fields diverge.
   - Useful context: Monthly overview MoM deltas are derived from already-aggregated month totals, so transfer exclusion must happen before totals are persisted per month key.
+---
+
+## 2026-02-20 18:42 CET - US-003
+- Implemented transfer-category exclusion for monthly review generation-input spend metrics by including `category.kind` in transaction select shape and filtering spend rows before monthly/category/merchant/MoM calculations.
+- Added regression coverage for generation-input transfer exclusion behavior, including uncategorized inclusion and transfer-aware month-over-month spend totals; aligned generation module test DB mock category shape with `kind`.
+- Files changed: `src/lib/monthly-review/generation-input.ts`, `src/lib/monthly-review/generation-input.test.ts`, `src/lib/monthly-review/generation.ts`, `src/lib/monthly-review/generation.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed, `pnpm build` passed.
+- **Learnings for future iterations**
+  - Patterns discovered: Keep `generation.ts` DB client type and `generation-input.ts` transaction select shape in sync when adding new nested transaction fields.
+  - Gotchas encountered: Generation-flow tests that reuse DB mocks must include all required nested category fields (`id`, `name`, `kind`) after select-shape changes or typecheck fails.
+  - Useful context: Monthly review generation still sends full-month transaction rows to the model, while only spend-side metrics exclude transfer-category transactions.
 ---
