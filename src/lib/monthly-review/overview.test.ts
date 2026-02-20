@@ -141,7 +141,7 @@ describe("monthly overview", () => {
     ]);
   });
 
-  it("excludes transfer-category spend while still including uncategorized spend", async () => {
+  it("excludes transfer-category spend while keeping non-transfer and uncategorized spend", async () => {
     const db = createMonthlyOverviewDbMock([
       {
         id: "tx-jan-expense",

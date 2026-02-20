@@ -190,7 +190,7 @@ describe("analytics", () => {
     });
   });
 
-  it("excludes transfer-category rows from net, inflow/outflow, and spend breakdown", async () => {
+  it("excludes transfer-category rows while keeping non-transfer and uncategorized rows", async () => {
     const db = createAnalyticsDbMock([
       {
         id: "tx-1",
@@ -209,12 +209,19 @@ describe("analytics", () => {
       {
         id: "tx-3",
         bookingDate: new Date("2026-02-01T00:00:00.000Z"),
+        amountNok: 600,
+        account: { id: "acc-1", name: "Main" },
+        category: { id: "cat-transfer", name: "Transfer", kind: "TRANSFER" },
+      },
+      {
+        id: "tx-4",
+        bookingDate: new Date("2026-02-01T00:00:00.000Z"),
         amountNok: -200,
         account: { id: "acc-1", name: "Main" },
         category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
       },
       {
-        id: "tx-4",
+        id: "tx-5",
         bookingDate: new Date("2026-02-01T00:00:00.000Z"),
         amountNok: -100,
         account: { id: "acc-1", name: "Main" },

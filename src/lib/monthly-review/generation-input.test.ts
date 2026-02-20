@@ -248,7 +248,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
     ).rejects.toThrow("MONTH_START_INVALID");
   });
 
-  it("excludes transfer-category spend from metrics while keeping uncategorized spend included", async () => {
+  it("excludes transfer-category spend from metrics while keeping non-transfer and uncategorized spend", async () => {
     const db = createGenerationInputDbMock({
       monthTransactions: [
         {
