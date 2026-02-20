@@ -178,8 +178,8 @@
         "Relevant tests pass"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented shared CategoryCombobox usage in import review, transaction edit, and category-rule creation flows with clearable uncategorized behavior and auto-highlighted keyboard selection."
     }
   ]
 }

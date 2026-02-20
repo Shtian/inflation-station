@@ -10,6 +10,7 @@
 - For monthly review timeline cards, pair state badges with explicit state-specific body copy and show generated review text as preview-first content with a user-controlled full-text toggle.
 - Keep monthly-review prompt settings behind `/api/monthly-review/system-prompt` with explicit `GET`/`PUT` response shape (`promptText`, `resolvedPrompt`, `usesDefaultPrompt`) so the UI can distinguish saved text from fallback-default usage.
 - Keep category pickers wired through the shared `CategoryCombobox` in import review, transaction edit, and category-rule creation flows, and preserve row-specific import accessibility labels (`Category for row N`) for stable Playwright locators.
+- Configure `CategoryCombobox` with `showClear` when uncategorized values are valid and keep `autoHighlight` enabled for keyboard-first category selection.
 
 ## 2026-02-19 13:34:03 CET - US-001
 - What was implemented
@@ -312,4 +313,26 @@
     - Review preview and full-review panes can duplicate text locators in Playwright; prefer specific role/class locators for expanded-content assertions.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Monthly review timeline content rendering lives in `src/app/monthly-review/monthly-review-manager.tsx`; E2E coverage is in `tests/e2e/us-020-monthly-review-route.e2e.ts`.
+---
+
+## 2026-02-20 13:59:45 CET - US-012
+- What was implemented
+  - Verified and completed category-picker migration to the shared searchable shadcn combobox across import review rows, transactions edit dialog, and category-rules creation form.
+  - Confirmed each migrated picker keeps uncategorized-compatible clear behavior (`showClear`) and keyboard-first quick selection (`autoHighlight`) through the shared `CategoryCombobox`.
+  - Documented the reusable category-picker convention in `AGENTS.md` and marked the story as passing in `ralph/prd.json`.
+- Files changed
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass: unit + Playwright E2E)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep category selection behavior centralized in `src/components/category-combobox.tsx` so clear/auto-highlight interaction rules remain consistent across all category workflows.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - E2E locators should target combobox roles/labels instead of legacy select triggers now that category inputs are searchable text-based controls.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Migrated picker call sites are `src/app/import/components/import-review-category-cell.tsx`, `src/app/transactions/components/edit-transaction-dialog.tsx`, and `src/app/categories/components/rules-management-section.tsx`.
 ---
