@@ -3,7 +3,7 @@ export type Account = {
   name: string;
 };
 
-export type DashboardRangePreset = "30d" | "90d" | "ytd" | "custom";
+export type DashboardRangePreset = "all" | "30d" | "90d" | "ytd" | "custom";
 
 export type DashboardAnalytics = {
   netCashflow: Array<{
