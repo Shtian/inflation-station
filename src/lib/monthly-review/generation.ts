@@ -3,6 +3,10 @@ import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { MonthlyReviewStatus, type PaymentType } from "@prisma/client";
 import { generateText } from "ai";
 import {
+  buildProviderErrorDetail,
+  isAbortError,
+} from "../openai/provider-errors";
+import {
   buildMonthlyReviewGenerationInput,
   type MonthlyReviewGenerationInput,
 } from "./generation-input";
@@ -152,75 +156,6 @@ class MonthlyReviewProviderError extends Error {
   }
 }
 
-function readErrorProperty(error: unknown, key: string): unknown {
-  if (typeof error !== "object" || error === null) {
-    return undefined;
-  }
-
-  if (!(key in error)) {
-    return undefined;
-  }
-
-  return (error as Record<string, unknown>)[key];
-}
-
-function asDetailFragment(value: unknown): string | null {
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    return trimmed ? trimmed : null;
-  }
-
-  if (typeof value === "number" || typeof value === "boolean") {
-    return String(value);
-  }
-
-  return null;
-}
-
-function buildProviderErrorDetail(error: unknown): string {
-  if (error instanceof Error) {
-    const direct = [error.name, error.message]
-      .filter(Boolean)
-      .join(": ")
-      .trim();
-    const code = asDetailFragment(readErrorProperty(error, "code"));
-    const statusCode = asDetailFragment(readErrorProperty(error, "statusCode"));
-    const statusText = asDetailFragment(readErrorProperty(error, "statusText"));
-    const responseBody = asDetailFragment(
-      readErrorProperty(error, "responseBody"),
-    );
-
-    const fragments = [
-      direct || "Unknown error",
-      code ? `code=${code}` : null,
-      statusCode ? `statusCode=${statusCode}` : null,
-      statusText ? `statusText=${statusText}` : null,
-      responseBody ? `responseBody=${responseBody.slice(0, 300)}` : null,
-    ].filter((fragment): fragment is string => Boolean(fragment));
-
-    return fragments.join(" | ");
-  }
-
-  if (typeof error === "string") {
-    return error.trim() || "Unknown provider error";
-  }
-
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return "Unknown provider error";
-  }
-}
-
-function isAbortError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "name" in error &&
-    (error as { name: unknown }).name === "AbortError"
-  );
-}
-
 function toMonthStartDate(monthStart: string): Date {
   if (!MONTH_START_PATTERN.test(monthStart)) {
     throw new MonthlyReviewMonthStartValidationError();
@@ -307,18 +242,16 @@ async function buildReviewText(params: {
   const userPrompt = JSON.stringify(
     {
       instructions: [
-        "Write a concise monthly spending review in plain text (no markdown).",
+        "Write a concise monthly spending review in markdown.",
         "Use only the provided data and avoid inventing facts.",
         "Call out notable category, merchant, and month-over-month signals.",
         "Keep practical suggestions concrete and short.",
-        "Use a natural, human tone while staying clear and professional.",
-        "Organize the response with short labeled sections like Overview, What Stood Out, and Next Steps.",
       ],
       monthStart: params.input.monthStart,
       metrics: params.input.metrics,
       transactions: params.input.transactions,
       outputFormat: {
-        reviewText: "plain text summary with labeled sections",
+        reviewText: "markdown summary",
       },
     },
     null,

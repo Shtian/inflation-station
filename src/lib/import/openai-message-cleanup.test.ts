@@ -68,9 +68,15 @@ describe("buildOpenAiMessageCleanup", () => {
         async () =>
           new Response(
             JSON.stringify({
+              id: "chatcmpl-test",
+              object: "chat.completion",
+              created: 1_738_780_800,
+              model: "gpt-5-mini",
               choices: [
                 {
+                  index: 0,
                   message: {
+                    role: "assistant",
                     content: JSON.stringify({
                       suggestions: [
                         { rowNumber: 2, cleanedMessage: "Joker Oslo" },
@@ -78,8 +84,14 @@ describe("buildOpenAiMessageCleanup", () => {
                       ],
                     }),
                   },
+                  finish_reason: "stop",
                 },
               ],
+              usage: {
+                prompt_tokens: 123,
+                completion_tokens: 45,
+                total_tokens: 168,
+              },
             }),
             { status: 200, headers: { "content-type": "application/json" } },
           ),
