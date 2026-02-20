@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { CategoryCombobox } from "@/components/category-combobox";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,9 +61,11 @@ export function EditTransactionDialog({
   onCancel,
   onSubmit,
 }: EditTransactionDialogProps) {
+  const dialogContentRef = useRef<HTMLDivElement | null>(null);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent ref={dialogContentRef}>
         <DialogHeader>
           <DialogTitle>Edit transaction</DialogTitle>
           <DialogDescription>
@@ -94,6 +97,7 @@ export function EditTransactionDialog({
                 emptyLabel="No matching categories."
                 disabled={editSaving}
                 showClear
+                portalContainer={dialogContentRef.current}
               />
             </div>
 

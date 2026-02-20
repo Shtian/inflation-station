@@ -457,9 +457,8 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     .getByRole("dialog", { name: "Edit transaction" })
     .getByRole("combobox", { name: "Category" });
   await categoryCombobox.click();
-  await categoryCombobox.fill("Food");
-  await page.keyboard.press("Enter");
-  await expect(categoryCombobox).toHaveValue("cat-food");
+  await page.getByRole("option", { name: "Food", exact: true }).click();
+  await expect(categoryCombobox).toHaveValue("Food");
   await page.getByRole("button", { name: "Save changes" }).click();
 
   await expect(page.getByText("Page 2 of 2")).toBeVisible();

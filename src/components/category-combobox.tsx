@@ -24,6 +24,9 @@ type CategoryComboboxProps = {
   className?: string;
   disabled?: boolean;
   showClear?: boolean;
+  portalContainer?: React.ComponentProps<
+    typeof ComboboxContent
+  >["portalContainer"];
 };
 
 export function CategoryCombobox({
@@ -37,13 +40,23 @@ export function CategoryCombobox({
   className,
   disabled,
   showClear = true,
+  portalContainer,
 }: CategoryComboboxProps) {
+  const categoriesById = new Map(
+    categories.map((category) => [category.id, category.name]),
+  );
+
   return (
     <Combobox
+      items={categories.map((category) => category.id)}
       value={value.length > 0 ? value : null}
       onValueChange={(nextValue) => onValueChange(nextValue ?? "")}
+      itemToStringLabel={(itemValue) =>
+        categoriesById.get(itemValue as string) ?? (itemValue as string)
+      }
       autoHighlight
       disabled={disabled}
+      modal={false}
     >
       <ComboboxInput
         id={id}
@@ -52,14 +65,14 @@ export function CategoryCombobox({
         placeholder={placeholder}
         showClear={showClear}
       />
-      <ComboboxContent>
+      <ComboboxContent portalContainer={portalContainer}>
         <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
         <ComboboxList>
-          {categories.map((category) => (
-            <ComboboxItem key={category.id} value={category.id}>
-              {category.name}
+          {(categoryId) => (
+            <ComboboxItem key={categoryId as string} value={categoryId}>
+              {categoriesById.get(categoryId as string) ?? String(categoryId)}
             </ComboboxItem>
-          ))}
+          )}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>

@@ -200,7 +200,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await expect(rowTwoCategory).toHaveAttribute("placeholder", "Uncategorized");
   await rowTwoCategory.click();
   await page.getByRole("option", { name: "Food", exact: true }).click();
-  await expect(rowTwoCategory).toHaveValue("cat-food");
+  await expect(rowTwoCategory).toHaveValue("Food");
 
   const rowOneNote = page.getByRole("textbox", {
     name: "Note for row 2",
