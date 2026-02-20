@@ -75,6 +75,11 @@ export function OverviewDashboard() {
 
       <Separator className="my-4" />
 
+      <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+        Transfer-category transactions are excluded from spend and income
+        analytics.
+      </p>
+
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         <div className="space-y-2">
           <Label

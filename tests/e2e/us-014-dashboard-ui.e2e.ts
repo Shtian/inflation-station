@@ -140,6 +140,11 @@ test("updates dashboard charts when account and date filters change", async ({
     page.getByRole("heading", { name: "Net Cashflow" }),
   ).toBeVisible();
   await expect(
+    page.getByText(
+      "Transfer-category transactions are excluded from spend and income analytics.",
+    ),
+  ).toBeVisible();
+  await expect(
     page.getByRole("heading", { name: "Inflow vs Outflow" }),
   ).toBeVisible();
   await expect(

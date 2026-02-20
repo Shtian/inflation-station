@@ -286,6 +286,11 @@ export function MonthlyReviewManager() {
         </Card>
       </div>
 
+      <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+        Transfer-category transactions are excluded from spend and income
+        analytics.
+      </p>
+
       <Separator className="my-4" />
 
       {loading ? (
