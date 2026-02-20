@@ -9,16 +9,25 @@ import {
 
 function createSystemPromptDbMock(promptText: string | null = null) {
   let storedPromptText = promptText;
+  let storedModelId: string | null = null;
 
   return {
     monthlyReviewSystemPrompt: {
       findUnique: vi.fn(async () =>
-        storedPromptText === null ? null : { promptText: storedPromptText },
+        storedPromptText === null && storedModelId === null
+          ? null
+          : { promptText: storedPromptText, modelId: storedModelId },
       ),
       upsert: vi.fn(async ({ create, update }) => {
-        storedPromptText =
-          storedPromptText === null ? create.promptText : update.promptText;
-        return { promptText: storedPromptText };
+        if (storedPromptText === null && storedModelId === null) {
+          storedPromptText = create.promptText;
+          storedModelId = create.modelId;
+        } else {
+          storedPromptText = update.promptText;
+          storedModelId = update.modelId;
+        }
+
+        return { promptText: storedPromptText, modelId: storedModelId };
       }),
     },
   };
@@ -33,6 +42,8 @@ describe("monthly review system prompt", () => {
     expect(result).toEqual({
       prompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
       isDefault: true,
+      modelId: "gpt-5.2",
+      isDefaultModel: true,
     });
   });
 
@@ -44,6 +55,8 @@ describe("monthly review system prompt", () => {
     expect(result).toEqual({
       prompt: "Use structured bullet points.",
       isDefault: false,
+      modelId: "gpt-5.2",
+      isDefaultModel: true,
     });
   });
 
@@ -56,6 +69,9 @@ describe("monthly review system prompt", () => {
       storedPromptText: null,
       resolvedPrompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
       isDefault: true,
+      storedModelId: null,
+      resolvedModelId: "gpt-5.2",
+      isDefaultModel: true,
     });
   });
 
@@ -70,17 +86,21 @@ describe("monthly review system prompt", () => {
     expect(result).toEqual({
       prompt: "Focus on outliers and recurring merchants.",
       isDefault: false,
+      modelId: "gpt-5.2",
+      isDefaultModel: true,
     });
     expect(db.monthlyReviewSystemPrompt.upsert).toHaveBeenCalledWith({
       where: { id: "monthly-review-system-prompt" },
       create: {
         id: "monthly-review-system-prompt",
         promptText: "Focus on outliers and recurring merchants.",
+        modelId: null,
       },
       update: {
         promptText: "Focus on outliers and recurring merchants.",
+        modelId: null,
       },
-      select: { promptText: true },
+      select: { promptText: true, modelId: true },
     });
   });
 
@@ -92,29 +112,39 @@ describe("monthly review system prompt", () => {
     expect(result).toEqual({
       prompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
       isDefault: true,
+      modelId: "gpt-5.2",
+      isDefaultModel: true,
     });
     expect(db.monthlyReviewSystemPrompt.upsert).toHaveBeenCalledWith({
       where: { id: "monthly-review-system-prompt" },
       create: {
         id: "monthly-review-system-prompt",
         promptText: null,
+        modelId: null,
       },
       update: {
         promptText: null,
+        modelId: null,
       },
-      select: { promptText: true },
+      select: { promptText: true, modelId: true },
     });
   });
 
   it("returns settings response after update with blank prompt", async () => {
     const db = createSystemPromptDbMock("Existing prompt.");
 
-    const result = await updateMonthlyReviewSystemPromptSettings(db, " ");
+    const result = await updateMonthlyReviewSystemPromptSettings(db, {
+      promptText: " ",
+      modelId: "gpt-5-mini",
+    });
 
     expect(result).toEqual({
       storedPromptText: null,
       resolvedPrompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
       isDefault: true,
+      storedModelId: "gpt-5-mini",
+      resolvedModelId: "gpt-5-mini",
+      isDefaultModel: false,
     });
   });
 });

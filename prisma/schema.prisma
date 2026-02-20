@@ -182,6 +182,7 @@ model MonthlyReview {
 model MonthlyReviewSystemPrompt {
   id         String   @id
   promptText String?
+  modelId    String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }

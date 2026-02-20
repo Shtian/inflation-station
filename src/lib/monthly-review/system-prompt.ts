@@ -1,4 +1,9 @@
+import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
+import { DEFAULT_CHAT_MODEL, getModelById } from "./chat-model-registry";
+
 const MONTHLY_REVIEW_SYSTEM_PROMPT_ID = "monthly-review-system-prompt";
+
+export const DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL = DEFAULT_CHAT_MODEL;
 
 export const DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT = `You are a financial review assistant.
 - Analyze one calendar month of transactions and summarize key spending patterns.
@@ -11,6 +16,7 @@ export const DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT = `You are a financial review 
 
 type MonthlyReviewSystemPromptRecord = {
   promptText: string | null;
+  modelId: string | null;
 };
 
 type MonthlyReviewSystemPromptReadDbClient = {
@@ -21,6 +27,7 @@ type MonthlyReviewSystemPromptReadDbClient = {
       };
       select: {
         promptText: true;
+        modelId: true;
       };
     }): Promise<MonthlyReviewSystemPromptRecord | null>;
   };
@@ -35,12 +42,15 @@ type MonthlyReviewSystemPromptWriteDbClient = {
       create: {
         id: string;
         promptText: string | null;
+        modelId: string | null;
       };
       update: {
         promptText: string | null;
+        modelId: string | null;
       };
       select: {
         promptText: true;
+        modelId: true;
       };
     }): Promise<MonthlyReviewSystemPromptRecord>;
   };
@@ -52,17 +62,23 @@ type MonthlyReviewSystemPromptDbClient = MonthlyReviewSystemPromptReadDbClient &
 export type MonthlyReviewSystemPromptResult = {
   prompt: string;
   isDefault: boolean;
+  modelId: OpenAIChatModelId;
+  isDefaultModel: boolean;
 };
 
 export type MonthlyReviewSystemPromptSettingsResult = {
   storedPromptText: string | null;
   resolvedPrompt: string;
   isDefault: boolean;
+  storedModelId: string | null;
+  resolvedModelId: OpenAIChatModelId;
+  isDefaultModel: boolean;
 };
 
-function resolvePrompt(
-  promptText: string | null,
-): MonthlyReviewSystemPromptResult {
+function resolvePrompt(promptText: string | null): {
+  prompt: string;
+  isDefault: boolean;
+} {
   if (!promptText || promptText.trim().length === 0) {
     return {
       prompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
@@ -80,15 +96,46 @@ function normalizePromptText(promptText: string): string | null {
   return promptText.trim().length === 0 ? null : promptText;
 }
 
-function toSettingsResult(
-  promptText: string | null,
-): MonthlyReviewSystemPromptSettingsResult {
-  const resolved = resolvePrompt(promptText);
+function resolveModel(modelId: string | null): {
+  modelId: OpenAIChatModelId;
+  isDefaultModel: boolean;
+} {
+  if (!modelId || modelId.trim().length === 0) {
+    return {
+      modelId: DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
+      isDefaultModel: true,
+    };
+  }
+
+  const resolvedModel = getModelById(modelId);
 
   return {
-    storedPromptText: promptText,
+    modelId: resolvedModel.id,
+    isDefaultModel: resolvedModel.id === DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
+  };
+}
+
+function normalizeModelId(modelId: string | null): string | null {
+  if (modelId === null) {
+    return null;
+  }
+
+  return modelId.trim().length === 0 ? null : modelId;
+}
+
+function toSettingsResult(
+  record: MonthlyReviewSystemPromptRecord,
+): MonthlyReviewSystemPromptSettingsResult {
+  const model = resolveModel(record.modelId);
+  const resolved = resolvePrompt(record.promptText);
+
+  return {
+    storedPromptText: record.promptText,
     resolvedPrompt: resolved.prompt,
     isDefault: resolved.isDefault,
+    storedModelId: record.modelId,
+    resolvedModelId: model.modelId,
+    isDefaultModel: model.isDefaultModel,
   };
 }
 
@@ -101,10 +148,19 @@ export async function getMonthlyReviewSystemPrompt(
     },
     select: {
       promptText: true,
+      modelId: true,
     },
   });
 
-  return resolvePrompt(record?.promptText ?? null);
+  const resolvedPrompt = resolvePrompt(record?.promptText ?? null);
+  const resolvedModel = resolveModel(record?.modelId ?? null);
+
+  return {
+    prompt: resolvedPrompt.prompt,
+    isDefault: resolvedPrompt.isDefault,
+    modelId: resolvedModel.modelId,
+    isDefaultModel: resolvedModel.isDefaultModel,
+  };
 }
 
 export async function getMonthlyReviewSystemPromptSettings(
@@ -116,16 +172,22 @@ export async function getMonthlyReviewSystemPromptSettings(
     },
     select: {
       promptText: true,
+      modelId: true,
     },
   });
 
-  return toSettingsResult(record?.promptText ?? null);
+  return toSettingsResult({
+    promptText: record?.promptText ?? null,
+    modelId: record?.modelId ?? null,
+  });
 }
 
 export async function updateMonthlyReviewSystemPrompt(
   db: MonthlyReviewSystemPromptDbClient,
   promptText: string,
+  modelId: OpenAIChatModelId | null = null,
 ): Promise<MonthlyReviewSystemPromptResult> {
+  const normalizedModelId = normalizeModelId(modelId);
   const record = await db.monthlyReviewSystemPrompt.upsert({
     where: {
       id: MONTHLY_REVIEW_SYSTEM_PROMPT_ID,
@@ -133,37 +195,55 @@ export async function updateMonthlyReviewSystemPrompt(
     create: {
       id: MONTHLY_REVIEW_SYSTEM_PROMPT_ID,
       promptText: normalizePromptText(promptText),
+      modelId: normalizedModelId,
     },
     update: {
       promptText: normalizePromptText(promptText),
+      modelId: normalizedModelId,
     },
     select: {
       promptText: true,
+      modelId: true,
     },
   });
 
-  return resolvePrompt(record.promptText);
+  const resolvedPrompt = resolvePrompt(record.promptText);
+  const resolvedModel = resolveModel(record.modelId);
+
+  return {
+    prompt: resolvedPrompt.prompt,
+    isDefault: resolvedPrompt.isDefault,
+    modelId: resolvedModel.modelId,
+    isDefaultModel: resolvedModel.isDefaultModel,
+  };
 }
 
 export async function updateMonthlyReviewSystemPromptSettings(
   db: MonthlyReviewSystemPromptDbClient,
-  promptText: string,
+  params: {
+    promptText: string;
+    modelId: OpenAIChatModelId | null;
+  },
 ): Promise<MonthlyReviewSystemPromptSettingsResult> {
+  const normalizedModelId = normalizeModelId(params.modelId);
   const record = await db.monthlyReviewSystemPrompt.upsert({
     where: {
       id: MONTHLY_REVIEW_SYSTEM_PROMPT_ID,
     },
     create: {
       id: MONTHLY_REVIEW_SYSTEM_PROMPT_ID,
-      promptText: normalizePromptText(promptText),
+      promptText: normalizePromptText(params.promptText),
+      modelId: normalizedModelId,
     },
     update: {
-      promptText: normalizePromptText(promptText),
+      promptText: normalizePromptText(params.promptText),
+      modelId: normalizedModelId,
     },
     select: {
       promptText: true,
+      modelId: true,
     },
   });
 
-  return toSettingsResult(record.promptText);
+  return toSettingsResult(record);
 }

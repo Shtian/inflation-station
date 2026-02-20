@@ -1,5 +1,6 @@
 "use client";
 
+import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -12,12 +13,28 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  type ChatModelEntry,
+  DEFAULT_CHAT_MODEL,
+  getModelById,
+} from "@/lib/monthly-review/chat-model-registry";
 
 type SystemPromptResponse = {
   promptText: string;
   resolvedPrompt: string;
   usesDefaultPrompt: boolean;
+  modelId: string | null;
+  resolvedModelId: OpenAIChatModelId;
+  usesDefaultModel: boolean;
+  availableModels: ChatModelEntry[];
 };
 
 function isSystemPromptResponse(value: unknown): value is SystemPromptResponse {
@@ -37,7 +54,31 @@ function isSystemPromptResponse(value: unknown): value is SystemPromptResponse {
   }
 
   return (
-    "usesDefaultPrompt" in value && typeof value.usesDefaultPrompt === "boolean"
+    "usesDefaultPrompt" in value &&
+    typeof value.usesDefaultPrompt === "boolean" &&
+    "modelId" in value &&
+    (value.modelId === null || typeof value.modelId === "string") &&
+    "resolvedModelId" in value &&
+    typeof value.resolvedModelId === "string" &&
+    "usesDefaultModel" in value &&
+    typeof value.usesDefaultModel === "boolean" &&
+    "availableModels" in value &&
+    Array.isArray(value.availableModels) &&
+    value.availableModels.every(
+      (model) =>
+        model &&
+        typeof model === "object" &&
+        "id" in model &&
+        typeof model.id === "string" &&
+        "label" in model &&
+        typeof model.label === "string" &&
+        "description" in model &&
+        typeof model.description === "string" &&
+        "tier" in model &&
+        (model.tier === "cheap" ||
+          model.tier === "balanced" ||
+          model.tier === "premium"),
+    )
   );
 }
 
@@ -45,6 +86,12 @@ export function MonthlyReviewSettingsManager() {
   const [promptText, setPromptText] = useState("");
   const [resolvedPrompt, setResolvedPrompt] = useState("");
   const [usesDefaultPrompt, setUsesDefaultPrompt] = useState(false);
+  const [selectedModelId, setSelectedModelId] =
+    useState<OpenAIChatModelId>(DEFAULT_CHAT_MODEL);
+  const [resolvedModelId, setResolvedModelId] =
+    useState<OpenAIChatModelId>(DEFAULT_CHAT_MODEL);
+  const [usesDefaultModel, setUsesDefaultModel] = useState(false);
+  const [availableModels, setAvailableModels] = useState<ChatModelEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +108,10 @@ export function MonthlyReviewSettingsManager() {
       setPromptText("");
       setResolvedPrompt("");
       setUsesDefaultPrompt(true);
+      setSelectedModelId(DEFAULT_CHAT_MODEL);
+      setResolvedModelId(DEFAULT_CHAT_MODEL);
+      setUsesDefaultModel(true);
+      setAvailableModels([]);
       setError("Could not load monthly review system prompt.");
       setLoading(false);
       return;
@@ -69,6 +120,10 @@ export function MonthlyReviewSettingsManager() {
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);
     setUsesDefaultPrompt(body.usesDefaultPrompt);
+    setSelectedModelId(getModelById(body.modelId ?? body.resolvedModelId).id);
+    setResolvedModelId(body.resolvedModelId);
+    setUsesDefaultModel(body.usesDefaultModel);
+    setAvailableModels(body.availableModels);
     setLoading(false);
   }, []);
 
@@ -76,9 +131,13 @@ export function MonthlyReviewSettingsManager() {
     void loadSystemPrompt();
   }, [loadSystemPrompt]);
 
-  async function handleSaveSystemPrompt() {
+  async function saveSettings(params: {
+    promptText: string;
+    modelId: OpenAIChatModelId;
+    successMessage: string;
+  }): Promise<boolean> {
     if (saving) {
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -90,24 +149,54 @@ export function MonthlyReviewSettingsManager() {
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({ promptText }),
+      body: JSON.stringify({
+        promptText: params.promptText,
+        modelId: params.modelId,
+      }),
     });
 
     const body: unknown = await response.json().catch(() => null);
 
     if (!response.ok || !isSystemPromptResponse(body)) {
       setSaving(false);
-      setError(
-        "Could not save monthly review system prompt. Please try again.",
-      );
-      return;
+      setError("Could not save monthly review settings. Please try again.");
+      return false;
     }
 
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);
     setUsesDefaultPrompt(body.usesDefaultPrompt);
+    setSelectedModelId(getModelById(body.modelId ?? body.resolvedModelId).id);
+    setResolvedModelId(body.resolvedModelId);
+    setUsesDefaultModel(body.usesDefaultModel);
+    setAvailableModels(body.availableModels);
     setSaving(false);
-    setSuccess("System prompt saved.");
+    setSuccess(params.successMessage);
+    return true;
+  }
+
+  async function handleSaveSystemPrompt() {
+    await saveSettings({
+      promptText,
+      modelId: selectedModelId,
+      successMessage: "System prompt saved.",
+    });
+  }
+
+  async function handleModelChange(value: OpenAIChatModelId) {
+    const previousModelId = selectedModelId;
+    setSelectedModelId(value);
+    setSuccess(null);
+
+    const didSave = await saveSettings({
+      promptText,
+      modelId: value,
+      successMessage: "Generation model saved.",
+    });
+
+    if (!didSave) {
+      setSelectedModelId(previousModelId);
+    }
   }
 
   return (
@@ -142,6 +231,48 @@ export function MonthlyReviewSettingsManager() {
             <p className="text-sm text-muted-foreground">Loading prompt...</p>
           ) : (
             <>
+              <div className="space-y-2">
+                <Label htmlFor="monthly-review-openai-model">
+                  Monthly review OpenAI model
+                </Label>
+                <Select
+                  value={selectedModelId}
+                  onValueChange={(value) => {
+                    const nextModel = getModelById(value);
+                    if (
+                      !availableModels.some(
+                        (model) => model.id === nextModel.id,
+                      )
+                    ) {
+                      return;
+                    }
+
+                    void handleModelChange(nextModel.id);
+                  }}
+                  disabled={saving}
+                >
+                  <SelectTrigger id="monthly-review-openai-model">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableModels.map((model) => (
+                      <SelectItem key={model.id} value={model.id}>
+                        <span className="block text-sm">{model.label}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {model.description}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                {usesDefaultModel
+                  ? `Using fallback model ${resolvedModelId}.`
+                  : `Using saved model ${resolvedModelId}.`}
+              </p>
+
               <div className="space-y-2">
                 <Label htmlFor="monthly-review-system-prompt">
                   Monthly review system prompt

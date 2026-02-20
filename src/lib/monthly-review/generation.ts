@@ -10,10 +10,12 @@ import {
   buildMonthlyReviewGenerationInput,
   type MonthlyReviewGenerationInput,
 } from "./generation-input";
+import { DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL } from "./system-prompt";
 
 const MONTH_START_PATTERN = /^\d{4}-\d{2}-01$/;
 const DEFAULT_PROVIDER_TIMEOUT_MS = 20_000;
-const DEFAULT_OPENAI_MODEL: OpenAIChatModelId = "gpt-5.2";
+const DEFAULT_OPENAI_MODEL: OpenAIChatModelId =
+  DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL;
 
 export type MonthlyReviewGenerationUnavailableReason =
   | "key_missing"
@@ -88,8 +90,9 @@ type MonthlyReviewGenerationDbClient = {
       };
       select: {
         promptText: true;
+        modelId: true;
       };
-    }) => Promise<{ promptText: string | null } | null>;
+    }) => Promise<{ promptText: string | null; modelId: string | null } | null>;
   };
   monthlyReview: {
     upsert: (args: {
@@ -229,7 +232,7 @@ async function buildReviewText(params: {
   input: MonthlyReviewGenerationInput;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
-  model?: string;
+  model?: OpenAIChatModelId;
 }): Promise<string> {
   const fetchImpl = params.fetchImpl ?? fetch;
   const timeoutMs = Math.max(
@@ -344,7 +347,7 @@ export async function generateMonthlyReview(
     openAiApiKey?: string | null;
     fetchImpl?: typeof fetch;
     timeoutMs?: number;
-    model?: string;
+    model?: OpenAIChatModelId;
   },
 ): Promise<MonthlyReviewGenerationResult> {
   const normalizedMonthStart = params.monthStart.trim();
@@ -392,7 +395,7 @@ export async function generateMonthlyReview(
       input,
       fetchImpl: options?.fetchImpl,
       timeoutMs: options?.timeoutMs,
-      model: options?.model,
+      model: options?.model ?? input.modelId,
     });
 
     const generated = await db.monthlyReview.update({

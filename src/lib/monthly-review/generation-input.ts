@@ -1,3 +1,4 @@
+import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import type { PaymentType } from "@prisma/client";
 import { getMonthlyReviewSystemPrompt } from "./system-prompt";
 
@@ -47,8 +48,9 @@ type MonthlyReviewGenerationDbClient = {
       };
       select: {
         promptText: true;
+        modelId: true;
       };
-    }): Promise<{ promptText: string | null } | null>;
+    }): Promise<{ promptText: string | null; modelId: string | null } | null>;
   };
 };
 
@@ -99,6 +101,8 @@ export type MonthlyReviewGenerationInput = {
   monthStart: string;
   systemPrompt: string;
   usesDefaultPrompt: boolean;
+  modelId: OpenAIChatModelId;
+  usesDefaultModel: boolean;
   metrics: MonthlyReviewGenerationMetrics;
   transactions: MonthlyReviewGenerationTransaction[];
 };
@@ -339,6 +343,8 @@ export async function buildMonthlyReviewGenerationInput(
     monthStart: toMonthStartKey(monthStartDate),
     systemPrompt: promptResult.prompt,
     usesDefaultPrompt: promptResult.isDefault,
+    modelId: promptResult.modelId,
+    usesDefaultModel: promptResult.isDefaultModel,
     metrics: {
       monthlyTotals: {
         totalSpendNok,

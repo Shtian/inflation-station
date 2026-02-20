@@ -45,6 +45,7 @@ function createGenerationDbMock() {
     monthlyReviewSystemPrompt: {
       findUnique: vi.fn(async () => ({
         promptText: "Summarize spend clearly.",
+        modelId: "gpt-5-mini",
       })),
     },
     monthlyReview: {

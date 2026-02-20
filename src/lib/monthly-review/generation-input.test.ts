@@ -5,6 +5,7 @@ import { DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT } from "./system-prompt";
 
 function createGenerationInputDbMock(params?: {
   promptText?: string | null;
+  modelId?: string | null;
   monthTransactions?: Array<{
     id: string;
     bookingDate: Date;
@@ -31,6 +32,7 @@ function createGenerationInputDbMock(params?: {
   const monthTransactions = params?.monthTransactions ?? [];
   const previousMonthTransactions = params?.previousMonthTransactions ?? [];
   const promptText = params?.promptText ?? null;
+  const modelId = params?.modelId ?? null;
 
   return {
     transaction: {
@@ -43,7 +45,9 @@ function createGenerationInputDbMock(params?: {
     },
     monthlyReviewSystemPrompt: {
       findUnique: vi.fn(async () =>
-        promptText === null ? null : { promptText },
+        promptText === null && modelId === null
+          ? null
+          : { promptText, modelId },
       ),
     },
   };
@@ -107,6 +111,8 @@ describe("buildMonthlyReviewGenerationInput", () => {
       monthStart: "2026-02-01",
       systemPrompt: "Focus on major spending shifts.",
       usesDefaultPrompt: false,
+      modelId: "gpt-5.2",
+      usesDefaultModel: true,
       metrics: {
         monthlyTotals: {
           totalSpendNok: 1500,
@@ -208,6 +214,8 @@ describe("buildMonthlyReviewGenerationInput", () => {
 
     expect(result.systemPrompt).toBe(DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT);
     expect(result.usesDefaultPrompt).toBe(true);
+    expect(result.modelId).toBe("gpt-5.2");
+    expect(result.usesDefaultModel).toBe(true);
     expect(result.metrics.monthOverMonth).toBeNull();
     expect(result.metrics.categoryTotals).toEqual([
       {
