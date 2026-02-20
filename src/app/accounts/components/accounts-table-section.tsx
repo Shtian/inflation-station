@@ -1,5 +1,13 @@
-import { Check, Loader2, Pencil, Trash2, X } from "lucide-react";
+import { Check, Ellipsis, Loader2, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -122,40 +130,59 @@ export function AccountsTableSection({
                             </Button>
                           </>
                         ) : (
-                          <>
-                            <Button
-                              variant="outline"
-                              onClick={() => onStartEdit(account)}
-                              disabled={isBusy}
-                              className="gap-2"
-                            >
-                              <Pencil className="h-4 w-4" aria-hidden="true" />
-                              Rename
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              onClick={() => void onDeleteAccount(account.id)}
-                              disabled={isBusy}
-                              className="h-9 w-9 px-0"
-                              aria-label={`Remove account ${account.name}`}
-                              title={`Remove account ${account.name}`}
-                            >
-                              {isBusy ? (
-                                <Loader2
-                                  className="h-5 w-5 animate-spin"
-                                  aria-hidden="true"
-                                />
-                              ) : (
-                                <Trash2
-                                  className="h-5 w-5 stroke-[2.25]"
-                                  aria-hidden="true"
-                                />
-                              )}
-                              <span className="sr-only">
-                                Remove account {account.name}
-                              </span>
-                            </Button>
-                          </>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="icon-sm"
+                                aria-label={`Actions for account ${account.name}`}
+                                title={`Actions for account ${account.name}`}
+                                disabled={isBusy}
+                              >
+                                {isBusy ? (
+                                  <Loader2
+                                    className="h-4 w-4 animate-spin"
+                                    aria-hidden="true"
+                                  />
+                                ) : (
+                                  <Ellipsis
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                <span className="sr-only">Actions</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuGroup>
+                                <DropdownMenuItem
+                                  onSelect={() => onStartEdit(account)}
+                                >
+                                  <Pencil
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                  Rename
+                                </DropdownMenuItem>
+                              </DropdownMenuGroup>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuGroup>
+                                <DropdownMenuItem
+                                  variant="destructive"
+                                  onSelect={() =>
+                                    void onDeleteAccount(account.id)
+                                  }
+                                >
+                                  <Trash2
+                                    className="h-4 w-4"
+                                    aria-hidden="true"
+                                  />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuGroup>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         )}
                       </div>
                     </TableCell>

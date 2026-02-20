@@ -131,7 +131,10 @@ test("manages accounts from /accounts with success and error feedback", async ({
     page.getByRole("cell", { name: "Savings Account", exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Rename" }).nth(1).click();
+  await page
+    .getByRole("button", { name: "Actions for account Savings Account" })
+    .click();
+  await page.getByRole("menuitem", { name: "Rename" }).click();
   await page.getByLabel("Edit name Savings Account").fill("Rainy Day Account");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Account updated.")).toBeVisible();
@@ -143,7 +146,10 @@ test("manages accounts from /accounts with success and error feedback", async ({
   page.on("dialog", (dialog) => {
     void dialog.accept();
   });
-  await page.getByRole("button", { name: "Remove" }).nth(1).click();
+  await page
+    .getByRole("button", { name: "Actions for account Rainy Day Account" })
+    .click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByText("Account removed.")).toBeVisible();
 
   await expect(
