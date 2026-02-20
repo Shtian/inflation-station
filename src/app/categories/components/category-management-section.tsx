@@ -1,7 +1,23 @@
 import type { CategoryKind } from "@prisma/client";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Ellipsis, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { CategoryBadge } from "@/components/category-badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -33,8 +49,14 @@ type CategoryManagementSectionProps = {
   onNewCategoryNameChange: (value: string) => void;
   onNewCategoryKindChange: (value: CategoryKind) => void;
   onNewCategoryScopeChange: (value: string) => void;
+  editingCategoryId: string | null;
+  editCategoryName: string;
   onCreateCategory: () => void;
   onDeleteCategory: (categoryId: string) => void;
+  onStartRenameCategory: (category: Category) => void;
+  onCancelRenameCategory: () => void;
+  onEditCategoryNameChange: (value: string) => void;
+  onRenameCategory: (categoryId: string) => void;
 };
 
 export function CategoryManagementSection({
@@ -48,8 +70,14 @@ export function CategoryManagementSection({
   onNewCategoryNameChange,
   onNewCategoryKindChange,
   onNewCategoryScopeChange,
+  editingCategoryId,
+  editCategoryName,
   onCreateCategory,
   onDeleteCategory,
+  onStartRenameCategory,
+  onCancelRenameCategory,
+  onEditCategoryNameChange,
+  onRenameCategory,
 }: CategoryManagementSectionProps) {
   const activeAccounts = accounts.filter((account) => account.isActive);
 
@@ -171,26 +199,51 @@ export function CategoryManagementSection({
                       {getScopeLabel(category.accountId, accounts)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        onClick={() => onDeleteCategory(category.id)}
-                        disabled={
-                          busyKey !== null &&
-                          busyKey !== `delete-category-${category.id}`
-                        }
-                        className="h-8 w-8 px-0"
-                        aria-label={`Delete category ${category.name}`}
-                        title={`Delete category ${category.name}`}
-                      >
-                        {busyKey === `delete-category-${category.id}` ? (
-                          <Loader2
-                            className="h-4 w-4 animate-spin"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <Trash2 className="h-4 w-4" aria-hidden="true" />
-                        )}
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon-sm"
+                            aria-label={`Actions for category ${category.name}`}
+                            title={`Actions for category ${category.name}`}
+                            disabled={busyKey !== null}
+                          >
+                            {busyKey === `delete-category-${category.id}` ? (
+                              <Loader2
+                                className="h-4 w-4 animate-spin"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Ellipsis
+                                className="h-4 w-4"
+                                aria-hidden="true"
+                              />
+                            )}
+                            <span className="sr-only">Actions</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem
+                              onSelect={() => onStartRenameCategory(category)}
+                            >
+                              <Pencil className="h-4 w-4" aria-hidden="true" />
+                              Rename
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuGroup>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => onDeleteCategory(category.id)}
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -198,6 +251,73 @@ export function CategoryManagementSection({
           </TableBody>
         </Table>
       </div>
+
+      <Dialog
+        open={editingCategoryId !== null}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            onCancelRenameCategory();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename category</DialogTitle>
+            <DialogDescription>
+              Update the category name. Existing transaction and rule links stay
+              connected to the same category ID.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Label
+              htmlFor="edit-category-name"
+              className="text-sm font-medium text-foreground"
+            >
+              Category name
+            </Label>
+            <Input
+              id="edit-category-name"
+              value={editCategoryName}
+              onChange={(event) => onEditCategoryNameChange(event.target.value)}
+              placeholder="Groceries"
+              disabled={
+                editingCategoryId !== null &&
+                busyKey === `rename-category-${editingCategoryId}`
+              }
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancelRenameCategory}
+              disabled={
+                editingCategoryId !== null &&
+                busyKey === `rename-category-${editingCategoryId}`
+              }
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() =>
+                editingCategoryId ? onRenameCategory(editingCategoryId) : null
+              }
+              disabled={
+                editingCategoryId === null ||
+                busyKey === `rename-category-${editingCategoryId}`
+              }
+            >
+              {editingCategoryId !== null &&
+              busyKey === `rename-category-${editingCategoryId}`
+                ? "Saving..."
+                : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

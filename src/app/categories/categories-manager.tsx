@@ -25,6 +25,10 @@ export function CategoriesManager() {
   const [newCategoryKind, setNewCategoryKind] =
     useState<CategoryKind>("EXPENSE");
   const [newCategoryScope, setNewCategoryScope] = useState("");
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
+    null,
+  );
+  const [editCategoryName, setEditCategoryName] = useState("");
 
   const [ruleCategoryId, setRuleCategoryId] = useState("");
   const [ruleMerchantContains, setRuleMerchantContains] = useState("");
@@ -168,6 +172,52 @@ export function CategoriesManager() {
     await loadData();
   }
 
+  function startRenameCategory(category: Category) {
+    setEditingCategoryId(category.id);
+    setEditCategoryName(category.name);
+    setError(null);
+    setNotice(null);
+  }
+
+  function cancelRenameCategory() {
+    setEditingCategoryId(null);
+    setEditCategoryName("");
+  }
+
+  async function renameCategory(categoryId: string) {
+    if (!editCategoryName.trim()) {
+      setError("Category name is required.");
+      setNotice(null);
+      return;
+    }
+
+    setBusyKey(`rename-category-${categoryId}`);
+    setError(null);
+    setNotice(null);
+
+    const response = await fetch(`/api/categories/${categoryId}`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        name: editCategoryName.trim(),
+      }),
+    });
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      setError(getCategoryMutationErrorMessage(response.status, body));
+      setBusyKey(null);
+      return;
+    }
+
+    setBusyKey(null);
+    cancelRenameCategory();
+    setNotice("Category renamed.");
+    await loadData();
+  }
+
   async function createRule() {
     if (!ruleCategoryId) {
       setError("Select a category for the rule.");
@@ -272,8 +322,14 @@ export function CategoriesManager() {
         onNewCategoryNameChange={setNewCategoryName}
         onNewCategoryKindChange={setNewCategoryKind}
         onNewCategoryScopeChange={setNewCategoryScope}
+        editingCategoryId={editingCategoryId}
+        editCategoryName={editCategoryName}
         onCreateCategory={createCategory}
         onDeleteCategory={deleteCategory}
+        onStartRenameCategory={startRenameCategory}
+        onCancelRenameCategory={cancelRenameCategory}
+        onEditCategoryNameChange={setEditCategoryName}
+        onRenameCategory={renameCategory}
       />
 
       <Separator className="my-4" />

@@ -77,12 +77,48 @@ test("manages categories and category rules from /categories", async ({
   });
 
   await page.route("**/api/categories/*", async (route, request) => {
+    const categoryId = request.url().split("/").at(-1) ?? "";
+
+    if (request.method() === "PATCH") {
+      const payload = request.postDataJSON() as { name: string };
+      categories = categories.map((category) =>
+        category.id === categoryId
+          ? {
+              ...category,
+              name: payload.name,
+            }
+          : category,
+      );
+      rules = rules.map((rule) => {
+        if (rule.categoryId !== categoryId) {
+          return rule;
+        }
+
+        return {
+          ...rule,
+          category: {
+            ...rule.category,
+            name: payload.name,
+          },
+        };
+      });
+
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          category:
+            categories.find((category) => category.id === categoryId) ?? null,
+        }),
+      });
+      return;
+    }
+
     if (request.method() !== "DELETE") {
       await route.fallback();
       return;
     }
 
-    const categoryId = request.url().split("/").at(-1) ?? "";
     categories = categories.filter((category) => category.id !== categoryId);
     rules = rules.filter((rule) => rule.categoryId !== categoryId);
 
@@ -169,8 +205,21 @@ test("manages categories and category rules from /categories", async ({
     page.getByRole("cell", { name: "Transport", exact: true }),
   ).toBeVisible();
 
+  await page
+    .getByRole("row", { name: /Transport/i })
+    .getByRole("button", { name: "Actions for category Transport" })
+    .click();
+  await page.getByRole("menuitem", { name: "Rename" }).click();
+  await page.getByRole("dialog").getByLabel("Category name").fill("Commute");
+  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+
+  await expect(page.getByText("Category renamed.")).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: "Commute", exact: true }),
+  ).toBeVisible();
+
   await page.locator("#rule-category").click();
-  await page.getByRole("option", { name: "Transport", exact: true }).click();
+  await page.getByRole("option", { name: "Commute", exact: true }).click();
   await page.getByLabel("Merchant contains").fill("ruter");
   await page.getByLabel("Payment type (optional)").click();
   await page.getByRole("option", { name: "CARD", exact: true }).click();
@@ -184,6 +233,7 @@ test("manages categories and category rules from /categories", async ({
   await expect(
     page.getByRole("cell", { name: "CARD", exact: true }),
   ).toBeVisible();
+  await expect.poll(() => rules.at(-1)?.categoryId).toBe("cat-2");
 
   page.once("dialog", (dialog) => dialog.accept());
   await page
@@ -197,11 +247,12 @@ test("manages categories and category rules from /categories", async ({
 
   page.once("dialog", (dialog) => dialog.accept());
   await page
-    .getByRole("row", { name: /Transport/i })
-    .getByRole("button", { name: "Delete" })
+    .getByRole("row", { name: /Commute/i })
+    .getByRole("button", { name: "Actions for category Commute" })
     .click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByText("Category removed.")).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "Transport", exact: true }),
+    page.getByRole("cell", { name: "Commute", exact: true }),
   ).toHaveCount(0);
 });
