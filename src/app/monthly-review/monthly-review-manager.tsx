@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, RotateCw, Settings, Sparkles } from "lucide-react";
+import { Calendar, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -20,12 +20,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CategorySpendBar } from "./components/category-spend-bar";
 import type { MonthlyReviewTimelineRow } from "./monthly-review-manager.types";
 import {
@@ -43,15 +39,6 @@ type GenerateDialogState = {
   monthStart: string;
   mode: GenerateMode;
 };
-
-function getReviewPreview(reviewText: string, maxLength = 220): string {
-  const normalized = reviewText.trim();
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  return `${normalized.slice(0, maxLength).trimEnd()}...`;
-}
 
 function getReviewStateTone(
   reviewState: MonthlyReviewTimelineRow["reviewState"],
@@ -118,10 +105,9 @@ export function MonthlyReviewManager() {
   const [generateSavingMonthStart, setGenerateSavingMonthStart] = useState<
     string | null
   >(null);
+  const [pendingGenerationMonthStart, setPendingGenerationMonthStart] =
+    useState<string | null>(null);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  const [expandedReviewMonthStart, setExpandedReviewMonthStart] = useState<
-    string | null
-  >(null);
 
   const loadTimeline = useCallback(async () => {
     setLoading(true);
@@ -178,28 +164,45 @@ export function MonthlyReviewManager() {
       return;
     }
 
+    const monthStart = generateDialogState.monthStart;
     setGenerateError(null);
-    setGenerateSavingMonthStart(generateDialogState.monthStart);
+    setGenerateSavingMonthStart(monthStart);
+    setPendingGenerationMonthStart(monthStart);
+    setGenerateDialogState(null);
+    setRows((currentRows) =>
+      currentRows.map((row) =>
+        row.monthStart === monthStart
+          ? {
+              ...row,
+              reviewState: "GENERATING",
+              errorMessage: null,
+              reviewText: null,
+            }
+          : row,
+      ),
+    );
 
     const response = await fetch("/api/monthly-review/generate", {
       method: "POST",
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify({ monthStart: generateDialogState.monthStart }),
+      body: JSON.stringify({ monthStart }),
     });
 
     if (!response.ok) {
       setGenerateSavingMonthStart(null);
+      setPendingGenerationMonthStart(null);
       setGenerateError(
         "Could not start monthly review generation. Please try again.",
       );
+      await loadTimeline();
       return;
     }
 
     setGenerateSavingMonthStart(null);
-    setGenerateDialogState(null);
     await loadTimeline();
+    setPendingGenerationMonthStart(null);
   }
 
   function openGenerateDialog(monthStart: string, mode: GenerateMode) {
@@ -298,6 +301,15 @@ export function MonthlyReviewManager() {
         </p>
       ) : null}
 
+      {!error && generateError ? (
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          {generateError}
+        </p>
+      ) : null}
+
       {!loading && !error && !hasRows ? (
         <p className="text-sm text-muted-foreground">
           No monthly data is available yet.
@@ -312,6 +324,9 @@ export function MonthlyReviewManager() {
         {rows.map((row) => {
           const stateTone = getReviewStateTone(row.reviewState);
           const deltaPercent = formatDeltaPercent(row);
+          const isReviewGenerating =
+            row.reviewState === "GENERATING" ||
+            pendingGenerationMonthStart === row.monthStart;
 
           return (
             <article key={row.monthStart} className="relative md:pl-14">
@@ -373,9 +388,30 @@ export function MonthlyReviewManager() {
                     </Button>
                   ) : null}
 
-                  {row.reviewState === "GENERATING" ? (
-                    <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-muted-foreground">
-                      Review generation is currently in progress for this month.
+                  {isReviewGenerating ? (
+                    <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                        AI insight
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        AI insight is generating...
+                      </p>
+                      <div className="space-y-2 pt-1">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-11/12" />
+                        <Skeleton className="h-4 w-10/12" />
+                        <Skeleton className="h-4 w-3/4 mb-4" />
+
+                        <Skeleton className="h-4 w-11/12" />
+                        <Skeleton className="h-4 w-10/12" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4 mb-4" />
+
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-11/12" />
+                        <Skeleton className="h-4 w-10/12" />
+                      </div>
                     </div>
                   ) : null}
 
@@ -404,50 +440,29 @@ export function MonthlyReviewManager() {
                   ) : null}
 
                   {row.reviewState === "GENERATED" && row.reviewText ? (
-                    <Collapsible
-                      open={expandedReviewMonthStart === row.monthStart}
-                      onOpenChange={(nextOpen) => {
-                        setExpandedReviewMonthStart(
-                          nextOpen ? row.monthStart : null,
-                        );
-                      }}
-                      className="space-y-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3"
-                    >
+                    <div className="space-y-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
                       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                         AI insight
                       </p>
-                      <p className="text-sm text-foreground">
-                        {getReviewPreview(row.reviewText)}
+                      <p className="whitespace-pre-wrap text-sm text-foreground">
+                        {row.reviewText}
                       </p>
 
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        <CollapsibleTrigger asChild>
-                          <Button type="button" size="sm" variant="outline">
-                            {expandedReviewMonthStart === row.monthStart
-                              ? "Hide full review"
-                              : "View full review"}
-                          </Button>
-                        </CollapsibleTrigger>
+                      <div className="flex flex-wrap pt-1">
                         <Button
                           type="button"
-                          size="sm"
-                          variant="secondary"
+                          size="xs"
+                          variant="link"
+                          className="h-auto p-0 text-muted-foreground"
                           onClick={() =>
                             openGenerateDialog(row.monthStart, "regenerate")
                           }
                           disabled={generateSavingMonthStart !== null}
                         >
-                          <RotateCw className="size-4" aria-hidden />
-                          Regenerate review
+                          Regenerate insight
                         </Button>
                       </div>
-
-                      <CollapsibleContent>
-                        <p className="whitespace-pre-wrap px-3 py-2 text-sm text-foreground">
-                          {row.reviewText}
-                        </p>
-                      </CollapsibleContent>
-                    </Collapsible>
+                    </div>
                   ) : null}
                 </div>
               </div>

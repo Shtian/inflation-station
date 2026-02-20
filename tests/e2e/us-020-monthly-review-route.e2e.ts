@@ -20,6 +20,13 @@ test("renders monthly review timeline cards with deterministic overview data", a
               categoryName: "Groceries",
               spendNok: 820,
             },
+            categorySpendBreakdown: [
+              {
+                categoryId: "cat-groceries",
+                categoryName: "Groceries",
+                spendNok: 820,
+              },
+            ],
             monthOverMonthSpendDeltaNok: 100,
             reviewState: "GENERATING",
             generatedAt: null,
@@ -35,6 +42,13 @@ test("renders monthly review timeline cards with deterministic overview data", a
               categoryName: "Utilities",
               spendNok: 760,
             },
+            categorySpendBreakdown: [
+              {
+                categoryId: "cat-utilities",
+                categoryName: "Utilities",
+                spendNok: 760,
+              },
+            ],
             monthOverMonthSpendDeltaNok: -125,
             reviewState: "FAILED",
             generatedAt: "2026-03-28T14:00:00.000Z",
@@ -50,6 +64,13 @@ test("renders monthly review timeline cards with deterministic overview data", a
               categoryName: "Food",
               spendNok: 700,
             },
+            categorySpendBreakdown: [
+              {
+                categoryId: "cat-food",
+                categoryName: "Food",
+                spendNok: 700,
+              },
+            ],
             monthOverMonthSpendDeltaNok: null,
             reviewState: "NOT_GENERATED",
             generatedAt: null,
@@ -65,6 +86,13 @@ test("renders monthly review timeline cards with deterministic overview data", a
               categoryName: "Rent",
               spendNok: 900,
             },
+            categorySpendBreakdown: [
+              {
+                categoryId: "cat-rent",
+                categoryName: "Rent",
+                spendNok: 900,
+              },
+            ],
             monthOverMonthSpendDeltaNok: 200,
             reviewState: "GENERATED",
             generatedAt: "2026-02-15T10:00:00.000Z",
@@ -100,7 +128,7 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await page.goto("/monthly-review");
 
   await expect(
-    page.getByRole("heading", { name: "Monthly Review" }),
+    page.getByRole("heading", { name: "Financial Timeline" }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Open monthly review settings" }),
@@ -113,14 +141,10 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await expect(monthHeadings.nth(2)).toHaveText("February 2026");
   await expect(monthHeadings.nth(3)).toHaveText("January 2026");
 
-  await expect(page.getByText("Total spend").first()).toBeVisible();
+  await expect(page.getByText("Avg. monthly spend").first()).toBeVisible();
   await expect(page.getByText(/1\s?600,00/).first()).toBeVisible();
-  await expect(page.getByText("Transactions").first()).toBeVisible();
-  await expect(page.getByText("9").first()).toBeVisible();
-  await expect(page.getByText(/Rent \(/)).toBeVisible();
-  await expect(
-    page.getByText("Review generation is in progress for this month."),
-  ).toBeVisible();
+  await expect(page.getByText("9 spending transactions")).toBeVisible();
+  await expect(page.getByText("AI insight is generating...")).toBeVisible();
   await expect(
     page.getByText("Generation failed: provider_error"),
   ).toBeVisible();
@@ -128,30 +152,24 @@ test("renders monthly review timeline cards with deterministic overview data", a
   const generatedMonthCard = page
     .locator("article")
     .filter({ has: page.getByRole("heading", { name: "February 2026" }) });
-  await expect(generatedMonthCard.getByText("Review preview")).toBeVisible();
+  await expect(generatedMonthCard.getByText("AI insight")).toBeVisible();
   await expect(
     generatedMonthCard.getByText(
       /Spending increased due to rent and utilities/,
     ),
   ).toBeVisible();
-  await generatedMonthCard
-    .getByRole("button", { name: "View full review" })
-    .click();
   await expect(
-    generatedMonthCard.locator("p.whitespace-pre-wrap"),
+    generatedMonthCard.getByRole("button", { name: "Regenerate insight" }),
   ).toBeVisible();
-  await generatedMonthCard
-    .getByRole("button", { name: "Hide full review" })
-    .click();
 
   await expect(
-    page.getByText("No review generated for this month yet."),
+    page.getByRole("button", { name: "Get AI review" }),
   ).toBeVisible();
 
   await page
     .locator("article")
     .filter({ has: page.getByRole("heading", { name: "January 2026" }) })
-    .getByRole("button", { name: "Generate review" })
+    .getByRole("button", { name: "Get AI review" })
     .click();
 
   await expect(
@@ -168,7 +186,7 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await page
     .locator("article")
     .filter({ has: page.getByRole("heading", { name: "January 2026" }) })
-    .getByRole("button", { name: "Generate review" })
+    .getByRole("button", { name: "Get AI review" })
     .click();
   await page.getByRole("button", { name: "Generate now" }).click();
 
@@ -178,7 +196,7 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await page
     .locator("article")
     .filter({ has: page.getByRole("heading", { name: "February 2026" }) })
-    .getByRole("button", { name: "Regenerate review" })
+    .getByRole("button", { name: "Regenerate insight" })
     .click();
 
   await expect(

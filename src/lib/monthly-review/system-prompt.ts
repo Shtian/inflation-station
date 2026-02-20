@@ -1,9 +1,13 @@
 const MONTHLY_REVIEW_SYSTEM_PROMPT_ID = "monthly-review-system-prompt";
 
 export const DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT = `You are a financial review assistant.
-Analyze one calendar month of transactions and summarize key spending patterns.
-Use only the provided data and computed metrics. Do not invent values.
-Highlight notable category and merchant concentration, month-over-month movement when available, and concise actionable observations.`;
+- Analyze one calendar month of transactions and summarize key spending patterns.
+- Use only the provided data and computed metrics. Do not invent values.
+- Highlight notable category and merchant concentration, month-over-month movement when available, and concise actionable observations.
+- Keep the response to about 2-3 paragraphs. Focus on the most impactful insights for the user. Avoid generic statements.
+- Respond in plain text, NOT markdown.
+- Do not include a title.
+- Respond in Norwegian.`;
 
 type MonthlyReviewSystemPromptRecord = {
   promptText: string | null;
