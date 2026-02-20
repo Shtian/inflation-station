@@ -149,6 +149,37 @@
       "priority": 10,
       "passes": true,
       "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Audit category selectors for combobox migration",
+      "description": "As an app owner, I need category selection touchpoints identified so search-enabled category picking can be introduced consistently where large lists are expected.",
+      "acceptanceCriteria": [
+        "Identify each UI location where users pick a category via Select",
+        "Document target components/files for migration in implementation notes",
+        "Confirm row-level accessible naming remains stable for import review controls",
+        "Typecheck passes"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Targets discovered: src/app/import/components/import-review-category-cell.tsx, src/app/transactions/components/edit-transaction-dialog.tsx, src/app/categories/components/rules-management-section.tsx"
+    },
+    {
+      "id": "US-012",
+      "title": "Replace category Select inputs with searchable shadcn combobox",
+      "description": "As an app owner, I want searchable category pickers with clear and auto-highlight behavior so selecting from large category lists is faster and less error-prone.",
+      "acceptanceCriteria": [
+        "Install shadcn combobox component via pnpm dlx shadcn@latest add combobox",
+        "Replace category Select controls in identified components with shadcn Combobox",
+        "Enable clear button behavior where uncategorized/empty selection is valid",
+        "Enable auto-highlight behavior for keyboard-friendly quick selection",
+        "Preserve existing category state update flows and accessibility labels",
+        "Typecheck passes",
+        "Relevant tests pass"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
