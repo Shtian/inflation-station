@@ -11,6 +11,7 @@ type DashboardTransactionRecord = {
   category: {
     id: string;
     name: string;
+    kind: "EXPENSE" | "INCOME" | "TRANSFER";
   } | null;
 };
 
@@ -38,6 +39,7 @@ type DashboardAnalyticsDbClient = {
           select: {
             id: true;
             name: true;
+            kind: true;
           };
         };
       };
@@ -151,6 +153,7 @@ export async function getDashboardAnalytics(
         select: {
           id: true,
           name: true,
+          kind: true,
         },
       },
     },
@@ -163,6 +166,10 @@ export async function getDashboardAnalytics(
   const accountNames = new Map<string, string>();
 
   for (const transaction of transactions) {
+    if (transaction.category?.kind === "TRANSFER") {
+      continue;
+    }
+
     const dateKey = toDateKey(transaction.bookingDate);
     const amount = toNumber(transaction.amountNok);
 

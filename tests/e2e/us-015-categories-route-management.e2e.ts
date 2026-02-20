@@ -191,11 +191,15 @@ test("manages categories and category rules from /categories", async ({
     page.getByRole("heading", { name: "Category Management" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Category Rules" }),
-  ).toBeVisible();
-  await expect(
     page.getByRole("cell", { name: "Food", exact: true }),
   ).toBeVisible();
+
+  await page.getByRole("tab", { name: "Category rules" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Category Rules" }),
+  ).toBeVisible();
+
+  await page.getByRole("tab", { name: "Category management" }).click();
 
   await page.getByLabel("Category name").fill("Transport");
   await page.getByRole("button", { name: "Add category" }).click();
@@ -217,6 +221,8 @@ test("manages categories and category rules from /categories", async ({
   await expect(
     page.getByRole("cell", { name: "Commute", exact: true }),
   ).toBeVisible();
+
+  await page.getByRole("tab", { name: "Category rules" }).click();
 
   await page.locator("#rule-category").click();
   await page.getByRole("option", { name: "Commute", exact: true }).click();
@@ -244,6 +250,8 @@ test("manages categories and category rules from /categories", async ({
   await expect(
     page.getByRole("cell", { name: "ruter", exact: true }),
   ).toHaveCount(0);
+
+  await page.getByRole("tab", { name: "Category management" }).click();
 
   page.once("dialog", (dialog) => dialog.accept());
   await page

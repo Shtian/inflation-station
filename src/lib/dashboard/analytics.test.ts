@@ -13,6 +13,7 @@ function createAnalyticsDbMock(
     category: {
       id: string;
       name: string;
+      kind: "EXPENSE" | "INCOME" | "TRANSFER";
     } | null;
   }>,
 ) {
@@ -38,7 +39,7 @@ describe("analytics", () => {
         bookingDate: new Date("2026-02-01T00:00:00.000Z"),
         amountNok: -200,
         account: { id: "acc-1", name: "Main" },
-        category: { id: "cat-food", name: "Food" },
+        category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
       },
       {
         id: "tx-3",
@@ -68,7 +69,7 @@ describe("analytics", () => {
         bookingDate: new Date("2026-02-01T00:00:00.000Z"),
         amountNok: -250.5,
         account: { id: "acc-1", name: "Main" },
-        category: { id: "cat-food", name: "Food" },
+        category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
       },
       {
         id: "tx-2",
@@ -82,7 +83,7 @@ describe("analytics", () => {
         bookingDate: new Date("2026-02-01T00:00:00.000Z"),
         amountNok: 1200,
         account: { id: "acc-1", name: "Main" },
-        category: { id: "cat-salary", name: "Salary" },
+        category: { id: "cat-salary", name: "Salary", kind: "INCOME" },
       },
     ]);
 
@@ -181,10 +182,65 @@ describe("analytics", () => {
           select: {
             id: true,
             name: true,
+            kind: true,
           },
         },
       },
       orderBy: [{ bookingDate: "asc" }, { id: "asc" }],
     });
+  });
+
+  it("excludes transfer-category rows from net, inflow/outflow, and spend breakdown", async () => {
+    const db = createAnalyticsDbMock([
+      {
+        id: "tx-1",
+        bookingDate: new Date("2026-02-01T00:00:00.000Z"),
+        amountNok: 1000,
+        account: { id: "acc-1", name: "Main" },
+        category: { id: "cat-salary", name: "Salary", kind: "INCOME" },
+      },
+      {
+        id: "tx-2",
+        bookingDate: new Date("2026-02-01T00:00:00.000Z"),
+        amountNok: -300,
+        account: { id: "acc-1", name: "Main" },
+        category: { id: "cat-transfer", name: "Transfer", kind: "TRANSFER" },
+      },
+      {
+        id: "tx-3",
+        bookingDate: new Date("2026-02-01T00:00:00.000Z"),
+        amountNok: -200,
+        account: { id: "acc-1", name: "Main" },
+        category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
+      },
+      {
+        id: "tx-4",
+        bookingDate: new Date("2026-02-01T00:00:00.000Z"),
+        amountNok: -100,
+        account: { id: "acc-1", name: "Main" },
+        category: null,
+      },
+    ]);
+
+    const result = await getDashboardAnalytics(db);
+
+    expect(result.netCashflow).toEqual([{ date: "2026-02-01", netNok: 700 }]);
+    expect(result.inflowOutflow).toEqual([
+      { date: "2026-02-01", inflowNok: 1000, outflowNok: 300 },
+    ]);
+    expect(result.categoryBreakdown).toEqual([
+      {
+        categoryId: "cat-food",
+        categoryName: "Food",
+        spendNok: 200,
+        transactionCount: 1,
+      },
+      {
+        categoryId: null,
+        categoryName: "Uncategorized",
+        spendNok: 100,
+        transactionCount: 1,
+      },
+    ]);
   });
 });

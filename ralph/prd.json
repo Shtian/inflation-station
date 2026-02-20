@@ -1,17 +1,19 @@
 {
   "project": "inflation-station",
-  "branchName": "ralph/monthly-ai-spend-review",
-  "description": "Add a monthly timeline page with deterministic spend overviews and optional manual AI-generated monthly reviews using a configurable system prompt.",
+  "branchName": "ralph/exclude-inter-account-transfers-from-spend-income-analytics",
+  "description": "Exclude transactions categorized as TRANSFER from spend/income analytics in Overview and Monthly Review while keeping transfer rows visible in transaction workflows.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add persistence model for monthly AI reviews",
-      "description": "As a developer, I need a persistence model for monthly review outputs and metadata so each month has one replaceable stored review.",
+      "title": "Exclude transfer-category transactions from Overview analytics",
+      "description": "As a user, I want transactions categorized as TRANSFER excluded from Overview spend and income analytics so totals reflect real spending and earning.",
       "acceptanceCriteria": [
-        "Add Prisma model(s) to persist monthly review output keyed by month with unique month identity and generated timestamp/status fields",
-        "Regenerate Prisma client after schema change",
-        "Typecheck passes",
-        "Tests pass"
+        "Overview net cashflow excludes rows where category.kind is TRANSFER",
+        "Overview inflow and outflow totals exclude rows where category.kind is TRANSFER",
+        "Overview category spend breakdown excludes rows where category.kind is TRANSFER",
+        "Uncategorized transactions remain included",
+        "Tests pass",
+        "Typecheck passes"
       ],
       "priority": 1,
       "passes": true,
@@ -19,167 +21,69 @@
     },
     {
       "id": "US-002",
-      "title": "Persist configurable monthly review system prompt",
-      "description": "As a developer, I need storage for a reusable monthly review system prompt so generation uses stable baseline instructions.",
+      "title": "Exclude transfer-category transactions from Monthly Review overview metrics",
+      "description": "As a user, I want Monthly Review timeline and overview spend metrics to ignore TRANSFER-categorized transactions so monthly summaries are not inflated.",
       "acceptanceCriteria": [
-        "Add persistence for monthly review system prompt with get and update access",
-        "Define fallback default prompt when stored prompt is missing or empty",
-        "Typecheck passes",
-        "Tests pass"
+        "Monthly total spend excludes rows where category.kind is TRANSFER",
+        "Monthly spend transaction count excludes rows where category.kind is TRANSFER",
+        "Monthly category spend breakdown excludes rows where category.kind is TRANSFER",
+        "Month-over-month spend delta uses transfer-excluded spend totals",
+        "Uncategorized transactions remain included",
+        "Tests pass",
+        "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Build deterministic monthly overview aggregation service",
-      "description": "As a developer, I want a backend monthly aggregation module so timeline summaries are available without AI generation.",
+      "title": "Exclude transfer-category transactions from Monthly Review generation metrics",
+      "description": "As a user, I want Monthly Review generation-input metrics to ignore TRANSFER-categorized transactions so generated analysis reflects actual spending patterns.",
       "acceptanceCriteria": [
-        "Create route-independent backend service that returns per-month deterministic overview including total spend, transaction count, top category, and month-over-month delta when prior month exists",
-        "Service returns overview rows even when no AI review exists for the month",
-        "Typecheck passes",
-        "Tests pass"
+        "metrics.monthlyTotals.totalSpendNok excludes rows where category.kind is TRANSFER",
+        "metrics.categoryTotals excludes rows where category.kind is TRANSFER",
+        "metrics.merchantConcentration excludes rows where category.kind is TRANSFER",
+        "metrics.monthOverMonth uses transfer-excluded spend totals",
+        "Uncategorized transactions remain included",
+        "Tests pass",
+        "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Add timeline read API for monthly overview and review state",
-      "description": "As a developer, I need an API endpoint for monthly timeline data so the UI can load deterministic overviews and review status in one request.",
+      "title": "Add inline transfer-exclusion messaging on analytics pages",
+      "description": "As a user, I want clear inline messaging on analytics pages so I understand why spend and income totals exclude transfer-category transactions.",
       "acceptanceCriteria": [
-        "Add App Router API route that returns monthly overview rows with review state and generated timestamp metadata",
-        "Response includes explicit review state values for not generated, generating, generated, and failed",
-        "API maps validation and server errors to stable response codes/messages",
-        "Typecheck passes",
-        "Tests pass"
+        "Overview page shows inline copy explaining that Transfer-category transactions are excluded from spend and income analytics",
+        "Monthly Review page shows equivalent inline copy with consistent wording",
+        "Copy is visible in normal page flow (not hover-only)",
+        "Copy is concise and non-technical",
+        "Tests pass",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Implement AI generation input builder with precomputed metrics",
-      "description": "As a developer, I want an AI payload builder that includes each transaction with minimal fields and precomputed metrics so the model does not perform core arithmetic.",
+      "title": "Add regression tests for transfer exclusion analytics behavior",
+      "description": "As a developer, I want regression coverage for transfer exclusion rules so future changes do not reintroduce inflated analytics totals.",
       "acceptanceCriteria": [
-        "Generation service computes and includes precomputed metrics (monthly totals, category totals, merchant concentration indicators, and month-over-month deltas when available)",
-        "Generation payload includes each month transaction with minimal required fields only",
-        "Generation uses stored system prompt or fallback default prompt",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 5,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-006",
-      "title": "Add manual generation API with replace semantics",
-      "description": "As a developer, I need a manual generation endpoint that replaces existing month review output so one current review exists per month.",
-      "acceptanceCriteria": [
-        "Add App Router mutation endpoint to trigger generation for a selected month",
-        "If review exists for that month, endpoint replaces stored review output and updates generated timestamp",
-        "Provider failure or missing key is returned as non-crashing generation error state without breaking timeline reads",
-        "Typecheck passes",
-        "Tests pass"
-      ],
-      "priority": 6,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-007",
-      "title": "Create monthly review route shell and timeline rendering",
-      "description": "As an app owner, I want a dedicated monthly review page so I can browse month cards with deterministic overview summaries.",
-      "acceptanceCriteria": [
-        "Add a dedicated route (for example `/monthly-review`) with route-local root component structure matching repository conventions",
-        "Render timeline cards sorted by month descending with deterministic overview values visible without AI review",
-        "Display explicit empty-state text for months with no review",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 7,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-008",
-      "title": "Add manual generate/regenerate UI with mandatory confirmation",
-      "description": "As an app owner, I want a confirmation prompt before every generation so accidental generate/regenerate actions are prevented.",
-      "acceptanceCriteria": [
-        "Each month card includes generate action and regenerate action when review already exists",
-        "Clicking either action opens confirmation dialog before request is sent",
-        "Dialog copy differentiates first-time generate vs replace existing review",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 8,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-009",
-      "title": "Show review content and generation states on timeline",
-      "description": "As an app owner, I want month cards to show review output preview and status so I can quickly understand which months are reviewed.",
-      "acceptanceCriteria": [
-        "Month cards render review metadata and status badges for generating, generated, and failed states",
-        "Generated months show concise preview with access to full stored review text",
-        "Generation errors are visible on the month card without blocking page rendering",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 9,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-010",
-      "title": "Add system prompt settings UI for monthly review",
-      "description": "As an app owner, I want to edit and save the monthly review system prompt so I can control AI baseline behavior.",
-      "acceptanceCriteria": [
-        "Add prompt editor UI with save action and success/error feedback",
-        "Prompt editor loads currently persisted prompt and supports empty value fallback behavior",
-        "Saved prompt is used by subsequent generation calls without mutating existing stored review outputs",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 10,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-011",
-      "title": "Audit category selectors for combobox migration",
-      "description": "As an app owner, I need category selection touchpoints identified so search-enabled category picking can be introduced consistently where large lists are expected.",
-      "acceptanceCriteria": [
-        "Identify each UI location where users pick a category via Select",
-        "Document target components/files for migration in implementation notes",
-        "Confirm row-level accessible naming remains stable for import review controls",
+        "Add or update tests in src/lib/dashboard/analytics.test.ts for transfer excluded, non-transfer included, and uncategorized included cases",
+        "Add or update tests in src/lib/monthly-review/overview.test.ts for transfer excluded, non-transfer included, and uncategorized included cases",
+        "Add or update tests in src/lib/monthly-review/generation-input.test.ts for transfer excluded, non-transfer included, and uncategorized included cases",
+        "Tests pass",
         "Typecheck passes"
       ],
-      "priority": 11,
-      "passes": true,
-      "notes": "Category picker touchpoints audited and documented: src/app/import/components/import-review-category-cell.tsx, src/app/transactions/components/edit-transaction-dialog.tsx, src/app/categories/components/rules-management-section.tsx. Import review row-level accessibility naming remains stable via aria label `Category for row N` on the combobox input and is exercised in tests/e2e/us-016-import-route-upload.e2e.ts."
-    },
-    {
-      "id": "US-012",
-      "title": "Replace category Select inputs with searchable shadcn combobox",
-      "description": "As an app owner, I want searchable category pickers with clear and auto-highlight behavior so selecting from large category lists is faster and less error-prone.",
-      "acceptanceCriteria": [
-        "Install shadcn combobox component via pnpm dlx shadcn@latest add combobox",
-        "Replace category Select controls in identified components with shadcn Combobox",
-        "Enable clear button behavior where uncategorized/empty selection is valid",
-        "Enable auto-highlight behavior for keyboard-friendly quick selection",
-        "Preserve existing category state update flows and accessibility labels",
-        "Typecheck passes",
-        "Relevant tests pass"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Implemented shared CategoryCombobox usage in import review, transaction edit, and category-rule creation flows with clearable uncategorized behavior and auto-highlighted keyboard selection."
+      "priority": 5,
+      "passes": false,
+      "notes": ""
     }
   ]
 }
