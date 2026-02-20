@@ -214,10 +214,22 @@ test("opens monthly review settings from header configuration and monthly review
   page,
 }) => {
   const promptUpdateRequests: Array<{ promptText?: string }> = [];
+  const availableModels = [
+    {
+      id: "gpt-5.2",
+      label: "GPT-5.2",
+      description: "Best default quality/cost tradeoff for monthly analysis.",
+      tier: "balanced",
+    },
+  ];
   let systemPromptResponse = {
     promptText: "Start with top deltas and concentration signals.",
     resolvedPrompt: "Start with top deltas and concentration signals.",
     usesDefaultPrompt: false,
+    modelId: "gpt-5.2",
+    resolvedModelId: "gpt-5.2",
+    usesDefaultModel: false,
+    availableModels,
   };
 
   await page.route("**/api/monthly-review/system-prompt", async (route) => {
@@ -244,6 +256,10 @@ test("opens monthly review settings from header configuration and monthly review
             ? "You are a financial review assistant."
             : nextPromptText,
         usesDefaultPrompt: nextPromptText.trim().length === 0,
+        modelId: "gpt-5.2",
+        resolvedModelId: "gpt-5.2",
+        usesDefaultModel: false,
+        availableModels,
       };
 
       await route.fulfill({
@@ -285,6 +301,7 @@ test("opens monthly review settings from header configuration and monthly review
   await expect.poll(() => promptUpdateRequests.length).toBe(1);
   expect(promptUpdateRequests[0]).toEqual({
     promptText: "Focus on anomalies and recurring spend.",
+    modelId: "gpt-5.2",
   });
   await expect(page.getByText("System prompt saved.")).toBeVisible();
 
@@ -310,6 +327,7 @@ test("opens monthly review settings from header configuration and monthly review
   await expect.poll(() => promptUpdateRequests.length).toBe(2);
   expect(promptUpdateRequests[1]).toEqual({
     promptText: "   ",
+    modelId: "gpt-5.2",
   });
   await expect(
     page.getByText("Using fallback default prompt for generation."),

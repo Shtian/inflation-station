@@ -196,10 +196,11 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   const rowTwoCategory = page.getByRole("combobox", {
     name: "Category for row 2",
   });
-  await expect(rowTwoCategory).toHaveText("Uncategorized");
+  await expect(rowTwoCategory).toHaveValue("");
+  await expect(rowTwoCategory).toHaveAttribute("placeholder", "Uncategorized");
   await rowTwoCategory.click();
   await page.getByRole("option", { name: "Food", exact: true }).click();
-  await expect(rowTwoCategory).toHaveText("Food");
+  await expect(rowTwoCategory).toHaveValue("cat-food");
 
   const rowOneNote = page.getByRole("textbox", {
     name: "Note for row 2",

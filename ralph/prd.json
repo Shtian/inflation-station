@@ -161,8 +161,8 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": "Targets discovered: src/app/import/components/import-review-category-cell.tsx, src/app/transactions/components/edit-transaction-dialog.tsx, src/app/categories/components/rules-management-section.tsx"
+      "passes": true,
+      "notes": "Category picker touchpoints audited and documented: src/app/import/components/import-review-category-cell.tsx, src/app/transactions/components/edit-transaction-dialog.tsx, src/app/categories/components/rules-management-section.tsx. Import review row-level accessibility naming remains stable via aria label `Category for row N` on the combobox input and is exercised in tests/e2e/us-016-import-route-upload.e2e.ts."
     },
     {
       "id": "US-012",
