@@ -1,3 +1,4 @@
+import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import type { PaymentType } from "@prisma/client";
 import {
   buildRuleBasedSuggestions,
@@ -427,6 +428,8 @@ export async function stageParsedImportRows(
   options?: {
     openAiCleanupEnabled?: boolean;
     openAiApiKey?: string | null;
+    openAiCleanupModel?: OpenAIChatModelId;
+    openAiCleanupSystemPrompt?: string;
     buildOpenAiMessageCleanup?: BuildOpenAiMessageCleanup;
   },
 ): Promise<StageParsedImportResult> {
@@ -490,6 +493,8 @@ export async function stageParsedImportRows(
     const cleanupResult = await openAiCleanupBuilder({
       enabled: options?.openAiCleanupEnabled ?? true,
       apiKey: resolvedOpenAiApiKey,
+      model: options?.openAiCleanupModel,
+      systemPrompt: options?.openAiCleanupSystemPrompt,
       rows: validRows.map((row) => ({
         rowNumber: row.rowNumber,
         message: `${row.name} ${row.title}`.trim(),

@@ -5,8 +5,10 @@ import {
   Pencil,
   RotateCcw,
 } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Progress } from "@/components/ui/progress";
 import {
   ImportReviewTable,
   type MessageSource,
@@ -26,6 +28,28 @@ function formatNok(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function getCleanupUnavailableMessage(
+  reason: "disabled" | "key_missing" | "timeout" | "provider_error" | null,
+) {
+  if (reason === "disabled") {
+    return "Message cleanup is disabled by configuration.";
+  }
+
+  if (reason === "key_missing") {
+    return "Message cleanup unavailable: OPENAI_API_KEY is missing.";
+  }
+
+  if (reason === "timeout") {
+    return "Message cleanup timed out. Original messages are kept for this import.";
+  }
+
+  if (reason === "provider_error") {
+    return "Message cleanup provider failed. Original messages are kept for this import.";
+  }
+
+  return null;
 }
 
 type AccountSummary = {
@@ -89,7 +113,40 @@ export function ImportReviewPhase({
   submitNotice,
   submitReviewRows,
 }: ImportReviewPhaseProps) {
+  const [loadingProgress, setLoadingProgress] = useState(8);
+
+  useEffect(() => {
+    if (!importLoading) {
+      setLoadingProgress(8);
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setLoadingProgress((current) => {
+        if (current >= 92) {
+          return current;
+        }
+
+        return Math.min(92, current + (current < 50 ? 8 : 4));
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [importLoading]);
+
   const reviewRows = getReviewRows(parseResult);
+  const cleanedSuggestionCount = reviewRows.reduce(
+    (count, row) =>
+      typeof row.cleanedMessage === "string" && row.cleanedMessage.length > 0
+        ? count + 1
+        : count,
+    0,
+  );
+  const cleanupUnavailableMessage = getCleanupUnavailableMessage(
+    parseResult?.review?.messageCleanupUnavailableReason ?? null,
+  );
 
   if (importLoading) {
     return (
@@ -118,6 +175,19 @@ export function ImportReviewPhase({
         </div>
 
         <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Waiting for AI feedback. This can take up to 90 seconds.
+          </p>
+          <Field className="w-full">
+            <FieldLabel htmlFor="import-ai-feedback-progress">
+              <span>AI feedback progress</span>
+              <span className="ml-auto">{loadingProgress}%</span>
+            </FieldLabel>
+            <Progress
+              value={loadingProgress}
+              id="import-ai-feedback-progress"
+            />
+          </Field>
           <p className="text-xs text-muted-foreground">
             Preparing parsed rows for review.
           </p>
@@ -278,6 +348,12 @@ export function ImportReviewPhase({
         </div>
       ) : null}
 
+      {cleanupUnavailableMessage ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          {cleanupUnavailableMessage}
+        </p>
+      ) : null}
+
       {parseResult.review && reviewRows.length > 0 ? (
         <div className="space-y-2">
           {parseResult.review.potentialDuplicates > 0 ? (
@@ -293,6 +369,10 @@ export function ImportReviewPhase({
               Rows without a suggestion keep the original message.
             </p>
           )}
+          <p className="text-xs text-muted-foreground">
+            AI cleanup suggestions: {cleanedSuggestionCount} of{" "}
+            {reviewRows.length}.
+          </p>
           <ImportReviewTable
             rows={reviewRows}
             categories={reviewCategoryOptions}

@@ -19,6 +19,11 @@ const primaryLinks = [
 
 const configurationLinks = [
   {
+    href: "/import/settings/message-cleanup",
+    label: "Message Cleanup Settings",
+    description: "Configure OpenAI model and prompt for import cleanup.",
+  },
+  {
     href: "/monthly-review/settings",
     label: "Monthly Review Settings",
     description: "Edit AI system prompt defaults for monthly reviews.",

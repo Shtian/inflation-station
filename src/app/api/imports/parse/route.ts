@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getMessageCleanupSettings } from "@/lib/import/message-cleanup-settings";
 import { detectProviderFromCsv } from "@/lib/import/provider-detection";
 import { stageParsedImportRows } from "@/lib/import/review-stage";
 import { prisma } from "@/lib/prisma";
@@ -171,6 +172,8 @@ export async function POST(request: Request) {
       })
     : null;
 
+  const messageCleanupSettings = await getMessageCleanupSettings(prisma);
+
   const staged = await stageParsedImportRows(
     prisma,
     {
@@ -179,6 +182,8 @@ export async function POST(request: Request) {
       providerMapping,
     },
     {
+      openAiCleanupModel: messageCleanupSettings.modelId,
+      openAiCleanupSystemPrompt: messageCleanupSettings.prompt,
       openAiCleanupEnabled:
         process.env.OPENAI_MESSAGE_CLEANUP_ENABLED?.trim().toLowerCase() !==
         "false",

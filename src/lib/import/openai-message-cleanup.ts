@@ -5,6 +5,10 @@ import {
   buildProviderErrorDetail,
   isAbortError,
 } from "../openai/provider-errors";
+import {
+  DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
+  DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
+} from "./message-cleanup-settings";
 
 export type MessageCleanupUnavailableReason =
   | "disabled"
@@ -12,8 +16,7 @@ export type MessageCleanupUnavailableReason =
   | "timeout"
   | "provider_error";
 
-const DEFAULT_PROVIDER_TIMEOUT_MS = 8_000;
-const DEFAULT_OPENAI_MODEL: OpenAIChatModelId = "gpt-5-mini";
+const DEFAULT_PROVIDER_TIMEOUT_MS = 90_000;
 
 export type MessageCleanupInputRow = {
   rowNumber: number;
@@ -37,6 +40,45 @@ type MessageCleanupPayload = {
   }>;
 };
 
+const REQUIRED_JSON_OUTPUT_INSTRUCTION =
+  "Return strict JSON with top-level suggestions only.";
+
+function buildSystemPrompt(systemPrompt: string | undefined): string {
+  const basePrompt = (
+    systemPrompt ?? DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT
+  ).trim();
+
+  if (
+    basePrompt
+      .toLowerCase()
+      .includes(REQUIRED_JSON_OUTPUT_INSTRUCTION.toLowerCase())
+  ) {
+    return basePrompt;
+  }
+
+  return `${basePrompt}\n\n${REQUIRED_JSON_OUTPUT_INSTRUCTION}`;
+}
+
+function unwrapJsonPayload(payload: string): string {
+  const trimmed = payload.trim();
+  if (!trimmed) {
+    return trimmed;
+  }
+
+  const fencedMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fencedMatch?.[1]) {
+    return fencedMatch[1].trim();
+  }
+
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1);
+  }
+
+  return trimmed;
+}
+
 function normalizeInputRows(rows: MessageCleanupInputRow[]) {
   return rows
     .map((row) => ({
@@ -50,7 +92,9 @@ function parseSuggestions(
   payload: string,
   rowNumbers: Set<number>,
 ): MessageCleanupSuggestion[] {
-  const parsed = JSON.parse(payload) as MessageCleanupPayload;
+  const parsed = JSON.parse(
+    unwrapJsonPayload(payload),
+  ) as MessageCleanupPayload;
   const suggestions = Array.isArray(parsed.suggestions)
     ? parsed.suggestions
     : [];
@@ -86,7 +130,8 @@ export async function buildOpenAiMessageCleanup(params: {
   rows: MessageCleanupInputRow[];
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
-  model?: string;
+  model?: OpenAIChatModelId;
+  systemPrompt?: string;
 }): Promise<MessageCleanupResult> {
   if (params.enabled === false) {
     return {
@@ -149,11 +194,9 @@ export async function buildOpenAiMessageCleanup(params: {
     });
 
     const result = await generateText({
-      model: openai.chat(params.model ?? DEFAULT_OPENAI_MODEL),
-      temperature: 0,
+      model: openai.chat(params.model ?? DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL),
       maxRetries: 0,
-      system:
-        "You clean transaction messages. Return strict JSON with top-level suggestions only.",
+      system: buildSystemPrompt(params.systemPrompt),
       prompt: userPrompt,
       abortSignal: controller.signal,
     });
@@ -172,7 +215,7 @@ export async function buildOpenAiMessageCleanup(params: {
   } catch (error) {
     if (!isAbortError(error)) {
       console.error("Import message cleanup provider request failed", {
-        model: params.model ?? DEFAULT_OPENAI_MODEL,
+        model: params.model ?? DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
         timeoutMs,
         detail: buildProviderErrorDetail(error),
       });
