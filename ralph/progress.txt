@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - For Server Action mutations, keep a typed result union (`ok` + `data` or typed `error`) and centralize Zod-validation/error-shape helpers in `src/lib/server-actions/mutation-result.ts`.
+- For Playwright coverage of client-triggered Server Actions, intercept page-path `POST` requests and detect the `next-action` header while allowing `route.fallback()` so the real action protocol remains intact.
 
 ## 2026-02-21 10:55 CET - US-001
 - Implemented a server-action mutation architecture baseline with shared typed result helpers and two settings-focused Server Action modules prepared for migration wiring.
@@ -9,4 +10,14 @@
   - Patterns discovered: Existing settings API routes for monthly review and message cleanup already share near-identical validation/model-resolution semantics, making them strong first candidates for direct action parity.
   - Gotchas encountered: Preserve existing uppercase API error-code identifiers in action results to avoid churn in existing client-side error mapping logic during migration.
   - Useful context: Provider mapping mutations have route-level validation contracts (`REQUIRED_CANONICAL_FIELDS_MISSING`, `DUPLICATE_CANONICAL_FIELD_MAPPINGS`, `MERCHANT_SIGNAL_FIELD_REQUIRED`) that should be mirrored exactly when migrating the entity workflow.
+---
+
+## 2026-02-21 19:03 CET - US-002
+- Implemented migration of the message cleanup settings save flow from client `PUT /api/imports/message-cleanup-settings` fetch calls to `updateMessageCleanupSettingsAction` while preserving existing UI copy, controls, and save interactions.
+- Files changed: `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx`, `tests/e2e/us-021-message-cleanup-settings.e2e.ts`, `src/app/import/AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed (unit + Playwright e2e), `pnpm build` passed.
+- **Learnings for future iterations**
+  - Patterns discovered: Keeping settings-page initial loads on existing GET APIs while migrating only save mutations to Server Actions is a low-risk parity path for staged rollout.
+  - Gotchas encountered: Frontend save feedback parity is easiest to preserve by keeping existing generic UI error/success copy and mapping all action `ok: false` cases to the current message text.
+  - Useful context: `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx` now serves as the reference settings-manager pattern for Server Action mutation wiring in import settings pages.
 ---
