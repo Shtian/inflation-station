@@ -4,7 +4,6 @@ type DecimalLike = { toString(): string } | number;
 
 type StringContainsFilter = {
   contains: string;
-  mode: "insensitive";
 };
 
 type TransactionListRecord = {
@@ -152,7 +151,6 @@ export async function getTransactionsPage(
   if (normalizedQuery) {
     const containsQuery: StringContainsFilter = {
       contains: normalizedQuery,
-      mode: "insensitive",
     };
 
     where.OR = [

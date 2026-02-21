@@ -133,13 +133,11 @@ describe("getTransactionsPage", () => {
         {
           normalizedMerchant: {
             contains: "coffee",
-            mode: "insensitive",
           },
         },
         {
           note: {
             contains: "coffee",
-            mode: "insensitive",
           },
         },
         {
@@ -147,7 +145,6 @@ describe("getTransactionsPage", () => {
             is: {
               name: {
                 contains: "coffee",
-                mode: "insensitive",
               },
             },
           },

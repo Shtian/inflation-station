@@ -415,7 +415,7 @@ export function TransactionsTableSection({
     .getAllLeafColumns()
     .filter((column) => column.getCanHide() && column.id !== "actions");
 
-  if (loading) {
+  if (loading && !transactions) {
     return (
       <p className="text-muted-foreground text-sm">Loading transactions...</p>
     );
@@ -548,6 +548,10 @@ export function TransactionsTableSection({
       <p className="text-muted-foreground text-sm">
         {transactions.pagination.total} total transactions.
       </p>
+
+      {loading ? (
+        <p className="text-muted-foreground text-sm">Updating results...</p>
+      ) : null}
 
       {transactions.rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">

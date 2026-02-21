@@ -26,6 +26,22 @@ function getTransactionsErrorMessage(body: unknown) {
   return "Could not load transactions.";
 }
 
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [delayMs, value]);
+
+  return debouncedValue;
+}
+
 export function useTransactionsManager() {
   const router = useRouter();
   const pathname = usePathname();
@@ -40,6 +56,10 @@ export function useTransactionsManager() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tableState, setTableState] = useState(parsedUrlState);
+  const [globalQueryInput, setGlobalQueryInput] = useState(
+    parsedUrlState.globalQuery ?? "",
+  );
+  const debouncedGlobalQueryInput = useDebouncedValue(globalQueryInput, 250);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<TransactionsResponse | null>(
@@ -53,6 +73,25 @@ export function useTransactionsManager() {
         : parsedUrlState,
     );
   }, [parsedUrlState]);
+
+  useEffect(() => {
+    setGlobalQueryInput(tableState.globalQuery ?? "");
+  }, [tableState.globalQuery]);
+
+  useEffect(() => {
+    const trimmed = debouncedGlobalQueryInput.trim();
+    const nextGlobalQuery = trimmed.length > 0 ? trimmed : undefined;
+
+    setTableState((current) => {
+      if (current.globalQuery === nextGlobalQuery) {
+        return current;
+      }
+
+      return withFilterStateChange(current, {
+        globalQuery: nextGlobalQuery,
+      });
+    });
+  }, [debouncedGlobalQueryInput]);
 
   useEffect(() => {
     const nextParams = toTransactionsTableSearchParams(
@@ -230,12 +269,7 @@ export function useTransactionsManager() {
   }, []);
 
   const setGlobalQueryFilter = useCallback((nextGlobalQuery: string) => {
-    const trimmed = nextGlobalQuery.trim();
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        globalQuery: trimmed.length > 0 ? trimmed : undefined,
-      }),
-    );
+    setGlobalQueryInput(nextGlobalQuery);
   }, []);
 
   const setDateFromFilter = useCallback((nextDateFrom: string) => {
@@ -280,7 +314,7 @@ export function useTransactionsManager() {
     categories,
     accountId: tableState.accountId ?? "",
     categoryId: tableState.categoryId ?? "",
-    globalQuery: tableState.globalQuery ?? "",
+    globalQuery: globalQueryInput,
     dateFrom: tableState.dateFrom ?? "",
     dateTo: tableState.dateTo ?? "",
     sorting: tableState.sorting,
