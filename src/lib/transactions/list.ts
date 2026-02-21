@@ -47,7 +47,7 @@ type TransactionListDbClient = {
         createdAt: true;
         updatedAt: true;
       };
-      orderBy: [{ bookingDate: "desc" }, { id: "desc" }];
+      orderBy: Prisma.TransactionOrderByWithRelationInput[];
       skip: number;
       take: number;
     }): Promise<TransactionListRecord[]>;
@@ -103,6 +103,35 @@ function addUtcDays(date: Date, days: number): Date {
   return nextDate;
 }
 
+function getOrderBy(
+  sorting: TransactionsListFilters["sorting"],
+): Prisma.TransactionOrderByWithRelationInput[] {
+  if (!sorting) {
+    return [{ bookingDate: "desc" }, { id: "desc" }];
+  }
+
+  switch (sorting.field) {
+    case "bookingDate":
+      return [{ bookingDate: sorting.direction }, { id: sorting.direction }];
+    case "amountNok":
+      return [{ amountNok: sorting.direction }, { id: sorting.direction }];
+    case "normalizedMerchant":
+      return [
+        { normalizedMerchant: sorting.direction },
+        { id: sorting.direction },
+      ];
+    case "category":
+      return [
+        {
+          category: {
+            name: sorting.direction,
+          },
+        },
+        { id: sorting.direction },
+      ];
+  }
+}
+
 export async function getTransactionsPage(
   db: TransactionListDbClient,
   filters: TransactionsListFilters,
@@ -144,6 +173,7 @@ export async function getTransactionsPage(
   }
 
   const skip = (filters.page - 1) * filters.pageSize;
+  const orderBy = getOrderBy(filters.sorting);
 
   const total = await db.transaction.count({ where });
   const records = await db.transaction.findMany({
@@ -166,7 +196,7 @@ export async function getTransactionsPage(
       createdAt: true,
       updatedAt: true,
     },
-    orderBy: [{ bookingDate: "desc" }, { id: "desc" }],
+    orderBy,
     skip,
     take: filters.pageSize,
   });

@@ -178,4 +178,88 @@ describe("getTransactionsPage", () => {
       totalPages: 0,
     });
   });
+
+  it("applies amount sorting with deterministic id ordering and stable pagination metadata", async () => {
+    const db = createTransactionsDbMock(12);
+
+    const result = await getTransactionsPage(db, {
+      page: 2,
+      pageSize: 5,
+      sorting: {
+        field: "amountNok",
+        direction: "asc",
+      },
+    });
+
+    expect(db.transaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [{ amountNok: "asc" }, { id: "asc" }],
+        skip: 5,
+        take: 5,
+      }),
+    );
+    expect(result.pagination).toEqual({
+      total: 12,
+      page: 2,
+      pageSize: 5,
+      totalPages: 3,
+    });
+  });
+
+  it("applies category sorting with deterministic id ordering", async () => {
+    const db = createTransactionsDbMock(1);
+
+    await getTransactionsPage(db, {
+      ...createTransactionListFilters(),
+      sorting: {
+        field: "category",
+        direction: "desc",
+      },
+    });
+
+    expect(db.transaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [
+          {
+            category: {
+              name: "desc",
+            },
+          },
+          { id: "desc" },
+        ],
+      }),
+    );
+  });
+
+  it("applies bookingDate and normalizedMerchant sort fields", async () => {
+    const db = createTransactionsDbMock(1);
+
+    await getTransactionsPage(db, {
+      ...createTransactionListFilters(),
+      sorting: {
+        field: "bookingDate",
+        direction: "asc",
+      },
+    });
+
+    expect(db.transaction.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        orderBy: [{ bookingDate: "asc" }, { id: "asc" }],
+      }),
+    );
+
+    await getTransactionsPage(db, {
+      ...createTransactionListFilters(),
+      sorting: {
+        field: "normalizedMerchant",
+        direction: "desc",
+      },
+    });
+
+    expect(db.transaction.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        orderBy: [{ normalizedMerchant: "desc" }, { id: "desc" }],
+      }),
+    );
+  });
 });

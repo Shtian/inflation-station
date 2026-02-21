@@ -2,6 +2,7 @@
 - Transactions list query parsing should trim optional text/id filters and normalize empty values to `undefined` before passing to domain modules.
 - Keep transactions sorting query strings in `<field>:<direction>` format with an explicit field allowlist and per-param `INVALID_*` HTTP 400 responses.
 - For inclusive `dateTo` filtering on `bookingDate`, convert to `< next UTC day` in domain queries to handle non-midnight timestamps safely.
+- For server-sorted transaction pagination, always add a deterministic `id` tiebreaker to every `orderBy` mode.
 
 ## 2026-02-21 19:50:25 +0100 - US-001
 - What was implemented
@@ -56,4 +57,29 @@
     - `paymentType` is an enum and cannot use string `contains` filters; global text matching should target text fields/relations only.
   - Useful context
     - Filter behavior for `/api/transactions` now lives in `src/lib/transactions/list.ts`, while request validation stays in `src/app/api/transactions/route.ts`.
+---
+
+## 2026-02-21 21:15:50 +0100 - US-003
+- What was implemented
+  - Added server-side sorting in `getTransactionsPage` for `bookingDate`, `amountNok`, `normalizedMerchant`, and relation `category.name`.
+  - Added deterministic `id` tiebreaker ordering for every explicit sorting mode to keep pagination stable.
+  - Added domain tests covering sorting orderBy mapping and pagination metadata under sorted paging.
+- Files changed
+  - `src/lib/transactions/list.ts`
+  - `src/lib/transactions/list.test.ts`
+  - `src/lib/transactions/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered
+    - Build `orderBy` from a dedicated helper so route-provided sort state maps consistently and keeps default ordering fallback in one place.
+  - Gotchas encountered
+    - Sorting by category requires relation ordering (`category.name`) rather than a direct scalar field on `transaction`.
+  - Useful context
+    - Transactions list sorting behavior is implemented in `src/lib/transactions/list.ts`; the API layer only parses/validates `sorting` query params.
 ---
