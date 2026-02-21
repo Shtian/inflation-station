@@ -67,7 +67,7 @@ export function ProviderSelectionDialog({
                   <div className="h-2 w-2 rounded-full bg-primary-foreground" />
                 ) : null}
               </div>
-              <span className="text-sm font-medium">{provider.name}</span>
+              <span className="font-medium text-sm">{provider.name}</span>
             </button>
           ))}
         </div>

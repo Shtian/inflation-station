@@ -56,20 +56,20 @@ export function ProviderMappingFieldMappingsEditor(props: {
 
   return (
     <section className="space-y-3 rounded-md border border-border p-3">
-      <h4 className="text-sm font-semibold text-foreground">Field mappings</h4>
+      <h4 className="font-semibold text-foreground text-sm">Field mappings</h4>
       <section className="space-y-2 rounded-md border border-border p-3">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+        <h4 className="font-semibold text-foreground text-xs uppercase tracking-wide">
           Required mappings
         </h4>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           Required: booking date, amount, and one merchant signal field.
         </p>
         <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)]">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-xs">
             Destination
           </span>
           <span />
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-xs">
             Source
           </span>
           <Input value="bookingDate" disabled className="w-full" />
@@ -165,20 +165,20 @@ export function ProviderMappingFieldMappingsEditor(props: {
         </div>
       </section>
       <section className="space-y-2 rounded-md border border-border p-3">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">
+        <h4 className="font-semibold text-foreground text-xs uppercase tracking-wide">
           Optional mappings
         </h4>
         <div className="grid items-center gap-2 md:grid-cols-[minmax(0,1fr)_1.5rem_minmax(0,1fr)_auto]">
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-xs">
             Destination
           </span>
           <span />
-          <span className="text-xs font-medium text-muted-foreground">
+          <span className="font-medium text-muted-foreground text-xs">
             Source
           </span>
           <span />
           {optionalRows.length === 0 ? (
-            <p className="text-xs text-muted-foreground md:col-span-4">
+            <p className="text-muted-foreground text-xs md:col-span-4">
               No optional mappings added.
             </p>
           ) : (

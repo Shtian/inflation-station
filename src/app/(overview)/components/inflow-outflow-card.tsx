@@ -33,11 +33,11 @@ export function InflowOutflowCard({
   return (
     <Card>
       <CardContent className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">
+        <h3 className="font-semibold text-foreground text-sm">
           Inflow vs Outflow
         </h3>
         {!isLoading && (!inflowOutflow || inflowOutflow.length === 0) ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-muted-foreground text-sm">
             No data for selected filters.
           </p>
         ) : null}

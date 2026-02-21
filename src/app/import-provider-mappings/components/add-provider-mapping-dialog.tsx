@@ -55,7 +55,7 @@ export function AddProviderMappingDialog(props: {
         <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-2">
           <Label
             htmlFor="new-provider-name"
-            className="text-sm font-medium text-foreground"
+            className="font-medium text-foreground text-sm"
           >
             Provider name
           </Label>
@@ -67,7 +67,7 @@ export function AddProviderMappingDialog(props: {
           />
           <Label
             htmlFor="new-mapping-version"
-            className="text-sm font-medium text-foreground"
+            className="font-medium text-foreground text-sm"
           >
             Mapping version (optional)
           </Label>
@@ -82,10 +82,10 @@ export function AddProviderMappingDialog(props: {
           />
           <section className="space-y-3 rounded-md border border-border p-3">
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-foreground">
+              <h3 className="font-semibold text-foreground text-sm">
                 Provider detection rules
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Used when matching the uploaded CSV to a provider mapping during
                 import parsing.
               </p>
@@ -181,7 +181,7 @@ export function AddProviderMappingDialog(props: {
           {props.error ? (
             <p
               role="alert"
-              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
             >
               {props.error}
             </p>

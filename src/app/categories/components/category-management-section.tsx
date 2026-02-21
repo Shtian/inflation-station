@@ -84,10 +84,10 @@ export function CategoryManagementSection({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h3 className="text-base font-semibold text-foreground">
+        <h3 className="font-semibold text-base text-foreground">
           Category Management
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Create and remove categories used in review and analytics.
         </p>
       </div>
@@ -95,7 +95,7 @@ export function CategoryManagementSection({
       <div className="grid gap-3">
         <Label
           htmlFor="new-category-name"
-          className="text-sm font-medium text-foreground"
+          className="font-medium text-foreground text-sm"
         >
           Category name
         </Label>
@@ -107,7 +107,7 @@ export function CategoryManagementSection({
         />
         <Label
           htmlFor="new-category-kind"
-          className="text-sm font-medium text-foreground"
+          className="font-medium text-foreground text-sm"
         >
           Kind
         </Label>
@@ -128,7 +128,7 @@ export function CategoryManagementSection({
         </Select>
         <Label
           htmlFor="new-category-scope"
-          className="text-sm font-medium text-foreground"
+          className="font-medium text-foreground text-sm"
         >
           Scope
         </Label>
@@ -272,7 +272,7 @@ export function CategoryManagementSection({
           <div className="space-y-2">
             <Label
               htmlFor="edit-category-name"
-              className="text-sm font-medium text-foreground"
+              className="font-medium text-foreground text-sm"
             >
               Category name
             </Label>

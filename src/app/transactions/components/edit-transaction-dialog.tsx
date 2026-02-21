@@ -78,7 +78,7 @@ export function EditTransactionDialog({
             <div className="space-y-2">
               <Label
                 htmlFor="edit-category-id"
-                className="text-sm font-medium text-foreground"
+                className="font-medium text-foreground text-sm"
               >
                 Category
               </Label>
@@ -104,7 +104,7 @@ export function EditTransactionDialog({
             <div className="space-y-2">
               <Label
                 htmlFor="edit-booking-date"
-                className="text-sm font-medium text-foreground"
+                className="font-medium text-foreground text-sm"
               >
                 Date
               </Label>
@@ -120,7 +120,7 @@ export function EditTransactionDialog({
             <div className="space-y-2">
               <Label
                 htmlFor="edit-normalized-merchant"
-                className="text-sm font-medium text-foreground"
+                className="font-medium text-foreground text-sm"
               >
                 Merchant
               </Label>
@@ -135,7 +135,7 @@ export function EditTransactionDialog({
             <div className="space-y-2">
               <Label
                 htmlFor="edit-amount-nok"
-                className="text-sm font-medium text-foreground"
+                className="font-medium text-foreground text-sm"
               >
                 Amount (NOK)
               </Label>
@@ -151,7 +151,7 @@ export function EditTransactionDialog({
             <div className="space-y-2">
               <Label
                 htmlFor="edit-payment-type"
-                className="text-sm font-medium text-foreground"
+                className="font-medium text-foreground text-sm"
               >
                 Payment type
               </Label>
@@ -176,7 +176,7 @@ export function EditTransactionDialog({
             <div className="space-y-2">
               <Label
                 htmlFor="edit-note"
-                className="text-sm font-medium text-foreground"
+                className="font-medium text-foreground text-sm"
               >
                 Note
               </Label>
@@ -198,7 +198,7 @@ export function EditTransactionDialog({
             {editError ? (
               <p
                 role="alert"
-                className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+                className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
               >
                 {editError}
               </p>

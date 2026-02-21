@@ -31,10 +31,10 @@ export function AccountsManager() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Accounts
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Add, rename, and remove accounts used in imports.
         </p>
       </div>
@@ -53,14 +53,14 @@ export function AccountsManager() {
       {accountError ? (
         <p
           role="alert"
-          className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {accountError}
         </p>
       ) : null}
 
       {accountNotice ? (
-        <p className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <p className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-700 text-sm">
           {accountNotice}
         </p>
       ) : null}

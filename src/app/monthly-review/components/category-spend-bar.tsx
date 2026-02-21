@@ -26,7 +26,7 @@ export function CategorySpendBar({
 }) {
   if (categories.length === 0 || total <= 0) {
     return (
-      <p className="text-xs text-muted-foreground">No categorized spend.</p>
+      <p className="text-muted-foreground text-xs">No categorized spend.</p>
     );
   }
 
@@ -64,10 +64,10 @@ export function CategorySpendBar({
                 className="h-2 w-2 rounded-full"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {category.categoryName}
               </span>
-              <span className="text-xs font-medium text-foreground">
+              <span className="font-medium text-foreground text-xs">
                 {formatNok(category.spendNok)}
               </span>
             </div>

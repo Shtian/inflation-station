@@ -408,10 +408,10 @@ export function ProviderMappingsManager() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="font-semibold text-2xl text-foreground tracking-tight">
             Provider mappings
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Configure source-column to canonical-field assignments and
             normalization rules for CSV providers.
           </p>
@@ -477,14 +477,14 @@ export function ProviderMappingsManager() {
       {error && !addDialogOpen && editingMappingId === null ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {error}
         </p>
       ) : null}
 
       {notice ? (
-        <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-800 text-sm">
           {notice}
         </output>
       ) : null}

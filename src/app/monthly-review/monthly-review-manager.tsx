@@ -234,10 +234,10 @@ export function MonthlyReviewManager() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+          <h1 className="font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
             Financial Timeline
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Monthly spending overview with deterministic insights and optional
             AI reviews.
           </p>
@@ -287,7 +287,7 @@ export function MonthlyReviewManager() {
         </Card>
       </div>
 
-      <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+      <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-sm">
         Transfer-category transactions are excluded from spend and income
         analytics.
       </p>
@@ -295,13 +295,13 @@ export function MonthlyReviewManager() {
       <Separator className="my-4" />
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading timeline...</p>
+        <p className="text-muted-foreground text-sm">Loading timeline...</p>
       ) : null}
 
       {error ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
         >
           {error}
         </p>
@@ -310,21 +310,21 @@ export function MonthlyReviewManager() {
       {!error && generateError ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
         >
           {generateError}
         </p>
       ) : null}
 
       {!loading && !error && !hasRows ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           No monthly data is available yet.
         </p>
       ) : null}
 
       <div className="relative space-y-6">
         {!loading && !error && hasRows ? (
-          <div className="absolute bottom-0 left-5 top-1 hidden w-px bg-border md:block" />
+          <div className="absolute top-1 bottom-0 left-5 hidden w-px bg-border md:block" />
         ) : null}
 
         {rows.map((row) => {
@@ -337,7 +337,7 @@ export function MonthlyReviewManager() {
           return (
             <article key={row.monthStart} className="relative md:pl-14">
               <div
-                className={`absolute left-0 top-2 z-10 hidden h-10 w-10 items-center justify-center rounded-full border bg-background text-sm md:flex ${stateTone.dotClassName}`}
+                className={`absolute top-2 left-0 z-10 hidden h-10 w-10 items-center justify-center rounded-full border bg-background text-sm md:flex ${stateTone.dotClassName}`}
                 aria-hidden
               >
                 <Calendar className="size-4" aria-hidden />
@@ -347,24 +347,24 @@ export function MonthlyReviewManager() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="text-xl font-semibold text-foreground">
+                      <h2 className="font-semibold text-foreground text-xl">
                         {formatMonthStartLabel(row.monthStart)}
                       </h2>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {row.transactionCount} spending transaction
                       {row.transactionCount === 1 ? "" : "s"}
                     </p>
                   </div>
 
                   <div className="space-y-1 text-right">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
                       Monthly balance
                     </p>
-                    <p className="text-3xl font-semibold tracking-tight text-foreground">
+                    <p className="font-semibold text-3xl text-foreground tracking-tight">
                       {formatSignedNok(row.monthlyBalanceNok, "auto")}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {row.monthOverMonthSpendDeltaNok === null
                         ? "No previous-month spend data"
                         : `${row.monthOverMonthSpendDeltaNok > 0 ? "Spend up" : "Spend down"} ${formatNok(Math.abs(row.monthOverMonthSpendDeltaNok))}${deltaPercent ? ` (${deltaPercent})` : ""}`}
@@ -374,7 +374,7 @@ export function MonthlyReviewManager() {
 
                 <div className="grid gap-2 rounded-md border border-border/70 bg-muted/20 p-3 text-sm md:grid-cols-2">
                   <div className="space-y-0.5">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide">
                       Total spend
                     </p>
                     <p className="font-medium text-foreground">
@@ -382,7 +382,7 @@ export function MonthlyReviewManager() {
                     </p>
                   </div>
                   <div className="space-y-0.5 md:text-right">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <p className="text-muted-foreground text-xs uppercase tracking-wide">
                       Total income
                     </p>
                     <p className="font-medium text-foreground">
@@ -393,7 +393,7 @@ export function MonthlyReviewManager() {
 
                 <div className="space-y-4 text-sm">
                   <div className="space-y-2 rounded-md border border-border/70 bg-muted/20 p-3">
-                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
                       Category spend
                     </p>
                     <CategorySpendBar
@@ -418,22 +418,22 @@ export function MonthlyReviewManager() {
 
                   {isReviewGenerating ? (
                     <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
                         AI insight
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-muted-foreground text-sm">
                         AI insight is generating...
                       </p>
                       <div className="space-y-2 pt-1">
                         <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-11/12" />
                         <Skeleton className="h-4 w-10/12" />
-                        <Skeleton className="h-4 w-3/4 mb-4" />
+                        <Skeleton className="mb-4 h-4 w-3/4" />
 
                         <Skeleton className="h-4 w-11/12" />
                         <Skeleton className="h-4 w-10/12" />
                         <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-3/4 mb-4" />
+                        <Skeleton className="mb-4 h-4 w-3/4" />
 
                         <Skeleton className="h-4 w-full" />
                         <Skeleton className="h-4 w-3/4" />
@@ -447,7 +447,7 @@ export function MonthlyReviewManager() {
                     <div className="space-y-3">
                       <p
                         role="alert"
-                        className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                        className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
                       >
                         {row.errorMessage
                           ? `Generation failed: ${row.errorMessage}`
@@ -469,10 +469,10 @@ export function MonthlyReviewManager() {
 
                   {row.reviewState === "GENERATED" && row.reviewText ? (
                     <div className="space-y-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
-                      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
                         AI insight
                       </p>
-                      <p className="whitespace-pre-wrap text-sm text-foreground">
+                      <p className="whitespace-pre-wrap text-foreground text-sm">
                         {row.reviewText}
                       </p>
 
@@ -520,7 +520,7 @@ export function MonthlyReviewManager() {
           {generateError ? (
             <p
               role="alert"
-              className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
             >
               {generateError}
             </p>

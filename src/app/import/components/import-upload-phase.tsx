@@ -79,10 +79,10 @@ export function ImportUploadPhase({
     <div className="mx-auto max-w-lg space-y-4">
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="font-semibold text-foreground text-lg">
             Import Configuration
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-muted-foreground text-sm">
             Select the target bank account and upload your CSV file to begin.
           </p>
         </div>
@@ -91,7 +91,7 @@ export function ImportUploadPhase({
           <div className="space-y-1.5">
             <Label
               htmlFor="account-select"
-              className="text-sm font-medium text-foreground"
+              className="font-medium text-foreground text-sm"
             >
               Bank Account
             </Label>
@@ -123,7 +123,7 @@ export function ImportUploadPhase({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Choose the account this CSV data belongs to.
             </p>
           </div>
@@ -133,7 +133,7 @@ export function ImportUploadPhase({
           <div className="space-y-1.5">
             <Label
               htmlFor="csv-file"
-              className="text-sm font-medium text-foreground"
+              className="font-medium text-foreground text-sm"
             >
               CSV File
             </Label>
@@ -207,17 +207,17 @@ export function ImportUploadPhase({
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">
+                  <p className="font-medium text-foreground text-sm">
                     Drag &amp; drop your CSV file
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     or click to browse from your computer
                   </p>
                 </div>
-                <span className="pointer-events-none inline-flex items-center rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background">
+                <span className="pointer-events-none inline-flex items-center rounded-md bg-foreground px-3 py-1.5 font-medium text-background text-sm">
                   Browse Files
                 </span>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Supports .csv files up to 10MB
                 </p>
               </button>
@@ -226,7 +226,7 @@ export function ImportUploadPhase({
 
           {providerDetection ? (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="font-medium text-muted-foreground text-xs">
                 Provider
               </p>
               <div className="flex items-center gap-2">
@@ -278,7 +278,7 @@ export function ImportUploadPhase({
                 )}
               </div>
               {providerDetection.state === "uncertain" ? (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Detection was uncertain — please confirm
                 </p>
               ) : null}
@@ -288,7 +288,7 @@ export function ImportUploadPhase({
           {accountError ? (
             <p
               role="alert"
-              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
             >
               {accountError}
             </p>
@@ -296,7 +296,7 @@ export function ImportUploadPhase({
           {importError ? (
             <p
               role="alert"
-              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
             >
               {importError}
             </p>
@@ -304,7 +304,7 @@ export function ImportUploadPhase({
           {categoryError ? (
             <p
               role="alert"
-              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+              className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
             >
               {categoryError}
             </p>
@@ -331,7 +331,7 @@ export function ImportUploadPhase({
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-4">
-        <p className="mb-2.5 text-sm font-medium text-foreground">
+        <p className="mb-2.5 font-medium text-foreground text-sm">
           Supported bank formats
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -352,14 +352,14 @@ export function ImportUploadPhase({
             <Badge variant="outline">+ {allProviders.length - 5} more</Badge>
           ) : null}
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-muted-foreground text-xs">
           The parser automatically detects the bank based on the CSV column
           headers.
         </p>
       </div>
 
       {submitNotice ? (
-        <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-800 text-sm">
           {submitNotice}
         </output>
       ) : null}

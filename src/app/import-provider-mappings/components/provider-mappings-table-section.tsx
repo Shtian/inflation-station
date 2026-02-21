@@ -27,13 +27,13 @@ export function ProviderMappingsTableSection(props: {
 }) {
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
+      <h2 className="font-semibold text-foreground text-sm uppercase tracking-wide">
         Existing mappings
       </h2>
       {props.loading ? (
-        <p className="text-sm text-muted-foreground">Loading mappings...</p>
+        <p className="text-muted-foreground text-sm">Loading mappings...</p>
       ) : props.mappings.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           No provider mappings configured yet.
         </p>
       ) : (

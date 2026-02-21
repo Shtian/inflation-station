@@ -35,11 +35,11 @@ export function AccountStateTrendCard({
   return (
     <Card>
       <CardContent className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">
+        <h3 className="font-semibold text-foreground text-sm">
           Account State Trend
         </h3>
         {!isLoading && (!accountTrend || accountTrend.length === 0) ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-muted-foreground text-sm">
             No trend data for selected filters.
           </p>
         ) : null}
@@ -50,10 +50,10 @@ export function AccountStateTrendCard({
               return (
                 <div key={series.accountId} className="rounded p-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="font-medium text-foreground text-sm">
                       {series.accountName}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {latest ? formatNok(latest.cumulativeNok) : "-"}
                     </p>
                   </div>
@@ -97,7 +97,7 @@ export function AccountStateTrendCard({
                       />
                     </LineChart>
                   </ChartContainer>
-                  <p className="mt-2 text-xs text-muted-foreground">
+                  <p className="mt-2 text-muted-foreground text-xs">
                     {series.points.length} points
                   </p>
                 </div>

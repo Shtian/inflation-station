@@ -34,14 +34,14 @@ export function NetCashflowCard({
   return (
     <Card>
       <CardContent className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">Net Cashflow</h3>
+        <h3 className="font-semibold text-foreground text-sm">Net Cashflow</h3>
         {isLoading ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-muted-foreground text-sm">
             Loading chart data...
           </p>
         ) : null}
         {!isLoading && (!netCashflow || netCashflow.length === 0) ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-muted-foreground text-sm">
             No data for selected filters.
           </p>
         ) : null}

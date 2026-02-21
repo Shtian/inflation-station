@@ -64,10 +64,10 @@ export function OverviewDashboard() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Overview
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Track net cashflow, inflow and outflow, category spending, and account
           trends.
         </p>
@@ -75,7 +75,7 @@ export function OverviewDashboard() {
 
       <Separator className="my-4" />
 
-      <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+      <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-sm">
         Transfer-category transactions are excluded from spend and income
         analytics.
       </p>
@@ -84,7 +84,7 @@ export function OverviewDashboard() {
         <div className="space-y-2">
           <Label
             htmlFor="dashboard-account-filter"
-            className="block text-sm font-medium text-foreground"
+            className="block font-medium text-foreground text-sm"
           >
             Account filter
           </Label>
@@ -109,7 +109,7 @@ export function OverviewDashboard() {
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium text-foreground">Date range</p>
+          <p className="font-medium text-foreground text-sm">Date range</p>
           <ButtonGroup>
             <Button
               variant={dashboardRangePreset === "all" ? "default" : "outline"}
@@ -172,7 +172,7 @@ export function OverviewDashboard() {
           </ButtonGroup>
           <p
             className={cn(
-              "text-xs text-muted-foreground",
+              "text-muted-foreground text-xs",
               dashboardRangePreset !== "custom" && "hidden",
             )}
           >
@@ -185,7 +185,7 @@ export function OverviewDashboard() {
       {dashboardError ? (
         <p
           role="alert"
-          className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {dashboardError}
         </p>

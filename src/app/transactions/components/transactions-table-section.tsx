@@ -75,7 +75,7 @@ export function TransactionsTableSection({
 }: TransactionsTableSectionProps) {
   if (loading) {
     return (
-      <p className="text-sm text-muted-foreground">Loading transactions...</p>
+      <p className="text-muted-foreground text-sm">Loading transactions...</p>
     );
   }
 
@@ -85,12 +85,12 @@ export function TransactionsTableSection({
 
   return (
     <section className="space-y-2" aria-live="polite">
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         {transactions.pagination.total} total transactions.
       </p>
 
       {transactions.rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           No transactions found for the selected filters.
         </p>
       ) : (
@@ -136,7 +136,7 @@ export function TransactionsTableSection({
                           </TooltipTrigger>
                           <TooltipContent
                             side="top"
-                            className="max-w-xs whitespace-pre-wrap wrap-break-word"
+                            className="wrap-break-word max-w-xs whitespace-pre-wrap"
                           >
                             {row.note}
                           </TooltipContent>
@@ -193,7 +193,7 @@ export function TransactionsTableSection({
           </Table>
 
           <div className="flex w-full justify-center sm:justify-end">
-            <div className="flex flex-col items-center gap-2 text-sm text-foreground sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <div className="flex flex-col items-center gap-2 text-foreground text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Rows per page:</span>
                 <Select

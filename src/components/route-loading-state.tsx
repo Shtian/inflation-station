@@ -7,7 +7,7 @@ type RouteLoadingStateProps = {
 export function RouteLoadingState({ label }: RouteLoadingStateProps) {
   return (
     <main className="mx-auto flex w-full max-w-6xl items-center justify-center px-5 py-16 md:px-10">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex items-center gap-2 text-muted-foreground text-sm">
         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
         <span>{label}</span>
       </div>

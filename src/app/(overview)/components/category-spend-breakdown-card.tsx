@@ -39,17 +39,17 @@ export function CategorySpendBreakdownCard({
   return (
     <Card>
       <CardContent className="space-y-3">
-        <h3 className="text-sm font-semibold text-foreground">
+        <h3 className="font-semibold text-foreground text-sm">
           Category Spend Breakdown
         </h3>
         {isLoading ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-muted-foreground text-sm">
             Loading chart data...
           </p>
         ) : null}
         {!isLoading &&
         (!categoryBreakdown || categoryBreakdown.length === 0) ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-muted-foreground text-sm">
             No spending data for selected filters.
           </p>
         ) : null}
@@ -88,7 +88,7 @@ export function CategorySpendBreakdownCard({
                 </Bar>
               </BarChart>
             </ChartContainer>
-            <div className="space-y-1 text-xs text-muted-foreground">
+            <div className="space-y-1 text-muted-foreground text-xs">
               {topCategories.map((point) => (
                 <p key={point.categoryId ?? "uncategorized"}>
                   {point.categoryName}: {formatNok(point.spendNok)} (

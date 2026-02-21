@@ -210,10 +210,10 @@ export function TransactionsManager() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Transactions
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Filter and page through imported transactions.
         </p>
       </div>
@@ -224,7 +224,7 @@ export function TransactionsManager() {
         <div className="space-y-2">
           <Label
             htmlFor="transactions-account-filter"
-            className="block text-sm font-medium text-foreground"
+            className="block font-medium text-foreground text-sm"
           >
             Account
           </Label>
@@ -252,7 +252,7 @@ export function TransactionsManager() {
       {error ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {error}
         </p>

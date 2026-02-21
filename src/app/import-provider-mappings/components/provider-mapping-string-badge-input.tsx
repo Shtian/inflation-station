@@ -44,7 +44,7 @@ export function ProviderMappingStringBadgeInput(props: {
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={props.id} className="text-sm font-medium text-foreground">
+      <Label htmlFor={props.id} className="font-medium text-foreground text-sm">
         {props.label}
       </Label>
       <Input
@@ -66,7 +66,7 @@ export function ProviderMappingStringBadgeInput(props: {
         placeholder={props.placeholder}
       />
       {inputError ? (
-        <p className="text-xs text-red-700" role="alert">
+        <p className="text-red-700 text-xs" role="alert">
           {inputError}
         </p>
       ) : null}
@@ -76,7 +76,7 @@ export function ProviderMappingStringBadgeInput(props: {
             <Badge
               key={value}
               variant="secondary"
-              className="animate-in fade-in-0 slide-in-from-top-1 duration-200 gap-1"
+              className="fade-in-0 slide-in-from-top-1 animate-in gap-1 duration-200"
             >
               <span>{value}</span>
               <button
@@ -93,7 +93,7 @@ export function ProviderMappingStringBadgeInput(props: {
           ))}
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">No values added yet.</p>
+        <p className="text-muted-foreground text-xs">No values added yet.</p>
       )}
     </div>
   );

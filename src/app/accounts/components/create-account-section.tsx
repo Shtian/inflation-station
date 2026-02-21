@@ -24,7 +24,7 @@ export function CreateAccountSection({
     <div className="grid gap-3">
       <Label
         htmlFor="new-account-name"
-        className="text-sm font-medium text-foreground"
+        className="font-medium text-foreground text-sm"
       >
         Account name
       </Label>
@@ -36,7 +36,7 @@ export function CreateAccountSection({
       />
       <Label
         htmlFor="new-account-institution"
-        className="text-sm font-medium text-foreground"
+        className="font-medium text-foreground text-sm"
       >
         Institution (optional)
       </Label>

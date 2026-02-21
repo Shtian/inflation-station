@@ -51,10 +51,10 @@ export function ImportUploader() {
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
       <div className="mb-4 space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Import
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Choose an account and CSV file to start the parse and validation flow.
         </p>
       </div>

@@ -212,10 +212,10 @@ export function MessageCleanupSettingsManager() {
             Back to import
           </Link>
         </Button>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Message Cleanup Settings
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Configure model and baseline instructions for import message cleanup.
         </p>
       </div>
@@ -231,7 +231,7 @@ export function MessageCleanupSettingsManager() {
         </CardHeader>
         <CardContent className="space-y-3">
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading settings...</p>
+            <p className="text-muted-foreground text-sm">Loading settings...</p>
           ) : (
             <>
               <div className="space-y-2">
@@ -261,7 +261,7 @@ export function MessageCleanupSettingsManager() {
                     {availableModels.map((model) => (
                       <SelectItem key={model.id} value={model.id}>
                         <span className="block text-sm">{model.label}</span>
-                        <span className="block text-xs text-muted-foreground">
+                        <span className="block text-muted-foreground text-xs">
                           {model.description}
                         </span>
                       </SelectItem>
@@ -270,7 +270,7 @@ export function MessageCleanupSettingsManager() {
                 </Select>
               </div>
 
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {usesDefaultModel
                   ? `Using fallback model ${resolvedModelId}.`
                   : `Using saved model ${resolvedModelId}.`}
@@ -293,13 +293,13 @@ export function MessageCleanupSettingsManager() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   {usesDefaultPrompt
                     ? "Using fallback default prompt for cleanup."
                     : "Using saved custom prompt for cleanup."}
                 </p>
                 {usesDefaultPrompt ? (
-                  <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+                  <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-xs">
                     {resolvedPrompt}
                   </p>
                 ) : null}
@@ -308,14 +308,14 @@ export function MessageCleanupSettingsManager() {
               {error ? (
                 <p
                   role="alert"
-                  className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+                  className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
                 >
                   {error}
                 </p>
               ) : null}
 
               {success ? (
-                <p className="rounded-md border border-emerald-300/60 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200">
+                <p className="rounded-md border border-emerald-300/60 bg-emerald-50 px-3 py-2 text-emerald-700 text-sm dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200">
                   {success}
                 </p>
               ) : null}

@@ -74,10 +74,10 @@ export function RulesManagementSection({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h3 className="text-base font-semibold text-foreground">
+        <h3 className="font-semibold text-base text-foreground">
           Category Rules
         </h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Define deterministic category suggestions by merchant text and
           optional payment type.
         </p>
@@ -86,7 +86,7 @@ export function RulesManagementSection({
       <div className="grid gap-3">
         <Label
           htmlFor="rule-category"
-          className="text-sm font-medium text-foreground"
+          className="font-medium text-foreground text-sm"
         >
           Category
         </Label>
@@ -107,7 +107,7 @@ export function RulesManagementSection({
 
         <Label
           htmlFor="rule-merchant"
-          className="text-sm font-medium text-foreground"
+          className="font-medium text-foreground text-sm"
         >
           Merchant contains
         </Label>
@@ -120,7 +120,7 @@ export function RulesManagementSection({
 
         <Label
           htmlFor="rule-payment-type"
-          className="text-sm font-medium text-foreground"
+          className="font-medium text-foreground text-sm"
         >
           Payment type (optional)
         </Label>
@@ -147,7 +147,7 @@ export function RulesManagementSection({
 
         <Label
           htmlFor="rule-priority"
-          className="text-sm font-medium text-foreground"
+          className="font-medium text-foreground text-sm"
         >
           Priority
         </Label>
@@ -161,7 +161,7 @@ export function RulesManagementSection({
 
         <Label
           htmlFor="rule-scope"
-          className="text-sm font-medium text-foreground"
+          className="font-medium text-foreground text-sm"
         >
           Scope
         </Label>

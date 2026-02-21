@@ -157,13 +157,13 @@ export function ImportReviewPhase({
               className="h-6 w-6 shrink-0 animate-spin text-muted-foreground"
               aria-hidden="true"
             />
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <h2 className="font-semibold text-foreground text-xl tracking-tight">
               Import Preview
             </h2>
           </div>
         </div>
 
-        <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-sm text-muted-foreground">
+        <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-muted-foreground text-sm">
           <div>
             <span>Importing to: </span>
             <span className="font-semibold text-foreground">
@@ -175,7 +175,7 @@ export function ImportReviewPhase({
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Waiting for AI feedback. This can take up to 90 seconds.
           </p>
           <Field className="w-full">
@@ -188,7 +188,7 @@ export function ImportReviewPhase({
               id="import-ai-feedback-progress"
             />
           </Field>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Preparing parsed rows for review.
           </p>
           <ReviewTableSkeleton />
@@ -209,7 +209,7 @@ export function ImportReviewPhase({
             className="h-6 w-6 shrink-0 text-emerald-600"
             aria-hidden="true"
           />
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+          <h2 className="font-semibold text-foreground text-xl tracking-tight">
             Import Preview
           </h2>
         </div>
@@ -245,7 +245,7 @@ export function ImportReviewPhase({
         </div>
       </div>
 
-      <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-sm text-muted-foreground">
+      <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-muted-foreground text-sm">
         {providerDetection ? (
           <div>
             <span>Detected provider: </span>
@@ -279,12 +279,12 @@ export function ImportReviewPhase({
       {parseResult.review ? (
         <div className="grid grid-cols-3 divide-x overflow-hidden rounded-lg border">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">Total Rows</span>
-            <span className="text-sm font-bold">{reviewRows.length}</span>
+            <span className="text-muted-foreground text-sm">Total Rows</span>
+            <span className="font-bold text-sm">{reviewRows.length}</span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">Credits</span>
-            <span className="text-sm font-bold text-emerald-600">
+            <span className="text-muted-foreground text-sm">Credits</span>
+            <span className="font-bold text-emerald-600 text-sm">
               +
               {formatNok(
                 reviewRows.reduce(
@@ -295,8 +295,8 @@ export function ImportReviewPhase({
             </span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm text-muted-foreground">Debits</span>
-            <span className="text-sm font-bold text-red-600">
+            <span className="text-muted-foreground text-sm">Debits</span>
+            <span className="font-bold text-red-600 text-sm">
               {formatNok(
                 reviewRows.reduce(
                   (sum, row) => (row.amountNok < 0 ? sum + row.amountNok : sum),
@@ -311,7 +311,7 @@ export function ImportReviewPhase({
       {accountError ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {accountError}
         </p>
@@ -319,7 +319,7 @@ export function ImportReviewPhase({
       {importError ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {importError}
         </p>
@@ -327,7 +327,7 @@ export function ImportReviewPhase({
       {categoryError ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {categoryError}
         </p>
@@ -335,10 +335,10 @@ export function ImportReviewPhase({
 
       {parseResult.errors.length > 0 ? (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-800">
+          <p className="mb-1 font-semibold text-amber-800 text-xs uppercase tracking-wide">
             Validation errors
           </p>
-          <ul className="space-y-1 text-sm text-amber-700">
+          <ul className="space-y-1 text-amber-700 text-sm">
             {parseResult.errors.map((error) => (
               <li key={`${error.rowNumber}-${error.code}`}>
                 Row {error.rowNumber}: {error.message}
@@ -349,7 +349,7 @@ export function ImportReviewPhase({
       ) : null}
 
       {cleanupUnavailableMessage ? (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 text-sm">
           {cleanupUnavailableMessage}
         </p>
       ) : null}
@@ -357,19 +357,19 @@ export function ImportReviewPhase({
       {parseResult.review && reviewRows.length > 0 ? (
         <div className="space-y-2">
           {parseResult.review.potentialDuplicates > 0 ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {parseResult.review.potentialDuplicates} potential duplicate
               {parseResult.review.potentialDuplicates !== 1 ? "s" : ""}{" "}
               detected. Default message selection uses AI-cleaned text when
               available.
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Default message selection uses AI-cleaned text when available.
               Rows without a suggestion keep the original message.
             </p>
           )}
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             AI cleanup suggestions: {cleanedSuggestionCount} of{" "}
             {reviewRows.length}.
           </p>
@@ -390,13 +390,13 @@ export function ImportReviewPhase({
       {submitError ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {submitError}
         </p>
       ) : null}
       {submitNotice ? (
-        <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-800 text-sm">
           {submitNotice}
         </output>
       ) : null}
