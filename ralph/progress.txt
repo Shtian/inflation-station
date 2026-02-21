@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - For Server Action mutations, keep a typed result union (`ok` + `data` or typed `error`) and centralize Zod-validation/error-shape helpers in `src/lib/server-actions/mutation-result.ts`.
 - For Playwright coverage of client-triggered Server Actions, intercept page-path `POST` requests and detect the `next-action` header while allowing `route.fallback()` so the real action protocol remains intact.
+- Preserve UX parity during migration by mapping Server Action `error.code`/`error.details` back to the exact route-era user-facing error strings instead of introducing new copy.
 
 ## 2026-02-21 10:55 CET - US-001
 - Implemented a server-action mutation architecture baseline with shared typed result helpers and two settings-focused Server Action modules prepared for migration wiring.
@@ -20,4 +21,14 @@
   - Patterns discovered: Keeping settings-page initial loads on existing GET APIs while migrating only save mutations to Server Actions is a low-risk parity path for staged rollout.
   - Gotchas encountered: Frontend save feedback parity is easiest to preserve by keeping existing generic UI error/success copy and mapping all action `ok: false` cases to the current message text.
   - Useful context: `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx` now serves as the reference settings-manager pattern for Server Action mutation wiring in import settings pages.
+---
+
+## 2026-02-21 19:12 CET - US-003
+- Implemented migration of the provider-mapping create mutation from client `POST /api/import-provider-mappings` fetch calls to `createImportProviderMappingAction`, while leaving GET/PATCH/DELETE route behavior and existing UI controls/copy intact.
+- Files changed: `src/app/actions/create-import-provider-mapping.ts`, `src/app/import-provider-mappings/provider-mappings-manager.tsx`, `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts`, `src/app/import-provider-mappings/AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed (unit + Playwright e2e), `pnpm build` passed.
+- **Learnings for future iterations**
+  - Patterns discovered: For staged entity migration, moving only one mutation path (create) to Server Actions while still reloading table state from existing GET routes keeps parity risk low.
+  - Gotchas encountered: Existing table e2e tests that mocked API POST need to switch to watching page-route Server Action `POST` requests (`next-action` header) and keep `route.fallback()` so real action execution continues.
+  - Useful context: Provider mapping create flow still depends on route-local validation helpers in `provider-mappings-manager.utils.ts`, then delegates persistence/error-code semantics to the typed Server Action.
 ---

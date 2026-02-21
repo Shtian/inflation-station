@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { createImportProviderMappingAction } from "@/app/actions/create-import-provider-mapping";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { AddProviderMappingDialog } from "./components/add-provider-mapping-dialog";
@@ -67,6 +68,45 @@ function getProviderMappingErrorMessage(status: number, body: unknown) {
     if (status === 400 && code === "MERCHANT_SIGNAL_FIELD_REQUIRED") {
       return "At least one merchant signal field mapping is required (name or title).";
     }
+  }
+
+  return "Request failed. Please try again.";
+}
+
+function getProviderMappingActionErrorMessage(error: {
+  code: string;
+  details?: unknown;
+}) {
+  if (error.code === "PROVIDER_MAPPING_MUST_BE_UNIQUE") {
+    return "A provider mapping with this name already exists.";
+  }
+
+  if (
+    error.code === "REQUIRED_CANONICAL_FIELDS_MISSING" &&
+    typeof error.details === "object" &&
+    error.details !== null &&
+    "missingCanonicalFields" in error.details &&
+    Array.isArray(error.details.missingCanonicalFields)
+  ) {
+    return `Missing required canonical fields: ${error.details.missingCanonicalFields.join(", ")}.`;
+  }
+
+  if (
+    error.code === "DUPLICATE_CANONICAL_FIELD_MAPPINGS" &&
+    typeof error.details === "object" &&
+    error.details !== null &&
+    "duplicateCanonicalFields" in error.details &&
+    Array.isArray(error.details.duplicateCanonicalFields)
+  ) {
+    return `Duplicate canonical field mappings: ${error.details.duplicateCanonicalFields.join(", ")}.`;
+  }
+
+  if (error.code === "MERCHANT_SIGNAL_FIELD_REQUIRED") {
+    return "At least one merchant signal field mapping is required (name or title).";
+  }
+
+  if (error.code === "INVALID_PROVIDER_MAPPING_PAYLOAD") {
+    return "Invalid provider mapping payload.";
   }
 
   return "Request failed. Please try again.";
@@ -230,27 +270,18 @@ export function ProviderMappingsManager() {
     setError(null);
     setNotice(null);
 
-    const response = await fetch("/api/import-provider-mappings", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        providerName: newProviderName.trim(),
-        normalizationRules: buildNormalizationRulesPayload(
-          newNormalizationRules,
-        ),
-        mappingVersion: parsedVersion.value,
-        fieldMappings: newFieldMappings.map((fieldMapping) => ({
-          sourceField: fieldMapping.sourceField.trim(),
-          canonicalField: fieldMapping.canonicalField.trim(),
-        })),
-      }),
+    const result = await createImportProviderMappingAction({
+      providerName: newProviderName.trim(),
+      normalizationRules: buildNormalizationRulesPayload(newNormalizationRules),
+      mappingVersion: parsedVersion.value,
+      fieldMappings: newFieldMappings.map((fieldMapping) => ({
+        sourceField: fieldMapping.sourceField.trim(),
+        canonicalField: fieldMapping.canonicalField.trim(),
+      })),
     });
-    const body = await response.json().catch(() => null);
 
-    if (!response.ok) {
-      setError(getProviderMappingErrorMessage(response.status, body));
+    if (!result.ok) {
+      setError(getProviderMappingActionErrorMessage(result.error));
       setBusyKey(null);
       return;
     }
