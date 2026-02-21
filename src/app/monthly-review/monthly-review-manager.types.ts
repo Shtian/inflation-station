@@ -1,6 +1,8 @@
 export type MonthlyReviewTimelineRow = {
   monthStart: string;
   totalSpendNok: number;
+  totalIncomeNok: number;
+  monthlyBalanceNok: number;
   transactionCount: number;
   topCategory: {
     categoryId: string | null;

@@ -58,6 +58,8 @@ export type MonthlyOverviewCategorySpend = {
 export type MonthlyOverviewRow = {
   monthStart: string;
   totalSpendNok: number;
+  totalIncomeNok: number;
+  monthlyBalanceNok: number;
   transactionCount: number;
   topCategory: MonthlyOverviewTopCategory | null;
   categorySpendBreakdown: MonthlyOverviewCategorySpend[];
@@ -72,6 +74,7 @@ type MutableCategoryTotal = {
 
 type MutableMonthTotals = {
   totalSpendNok: number;
+  totalIncomeNok: number;
   transactionCount: number;
   categoryTotals: Map<string, MutableCategoryTotal>;
 };
@@ -190,19 +193,27 @@ export async function getMonthlyOverview(
     allMonthKeys.add(monthKey);
 
     const amount = toNumber(transaction.amountNok);
-    if (amount >= 0) {
-      continue;
-    }
-
     if (transaction.category?.kind === TRANSFER_CATEGORY_KIND) {
       continue;
     }
 
     const monthTotals = totalsByMonth.get(monthKey) ?? {
       totalSpendNok: 0,
+      totalIncomeNok: 0,
       transactionCount: 0,
       categoryTotals: new Map<string, MutableCategoryTotal>(),
     };
+
+    if (amount > 0) {
+      monthTotals.totalIncomeNok += amount;
+      totalsByMonth.set(monthKey, monthTotals);
+      continue;
+    }
+
+    if (amount >= 0) {
+      totalsByMonth.set(monthKey, monthTotals);
+      continue;
+    }
 
     const spend = Math.abs(amount);
     monthTotals.totalSpendNok += spend;
@@ -228,10 +239,13 @@ export async function getMonthlyOverview(
     const previousMonthTotals = totalsByMonth.get(previousMonthKey);
 
     const totalSpendNok = totals?.totalSpendNok ?? 0;
+    const totalIncomeNok = totals?.totalIncomeNok ?? 0;
 
     return {
       monthStart,
       totalSpendNok,
+      totalIncomeNok,
+      monthlyBalanceNok: totalIncomeNok - totalSpendNok,
       transactionCount: totals?.transactionCount ?? 0,
       topCategory: totals ? toTopCategory(totals.categoryTotals) : null,
       categorySpendBreakdown: totals

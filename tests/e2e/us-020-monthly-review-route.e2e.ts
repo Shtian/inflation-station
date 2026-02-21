@@ -14,6 +14,8 @@ test("renders monthly review timeline cards with deterministic overview data", a
           {
             monthStart: "2026-04-01",
             totalSpendNok: 1850,
+            totalIncomeNok: 2400,
+            monthlyBalanceNok: 550,
             transactionCount: 9,
             topCategory: {
               categoryId: "cat-groceries",
@@ -36,6 +38,8 @@ test("renders monthly review timeline cards with deterministic overview data", a
           {
             monthStart: "2026-03-01",
             totalSpendNok: 1725,
+            totalIncomeNok: 1900,
+            monthlyBalanceNok: 175,
             transactionCount: 8,
             topCategory: {
               categoryId: "cat-utilities",
@@ -58,6 +62,8 @@ test("renders monthly review timeline cards with deterministic overview data", a
           {
             monthStart: "2026-01-01",
             totalSpendNok: 1400,
+            totalIncomeNok: 1400,
+            monthlyBalanceNok: 0,
             transactionCount: 6,
             topCategory: {
               categoryId: "cat-food",
@@ -80,6 +86,8 @@ test("renders monthly review timeline cards with deterministic overview data", a
           {
             monthStart: "2026-02-01",
             totalSpendNok: 1600,
+            totalIncomeNok: 3000,
+            monthlyBalanceNok: 1400,
             transactionCount: 7,
             topCategory: {
               categoryId: "cat-rent",
@@ -148,6 +156,9 @@ test("renders monthly review timeline cards with deterministic overview data", a
 
   await expect(page.getByText("Avg. monthly spend").first()).toBeVisible();
   await expect(page.getByText(/1\s?600,00/).first()).toBeVisible();
+  await expect(page.getByText("Monthly balance").first()).toBeVisible();
+  await expect(page.getByText("Total spend").first()).toBeVisible();
+  await expect(page.getByText("Total income").first()).toBeVisible();
   await expect(page.getByText("9 spending transactions")).toBeVisible();
   await expect(page.getByText("AI insight is generating...")).toBeVisible();
   await expect(

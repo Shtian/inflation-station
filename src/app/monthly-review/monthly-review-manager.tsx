@@ -27,6 +27,7 @@ import type { MonthlyReviewTimelineRow } from "./monthly-review-manager.types";
 import {
   formatMonthStartLabel,
   formatNok,
+  formatSignedNok,
 } from "./monthly-review-manager.utils";
 
 type TimelineResponse = {
@@ -356,14 +357,36 @@ export function MonthlyReviewManager() {
                     </p>
                   </div>
 
-                  <div className="text-right">
+                  <div className="space-y-1 text-right">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Monthly balance
+                    </p>
                     <p className="text-3xl font-semibold tracking-tight text-foreground">
-                      {formatNok(row.totalSpendNok)}
+                      {formatSignedNok(row.monthlyBalanceNok, "auto")}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {row.monthOverMonthSpendDeltaNok === null
-                        ? "No previous-month data"
-                        : `${row.monthOverMonthSpendDeltaNok > 0 ? "Up" : "Down"} ${formatNok(Math.abs(row.monthOverMonthSpendDeltaNok))}${deltaPercent ? ` (${deltaPercent})` : ""}`}
+                        ? "No previous-month spend data"
+                        : `${row.monthOverMonthSpendDeltaNok > 0 ? "Spend up" : "Spend down"} ${formatNok(Math.abs(row.monthOverMonthSpendDeltaNok))}${deltaPercent ? ` (${deltaPercent})` : ""}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 rounded-md border border-border/70 bg-muted/20 p-3 text-sm md:grid-cols-2">
+                  <div className="space-y-0.5">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Total spend
+                    </p>
+                    <p className="font-medium text-foreground">
+                      {formatSignedNok(row.totalSpendNok, "negative")}
+                    </p>
+                  </div>
+                  <div className="space-y-0.5 md:text-right">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Total income
+                    </p>
+                    <p className="font-medium text-foreground">
+                      {formatSignedNok(row.totalIncomeNok, "positive")}
                     </p>
                   </div>
                 </div>

@@ -35,6 +35,12 @@ function createTimelineDbMock() {
           amountNok: -400,
           category: { id: "cat-rent", name: "Rent", kind: "EXPENSE" },
         },
+        {
+          id: "tx-3",
+          bookingDate: new Date("2026-03-12T00:00:00.000Z"),
+          amountNok: 1000,
+          category: { id: "cat-salary", name: "Salary", kind: "INCOME" },
+        },
       ]),
     },
     monthlyReview: {
@@ -59,6 +65,8 @@ describe("getMonthlyTimeline", () => {
       {
         monthStart: "2026-03-01",
         totalSpendNok: 400,
+        totalIncomeNok: 1000,
+        monthlyBalanceNok: 600,
         transactionCount: 1,
         topCategory: {
           categoryId: "cat-rent",
@@ -81,6 +89,8 @@ describe("getMonthlyTimeline", () => {
       {
         monthStart: "2026-02-01",
         totalSpendNok: 200,
+        totalIncomeNok: 0,
+        monthlyBalanceNok: -200,
         transactionCount: 1,
         topCategory: {
           categoryId: "cat-food",
@@ -103,6 +113,8 @@ describe("getMonthlyTimeline", () => {
       {
         monthStart: "2026-01-01",
         totalSpendNok: 0,
+        totalIncomeNok: 0,
+        monthlyBalanceNok: 0,
         transactionCount: 0,
         topCategory: null,
         categorySpendBreakdown: [],

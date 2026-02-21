@@ -67,6 +67,8 @@ describe("monthly overview", () => {
       {
         monthStart: "2026-03-01",
         totalSpendNok: 100,
+        totalIncomeNok: 0,
+        monthlyBalanceNok: -100,
         transactionCount: 1,
         topCategory: {
           categoryId: null,
@@ -85,6 +87,8 @@ describe("monthly overview", () => {
       {
         monthStart: "2026-02-01",
         totalSpendNok: 500,
+        totalIncomeNok: 3000,
+        monthlyBalanceNok: 2500,
         transactionCount: 1,
         topCategory: {
           categoryId: "cat-travel",
@@ -103,6 +107,8 @@ describe("monthly overview", () => {
       {
         monthStart: "2026-01-01",
         totalSpendNok: 300,
+        totalIncomeNok: 0,
+        monthlyBalanceNok: -300,
         transactionCount: 2,
         topCategory: {
           categoryId: "cat-food",
@@ -133,6 +139,8 @@ describe("monthly overview", () => {
       {
         monthStart: "2026-04-01",
         totalSpendNok: 0,
+        totalIncomeNok: 0,
+        monthlyBalanceNok: 0,
         transactionCount: 0,
         topCategory: null,
         categorySpendBreakdown: [],
@@ -175,6 +183,8 @@ describe("monthly overview", () => {
       {
         monthStart: "2026-02-01",
         totalSpendNok: 200,
+        totalIncomeNok: 0,
+        monthlyBalanceNok: -200,
         transactionCount: 1,
         topCategory: {
           categoryId: null,
@@ -193,6 +203,8 @@ describe("monthly overview", () => {
       {
         monthStart: "2026-01-01",
         totalSpendNok: 400,
+        totalIncomeNok: 0,
+        monthlyBalanceNok: -400,
         transactionCount: 1,
         topCategory: {
           categoryId: "cat-food",
