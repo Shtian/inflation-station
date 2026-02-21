@@ -8,6 +8,8 @@ Load this when working in `src/app/transactions`.
 - Reset pagination to page 1 whenever table filters/sorting/page-size change.
 - Use shadcn table primitives and keep pagination/summary text outside the table.
 - Keep transactions toolbar inputs/selects in `TransactionsTableSection` controlled from `use-transactions-manager.ts` state so URL-synced filters stay canonical.
+- Keep sortable column headers wired to `use-transactions-manager.ts` `sorting` state with a tri-state cycle (asc/desc/none) so sort intent stays URL-backed.
+- Persist transactions table column visibility in `sessionStorage` via TanStack `columnVisibility` state and only expose hideable data columns in the visibility menu.
 - Keep edit/delete dialog state local to this route and dialog markup in focused components under `components/*`.
 - Submit edits/deletes via `/api/transactions/[transactionId]` and refetch current paginated query after mutations.
 - Keep NOK-only currency in this edit flow.

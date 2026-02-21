@@ -64,6 +64,7 @@ export function TransactionsManager() {
     globalQuery,
     dateFrom,
     dateTo,
+    sorting,
     pageSize,
     loading,
     error,
@@ -75,6 +76,7 @@ export function TransactionsManager() {
     setGlobalQueryFilter,
     setDateFromFilter,
     setDateToFilter,
+    setSorting,
     setPageSizeFilter,
   } = useTransactionsManager();
 
@@ -240,6 +242,7 @@ export function TransactionsManager() {
         globalQuery={globalQuery}
         dateFrom={dateFrom}
         dateTo={dateTo}
+        sorting={sorting}
         onEdit={openEditDialog}
         onDelete={openDeleteDialog}
         onAccountFilterChange={setAccountFilter}
@@ -247,6 +250,7 @@ export function TransactionsManager() {
         onGlobalQueryChange={setGlobalQueryFilter}
         onDateFromChange={setDateFromFilter}
         onDateToChange={setDateToFilter}
+        onSortingChange={setSorting}
         pageSize={pageSize}
         onPageSizeChange={setPageSizeFilter}
         onGoToPage={goToPage}

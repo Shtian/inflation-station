@@ -6,6 +6,7 @@
 - For route table state sync, keep URL params canonical by replacing legacy aliases (for example `query` -> `globalQuery`) and preserving unrelated query params when writing table state.
 - In transactions table migrations, model non-data UI cells (notes/actions) as TanStack `display` columns and use `row.original` for mutation handlers.
 - Keep transactions toolbar filter controls controlled by `use-transactions-manager.ts` state (not local component state) so URL sync and page-reset behavior stay consistent.
+- Persist TanStack `columnVisibility` for `/transactions` in `sessionStorage` (session-only) and whitelist hideable column ids when restoring state.
 
 ## 2026-02-21 19:50:25 +0100 - US-001
 - What was implemented
@@ -169,4 +170,31 @@
     - Filter toolbar changes can trigger multiple requests during typing; E2E assertions should poll request logs instead of assuming a single request.
   - Useful context
     - Existing `/transactions` E2E coverage lives in `tests/e2e/us-018-transactions-route-controls.e2e.ts` and now includes query-param sync checks for toolbar filters.
+---
+
+## 2026-02-21 22:43:01 +0100 - US-007
+- What was implemented
+  - Added sortable header controls for Date, Merchant, Category, and Amount with tri-state behavior (asc/desc/none) wired to URL-backed manager sorting state.
+  - Added a Columns visibility dropdown with hideable-column enforcement and session-scoped persistence using `sessionStorage`.
+  - Kept existing row actions and non-hideable utility columns (notes/actions) intact while preserving table rendering behavior.
+  - Extended transactions Playwright coverage to verify sort URL/query behavior, sort reset to page 1, and session-only column visibility persistence across reload.
+- Files changed
+  - `src/app/transactions/components/transactions-table-section.tsx`
+  - `src/app/transactions/transactions-manager.tsx`
+  - `src/app/transactions/AGENTS.md`
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass, includes Playwright E2E coverage in `tests/e2e/us-018-transactions-route-controls.e2e.ts`)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered
+    - For server-driven TanStack sorting, header buttons can own the asc/desc/none cycle while manager state remains the single source of truth for URL/query sync.
+  - Gotchas encountered
+    - Persisted column visibility should be filtered to known hideable column ids before restore to avoid invalid state keys from stale session data.
+  - Useful context
+    - `/transactions` sorting and column-visibility behavior is now covered in `tests/e2e/us-018-transactions-route-controls.e2e.ts` alongside existing filter/pagination/edit/delete flows.
 ---

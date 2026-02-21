@@ -3,24 +3,32 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
+  type VisibilityState,
 } from "@tanstack/react-table";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Columns3,
   Ellipsis,
   FileText,
   Pencil,
   Trash2,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { CategoryBadge } from "@/components/category-badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -54,8 +62,19 @@ import {
   type Category,
   PAGE_SIZE_OPTIONS,
   type TransactionRow,
+  type TransactionSorting,
   type TransactionsResponse,
 } from "../transactions-manager.types";
+
+const COLUMN_VISIBILITY_STORAGE_KEY =
+  "transactions-table-section-column-visibility";
+const HIDEABLE_COLUMN_IDS = [
+  "bookingDate",
+  "normalizedMerchant",
+  "category",
+  "paymentType",
+  "amountNok",
+] as const;
 
 type TransactionsTableSectionProps = {
   loading: boolean;
@@ -67,6 +86,7 @@ type TransactionsTableSectionProps = {
   globalQuery: string;
   dateFrom: string;
   dateTo: string;
+  sorting?: TransactionSorting;
   onEdit: (row: TransactionRow) => void;
   onDelete: (row: TransactionRow) => void;
   onAccountFilterChange: (accountId: string) => void;
@@ -74,6 +94,7 @@ type TransactionsTableSectionProps = {
   onGlobalQueryChange: (globalQuery: string) => void;
   onDateFromChange: (dateFrom: string) => void;
   onDateToChange: (dateTo: string) => void;
+  onSortingChange: (sorting: TransactionSorting | undefined) => void;
   pageSize: number;
   onPageSizeChange: (pageSize: number) => void;
   onGoToPage: (page: number) => void;
@@ -116,6 +137,58 @@ function getCellClassName(columnId: string) {
   return undefined;
 }
 
+function getNextSorting(
+  current: TransactionSorting | undefined,
+  field: TransactionSorting["field"],
+): TransactionSorting | undefined {
+  if (!current || current.field !== field) {
+    return {
+      field,
+      direction: "asc",
+    };
+  }
+
+  if (current.direction === "asc") {
+    return {
+      field,
+      direction: "desc",
+    };
+  }
+
+  return undefined;
+}
+
+function getSortingIcon(sorting: TransactionSorting | undefined) {
+  if (!sorting) {
+    return <ArrowUpDown className="h-4 w-4" aria-hidden="true" />;
+  }
+
+  return sorting.direction === "asc" ? (
+    <ArrowUp className="h-4 w-4" aria-hidden="true" />
+  ) : (
+    <ArrowDown className="h-4 w-4" aria-hidden="true" />
+  );
+}
+
+function parseStoredColumnVisibility(
+  storedValue: string,
+): VisibilityState | null {
+  const parsed = JSON.parse(storedValue);
+  if (!parsed || typeof parsed !== "object") {
+    return null;
+  }
+
+  const nextState: VisibilityState = {};
+  for (const columnId of HIDEABLE_COLUMN_IDS) {
+    const value = (parsed as Record<string, unknown>)[columnId];
+    if (typeof value === "boolean") {
+      nextState[columnId] = value;
+    }
+  }
+
+  return nextState;
+}
+
 export function TransactionsTableSection({
   loading,
   transactions,
@@ -126,6 +199,7 @@ export function TransactionsTableSection({
   globalQuery,
   dateFrom,
   dateTo,
+  sorting,
   onEdit,
   onDelete,
   onAccountFilterChange,
@@ -133,25 +207,73 @@ export function TransactionsTableSection({
   onGlobalQueryChange,
   onDateFromChange,
   onDateToChange,
+  onSortingChange,
   pageSize,
   onPageSizeChange,
   onGoToPage,
 }: TransactionsTableSectionProps) {
   const columnHelper = createColumnHelper<TransactionRow>();
   const rows = transactions?.rows ?? [];
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+  useEffect(() => {
+    const storedValue = sessionStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY);
+    if (!storedValue) {
+      return;
+    }
+
+    try {
+      const parsed = parseStoredColumnVisibility(storedValue);
+      if (parsed) {
+        setColumnVisibility(parsed);
+      }
+    } catch {
+      sessionStorage.removeItem(COLUMN_VISIBILITY_STORAGE_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      COLUMN_VISIBILITY_STORAGE_KEY,
+      JSON.stringify(columnVisibility),
+    );
+  }, [columnVisibility]);
+
+  const sortableHeader = (
+    label: string,
+    field: TransactionSorting["field"],
+  ) => {
+    const isSorted = sorting?.field === field ? sorting : undefined;
+
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        className="-ml-3 h-8 gap-1"
+        onClick={() => onSortingChange(getNextSorting(sorting, field))}
+      >
+        <span>{label}</span>
+        {getSortingIcon(isSorted)}
+      </Button>
+    );
+  };
+
   const table = useReactTable({
     data: rows,
     columns: [
       columnHelper.accessor("bookingDate", {
-        header: "Date",
+        enableHiding: true,
+        header: () => sortableHeader("Date", "bookingDate"),
         cell: (info) => info.getValue(),
       }),
       columnHelper.accessor("normalizedMerchant", {
-        header: "Merchant",
+        enableHiding: true,
+        header: () => sortableHeader("Merchant", "normalizedMerchant"),
         cell: (info) => info.getValue() || "Unknown",
       }),
       columnHelper.display({
         id: "noteIndicator",
+        enableHiding: false,
         header: () => <span className="sr-only">Note</span>,
         cell: (info) => {
           const note = info.row.original.note;
@@ -188,7 +310,8 @@ export function TransactionsTableSection({
       }),
       columnHelper.display({
         id: "category",
-        header: "Category",
+        enableHiding: true,
+        header: () => sortableHeader("Category", "category"),
         cell: (info) => (
           <CategoryBadge
             label={info.row.original.categoryName ?? "Uncategorized"}
@@ -196,15 +319,18 @@ export function TransactionsTableSection({
         ),
       }),
       columnHelper.accessor("paymentType", {
+        enableHiding: true,
         header: "Payment type",
         cell: (info) => info.getValue(),
       }),
       columnHelper.accessor("amountNok", {
-        header: "Amount",
+        enableHiding: true,
+        header: () => sortableHeader("Amount", "amountNok"),
         cell: (info) => formatNok(info.getValue()),
       }),
       columnHelper.display({
         id: "actions",
+        enableHiding: false,
         header: () => <span className="sr-only">Actions</span>,
         cell: (info) => {
           const row = info.row.original;
@@ -246,8 +372,16 @@ export function TransactionsTableSection({
         },
       }),
     ],
+    state: {
+      columnVisibility,
+    },
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  const visibleColumns = table
+    .getAllLeafColumns()
+    .filter((column) => column.getCanHide() && column.id !== "actions");
 
   if (loading) {
     return (
@@ -343,6 +477,40 @@ export function TransactionsTableSection({
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="outline" className="gap-2">
+              <Columns3 className="h-4 w-4" aria-hidden="true" />
+              Columns
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {visibleColumns.map((column) => (
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                checked={column.getIsVisible()}
+                onCheckedChange={(checked) =>
+                  column.toggleVisibility(Boolean(checked))
+                }
+              >
+                {column.id === "bookingDate"
+                  ? "Date"
+                  : column.id === "normalizedMerchant"
+                    ? "Merchant"
+                    : column.id === "paymentType"
+                      ? "Payment type"
+                      : column.id === "amountNok"
+                        ? "Amount"
+                        : "Category"}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <p className="text-muted-foreground text-sm">
