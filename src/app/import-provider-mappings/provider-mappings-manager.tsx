@@ -57,11 +57,7 @@ function getProviderMappingErrorMessage(status: number, body: unknown) {
       return `Duplicate canonical field mappings: ${body.duplicateCanonicalFields.join(", ")}.`;
     }
 
-    if (
-      status === 400 &&
-      (code === "INVALID_PROVIDER_MAPPING_PAYLOAD" ||
-        code === "INVALID_PROVIDER_MAPPING_UPDATE_PAYLOAD")
-    ) {
+    if (status === 400 && code === "INVALID_PROVIDER_MAPPING_UPDATE_PAYLOAD") {
       return "Invalid provider mapping payload.";
     }
 
