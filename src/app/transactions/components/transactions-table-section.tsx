@@ -1,4 +1,10 @@
 import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -64,6 +70,34 @@ function formatNok(value: number) {
   }).format(value);
 }
 
+function getHeaderClassName(columnId: string) {
+  if (columnId === "noteIndicator") {
+    return "w-0";
+  }
+
+  if (columnId === "amountNok") {
+    return "text-right";
+  }
+
+  if (columnId === "actions") {
+    return "w-0 text-right";
+  }
+
+  return undefined;
+}
+
+function getCellClassName(columnId: string) {
+  if (columnId === "noteIndicator") {
+    return "w-0";
+  }
+
+  if (columnId === "amountNok" || columnId === "actions") {
+    return "text-right";
+  }
+
+  return undefined;
+}
+
 export function TransactionsTableSection({
   loading,
   transactions,
@@ -73,6 +107,118 @@ export function TransactionsTableSection({
   onPageSizeChange,
   onGoToPage,
 }: TransactionsTableSectionProps) {
+  const columnHelper = createColumnHelper<TransactionRow>();
+  const rows = transactions?.rows ?? [];
+  const table = useReactTable({
+    data: rows,
+    columns: [
+      columnHelper.accessor("bookingDate", {
+        header: "Date",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor("normalizedMerchant", {
+        header: "Merchant",
+        cell: (info) => info.getValue() || "Unknown",
+      }),
+      columnHelper.display({
+        id: "noteIndicator",
+        header: () => <span className="sr-only">Note</span>,
+        cell: (info) => {
+          const note = info.row.original.note;
+          const bookingDate = info.row.original.bookingDate;
+
+          if (!note) {
+            return null;
+          }
+
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="h-6 w-6"
+                    aria-label={`View memo for transaction from ${bookingDate}`}
+                  >
+                    <FileText className="size-4 shrink-0" aria-hidden="true" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="top"
+                  className="wrap-break-word max-w-xs whitespace-pre-wrap"
+                >
+                  {note}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        },
+      }),
+      columnHelper.display({
+        id: "category",
+        header: "Category",
+        cell: (info) => (
+          <CategoryBadge
+            label={info.row.original.categoryName ?? "Uncategorized"}
+          />
+        ),
+      }),
+      columnHelper.accessor("paymentType", {
+        header: "Payment type",
+        cell: (info) => info.getValue(),
+      }),
+      columnHelper.accessor("amountNok", {
+        header: "Amount",
+        cell: (info) => formatNok(info.getValue()),
+      }),
+      columnHelper.display({
+        id: "actions",
+        header: () => <span className="sr-only">Actions</span>,
+        cell: (info) => {
+          const row = info.row.original;
+
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label={`Actions for transaction from ${row.bookingDate}`}
+                  title={`Actions for transaction from ${row.bookingDate}`}
+                >
+                  <Ellipsis className="h-4 w-4" aria-hidden="true" />
+                  <span className="sr-only">Actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onSelect={() => onEdit(row)}>
+                    <Pencil className="h-4 w-4" aria-hidden="true" />
+                    Edit
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => onDelete(row)}
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      }),
+    ],
+    getCoreRowModel: getCoreRowModel(),
+  });
+
   if (loading) {
     return (
       <p className="text-muted-foreground text-sm">Loading transactions...</p>
@@ -97,96 +243,38 @@ export function TransactionsTableSection({
         <>
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Merchant</TableHead>
-                <TableHead className="w-0">
-                  <span className="sr-only">Note</span>
-                </TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Payment type</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="w-0 text-right">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className={getHeaderClassName(header.column.id)}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
             </TableHeader>
             <TableBody>
-              {transactions.rows.map((row) => (
+              {table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell>{row.bookingDate}</TableCell>
-                  <TableCell>{row.normalizedMerchant || "Unknown"}</TableCell>
-                  <TableCell className="w-0">
-                    {row.note ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              className="h-6 w-6"
-                              aria-label={`View memo for transaction from ${row.bookingDate}`}
-                            >
-                              <FileText
-                                className="size-4 shrink-0"
-                                aria-hidden="true"
-                              />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side="top"
-                            className="wrap-break-word max-w-xs whitespace-pre-wrap"
-                          >
-                            {row.note}
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <CategoryBadge
-                      label={row.categoryName ?? "Uncategorized"}
-                    />
-                  </TableCell>
-                  <TableCell>{row.paymentType}</TableCell>
-                  <TableCell className="text-right">
-                    {formatNok(row.amountNok)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon-sm"
-                          aria-label={`Actions for transaction from ${row.bookingDate}`}
-                          title={`Actions for transaction from ${row.bookingDate}`}
-                        >
-                          <Ellipsis className="h-4 w-4" aria-hidden="true" />
-                          <span className="sr-only">Actions</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuGroup>
-                          <DropdownMenuItem onSelect={() => onEdit(row)}>
-                            <Pencil className="h-4 w-4" aria-hidden="true" />
-                            Edit
-                          </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onSelect={() => onDelete(row)}
-                          >
-                            <Trash2 className="h-4 w-4" aria-hidden="true" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell
+                      key={cell.id}
+                      className={getCellClassName(cell.column.id)}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))}
             </TableBody>

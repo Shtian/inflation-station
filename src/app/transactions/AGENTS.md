@@ -11,3 +11,4 @@ Load this when working in `src/app/transactions`.
 - Submit edits/deletes via `/api/transactions/[transactionId]` and refetch current paginated query after mutations.
 - Keep NOK-only currency in this edit flow.
 - Render a dedicated notes column with explicit empty-state text for null notes.
+- In TanStack table columns, use `display` columns for note/action UI and read `row.original` so edit/delete handlers always receive the full `TransactionRow`.
