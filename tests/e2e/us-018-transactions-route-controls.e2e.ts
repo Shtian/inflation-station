@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 test("manages transactions filters and pagination controls from /transactions", async ({
   page,
 }) => {
+  const transactionRequests: string[] = [];
+
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
       status: 200,
@@ -46,7 +48,12 @@ test("manages transactions filters and pagination controls from /transactions", 
 
   await page.route("**/api/transactions**", async (route, request) => {
     const url = new URL(request.url());
+    transactionRequests.push(url.search);
     const accountId = url.searchParams.get("accountId");
+    const categoryId = url.searchParams.get("categoryId");
+    const globalQuery = url.searchParams.get("globalQuery");
+    const dateFrom = url.searchParams.get("dateFrom");
+    const dateTo = url.searchParams.get("dateTo");
     const pageParam = url.searchParams.get("page");
     const pageSizeParam = url.searchParams.get("pageSize");
 
@@ -163,6 +170,45 @@ test("manages transactions filters and pagination controls from /transactions", 
       return;
     }
 
+    if (
+      pageParam === "1" &&
+      pageSizeParam === "25" &&
+      categoryId === "cat-groceries" &&
+      globalQuery === "market" &&
+      dateFrom === "2026-02-01" &&
+      dateTo === "2026-02-28"
+    ) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          rows: [
+            {
+              id: "txn-filtered-1",
+              accountId: accountId ?? "acc-1",
+              categoryId: "cat-groceries",
+              categoryName: "Groceries",
+              bookingDate: "2026-02-11",
+              amountNok: -99,
+              currency: "NOK",
+              normalizedMerchant: "Filtered Market",
+              paymentType: "CARD",
+              note: "Matched by filters",
+              createdAt: "2026-02-11T09:00:00.000Z",
+              updatedAt: "2026-02-11T09:00:00.000Z",
+            },
+          ],
+          pagination: {
+            total: 1,
+            page: 1,
+            pageSize: 25,
+            totalPages: 1,
+          },
+        }),
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -234,6 +280,36 @@ test("manages transactions filters and pagination controls from /transactions", 
 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "All accounts" }).click();
+
+  await page.getByLabel("Search").fill("market");
+  await page.getByLabel("Date from").fill("2026-02-01");
+  await page.getByLabel("Date to").fill("2026-02-28");
+  await page.getByLabel("Category").click();
+  await page.getByRole("option", { name: "Groceries", exact: true }).click();
+  await expect(page.getByText("Filtered Market")).toBeVisible();
+  await expect(page).toHaveURL(/globalQuery=market/);
+  await expect(page).toHaveURL(/dateFrom=2026-02-01/);
+  await expect(page).toHaveURL(/dateTo=2026-02-28/);
+  await expect(page).toHaveURL(/categoryId=cat-groceries/);
+
+  await expect
+    .poll(() =>
+      transactionRequests.some(
+        (search) =>
+          search.includes("globalQuery=market") &&
+          search.includes("dateFrom=2026-02-01") &&
+          search.includes("dateTo=2026-02-28") &&
+          search.includes("categoryId=cat-groceries"),
+      ),
+    )
+    .toBe(true);
+
+  await page.getByLabel("Search").fill("");
+  await page.getByLabel("Date from").fill("");
+  await page.getByLabel("Date to").fill("");
+  await page.getByLabel("Category").click();
+  await page.getByRole("option", { name: "All categories" }).click();
+  await expect(page.getByText("Supermarket")).toBeVisible();
 
   await page.getByRole("button", { name: "Go to next page" }).click();
   await expect(page.getByText("Page 2 of 2")).toBeVisible();

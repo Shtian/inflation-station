@@ -7,6 +7,7 @@ Load this when working in `src/app/transactions`.
 - Fetch `/api/transactions` when account, page, or page size changes.
 - Reset pagination to page 1 whenever table filters/sorting/page-size change.
 - Use shadcn table primitives and keep pagination/summary text outside the table.
+- Keep transactions toolbar inputs/selects in `TransactionsTableSection` controlled from `use-transactions-manager.ts` state so URL-synced filters stay canonical.
 - Keep edit/delete dialog state local to this route and dialog markup in focused components under `components/*`.
 - Submit edits/deletes via `/api/transactions/[transactionId]` and refetch current paginated query after mutations.
 - Keep NOK-only currency in this edit flow.

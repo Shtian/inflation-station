@@ -24,6 +24,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -46,6 +48,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  type Account,
+  ALL_ACCOUNTS_VALUE,
+  ALL_CATEGORIES_VALUE,
+  type Category,
   PAGE_SIZE_OPTIONS,
   type TransactionRow,
   type TransactionsResponse,
@@ -54,8 +60,20 @@ import {
 type TransactionsTableSectionProps = {
   loading: boolean;
   transactions: TransactionsResponse | null;
+  accounts: Account[];
+  categories: Category[];
+  accountId: string;
+  categoryId: string;
+  globalQuery: string;
+  dateFrom: string;
+  dateTo: string;
   onEdit: (row: TransactionRow) => void;
   onDelete: (row: TransactionRow) => void;
+  onAccountFilterChange: (accountId: string) => void;
+  onCategoryFilterChange: (categoryId: string) => void;
+  onGlobalQueryChange: (globalQuery: string) => void;
+  onDateFromChange: (dateFrom: string) => void;
+  onDateToChange: (dateTo: string) => void;
   pageSize: number;
   onPageSizeChange: (pageSize: number) => void;
   onGoToPage: (page: number) => void;
@@ -101,8 +119,20 @@ function getCellClassName(columnId: string) {
 export function TransactionsTableSection({
   loading,
   transactions,
+  accounts,
+  categories,
+  accountId,
+  categoryId,
+  globalQuery,
+  dateFrom,
+  dateTo,
   onEdit,
   onDelete,
+  onAccountFilterChange,
+  onCategoryFilterChange,
+  onGlobalQueryChange,
+  onDateFromChange,
+  onDateToChange,
   pageSize,
   onPageSizeChange,
   onGoToPage,
@@ -229,15 +259,101 @@ export function TransactionsTableSection({
     return null;
   }
 
+  const hasActiveFilters =
+    accountId.length > 0 ||
+    categoryId.length > 0 ||
+    globalQuery.length > 0 ||
+    dateFrom.length > 0 ||
+    dateTo.length > 0;
+
   return (
     <section className="space-y-2" aria-live="polite">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="space-y-2">
+          <Label htmlFor="transactions-global-query">Search</Label>
+          <Input
+            id="transactions-global-query"
+            type="search"
+            value={globalQuery}
+            onChange={(event) => onGlobalQueryChange(event.target.value)}
+            placeholder="Search merchant or note"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="transactions-date-from">Date from</Label>
+          <Input
+            id="transactions-date-from"
+            type="date"
+            value={dateFrom}
+            onChange={(event) => onDateFromChange(event.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="transactions-date-to">Date to</Label>
+          <Input
+            id="transactions-date-to"
+            type="date"
+            value={dateTo}
+            onChange={(event) => onDateToChange(event.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="transactions-account-filter">Account</Label>
+          <Select
+            value={accountId || ALL_ACCOUNTS_VALUE}
+            onValueChange={(value) =>
+              onAccountFilterChange(value === ALL_ACCOUNTS_VALUE ? "" : value)
+            }
+          >
+            <SelectTrigger id="transactions-account-filter" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_ACCOUNTS_VALUE}>All accounts</SelectItem>
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="transactions-category-filter">Category</Label>
+          <Select
+            value={categoryId || ALL_CATEGORIES_VALUE}
+            onValueChange={(value) =>
+              onCategoryFilterChange(
+                value === ALL_CATEGORIES_VALUE ? "" : value,
+              )
+            }
+          >
+            <SelectTrigger id="transactions-category-filter" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CATEGORIES_VALUE}>
+                All categories
+              </SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <p className="text-muted-foreground text-sm">
         {transactions.pagination.total} total transactions.
       </p>
 
       {transactions.rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          No transactions found for the selected filters.
+          {hasActiveFilters
+            ? "No transactions found for the selected filters."
+            : "No transactions found."}
         </p>
       ) : (
         <>

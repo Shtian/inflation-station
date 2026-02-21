@@ -1,14 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import {
   MAX_TRANSACTION_NOTE_LENGTH,
@@ -18,7 +10,6 @@ import { DeleteTransactionDialog } from "./components/delete-transaction-dialog"
 import { EditTransactionDialog } from "./components/edit-transaction-dialog";
 import { TransactionsTableSection } from "./components/transactions-table-section";
 import {
-  ALL_ACCOUNTS_VALUE,
   type EditFormState,
   PAYMENT_TYPE_OPTIONS,
   type PaymentTypeOption,
@@ -69,6 +60,10 @@ export function TransactionsManager() {
     accounts,
     categories,
     accountId,
+    categoryId,
+    globalQuery,
+    dateFrom,
+    dateTo,
     pageSize,
     loading,
     error,
@@ -76,6 +71,10 @@ export function TransactionsManager() {
     loadTransactions,
     goToPage,
     setAccountFilter,
+    setCategoryFilter,
+    setGlobalQueryFilter,
+    setDateFromFilter,
+    setDateToFilter,
     setPageSizeFilter,
   } = useTransactionsManager();
 
@@ -220,35 +219,6 @@ export function TransactionsManager() {
 
       <Separator className="my-4" />
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="space-y-2">
-          <Label
-            htmlFor="transactions-account-filter"
-            className="block font-medium text-foreground text-sm"
-          >
-            Account
-          </Label>
-          <Select
-            value={accountId || ALL_ACCOUNTS_VALUE}
-            onValueChange={(value) =>
-              setAccountFilter(value === ALL_ACCOUNTS_VALUE ? "" : value)
-            }
-          >
-            <SelectTrigger id="transactions-account-filter" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_ACCOUNTS_VALUE}>All accounts</SelectItem>
-              {accounts.map((account) => (
-                <SelectItem key={account.id} value={account.id}>
-                  {account.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {error ? (
         <p
           role="alert"
@@ -263,8 +233,20 @@ export function TransactionsManager() {
       <TransactionsTableSection
         loading={loading}
         transactions={transactions}
+        accounts={accounts}
+        categories={categories}
+        accountId={accountId}
+        categoryId={categoryId}
+        globalQuery={globalQuery}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
         onEdit={openEditDialog}
         onDelete={openDeleteDialog}
+        onAccountFilterChange={setAccountFilter}
+        onCategoryFilterChange={setCategoryFilter}
+        onGlobalQueryChange={setGlobalQueryFilter}
+        onDateFromChange={setDateFromFilter}
+        onDateToChange={setDateToFilter}
         pageSize={pageSize}
         onPageSizeChange={setPageSizeFilter}
         onGoToPage={goToPage}
