@@ -1,4 +1,11 @@
+import type { Prisma } from "@prisma/client";
+
 type DecimalLike = { toString(): string } | number;
+
+type StringContainsFilter = {
+  contains: string;
+  mode: "insensitive";
+};
 
 type TransactionListRecord = {
   id: string;
@@ -19,15 +26,9 @@ type TransactionListRecord = {
 
 type TransactionListDbClient = {
   transaction: {
-    count(args: {
-      where: {
-        accountId?: string;
-      };
-    }): Promise<number>;
+    count(args: { where: Prisma.TransactionWhereInput }): Promise<number>;
     findMany(args: {
-      where: {
-        accountId?: string;
-      };
+      where: Prisma.TransactionWhereInput;
       select: {
         id: true;
         accountId: true;
@@ -96,13 +97,52 @@ function toNumber(value: DecimalLike): number {
   return Number.parseFloat(value.toString());
 }
 
+function addUtcDays(date: Date, days: number): Date {
+  const nextDate = new Date(date);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
+  return nextDate;
+}
+
 export async function getTransactionsPage(
   db: TransactionListDbClient,
   filters: TransactionsListFilters,
 ): Promise<TransactionsListResult> {
-  const where = {
+  const where: Prisma.TransactionWhereInput = {
     accountId: filters.accountId,
+    categoryId: filters.categoryId,
   };
+
+  if (filters.dateFrom || filters.dateTo) {
+    where.bookingDate = {
+      gte: filters.dateFrom,
+      lt: filters.dateTo ? addUtcDays(filters.dateTo, 1) : undefined,
+    };
+  }
+
+  const normalizedQuery = filters.query?.trim();
+  if (normalizedQuery) {
+    const containsQuery: StringContainsFilter = {
+      contains: normalizedQuery,
+      mode: "insensitive",
+    };
+
+    where.OR = [
+      {
+        normalizedMerchant: containsQuery,
+      },
+      {
+        note: containsQuery,
+      },
+      {
+        category: {
+          is: {
+            name: containsQuery,
+          },
+        },
+      },
+    ];
+  }
+
   const skip = (filters.page - 1) * filters.pageSize;
 
   const total = await db.transaction.count({ where });

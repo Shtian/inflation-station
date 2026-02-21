@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - Transactions list query parsing should trim optional text/id filters and normalize empty values to `undefined` before passing to domain modules.
 - Keep transactions sorting query strings in `<field>:<direction>` format with an explicit field allowlist and per-param `INVALID_*` HTTP 400 responses.
+- For inclusive `dateTo` filtering on `bookingDate`, convert to `< next UTC day` in domain queries to handle non-midnight timestamps safely.
 
 ## 2026-02-21 19:50:25 +0100 - US-001
 - What was implemented
@@ -28,4 +29,31 @@
     - Keep `toHaveBeenCalledWith` expectations in route tests aligned with all forwarded filter keys, including intentionally `undefined` values.
   - Useful context
     - The list route now establishes the query contract that upcoming server-side filtering/sorting stories can apply directly in `src/lib/transactions/list.ts`.
+---
+
+## 2026-02-21 21:08:41 +0100 - US-002
+- What was implemented
+  - Added server-side transactions filtering in `getTransactionsPage` for global query, inclusive date range, accountId, and categoryId.
+  - Implemented global text matching across `normalizedMerchant`, `note`, and related `category.name` with case-insensitive contains filters.
+  - Applied date range filtering on `bookingDate` using `gte dateFrom` and `< next UTC day(dateTo)` to preserve inclusive end-date semantics.
+  - Added domain tests for combined filter query shape and empty-result pagination behavior.
+- Files changed
+  - `src/lib/transactions/list.ts`
+  - `src/lib/transactions/list.test.ts`
+  - `src/lib/transactions/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered
+    - Keep list `count` and `findMany` filters built from the same `where` object to keep pagination metadata aligned with filtered rows.
+    - Use `Prisma.TransactionWhereInput` directly in domain-query adapter types so route-to-domain signatures stay compatible with Prisma client.
+  - Gotchas encountered
+    - `paymentType` is an enum and cannot use string `contains` filters; global text matching should target text fields/relations only.
+  - Useful context
+    - Filter behavior for `/api/transactions` now lives in `src/lib/transactions/list.ts`, while request validation stays in `src/app/api/transactions/route.ts`.
 ---

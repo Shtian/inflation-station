@@ -27,6 +27,13 @@ function createTransactionsDbMock(total: number) {
   };
 }
 
+function createTransactionListFilters() {
+  return {
+    page: 1,
+    pageSize: 25,
+  };
+}
+
 describe("getTransactionsPage", () => {
   it("queries with account filter and deterministic pagination ordering", async () => {
     const db = createTransactionsDbMock(42);
@@ -79,10 +86,10 @@ describe("getTransactionsPage", () => {
   it("maps DB records to stable API row primitives", async () => {
     const db = createTransactionsDbMock(1);
 
-    const result = await getTransactionsPage(db, {
-      page: 1,
-      pageSize: 25,
-    });
+    const result = await getTransactionsPage(
+      db,
+      createTransactionListFilters(),
+    );
 
     expect(result.rows).toEqual([
       {
@@ -101,5 +108,74 @@ describe("getTransactionsPage", () => {
       },
     ]);
     expect(result.pagination.totalPages).toBe(1);
+  });
+
+  it("applies global query, date range, account, and category filters", async () => {
+    const db = createTransactionsDbMock(3);
+
+    await getTransactionsPage(db, {
+      ...createTransactionListFilters(),
+      query: "coffee",
+      dateFrom: new Date("2026-01-01T00:00:00.000Z"),
+      dateTo: new Date("2026-01-31T00:00:00.000Z"),
+      accountId: "acc-1",
+      categoryId: "cat-2",
+    });
+
+    const expectedWhere = {
+      accountId: "acc-1",
+      categoryId: "cat-2",
+      bookingDate: {
+        gte: new Date("2026-01-01T00:00:00.000Z"),
+        lt: new Date("2026-02-01T00:00:00.000Z"),
+      },
+      OR: [
+        {
+          normalizedMerchant: {
+            contains: "coffee",
+            mode: "insensitive",
+          },
+        },
+        {
+          note: {
+            contains: "coffee",
+            mode: "insensitive",
+          },
+        },
+        {
+          category: {
+            is: {
+              name: {
+                contains: "coffee",
+                mode: "insensitive",
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    expect(db.transaction.count).toHaveBeenCalledWith({ where: expectedWhere });
+    expect(db.transaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expectedWhere }),
+    );
+  });
+
+  it("returns empty rows and zero pages when no filters match", async () => {
+    const db = createTransactionsDbMock(0);
+    db.transaction.findMany.mockResolvedValueOnce([]);
+
+    const result = await getTransactionsPage(db, {
+      ...createTransactionListFilters(),
+      query: "no matches",
+    });
+
+    expect(result.rows).toEqual([]);
+    expect(result.pagination).toEqual({
+      total: 0,
+      page: 1,
+      pageSize: 25,
+      totalPages: 0,
+    });
   });
 });
