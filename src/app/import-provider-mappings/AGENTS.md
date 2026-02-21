@@ -6,3 +6,5 @@ Load this when working in `src/app/import-provider-mappings`.
 - Keep add/edit dialogs and mappings table/actions in focused components under `components/*`.
 - Reuse a shared field-mappings editor across create/edit flows.
 - Keep normalization rules parsing/building and field-mapping validation helpers in `provider-mappings-manager.utils.ts` for testable reuse.
+- Submit create mutations through typed Server Actions, while keeping list refreshes on `loadMappings()` against the existing GET route for parity.
+- Keep edit/delete on the existing `/api/import-provider-mappings/[providerMappingId]` endpoints until those mutations are explicitly migrated.

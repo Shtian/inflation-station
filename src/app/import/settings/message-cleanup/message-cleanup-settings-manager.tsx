@@ -4,6 +4,7 @@ import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { updateMessageCleanupSettingsAction } from "@/app/actions/update-message-cleanup-settings";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -148,24 +149,25 @@ export function MessageCleanupSettingsManager() {
     setError(null);
     setSuccess(null);
 
-    const response = await fetch("/api/imports/message-cleanup-settings", {
-      method: "PUT",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
+    let result: Awaited<ReturnType<typeof updateMessageCleanupSettingsAction>>;
+    try {
+      result = await updateMessageCleanupSettingsAction({
         promptText: params.promptText,
         modelId: params.modelId,
-      }),
-    });
-
-    const body: unknown = await response.json().catch(() => null);
-
-    if (!response.ok || !isMessageCleanupSettingsResponse(body)) {
+      });
+    } catch {
       setSaving(false);
       setError("Could not save message cleanup settings. Please try again.");
       return false;
     }
+
+    if (!result.ok) {
+      setSaving(false);
+      setError("Could not save message cleanup settings. Please try again.");
+      return false;
+    }
+
+    const body = result.data;
 
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);

@@ -16,8 +16,9 @@ type MockProviderMapping = {
 test("manages provider mappings from admin UI with validation feedback", async ({
   page,
 }) => {
-  let createAttempt = 0;
+  let createServerActionRequestCount = 0;
   let lastPatchBody: unknown = null;
+  const providerName = `Bank B ${Date.now()}`;
   let mappings: MockProviderMapping[] = [
     {
       id: "provider-1",
@@ -47,57 +48,53 @@ test("manages provider mappings from admin UI with validation feedback", async (
         return;
       }
 
-      if (request.method() === "POST") {
-        if (createAttempt === 0) {
-          createAttempt += 1;
-          await route.fulfill({
-            status: 400,
-            contentType: "application/json",
-            body: JSON.stringify({
-              error: "REQUIRED_CANONICAL_FIELDS_MISSING",
-              missingCanonicalFields: ["amount", "paymentType"],
-            }),
-          });
-          return;
-        }
-
-        const payload = request.postDataJSON() as {
-          providerName: string;
-          mappingVersion?: number;
-          normalizationRules?: unknown;
-          fieldMappings?: Array<{
-            sourceField: string;
-            canonicalField: string;
-          }>;
-        };
-
-        const createdMapping: MockProviderMapping = {
-          id: "provider-2",
-          providerName: payload.providerName,
-          normalizationRules: payload.normalizationRules ?? {},
-          mappingVersion: payload.mappingVersion ?? null,
-          fieldMappings: (payload.fieldMappings ?? []).map(
-            (fieldMapping, index) => ({
-              id: `field-new-${index + 1}`,
-              sourceField: fieldMapping.sourceField,
-              canonicalField: fieldMapping.canonicalField,
-              transformRules: null,
-            }),
-          ),
-        };
-        mappings = [createdMapping, ...mappings];
-
-        await route.fulfill({
-          status: 201,
-          contentType: "application/json",
-          body: JSON.stringify({ mapping: createdMapping }),
-        });
-        return;
-      }
-
       await route.fallback();
     },
   );
+
+  await page.route("**/import-provider-mappings", async (route) => {
+    const request = route.request();
+    if (
+      request.method() === "POST" &&
+      Object.hasOwn(request.headers(), "next-action")
+    ) {
+      createServerActionRequestCount += 1;
+
+      if (createServerActionRequestCount === 1) {
+        mappings = [
+          {
+            id: "provider-2",
+            providerName,
+            normalizationRules: {},
+            mappingVersion: 2,
+            fieldMappings: [
+              {
+                id: "field-new-1",
+                sourceField: "Dato",
+                canonicalField: "bookingDate",
+                transformRules: null,
+              },
+              {
+                id: "field-new-2",
+                sourceField: "Belop",
+                canonicalField: "amount",
+                transformRules: null,
+              },
+              {
+                id: "field-new-3",
+                sourceField: "Tekst",
+                canonicalField: "title",
+                transformRules: null,
+              },
+            ],
+          },
+          ...mappings,
+        ];
+      }
+    }
+
+    await route.fallback();
+  });
 
   await page.route(
     "**/api/import-provider-mappings/provider-2",
@@ -152,7 +149,7 @@ test("manages provider mappings from admin UI with validation feedback", async (
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Add provider mapping" }).click();
-  await page.getByLabel("Provider name").fill("Bank B");
+  await page.getByLabel("Provider name").fill(providerName);
   await page.getByLabel("Mapping version (optional)").fill("2");
   await page
     .getByRole("textbox", { name: "Required source field bookingDate" })
@@ -165,16 +162,14 @@ test("manages provider mappings from admin UI with validation feedback", async (
     .fill("Tekst");
 
   await page.getByRole("button", { name: "Create provider mapping" }).click();
+  await expect(page.getByText("Provider mapping added.")).toBeVisible();
+  await expect.poll(() => createServerActionRequestCount).toBe(1);
   await expect(
-    page.getByText("Missing required canonical fields: amount, paymentType."),
+    page.getByRole("row", { name: new RegExp(providerName) }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Create provider mapping" }).click();
-  await expect(page.getByText("Provider mapping added.")).toBeVisible();
-  await expect(page.getByRole("row", { name: /Bank B/i })).toBeVisible();
-
-  const bankBRow = page.getByRole("row", { name: /Bank B/i });
-  await bankBRow.getByRole("button", { name: "Actions for Bank B" }).click();
+  const bankBRow = page.getByRole("row", { name: new RegExp(providerName) });
+  await bankBRow.getByRole("button").click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
   const editReqHeaders = page.getByRole("textbox", {
     name: "Edit required headers",
@@ -188,11 +183,30 @@ test("manages provider mappings from admin UI with validation feedback", async (
   await expect(page.getByText("Provider mapping updated.")).toBeVisible();
   expect(lastPatchBody).toEqual(
     expect.objectContaining({
-      providerName: "Bank B",
+      providerName,
       mappingVersion: 2,
       normalizationRules: {
         requiredHeaders: ["dato", "belop"],
       },
     }),
   );
+
+  await page.getByRole("button", { name: "Add provider mapping" }).click();
+  await page.getByLabel("Provider name").fill(providerName);
+  await page.getByLabel("Mapping version (optional)").fill("2");
+  await page
+    .getByRole("textbox", { name: "Required source field bookingDate" })
+    .fill("Dato");
+  await page
+    .getByRole("textbox", { name: "Required source field amount" })
+    .fill("Belop");
+  await page
+    .getByRole("textbox", { name: "Required source field merchant signal" })
+    .fill("Tekst");
+  await page.getByRole("button", { name: "Create provider mapping" }).click();
+
+  await expect.poll(() => createServerActionRequestCount).toBe(2);
+  await expect(
+    page.getByText("A provider mapping with this name already exists."),
+  ).toBeVisible();
 });

@@ -1,60 +1,56 @@
 ## Codebase Patterns
-- In Overview analytics (`src/lib/dashboard/analytics.ts`), exclude transactions with `category.kind = TRANSFER` from `netCashflow`, `inflowOutflow`, and `categoryBreakdown`, while still counting uncategorized rows.
-- In Monthly Review overview aggregation (`src/lib/monthly-review/overview.ts`), exclude `category.kind = TRANSFER` from spend totals/counts/category breakdown and MoM calculations while still including uncategorized rows.
-- In Monthly Review generation input (`src/lib/monthly-review/generation-input.ts`), compute spend-side metrics from negative transactions excluding `category.kind = TRANSFER`, while preserving uncategorized spend rows.
-- Keep a shared inline notice on `/` and `/monthly-review` that transfer-category transactions are excluded from spend/income analytics so users understand totals at a glance.
-- Keep transfer-exclusion regression coverage aligned across `src/lib/dashboard/analytics.test.ts`, `src/lib/monthly-review/overview.test.ts`, and `src/lib/monthly-review/generation-input.test.ts` whenever analytics/review metric filtering changes.
+- For Server Action mutations, keep a typed result union (`ok` + `data` or typed `error`) and centralize Zod-validation/error-shape helpers in `src/lib/server-actions/mutation-result.ts`.
+- For Playwright coverage of client-triggered Server Actions, intercept page-path `POST` requests and detect the `next-action` header while allowing `route.fallback()` so the real action protocol remains intact.
+- Preserve UX parity during migration by mapping Server Action `error.code`/`error.details` back to the exact route-era user-facing error strings instead of introducing new copy.
+- In client managers that call Server Actions, wrap action calls in `try/catch` so protocol/transport failures still clear loading state and surface the existing save-error copy.
+- After migrating a mutation flow to Server Actions, retire the corresponding API mutation handler/tests and keep only read/list API routes still used for data loading parity.
 
-## 2026-02-20 18:22 CET - US-001
-- Implemented transfer-category exclusion in Overview analytics aggregation for net cashflow, inflow/outflow, and spend breakdown.
-- Added/updated regression coverage for transfer exclusion behavior and uncategorized inclusion in dashboard analytics tests; updated existing categories E2E test flow to handle current tabbed UI so project test checks pass reliably.
-- Files changed: `src/lib/dashboard/analytics.ts`, `src/lib/dashboard/analytics.test.ts`, `tests/e2e/us-015-categories-route-management.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
-- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed (after regenerating Next type artifacts), `pnpm test` passed, `pnpm build` passed.
+## 2026-02-21 10:55 CET - US-001
+- Implemented a server-action mutation architecture baseline with shared typed result helpers and two settings-focused Server Action modules prepared for migration wiring.
+- Files changed: `src/lib/server-actions/mutation-result.ts`, `src/lib/server-actions/mutation-result.test.ts`, `src/app/actions/update-message-cleanup-settings.ts`, `src/app/actions/update-monthly-review-system-prompt.ts`, `tasks/server-actions-mutation-architecture.md`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed (unit + Playwright e2e), `pnpm build` passed.
 - **Learnings for future iterations**
-  - Patterns discovered: Categories route UI is tabbed (`Category management` and `Category rules`), so E2E interactions must switch tabs before asserting/acting on section-specific controls.
-  - Gotchas encountered: `tsc --noEmit` can fail from stale `.next/dev/types` artifacts; regenerate with `pnpm exec next typegen` before rerunning typecheck.
-  - Useful context: Dashboard analytics now intentionally excludes transfer-category rows from spend/income views but leaves uncategorized rows included.
+  - Patterns discovered: Existing settings API routes for monthly review and message cleanup already share near-identical validation/model-resolution semantics, making them strong first candidates for direct action parity.
+  - Gotchas encountered: Preserve existing uppercase API error-code identifiers in action results to avoid churn in existing client-side error mapping logic during migration.
+  - Useful context: Provider mapping mutations have route-level validation contracts (`REQUIRED_CANONICAL_FIELDS_MISSING`, `DUPLICATE_CANONICAL_FIELD_MAPPINGS`, `MERCHANT_SIGNAL_FIELD_REQUIRED`) that should be mirrored exactly when migrating the entity workflow.
 ---
 
-## 2026-02-20 18:29 CET - US-002
-- Implemented transfer-category exclusion in Monthly Review overview aggregation by fetching `category.kind` and skipping transfer rows before monthly spend/count/category accumulation.
-- Added regression coverage validating transfer exclusion, uncategorized inclusion, category breakdown output, and month-over-month deltas; updated timeline test mock shape to include `category.kind`.
-- Files changed: `src/lib/monthly-review/overview.ts`, `src/lib/monthly-review/overview.test.ts`, `src/lib/monthly-review/timeline.ts`, `src/lib/monthly-review/timeline.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
-- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed, `pnpm build` passed.
+## 2026-02-21 19:03 CET - US-002
+- Implemented migration of the message cleanup settings save flow from client `PUT /api/imports/message-cleanup-settings` fetch calls to `updateMessageCleanupSettingsAction` while preserving existing UI copy, controls, and save interactions.
+- Files changed: `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx`, `tests/e2e/us-021-message-cleanup-settings.e2e.ts`, `src/app/import/AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed (unit + Playwright e2e), `pnpm build` passed.
 - **Learnings for future iterations**
-  - Patterns discovered: Timeline wrappers that proxy `getMonthlyOverview` must keep the transaction select shape aligned with overview requirements (including nested category fields).
-  - Gotchas encountered: Tight TypeScript contract between `overview.ts` and `timeline.ts` will fail typecheck immediately when nested select fields diverge.
-  - Useful context: Monthly overview MoM deltas are derived from already-aggregated month totals, so transfer exclusion must happen before totals are persisted per month key.
+  - Patterns discovered: Keeping settings-page initial loads on existing GET APIs while migrating only save mutations to Server Actions is a low-risk parity path for staged rollout.
+  - Gotchas encountered: Frontend save feedback parity is easiest to preserve by keeping existing generic UI error/success copy and mapping all action `ok: false` cases to the current message text.
+  - Useful context: `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx` now serves as the reference settings-manager pattern for Server Action mutation wiring in import settings pages.
 ---
 
-## 2026-02-20 18:42 CET - US-003
-- Implemented transfer-category exclusion for monthly review generation-input spend metrics by including `category.kind` in transaction select shape and filtering spend rows before monthly/category/merchant/MoM calculations.
-- Added regression coverage for generation-input transfer exclusion behavior, including uncategorized inclusion and transfer-aware month-over-month spend totals; aligned generation module test DB mock category shape with `kind`.
-- Files changed: `src/lib/monthly-review/generation-input.ts`, `src/lib/monthly-review/generation-input.test.ts`, `src/lib/monthly-review/generation.ts`, `src/lib/monthly-review/generation.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
-- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed, `pnpm build` passed.
+## 2026-02-21 19:12 CET - US-003
+- Implemented migration of the provider-mapping create mutation from client `POST /api/import-provider-mappings` fetch calls to `createImportProviderMappingAction`, while leaving GET/PATCH/DELETE route behavior and existing UI controls/copy intact.
+- Files changed: `src/app/actions/create-import-provider-mapping.ts`, `src/app/import-provider-mappings/provider-mappings-manager.tsx`, `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts`, `src/app/import-provider-mappings/AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed (unit + Playwright e2e), `pnpm build` passed.
 - **Learnings for future iterations**
-  - Patterns discovered: Keep `generation.ts` DB client type and `generation-input.ts` transaction select shape in sync when adding new nested transaction fields.
-  - Gotchas encountered: Generation-flow tests that reuse DB mocks must include all required nested category fields (`id`, `name`, `kind`) after select-shape changes or typecheck fails.
-  - Useful context: Monthly review generation still sends full-month transaction rows to the model, while only spend-side metrics exclude transfer-category transactions.
+  - Patterns discovered: For staged entity migration, moving only one mutation path (create) to Server Actions while still reloading table state from existing GET routes keeps parity risk low.
+  - Gotchas encountered: Existing table e2e tests that mocked API POST need to switch to watching page-route Server Action `POST` requests (`next-action` header) and keep `route.fallback()` so real action execution continues.
+  - Useful context: Provider mapping create flow still depends on route-local validation helpers in `provider-mappings-manager.utils.ts`, then delegates persistence/error-code semantics to the typed Server Action.
 ---
 
-## 2026-02-20 18:53 CET - US-004
-- Implemented concise inline transfer-exclusion messaging in normal page flow on Overview and Monthly Review using consistent wording.
-- Added Playwright assertions to verify the transfer-exclusion notice is visible on both pages.
-- Files changed: `src/app/(overview)/overview-dashboard.tsx`, `src/app/monthly-review/monthly-review-manager.tsx`, `tests/e2e/us-014-dashboard-ui.e2e.ts`, `tests/e2e/us-020-monthly-review-route.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
-- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed, `pnpm build` passed.
+## 2026-02-21 19:21 CET - US-004
+- Implemented parity-focused regression coverage for migrated mutation workflows by adding explicit failure-path assertions in Playwright for message-cleanup save and provider-mapping create, and hardened the message-cleanup client manager to preserve existing error UX when Server Action transport/protocol failures occur.
+- Files changed: `tests/e2e/us-021-message-cleanup-settings.e2e.ts`, `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts`, `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx`, `src/app/import/AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed (unit + Playwright e2e), `pnpm build` passed.
 - **Learnings for future iterations**
-  - Patterns discovered: Keep transfer-exclusion messaging copy identical across analytics routes to avoid user confusion and flaky text assertions.
-  - Gotchas encountered: UI copy changes on shared routes should be covered in existing route-level Playwright specs rather than creating redundant standalone specs.
-  - Useful context: Existing dashboard and monthly-review E2E mocks already cover these routes, so visibility assertions can be added with minimal test setup changes.
+  - Patterns discovered: Add migrated-mutation regression checks at the UI layer by pairing a happy path with one deterministic failure path in the same Playwright spec to guard parity without broadening scope.
+  - Gotchas encountered: For page-route Server Action requests, forcing non-OK responses can bypass typed `ok: false` handling unless client managers guard action calls with `try/catch` and reset loading state.
+  - Useful context: `tests/e2e/us-021-message-cleanup-settings.e2e.ts` now includes both success and forced-failure coverage for the migrated settings save flow; `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts` now verifies duplicate-name failure copy after a real action-backed create.
 ---
 
-## 2026-02-20 18:56 CET - US-005
-- Strengthened transfer-exclusion regression coverage by updating analytics/monthly-review metric tests to explicitly guard transfer-row exclusion while keeping non-transfer and uncategorized rows included.
-- Files changed: `src/lib/dashboard/analytics.test.ts`, `src/lib/monthly-review/overview.test.ts`, `src/lib/monthly-review/generation-input.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
-- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed, `pnpm build` passed.
+## 2026-02-21 19:25 CET - US-005
+- Removed obsolete API mutation handlers that were superseded by Server Actions: `PUT /api/imports/message-cleanup-settings` and `POST /api/import-provider-mappings`, while preserving existing GET/list and non-migrated mutation routes.
+- Files changed: `src/app/api/imports/message-cleanup-settings/route.ts`, `src/app/api/imports/message-cleanup-settings/route.test.ts`, `src/app/api/import-provider-mappings/route.ts`, `src/app/api/import-provider-mappings/route.test.ts`, `src/app/import-provider-mappings/provider-mappings-manager.tsx`, `src/app/api/imports/AGENTS.md`, `src/app/api/import-provider-mappings/AGENTS.md`, `src/app/import-provider-mappings/AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed (unit + Playwright e2e), `pnpm build` passed.
 - **Learnings for future iterations**
-  - Patterns discovered: Keep transfer-exclusion assertions in all three analytics/review test suites synchronized so changes to shared business rules fail fast in CI.
-  - Gotchas encountered: Dashboard coverage should include both negative and positive transfer rows to protect net cashflow and inflow calculations from transfer leakage.
-  - Useful context: Existing tests already cover most transfer behavior, so this iteration primarily tightened expectations and documentation consistency.
+  - Patterns discovered: Once a mutation is action-backed in UI code, route-level mutation contracts become dead code and should be removed with their unit coverage in the same change.
+  - Gotchas encountered: Keep read/list route handlers intact when managers still use fetch-based refreshes after action-backed mutations.
+  - Useful context: Provider mappings now use Server Actions for create plus route GET/PATCH/DELETE for load/edit/delete, and message-cleanup settings route is now read-only (`GET`).
 ---
