@@ -63,3 +63,65 @@ test("submits message cleanup settings through a server action", async ({
   await expect.poll(() => serverActionRequestCount).toBe(1);
   await expect(page.getByRole("button", { name: "Save prompt" })).toBeEnabled();
 });
+
+test("shows stable save failure feedback when message cleanup action fails", async ({
+  page,
+}) => {
+  let serverActionRequestCount = 0;
+
+  await page.route("**/api/imports/message-cleanup-settings", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        promptText: "Trim transaction noise.",
+        resolvedPrompt: "Trim transaction noise.",
+        usesDefaultPrompt: false,
+        modelId: "gpt-5.2",
+        resolvedModelId: "gpt-5.2",
+        usesDefaultModel: false,
+        availableModels: [
+          {
+            id: "gpt-5.2",
+            label: "GPT-5.2",
+            description: "Balanced quality and cost.",
+            tier: "balanced",
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/import/settings/message-cleanup", async (route) => {
+    const request = route.request();
+    if (
+      request.method() === "POST" &&
+      Object.hasOwn(request.headers(), "next-action")
+    ) {
+      serverActionRequestCount += 1;
+      await route.fulfill({
+        status: 500,
+        contentType: "text/plain",
+        body: "forced action failure",
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+
+  await page.goto("/import/settings/message-cleanup");
+
+  await page
+    .getByLabel("Message cleanup system prompt")
+    .fill("Keep merchant + location only.");
+  await page.getByRole("button", { name: "Save prompt" }).click();
+
+  await expect.poll(() => serverActionRequestCount).toBe(1);
+  await expect(
+    page.getByText(
+      "Could not save message cleanup settings. Please try again.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save prompt" })).toBeEnabled();
+});

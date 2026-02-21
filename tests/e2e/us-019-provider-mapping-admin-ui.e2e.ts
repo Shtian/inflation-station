@@ -190,4 +190,23 @@ test("manages provider mappings from admin UI with validation feedback", async (
       },
     }),
   );
+
+  await page.getByRole("button", { name: "Add provider mapping" }).click();
+  await page.getByLabel("Provider name").fill(providerName);
+  await page.getByLabel("Mapping version (optional)").fill("2");
+  await page
+    .getByRole("textbox", { name: "Required source field bookingDate" })
+    .fill("Dato");
+  await page
+    .getByRole("textbox", { name: "Required source field amount" })
+    .fill("Belop");
+  await page
+    .getByRole("textbox", { name: "Required source field merchant signal" })
+    .fill("Tekst");
+  await page.getByRole("button", { name: "Create provider mapping" }).click();
+
+  await expect.poll(() => createServerActionRequestCount).toBe(2);
+  await expect(
+    page.getByText("A provider mapping with this name already exists."),
+  ).toBeVisible();
 });

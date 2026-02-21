@@ -149,10 +149,17 @@ export function MessageCleanupSettingsManager() {
     setError(null);
     setSuccess(null);
 
-    const result = await updateMessageCleanupSettingsAction({
-      promptText: params.promptText,
-      modelId: params.modelId,
-    });
+    let result: Awaited<ReturnType<typeof updateMessageCleanupSettingsAction>>;
+    try {
+      result = await updateMessageCleanupSettingsAction({
+        promptText: params.promptText,
+        modelId: params.modelId,
+      });
+    } catch {
+      setSaving(false);
+      setError("Could not save message cleanup settings. Please try again.");
+      return false;
+    }
 
     if (!result.ok) {
       setSaving(false);

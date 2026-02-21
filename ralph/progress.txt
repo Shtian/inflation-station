@@ -2,6 +2,7 @@
 - For Server Action mutations, keep a typed result union (`ok` + `data` or typed `error`) and centralize Zod-validation/error-shape helpers in `src/lib/server-actions/mutation-result.ts`.
 - For Playwright coverage of client-triggered Server Actions, intercept page-path `POST` requests and detect the `next-action` header while allowing `route.fallback()` so the real action protocol remains intact.
 - Preserve UX parity during migration by mapping Server Action `error.code`/`error.details` back to the exact route-era user-facing error strings instead of introducing new copy.
+- In client managers that call Server Actions, wrap action calls in `try/catch` so protocol/transport failures still clear loading state and surface the existing save-error copy.
 
 ## 2026-02-21 10:55 CET - US-001
 - Implemented a server-action mutation architecture baseline with shared typed result helpers and two settings-focused Server Action modules prepared for migration wiring.
@@ -31,4 +32,14 @@
   - Patterns discovered: For staged entity migration, moving only one mutation path (create) to Server Actions while still reloading table state from existing GET routes keeps parity risk low.
   - Gotchas encountered: Existing table e2e tests that mocked API POST need to switch to watching page-route Server Action `POST` requests (`next-action` header) and keep `route.fallback()` so real action execution continues.
   - Useful context: Provider mapping create flow still depends on route-local validation helpers in `provider-mappings-manager.utils.ts`, then delegates persistence/error-code semantics to the typed Server Action.
+---
+
+## 2026-02-21 19:21 CET - US-004
+- Implemented parity-focused regression coverage for migrated mutation workflows by adding explicit failure-path assertions in Playwright for message-cleanup save and provider-mapping create, and hardened the message-cleanup client manager to preserve existing error UX when Server Action transport/protocol failures occur.
+- Files changed: `tests/e2e/us-021-message-cleanup-settings.e2e.ts`, `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts`, `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx`, `src/app/import/AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed (unit + Playwright e2e), `pnpm build` passed.
+- **Learnings for future iterations**
+  - Patterns discovered: Add migrated-mutation regression checks at the UI layer by pairing a happy path with one deterministic failure path in the same Playwright spec to guard parity without broadening scope.
+  - Gotchas encountered: For page-route Server Action requests, forcing non-OK responses can bypass typed `ok: false` handling unless client managers guard action calls with `try/catch` and reset loading state.
+  - Useful context: `tests/e2e/us-021-message-cleanup-settings.e2e.ts` now includes both success and forced-failure coverage for the migrated settings save flow; `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts` now verifies duplicate-name failure copy after a real action-backed create.
 ---
