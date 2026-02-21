@@ -93,6 +93,7 @@ OpenAI-based categorization suggestions are optional.
 ## Useful Commands
 
 - `pnpm lint`
+- `pnpm lint:fix` (applies Biome lint/format/assist fixes via `biome check --write`)
 - `pnpm exec tsc --noEmit`
 - `pnpm test`
 - `pnpm test:unit`

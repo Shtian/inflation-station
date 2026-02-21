@@ -92,7 +92,7 @@ This file guides LLM agents working in this repository. Keep context small, act 
 
 ## Validation Strategy
 Run only what matches the change scope:
-- Formatting/linting: `pnpm lint` (or targeted checks when possible)
+- Formatting/linting: `pnpm lint` for verification, and `pnpm lint:fix` to apply Biome check/format/assist fixes (`biome check --write`) when needed.
 - Build/type safety: `pnpm build`
 - Tests: `pnpm test` (or targeted tests). For behavior changes, tests are required unless there is a documented blocker.
 
