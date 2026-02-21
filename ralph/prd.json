@@ -1,18 +1,16 @@
 {
   "project": "inflation-station",
-  "branchName": "ralph/exclude-inter-account-transfers-from-spend-income-analytics",
-  "description": "Exclude transactions categorized as TRANSFER from spend/income analytics in Overview and Monthly Review while keeping transfer rows visible in transaction workflows.",
+  "branchName": "ralph/server-actions-refactor-mutations-first",
+  "description": "Refactor selected low-risk mutation workflows from client-side internal API fetch calls to Next.js Server Actions while preserving existing behavior and UI.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Exclude transfer-category transactions from Overview analytics",
-      "description": "As a user, I want transactions categorized as TRANSFER excluded from Overview spend and income analytics so totals reflect real spending and earning.",
+      "title": "Define server action mutation architecture and migration guardrails",
+      "description": "As a developer, I want a standard Server Action mutation pattern so that migrated workflows are consistent, secure, and maintainable.",
       "acceptanceCriteria": [
-        "Overview net cashflow excludes rows where category.kind is TRANSFER",
-        "Overview inflow and outflow totals exclude rows where category.kind is TRANSFER",
-        "Overview category spend breakdown excludes rows where category.kind is TRANSFER",
-        "Uncategorized transactions remain included",
-        "Tests pass",
+        "Document a standard Server Action mutation pattern covering input validation, authorization, typed success/error responses, and cache revalidation",
+        "Implement at least one shared helper or convention used by multiple server actions to reduce duplication",
+        "Create a mapping of targeted API mutation route behavior to equivalent Server Action behavior before migration implementation",
         "Typecheck passes"
       ],
       "priority": 1,
@@ -21,68 +19,64 @@
     },
     {
       "id": "US-002",
-      "title": "Exclude transfer-category transactions from Monthly Review overview metrics",
-      "description": "As a user, I want Monthly Review timeline and overview spend metrics to ignore TRANSFER-categorized transactions so monthly summaries are not inflated.",
+      "title": "Migrate one low-risk settings mutation workflow to Server Actions",
+      "description": "As a user, I want settings updates to save exactly as before so that the workflow is unchanged after server-side migration.",
       "acceptanceCriteria": [
-        "Monthly total spend excludes rows where category.kind is TRANSFER",
-        "Monthly spend transaction count excludes rows where category.kind is TRANSFER",
-        "Monthly category spend breakdown excludes rows where category.kind is TRANSFER",
-        "Month-over-month spend delta uses transfer-excluded spend totals",
-        "Uncategorized transactions remain included",
-        "Tests pass",
-        "Typecheck passes"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-003",
-      "title": "Exclude transfer-category transactions from Monthly Review generation metrics",
-      "description": "As a user, I want Monthly Review generation-input metrics to ignore TRANSFER-categorized transactions so generated analysis reflects actual spending patterns.",
-      "acceptanceCriteria": [
-        "metrics.monthlyTotals.totalSpendNok excludes rows where category.kind is TRANSFER",
-        "metrics.categoryTotals excludes rows where category.kind is TRANSFER",
-        "metrics.merchantConcentration excludes rows where category.kind is TRANSFER",
-        "metrics.monthOverMonth uses transfer-excluded spend totals",
-        "Uncategorized transactions remain included",
-        "Tests pass",
-        "Typecheck passes"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": ""
-    },
-    {
-      "id": "US-004",
-      "title": "Add inline transfer-exclusion messaging on analytics pages",
-      "description": "As a user, I want clear inline messaging on analytics pages so I understand why spend and income totals exclude transfer-category transactions.",
-      "acceptanceCriteria": [
-        "Overview page shows inline copy explaining that Transfer-category transactions are excluded from spend and income analytics",
-        "Monthly Review page shows equivalent inline copy with consistent wording",
-        "Copy is visible in normal page flow (not hover-only)",
-        "Copy is concise and non-technical",
+        "Migrate one low-risk settings mutation flow from client-side `/api/*` fetch to a Server Action",
+        "Preserve existing success and failure UX copy and interaction behavior for the migrated settings flow",
+        "Do not introduce new user-visible fields, controls, or layout changes in the touched settings UI",
         "Tests pass",
         "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Migrate one low-risk entity mutation workflow to Server Actions",
+      "description": "As a user, I want create and update operations in one low-risk entity area to remain reliable after moving mutations to Server Actions.",
+      "acceptanceCriteria": [
+        "Migrate one entity mutation flow (for example provider mappings, categories, or category rules) from client-side API fetch to a Server Action",
+        "Validation and error handling outcomes remain equivalent to current behavior",
+        "Persisted data is correct and visible after refresh or navigation",
+        "Tests pass",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add parity-focused regression coverage for migrated mutations",
+      "description": "As a developer, I want confidence checks around migrated mutation workflows so that refactoring does not introduce regressions.",
+      "acceptanceCriteria": [
+        "Add or update tests for each migrated mutation workflow at the existing project-appropriate layer",
+        "Cover happy-path and at least one failure-path for each migrated workflow",
+        "Keep related existing tests passing without weakening assertions",
+        "Tests pass",
+        "Typecheck passes"
+      ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Add regression tests for transfer exclusion analytics behavior",
-      "description": "As a developer, I want regression coverage for transfer exclusion rules so future changes do not reintroduce inflated analytics totals.",
+      "title": "Remove obsolete client mutation fetch logic for migrated workflows",
+      "description": "As a developer, I want legacy client mutation fetch plumbing removed so that the codebase is simpler and less error-prone.",
       "acceptanceCriteria": [
-        "Add or update tests in src/lib/dashboard/analytics.test.ts for transfer excluded, non-transfer included, and uncategorized included cases",
-        "Add or update tests in src/lib/monthly-review/overview.test.ts for transfer excluded, non-transfer included, and uncategorized included cases",
-        "Add or update tests in src/lib/monthly-review/generation-input.test.ts for transfer excluded, non-transfer included, and uncategorized included cases",
+        "Remove direct client mutation calls to `/api/...` endpoints for workflows migrated in this PRD",
+        "Delete dead migration-related client code in touched modules, including unused hooks, helpers, and state branches",
+        "Keep migration scope limited to selected low-risk mutation flows and leave unrelated workflows untouched",
         "Tests pass",
         "Typecheck passes"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]
