@@ -55,6 +55,14 @@ type TransactionListDbClient = {
 
 export type TransactionsListFilters = {
   accountId?: string;
+  categoryId?: string;
+  query?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  sorting?: {
+    field: "bookingDate" | "amountNok" | "normalizedMerchant" | "category";
+    direction: "asc" | "desc";
+  };
   page: number;
   pageSize: number;
 };
