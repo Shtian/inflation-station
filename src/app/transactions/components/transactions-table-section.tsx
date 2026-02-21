@@ -1,7 +1,9 @@
 import {
   createColumnHelper,
   flexRender,
+  functionalUpdate,
   getCoreRowModel,
+  type PaginationState,
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
@@ -214,11 +216,20 @@ export function TransactionsTableSection({
 }: TransactionsTableSectionProps) {
   const columnHelper = createColumnHelper<TransactionRow>();
   const rows = transactions?.rows ?? [];
+  const currentPage = transactions?.pagination.page ?? 1;
+  const totalPages = Math.max(1, transactions?.pagination.totalPages ?? 1);
+  const paginationState: PaginationState = {
+    pageIndex: currentPage - 1,
+    pageSize,
+  };
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [hasHydratedColumnVisibility, setHasHydratedColumnVisibility] =
+    useState(false);
 
   useEffect(() => {
     const storedValue = sessionStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY);
     if (!storedValue) {
+      setHasHydratedColumnVisibility(true);
       return;
     }
 
@@ -229,15 +240,21 @@ export function TransactionsTableSection({
       }
     } catch {
       sessionStorage.removeItem(COLUMN_VISIBILITY_STORAGE_KEY);
+    } finally {
+      setHasHydratedColumnVisibility(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!hasHydratedColumnVisibility) {
+      return;
+    }
+
     sessionStorage.setItem(
       COLUMN_VISIBILITY_STORAGE_KEY,
       JSON.stringify(columnVisibility),
     );
-  }, [columnVisibility]);
+  }, [columnVisibility, hasHydratedColumnVisibility]);
 
   const sortableHeader = (
     label: string,
@@ -374,8 +391,23 @@ export function TransactionsTableSection({
     ],
     state: {
       columnVisibility,
+      pagination: paginationState,
     },
     onColumnVisibilityChange: setColumnVisibility,
+    manualPagination: true,
+    pageCount: totalPages,
+    onPaginationChange: (updater) => {
+      const nextState = functionalUpdate(updater, paginationState);
+
+      if (nextState.pageSize !== paginationState.pageSize) {
+        onPageSizeChange(nextState.pageSize);
+        return;
+      }
+
+      if (nextState.pageIndex !== paginationState.pageIndex) {
+        onGoToPage(nextState.pageIndex + 1);
+      }
+    },
     getCoreRowModel: getCoreRowModel(),
   });
 
@@ -590,8 +622,7 @@ export function TransactionsTableSection({
                 </Select>
               </div>
               <span>
-                Page {transactions.pagination.page} of{" "}
-                {Math.max(1, transactions.pagination.totalPages)}
+                Page {table.getState().pagination.pageIndex + 1} of {totalPages}
               </span>
               <div className="flex items-center gap-2">
                 <Button
@@ -599,8 +630,8 @@ export function TransactionsTableSection({
                   variant="outline"
                   size="icon-sm"
                   aria-label="Go to first page"
-                  onClick={() => onGoToPage(1)}
-                  disabled={loading || transactions.pagination.page <= 1}
+                  onClick={() => table.setPageIndex(0)}
+                  disabled={loading || !table.getCanPreviousPage()}
                 >
                   <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
                 </Button>
@@ -609,8 +640,8 @@ export function TransactionsTableSection({
                   variant="outline"
                   size="icon-sm"
                   aria-label="Go to previous page"
-                  onClick={() => onGoToPage(transactions.pagination.page - 1)}
-                  disabled={loading || transactions.pagination.page <= 1}
+                  onClick={() => table.previousPage()}
+                  disabled={loading || !table.getCanPreviousPage()}
                 >
                   <ChevronLeft className="h-4 w-4" aria-hidden="true" />
                 </Button>
@@ -619,12 +650,8 @@ export function TransactionsTableSection({
                   variant="outline"
                   size="icon-sm"
                   aria-label="Go to next page"
-                  onClick={() => onGoToPage(transactions.pagination.page + 1)}
-                  disabled={
-                    loading ||
-                    transactions.pagination.page >=
-                      Math.max(1, transactions.pagination.totalPages)
-                  }
+                  onClick={() => table.nextPage()}
+                  disabled={loading || !table.getCanNextPage()}
                 >
                   <ChevronRight className="h-4 w-4" aria-hidden="true" />
                 </Button>
@@ -633,14 +660,8 @@ export function TransactionsTableSection({
                   variant="outline"
                   size="icon-sm"
                   aria-label="Go to last page"
-                  onClick={() =>
-                    onGoToPage(Math.max(1, transactions.pagination.totalPages))
-                  }
-                  disabled={
-                    loading ||
-                    transactions.pagination.page >=
-                      Math.max(1, transactions.pagination.totalPages)
-                  }
+                  onClick={() => table.setPageIndex(totalPages - 1)}
+                  disabled={loading || !table.getCanNextPage()}
                 >
                   <ChevronsRight className="h-4 w-4" aria-hidden="true" />
                 </Button>

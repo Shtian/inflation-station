@@ -7,6 +7,7 @@
 - In transactions table migrations, model non-data UI cells (notes/actions) as TanStack `display` columns and use `row.original` for mutation handlers.
 - Keep transactions toolbar filter controls controlled by `use-transactions-manager.ts` state (not local component state) so URL sync and page-reset behavior stay consistent.
 - Persist TanStack `columnVisibility` for `/transactions` in `sessionStorage` (session-only) and whitelist hideable column ids when restoring state.
+- For server-driven transaction tables, wire TanStack `manualPagination` from API pagination metadata and map table pagination callbacks back to URL-backed manager setters.
 
 ## 2026-02-21 19:50:25 +0100 - US-001
 - What was implemented
@@ -34,6 +35,32 @@
     - Keep `toHaveBeenCalledWith` expectations in route tests aligned with all forwarded filter keys, including intentionally `undefined` values.
   - Useful context
     - The list route now establishes the query contract that upcoming server-side filtering/sorting stories can apply directly in `src/lib/transactions/list.ts`.
+---
+
+## 2026-02-21 22:47:18 +0100 - US-008
+- What was implemented
+  - Updated `TransactionsTableSection` pagination to use TanStack server-driven pagination state (`manualPagination`) backed by API `page`, `pageSize`, and `totalPages` metadata.
+  - Wired TanStack pagination changes to manager callbacks so next/prev/first/last and page-size updates keep URL state and backend query params in sync.
+  - Added hydration guard for `sessionStorage` column visibility persistence to avoid wiping saved visibility state during initial mount/reload.
+  - Extended transactions Playwright coverage to assert first/last pagination controls and URL sync for page and page-size changes.
+- Files changed
+  - `src/app/transactions/components/transactions-table-section.tsx`
+  - `src/app/transactions/AGENTS.md`
+  - `tests/e2e/us-018-transactions-route-controls.e2e.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass, includes Playwright E2E coverage in `tests/e2e/us-018-transactions-route-controls.e2e.ts`)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered
+    - For server-driven TanStack pagination, keep table pagination state controlled from route/API metadata and forward TanStack pagination updates through manager callbacks instead of local page math.
+  - Gotchas encountered
+    - Persisted `sessionStorage` table preferences should not be written before hydration from storage completes, or reloads can clobber previously saved state.
+  - Useful context
+    - Transactions pagination, sorting, filters, and row mutations remain covered end-to-end in `tests/e2e/us-018-transactions-route-controls.e2e.ts`.
 ---
 
 ## 2026-02-21 21:52:57 +0100 - US-005

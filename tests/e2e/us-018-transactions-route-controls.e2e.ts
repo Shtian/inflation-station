@@ -341,6 +341,12 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.getByLabel("View memo for transaction from 2026-02-05").hover();
   await expect(page.getByRole("tooltip")).toHaveText("Weekly groceries");
 
+  await page.getByRole("button", { name: "Go to last page" }).click();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  await expect(page).toHaveURL(/page=2/);
+  await page.getByRole("button", { name: "Go to first page" }).click();
+  await expect(page.getByText("Page 1 of 2")).toBeVisible();
+  await expect(page.getByText("Supermarket")).toBeVisible();
   await page.getByRole("button", { name: "Go to next page" }).click();
   await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await page
@@ -434,6 +440,7 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.locator("#transactions-rows-per-page").click();
   await page.getByRole("option", { name: "10", exact: true }).click();
   await expect(page.getByText("Page 1 of 4")).toBeVisible();
+  await expect(page).toHaveURL(/pageSize=10/);
   await expect(page.getByText("Metro Kiosk")).toBeVisible();
   await expect(page.getByText("Uncategorized")).toBeVisible();
   await expect(
