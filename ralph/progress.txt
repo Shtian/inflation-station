@@ -3,6 +3,7 @@
 - Keep transactions sorting query strings in `<field>:<direction>` format with an explicit field allowlist and per-param `INVALID_*` HTTP 400 responses.
 - For inclusive `dateTo` filtering on `bookingDate`, convert to `< next UTC day` in domain queries to handle non-midnight timestamps safely.
 - For server-sorted transaction pagination, always add a deterministic `id` tiebreaker to every `orderBy` mode.
+- For route table state sync, keep URL params canonical by replacing legacy aliases (for example `query` -> `globalQuery`) and preserving unrelated query params when writing table state.
 
 ## 2026-02-21 19:50:25 +0100 - US-001
 - What was implemented
@@ -82,4 +83,33 @@
     - Sorting by category requires relation ordering (`category.name`) rather than a direct scalar field on `transaction`.
   - Useful context
     - Transactions list sorting behavior is implemented in `src/lib/transactions/list.ts`; the API layer only parses/validates `sorting` query params.
+---
+
+## 2026-02-21 21:23:01 +0100 - US-004
+- What was implemented
+  - Added `transactions-table-url-state.ts` to parse and serialize `/transactions` URL state for `page`, `pageSize`, `sorting`, `globalQuery`, `dateFrom`, `dateTo`, `accountId`, and `categoryId`.
+  - Updated `use-transactions-manager.ts` to initialize table state from URL params, keep back/forward URL updates in sync, and write state changes back to the route query string with `router.replace`.
+  - Added a reusable filter-state helper so filter/sorting/page-size changes consistently reset pagination to page 1.
+  - Added unit tests for URL parse/serialize behavior and page reset logic.
+- Files changed
+  - `src/app/transactions/transactions-manager.types.ts`
+  - `src/app/transactions/transactions-table-url-state.ts`
+  - `src/app/transactions/transactions-table-url-state.test.ts`
+  - `src/app/transactions/use-transactions-manager.ts`
+  - `src/app/transactions/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` (pass)
+  - `pnpm exec tsc --noEmit` (pass)
+  - `pnpm test` (pass)
+  - `pnpm build` (pass)
+- **Learnings for future iterations**
+  - Patterns discovered
+    - Keep route-level table URL behavior in a dedicated parse/serialize helper module so URL contract changes are testable without React hook tests.
+    - Rehydrate client state from `useSearchParams` and compare against current table state to support browser back/forward without state drift.
+  - Gotchas encountered
+    - `useSearchParams` synchronization should preserve unrelated query params while replacing table-owned keys, otherwise route-level params can be dropped.
+  - Useful context
+    - Transactions manager now exposes URL-synced state for upcoming toolbar/sorting stories via `setGlobalQueryFilter`, `setDateFromFilter`, `setDateToFilter`, `setCategoryFilter`, and `setSorting`.
 ---
