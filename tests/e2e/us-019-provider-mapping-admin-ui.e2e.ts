@@ -162,7 +162,9 @@ test("manages provider mappings from admin UI with validation feedback", async (
     .fill("Tekst");
 
   await page.getByRole("button", { name: "Create provider mapping" }).click();
-  await expect(page.getByText("Provider mapping added.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Provider mapping added." }),
+  ).toBeVisible();
   await expect.poll(() => createServerActionRequestCount).toBe(1);
   await expect(
     page.getByRole("row", { name: new RegExp(providerName) }),
@@ -180,7 +182,11 @@ test("manages provider mappings from admin UI with validation feedback", async (
   await editReqHeaders.press("Enter");
   await page.getByRole("button", { name: "Save provider mapping" }).click();
 
-  await expect(page.getByText("Provider mapping updated.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", {
+      hasText: "Provider mapping updated.",
+    }),
+  ).toBeVisible();
   expect(lastPatchBody).toEqual(
     expect.objectContaining({
       providerName,
@@ -209,4 +215,38 @@ test("manages provider mappings from admin UI with validation feedback", async (
   await expect(
     page.getByText("A provider mapping with this name already exists."),
   ).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await page.route(
+    "**/api/import-provider-mappings/provider-2",
+    async (route, request) => {
+      if (request.method() !== "DELETE") {
+        await route.fallback();
+        return;
+      }
+
+      mappings = mappings.filter((mapping) => mapping.id !== "provider-2");
+      await route.fulfill({
+        status: 204,
+        contentType: "application/json",
+        body: "",
+      });
+    },
+  );
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("row", { name: new RegExp(providerName) })
+    .getByRole("button")
+    .click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+
+  await expect(
+    page.locator("[data-sonner-toast]", {
+      hasText: "Provider mapping removed.",
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("row", { name: new RegExp(providerName) }),
+  ).toHaveCount(0);
 });

@@ -4,6 +4,7 @@
 - Inline success feedback is commonly state-driven (`notice`/`success`/`submitNotice`) in route manager hooks, and Playwright coverage usually asserts those exact strings with `getByText(...)`; toast migrations should update both surfaces together.
 - Mount the Sonner toaster once in `src/app/layout.tsx` via a shared `src/components/ui/sonner.tsx` wrapper so route-level toast migrations only call `toast(...)` and never create extra toaster instances.
 - For Sonner feedback assertions in Playwright, target toast elements with `[data-sonner-toast]` + `hasText` instead of relying on inline banner DOM.
+- In provider mappings, keep create on the Server Action (`createImportProviderMappingAction`) while edit/delete continue on `/api/import-provider-mappings/[providerMappingId]`, then refresh table state via `loadMappings()` after successful mutations.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -208,4 +209,31 @@
     - Toast migrations need both UI code and Playwright updates in the same story to avoid assertions still targeting removed inline success banners.
   - Useful context (e.g., "the evaluation panel is in component X")
     - All category/category-rule success copy is emitted centrally in `CategoriesManager`, while section components focus on controls and table rendering.
+---
+
+## 2026-03-01 09:47:06 CET - US-007
+- What was implemented
+  - Migrated provider mapping success feedback in `src/app/import-provider-mappings/provider-mappings-manager.tsx` from inline `notice` state to `toast.success(...)` for create, update, and delete flows.
+  - Kept validation/API failures inline (dialog or route-level alerts) and removed inline success banner rendering.
+  - Updated provider-mappings Playwright coverage to assert Sonner toasts for `Provider mapping added.`, `Provider mapping updated.`, and `Provider mapping removed.`, including delete-path coverage.
+  - Added reusable provider-mappings route guidance in `src/app/import-provider-mappings/AGENTS.md` for toast-success + inline-error conventions.
+  - Marked US-007 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/import-provider-mappings/provider-mappings-manager.tsx`
+  - `tests/e2e/us-019-provider-mapping-admin-ui.e2e.ts`
+  - `src/app/import-provider-mappings/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Provider mappings now follow the same route convention as accounts/categories: success via Sonner toast, blocking errors inline.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - When extending existing E2E stories with additional CRUD assertions, ensure modal state is closed (or escaped) before interacting with table rows behind dialogs.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Provider mapping create success is emitted after Server Action completion, while update/delete success is emitted after REST endpoint responses in the same manager component.
 ---

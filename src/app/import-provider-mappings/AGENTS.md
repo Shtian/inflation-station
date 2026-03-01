@@ -8,3 +8,4 @@ Load this when working in `src/app/import-provider-mappings`.
 - Keep normalization rules parsing/building and field-mapping validation helpers in `provider-mappings-manager.utils.ts` for testable reuse.
 - Submit create mutations through typed Server Actions, while keeping list refreshes on `loadMappings()` against the existing GET route for parity.
 - Keep edit/delete on the existing `/api/import-provider-mappings/[providerMappingId]` endpoints until those mutations are explicitly migrated.
+- Use Sonner toasts for successful provider mapping create/edit/delete outcomes in `provider-mappings-manager.tsx`, while keeping validation and API failures inline (dialog-level or route-level alerts).

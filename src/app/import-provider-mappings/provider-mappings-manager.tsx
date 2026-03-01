@@ -2,6 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { createImportProviderMappingAction } from "@/app/actions/create-import-provider-mapping";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -112,7 +113,6 @@ export function ProviderMappingsManager() {
   const [mappings, setMappings] = useState<ProviderMapping[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
@@ -244,27 +244,23 @@ export function ProviderMappingsManager() {
   async function createMapping() {
     if (!newProviderName.trim()) {
       setError("Provider name is required.");
-      setNotice(null);
       return;
     }
 
     const fieldMappingValidationError = validateFieldMappings(newFieldMappings);
     if (fieldMappingValidationError) {
       setError(fieldMappingValidationError);
-      setNotice(null);
       return;
     }
 
     const parsedVersion = parseMappingVersion(newMappingVersion);
     if ("error" in parsedVersion) {
       setError(parsedVersion.error);
-      setNotice(null);
       return;
     }
 
     setBusyKey("new");
     setError(null);
-    setNotice(null);
 
     const result = await createImportProviderMappingAction({
       providerName: newProviderName.trim(),
@@ -284,7 +280,7 @@ export function ProviderMappingsManager() {
 
     resetAddDialogState();
     setBusyKey(null);
-    setNotice("Provider mapping added.");
+    toast.success("Provider mapping added.");
     await loadMappings();
   }
 
@@ -314,7 +310,6 @@ export function ProviderMappingsManager() {
       ),
     );
     setError(null);
-    setNotice(null);
   }
 
   function cancelEdit() {
@@ -332,7 +327,6 @@ export function ProviderMappingsManager() {
   async function saveEdit(mappingId: string) {
     if (!editProviderName.trim()) {
       setError("Provider name is required.");
-      setNotice(null);
       return;
     }
 
@@ -340,20 +334,17 @@ export function ProviderMappingsManager() {
       validateFieldMappings(editFieldMappings);
     if (fieldMappingValidationError) {
       setError(fieldMappingValidationError);
-      setNotice(null);
       return;
     }
 
     const parsedVersion = parseMappingVersion(editMappingVersion);
     if ("error" in parsedVersion) {
       setError(parsedVersion.error);
-      setNotice(null);
       return;
     }
 
     setBusyKey(mappingId);
     setError(null);
-    setNotice(null);
 
     const response = await fetch(`/api/import-provider-mappings/${mappingId}`, {
       method: "PATCH",
@@ -382,7 +373,7 @@ export function ProviderMappingsManager() {
 
     setBusyKey(null);
     setEditingMappingId(null);
-    setNotice("Provider mapping updated.");
+    toast.success("Provider mapping updated.");
     await loadMappings();
   }
 
@@ -393,7 +384,6 @@ export function ProviderMappingsManager() {
 
     setBusyKey(`delete-${mappingId}`);
     setError(null);
-    setNotice(null);
 
     const response = await fetch(`/api/import-provider-mappings/${mappingId}`, {
       method: "DELETE",
@@ -411,7 +401,7 @@ export function ProviderMappingsManager() {
     }
 
     setBusyKey(null);
-    setNotice("Provider mapping removed.");
+    toast.success("Provider mapping removed.");
     await loadMappings();
   }
 
@@ -445,7 +435,6 @@ export function ProviderMappingsManager() {
         </div>
         <Button
           onClick={() => {
-            setNotice(null);
             setAddDialogOpen(true);
           }}
           className="shrink-0 gap-2"
@@ -508,12 +497,6 @@ export function ProviderMappingsManager() {
         >
           {error}
         </p>
-      ) : null}
-
-      {notice ? (
-        <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-800 text-sm">
-          {notice}
-        </output>
       ) : null}
 
       <Separator className="my-4" />
