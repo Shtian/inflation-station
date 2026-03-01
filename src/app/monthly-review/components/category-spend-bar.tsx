@@ -1,15 +1,5 @@
+import { getCategoryColor } from "@/lib/category-color";
 import { formatNok } from "../monthly-review-manager.utils";
-
-const CATEGORY_COLORS = [
-  "#14b8a6",
-  "#3b82f6",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#6b7280",
-  "#10b981",
-  "#0ea5e9",
-];
 
 type CategorySpend = {
   categoryId: string | null;
@@ -35,7 +25,7 @@ export function CategorySpendBar({
       <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-muted">
         {categories.map((category, index) => {
           const percent = (category.spendNok / total) * 100;
-          const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+          const color = getCategoryColor(category.categoryName);
 
           return (
             <div
@@ -43,7 +33,7 @@ export function CategorySpendBar({
               className="h-full transition-all"
               style={{
                 width: `${percent}%`,
-                backgroundColor: color,
+                backgroundColor: color.backgroundColor,
               }}
               title={`${category.categoryName}: ${formatNok(category.spendNok)}`}
             />
@@ -53,7 +43,7 @@ export function CategorySpendBar({
 
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {categories.map((category, index) => {
-          const color = CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+          const color = getCategoryColor(category.categoryName);
 
           return (
             <div
@@ -62,7 +52,7 @@ export function CategorySpendBar({
             >
               <div
                 className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: color }}
+                style={{ backgroundColor: color.backgroundColor }}
               />
               <span className="text-muted-foreground text-xs">
                 {category.categoryName}

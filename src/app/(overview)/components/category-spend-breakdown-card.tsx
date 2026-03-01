@@ -80,8 +80,7 @@ export function CategorySpendBreakdownCard({
                     <Cell
                       key={`${point.categoryId ?? "uncategorized"}-${point.categoryName}`}
                       fill={
-                        getCategoryColor(point.categoryName, "muted")
-                          .backgroundColor
+                        getCategoryColor(point.categoryName).backgroundColor
                       }
                     />
                   ))}

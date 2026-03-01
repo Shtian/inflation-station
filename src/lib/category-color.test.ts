@@ -12,8 +12,8 @@ describe("getCategoryColor", () => {
   });
 
   it("uses deterministic palette for regular categories", () => {
-    const resolved = getCategoryColor("Loan", "mattePastel");
-    const deterministic = getDeterministicColorFromText("Loan", "mattePastel");
+    const resolved = getCategoryColor("Loan");
+    const deterministic = getDeterministicColorFromText("Loan", "muted");
 
     expect(resolved).toEqual(deterministic);
   });

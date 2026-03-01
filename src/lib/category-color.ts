@@ -1,7 +1,4 @@
-import {
-  type DeterministicColorVariation,
-  getDeterministicColorFromText,
-} from "./deterministic-color";
+import { getDeterministicColorFromText } from "./deterministic-color";
 
 const UNCATEGORIZED_LABEL = "uncategorized";
 
@@ -12,15 +9,12 @@ const UNCATEGORIZED_COLOR = {
   darkTextColor: "#161616",
 };
 
-export function getCategoryColor(
-  label: string,
-  variation: DeterministicColorVariation = "mattePastel",
-) {
+export function getCategoryColor(label: string) {
   const normalized = label.trim().toLowerCase();
 
   if (normalized === UNCATEGORIZED_LABEL) {
     return UNCATEGORIZED_COLOR;
   }
 
-  return getDeterministicColorFromText(label, variation);
+  return getDeterministicColorFromText(label, "muted");
 }
