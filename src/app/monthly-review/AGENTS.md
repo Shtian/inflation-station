@@ -10,3 +10,4 @@ Load this when working in `src/app/monthly-review`.
 - Treat primary metric as `monthlyBalanceNok` (`totalIncomeNok - totalSpendNok`) with explicit spend/income companions.
 - Keep prompt settings UI state/feedback in `settings/monthly-review-settings-manager.tsx`.
 - In monthly review settings, emit save success confirmations via Sonner toasts and keep load/save failures as inline alerts.
+- During monthly review settings Field migrations, keep `SelectTrigger`/`Textarea` ids unchanged and pair them with `FieldLabel htmlFor` to preserve label wiring and selectors.

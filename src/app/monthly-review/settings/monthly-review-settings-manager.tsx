@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -229,41 +229,43 @@ export function MonthlyReviewSettingsManager() {
             <p className="text-muted-foreground text-sm">Loading prompt...</p>
           ) : (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="monthly-review-openai-model">
+              <Field>
+                <FieldLabel htmlFor="monthly-review-openai-model">
                   Monthly review OpenAI model
-                </Label>
-                <Select
-                  value={selectedModelId}
-                  onValueChange={(value) => {
-                    const nextModel = getModelById(value);
-                    if (
-                      !availableModels.some(
-                        (model) => model.id === nextModel.id,
-                      )
-                    ) {
-                      return;
-                    }
+                </FieldLabel>
+                <FieldContent>
+                  <Select
+                    value={selectedModelId}
+                    onValueChange={(value) => {
+                      const nextModel = getModelById(value);
+                      if (
+                        !availableModels.some(
+                          (model) => model.id === nextModel.id,
+                        )
+                      ) {
+                        return;
+                      }
 
-                    void handleModelChange(nextModel.id);
-                  }}
-                  disabled={saving}
-                >
-                  <SelectTrigger id="monthly-review-openai-model">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        <span className="block text-sm">{model.label}</span>
-                        <span className="block text-muted-foreground text-xs">
-                          {model.description}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                      void handleModelChange(nextModel.id);
+                    }}
+                    disabled={saving}
+                  >
+                    <SelectTrigger id="monthly-review-openai-model">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableModels.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          <span className="block text-sm">{model.label}</span>
+                          <span className="block text-muted-foreground text-xs">
+                            {model.description}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
 
               <p className="text-muted-foreground text-xs">
                 {usesDefaultModel
@@ -271,20 +273,22 @@ export function MonthlyReviewSettingsManager() {
                   : `Using saved model ${resolvedModelId}.`}
               </p>
 
-              <div className="space-y-2">
-                <Label htmlFor="monthly-review-system-prompt">
+              <Field>
+                <FieldLabel htmlFor="monthly-review-system-prompt">
                   Monthly review system prompt
-                </Label>
-                <Textarea
-                  id="monthly-review-system-prompt"
-                  value={promptText}
-                  onChange={(event) => {
-                    setPromptText(event.target.value);
-                  }}
-                  rows={10}
-                  placeholder="Leave empty to use default prompt."
-                />
-              </div>
+                </FieldLabel>
+                <FieldContent>
+                  <Textarea
+                    id="monthly-review-system-prompt"
+                    value={promptText}
+                    onChange={(event) => {
+                      setPromptText(event.target.value);
+                    }}
+                    rows={10}
+                    placeholder="Leave empty to use default prompt."
+                  />
+                </FieldContent>
+              </Field>
 
               <div className="space-y-1">
                 <p className="text-muted-foreground text-xs">

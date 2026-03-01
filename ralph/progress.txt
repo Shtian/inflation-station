@@ -15,6 +15,32 @@
 - For custom badge-input controls migrated to Field primitives, keep Enter-to-add behavior and route validator copy through `FieldError` so inline validation semantics stay accessible and consistent.
 - In the transactions edit dialog, keep note character-count and note validation copy inline in the note field area while reserving dialog-level alerts for submit failures.
 - In import settings managers, migrate `Label` wrappers to `Field` + `FieldLabel` + `FieldContent` while preserving `SelectTrigger`/`Textarea` ids so a11y bindings and tests remain stable.
+- In monthly review settings managers, follow the same Field migration pattern as import settings: preserve `SelectTrigger`/`Textarea` ids and pair with `FieldLabel htmlFor` to keep label semantics and selectors stable.
+
+## 2026-03-01 18:14:31 CET - US-017
+- What was implemented
+  - Refactored `src/app/monthly-review/settings/monthly-review-settings-manager.tsx` to use shared `Field`, `FieldLabel`, and `FieldContent` primitives for the model select and system-prompt textarea sections.
+  - Preserved existing control ids (`monthly-review-openai-model`, `monthly-review-system-prompt`), helper text, save behavior, and existing Sonner success + inline error feedback.
+  - Added reusable monthly-review guidance in `src/app/monthly-review/AGENTS.md` for Field migration id/label wiring conventions.
+  - Marked US-017 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/monthly-review/settings/monthly-review-settings-manager.tsx`
+  - `src/app/monthly-review/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Monthly review settings form semantics can migrate to Field primitives safely by preserving existing select/textarea ids and wrapping controls in `FieldContent`.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Keeping the model and prompt fallback/helper copy outside Field wrappers avoids changing current descriptive text hierarchy while migrating label semantics.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Monthly review settings form semantics and save feedback are centralized in `monthly-review-settings-manager.tsx`, so this file is the primary place for future form-structure updates.
+---
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
