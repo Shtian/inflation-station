@@ -7,8 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type {
   EditableFieldMapping,
   MerchantSignalCanonicalField,
@@ -50,33 +50,35 @@ export function EditProviderMappingDialog(props: {
           <DialogTitle>Edit provider mapping</DialogTitle>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-2">
-          <Label
-            htmlFor="edit-provider-name"
-            className="font-medium text-foreground text-sm"
-          >
-            Provider name
-          </Label>
-          <Input
-            id="edit-provider-name"
-            aria-label="Edit provider name"
-            value={props.providerName}
-            onChange={(event) => props.onProviderNameChange(event.target.value)}
-          />
-          <Label
-            htmlFor="edit-mapping-version"
-            className="font-medium text-foreground text-sm"
-          >
-            Mapping version (optional)
-          </Label>
-          <Input
-            id="edit-mapping-version"
-            aria-label="Edit mapping version"
-            inputMode="numeric"
-            value={props.mappingVersion}
-            onChange={(event) =>
-              props.onMappingVersionChange(event.target.value)
-            }
-          />
+          <Field>
+            <FieldLabel htmlFor="edit-provider-name">Provider name</FieldLabel>
+            <FieldContent>
+              <Input
+                id="edit-provider-name"
+                aria-label="Edit provider name"
+                value={props.providerName}
+                onChange={(event) =>
+                  props.onProviderNameChange(event.target.value)
+                }
+              />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="edit-mapping-version">
+              Mapping version (optional)
+            </FieldLabel>
+            <FieldContent>
+              <Input
+                id="edit-mapping-version"
+                aria-label="Edit mapping version"
+                inputMode="numeric"
+                value={props.mappingVersion}
+                onChange={(event) =>
+                  props.onMappingVersionChange(event.target.value)
+                }
+              />
+            </FieldContent>
+          </Field>
           <section className="space-y-3 rounded-md border border-border p-3">
             <div className="space-y-1">
               <h4 className="font-semibold text-foreground text-sm">

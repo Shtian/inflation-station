@@ -8,8 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import type {
   EditableFieldMapping,
   MerchantSignalCanonicalField,
@@ -53,33 +53,35 @@ export function AddProviderMappingDialog(props: {
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-2">
-          <Label
-            htmlFor="new-provider-name"
-            className="font-medium text-foreground text-sm"
-          >
-            Provider name
-          </Label>
-          <Input
-            id="new-provider-name"
-            value={props.providerName}
-            onChange={(event) => props.onProviderNameChange(event.target.value)}
-            placeholder="Bank A"
-          />
-          <Label
-            htmlFor="new-mapping-version"
-            className="font-medium text-foreground text-sm"
-          >
-            Mapping version (optional)
-          </Label>
-          <Input
-            id="new-mapping-version"
-            value={props.mappingVersion}
-            onChange={(event) =>
-              props.onMappingVersionChange(event.target.value)
-            }
-            inputMode="numeric"
-            placeholder="1"
-          />
+          <Field>
+            <FieldLabel htmlFor="new-provider-name">Provider name</FieldLabel>
+            <FieldContent>
+              <Input
+                id="new-provider-name"
+                value={props.providerName}
+                onChange={(event) =>
+                  props.onProviderNameChange(event.target.value)
+                }
+                placeholder="Bank A"
+              />
+            </FieldContent>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="new-mapping-version">
+              Mapping version (optional)
+            </FieldLabel>
+            <FieldContent>
+              <Input
+                id="new-mapping-version"
+                value={props.mappingVersion}
+                onChange={(event) =>
+                  props.onMappingVersionChange(event.target.value)
+                }
+                inputMode="numeric"
+                placeholder="1"
+              />
+            </FieldContent>
+          </Field>
           <section className="space-y-3 rounded-md border border-border p-3">
             <div className="space-y-1">
               <h3 className="font-semibold text-foreground text-sm">

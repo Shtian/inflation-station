@@ -12,6 +12,7 @@
 - In debounced filter UIs, avoid syncing raw input state from every table-state update; sync from parsed URL state to prevent typed text from being reset by unrelated filter changes.
 - For `Select` controls migrated to Field primitives, keep the `SelectTrigger` id and pair it with `FieldLabel htmlFor` to preserve accessible label association and existing selectors.
 - For custom combobox-style controls migrated to Field primitives, keep the existing control `id` and pair it with `FieldLabel htmlFor` inside `FieldContent` to preserve a11y label binding and stable selectors.
+- For custom badge-input controls migrated to Field primitives, keep Enter-to-add behavior and route validator copy through `FieldError` so inline validation semantics stay accessible and consistent.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -426,6 +427,33 @@
     - Category rules form semantics can migrate cleanly to Field primitives by wrapping each control in `Field` + `FieldContent` and preserving existing ids.
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
     - The `us-018` transactions Playwright test can still fail intermittently on `Filtered Market`; rerun once before treating that as a deterministic regression for unrelated stories.
-  - Useful context (e.g., "the evaluation panel is in component X")
+- Useful context (e.g., "the evaluation panel is in component X")
     - `rules-management-section.tsx` owns all category-rule input labeling/wiring, while mutation success/error messaging remains centralized in `categories-manager.tsx`.
+---
+
+## 2026-03-01 18:03:46 CET - US-014
+- What was implemented
+  - Refactored provider and mapping-version inputs in `src/app/import-provider-mappings/components/add-provider-mapping-dialog.tsx` and `src/app/import-provider-mappings/components/edit-provider-mapping-dialog.tsx` to use shared `Field`, `FieldLabel`, and `FieldContent` primitives.
+  - Refactored `src/app/import-provider-mappings/components/provider-mapping-string-badge-input.tsx` to use Field primitives and `FieldError` for validator feedback while preserving Enter-to-add interaction and existing label/input ids.
+  - Added reusable provider-mappings guidance in `src/app/import-provider-mappings/AGENTS.md` for dialog Field migrations and badge-input validation patterns.
+  - Marked US-014 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/import-provider-mappings/components/add-provider-mapping-dialog.tsx`
+  - `src/app/import-provider-mappings/components/edit-provider-mapping-dialog.tsx`
+  - `src/app/import-provider-mappings/components/provider-mapping-string-badge-input.tsx`
+  - `src/app/import-provider-mappings/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Provider mapping dialog forms can migrate to Field primitives without behavior regressions by preserving existing control ids and `aria-label`s.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - For validator-backed badge inputs, preserve immediate input-error clearing on keystroke while routing rendered errors through `FieldError` to avoid duplicate alert structures.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Provider detection rule badge inputs (`requiredHeaders`, `anyHeaders`, `headerPatterns`) are all centralized in `provider-mapping-string-badge-input.tsx`, so one migration updates both add/edit dialogs.
 ---

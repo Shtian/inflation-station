@@ -1,8 +1,13 @@
 import { X } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   mergeStringList,
   removeStringListValue,
@@ -44,32 +49,31 @@ export function ProviderMappingStringBadgeInput(props: {
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={props.id} className="font-medium text-foreground text-sm">
-        {props.label}
-      </Label>
-      <Input
-        id={props.id}
-        aria-label={props.inputAriaLabel}
-        value={inputValue}
-        onChange={(event) => {
-          setInputValue(event.target.value);
-          if (inputError) {
-            setInputError(null);
-          }
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            addValue(inputValue);
-          }
-        }}
-        placeholder={props.placeholder}
-      />
-      {inputError ? (
-        <p className="text-red-700 text-xs" role="alert">
-          {inputError}
-        </p>
-      ) : null}
+      <Field>
+        <FieldLabel htmlFor={props.id}>{props.label}</FieldLabel>
+        <FieldContent>
+          <Input
+            id={props.id}
+            aria-label={props.inputAriaLabel}
+            value={inputValue}
+            onChange={(event) => {
+              setInputValue(event.target.value);
+              if (inputError) {
+                setInputError(null);
+              }
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                addValue(inputValue);
+              }
+            }}
+            placeholder={props.placeholder}
+            aria-invalid={inputError ? true : undefined}
+          />
+          <FieldError>{inputError}</FieldError>
+        </FieldContent>
+      </Field>
       {props.values.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {props.values.map((value) => (
