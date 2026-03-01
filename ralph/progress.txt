@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - Keep deterministic category color API shape stable even when changing color spaces (`hue`, `saturation`, `lightness`, and contrast fields), and adapt internals for conversion/contrast math.
+- Keep `uncategorized` category color as an explicit neutral fallback in `src/lib/category-color.ts`, and provide separate light/dark text tokens to preserve readability in badges.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -23,4 +24,52 @@
     - Floating point precision from profile math can cause strict equality test failures; normalize values before returning/asserting.
   - Useful context (e.g., "the evaluation panel is in component X")
     - `getDeterministicColorFromText` is the central source of category color tokens consumed by category color helpers.
+---
+
+## 2026-03-01 08:58:40 CET - US-002
+- What was implemented
+  - Updated uncategorized fallback category colors in `src/lib/category-color.ts` from HSL to OKLCH neutral tokens to align with deterministic OKLCH output consumers.
+  - Adjusted uncategorized text colors to use separate light/dark foreground values so `CategoryBadge` remains readable across themes.
+  - Updated `src/lib/category-color.test.ts` assertions for the new fallback output values.
+- Files changed
+  - `src/lib/category-color.ts`
+  - `src/lib/category-color.test.ts`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ❌ (unit tests pass; Playwright E2E fails consistently on existing transactions test `tests/e2e/us-018-transactions-route-controls.e2e.ts` expecting `Filtered Market` visibility)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Category UI consumers (`CategoryBadge`, overview/monthly-review charts) rely on `getCategoryColor` output being CSS color strings, so neutral fallback colors should stay valid CSS color functions after palette migrations.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Full `pnpm test` currently includes flaky/failing transactions Playwright coverage unrelated to category color changes; reruns can fail at different assertions in `us-018-transactions-route-controls.e2e.ts`.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - `uncategorized` fallback logic is centralized in `src/lib/category-color.ts`, while deterministic category colors remain in `src/lib/deterministic-color.ts`.
+---
+
+## 2026-03-01 09:07:26 CET - US-002
+- What was implemented
+  - Kept `uncategorized` category fallback colors on neutral OKLCH tokens in `src/lib/category-color.ts` and validated readable light/dark foreground tokens for badge/chart consumers.
+  - Kept category-color unit assertions aligned with the fallback output contract in `src/lib/category-color.test.ts`.
+  - Marked US-002 as passing in `ralph/prd.json` after all required checks completed successfully.
+  - Added reusable fallback-color guidance to root `AGENTS.md`.
+- Files changed
+  - `src/lib/category-color.ts`
+  - `src/lib/category-color.test.ts`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Category color consumers expect CSS color strings end-to-end, so palette migrations should verify fallback and deterministic outputs with both unit tests and E2E smoke coverage.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - `ralph/progress.txt` may contain earlier failed attempts for the same story; append a new timestamped entry with final passing status instead of rewriting history.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - `getCategoryColor` is the single uncategorized fallback gateway, while category badges/charts consume the returned tokens directly.
 ---
