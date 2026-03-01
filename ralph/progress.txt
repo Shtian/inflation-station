@@ -3,6 +3,7 @@
 - Keep `uncategorized` category color as an explicit neutral fallback in `src/lib/category-color.ts`, and provide separate light/dark text tokens to preserve readability in badges.
 - Inline success feedback is commonly state-driven (`notice`/`success`/`submitNotice`) in route manager hooks, and Playwright coverage usually asserts those exact strings with `getByText(...)`; toast migrations should update both surfaces together.
 - Mount the Sonner toaster once in `src/app/layout.tsx` via a shared `src/components/ui/sonner.tsx` wrapper so route-level toast migrations only call `toast(...)` and never create extra toaster instances.
+- For Sonner feedback assertions in Playwright, target toast elements with `[data-sonner-toast]` + `hasText` instead of relying on inline banner DOM.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -26,6 +27,34 @@
     - Floating point precision from profile math can cause strict equality test failures; normalize values before returning/asserting.
   - Useful context (e.g., "the evaluation panel is in component X")
     - `getDeterministicColorFromText` is the central source of category color tokens consumed by category color helpers.
+---
+
+## 2026-03-01 09:24:56 CET - US-005
+- What was implemented
+  - Migrated account CRUD success feedback from inline `accountNotice` state to Sonner toasts by calling `toast.success(...)` in `use-accounts-manager.ts` on create, edit save, and delete success paths.
+  - Removed inline success banner rendering from `src/app/accounts/accounts-manager.tsx` while keeping inline validation/API error alerts unchanged.
+  - Updated accounts Playwright E2E coverage to assert toast feedback via `[data-sonner-toast]` locators for `Account added.`, `Account updated.`, and `Account removed.`.
+  - Added reusable accounts-route guidance in `src/app/accounts/AGENTS.md` for toast success + inline error conventions.
+  - Marked US-005 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/accounts/use-accounts-manager.ts`
+  - `src/app/accounts/accounts-manager.tsx`
+  - `tests/e2e/us-011-account-import-ui.e2e.ts`
+  - `src/app/accounts/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Account route success feedback now flows through Sonner from the manager hook, while inline account feedback is reserved for blocking errors.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Toast migrations should update E2E assertions to target Sonner toast containers (`[data-sonner-toast]`) so tests remain aligned with the feedback surface.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Account success flows are centralized in `useAccountsManager`, with `AccountsManager` handling only structural layout and inline alert rendering.
 ---
 
 ## 2026-03-01 09:10:12 CET - US-003

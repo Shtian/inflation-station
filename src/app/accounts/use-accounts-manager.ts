@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export type Account = {
   id: string;
@@ -33,7 +34,6 @@ export function useAccountsManager() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [accountError, setAccountError] = useState<string | null>(null);
-  const [accountNotice, setAccountNotice] = useState<string | null>(null);
   const [busyAccountId, setBusyAccountId] = useState<string | null>(null);
 
   const [newAccountName, setNewAccountName] = useState("");
@@ -75,13 +75,11 @@ export function useAccountsManager() {
   async function createAccount() {
     if (!newAccountName.trim()) {
       setAccountError("Account name is required.");
-      setAccountNotice(null);
       return;
     }
 
     setBusyAccountId("new");
     setAccountError(null);
-    setAccountNotice(null);
 
     const response = await fetch("/api/accounts", {
       method: "POST",
@@ -105,7 +103,7 @@ export function useAccountsManager() {
     setNewAccountName("");
     setNewAccountInstitution("");
     setBusyAccountId(null);
-    setAccountNotice("Account added.");
+    toast.success("Account added.");
     await loadAccounts();
   }
 
@@ -114,19 +112,16 @@ export function useAccountsManager() {
     setEditName(account.name);
     setEditInstitution(account.institution ?? "");
     setAccountError(null);
-    setAccountNotice(null);
   }
 
   async function saveEdit(accountId: string) {
     if (!editName.trim()) {
       setAccountError("Account name is required.");
-      setAccountNotice(null);
       return;
     }
 
     setBusyAccountId(accountId);
     setAccountError(null);
-    setAccountNotice(null);
 
     const response = await fetch(`/api/accounts/${accountId}`, {
       method: "PATCH",
@@ -149,7 +144,7 @@ export function useAccountsManager() {
 
     setEditingAccountId(null);
     setBusyAccountId(null);
-    setAccountNotice("Account updated.");
+    toast.success("Account updated.");
     await loadAccounts();
   }
 
@@ -160,7 +155,6 @@ export function useAccountsManager() {
 
     setBusyAccountId(accountId);
     setAccountError(null);
-    setAccountNotice(null);
 
     const response = await fetch(`/api/accounts/${accountId}`, {
       method: "DELETE",
@@ -175,13 +169,12 @@ export function useAccountsManager() {
     }
 
     setBusyAccountId(null);
-    setAccountNotice("Account removed.");
+    toast.success("Account removed.");
     await loadAccounts();
   }
 
   return {
     accountError,
-    accountNotice,
     accounts,
     accountsLoading,
     busyAccountId,

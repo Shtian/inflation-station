@@ -8,7 +8,6 @@ import { useAccountsManager } from "./use-accounts-manager";
 export function AccountsManager() {
   const {
     accountError,
-    accountNotice,
     accounts,
     accountsLoading,
     busyAccountId,
@@ -56,12 +55,6 @@ export function AccountsManager() {
           className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {accountError}
-        </p>
-      ) : null}
-
-      {accountNotice ? (
-        <p className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-700 text-sm">
-          {accountNotice}
         </p>
       ) : null}
 

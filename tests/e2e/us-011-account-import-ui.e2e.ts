@@ -125,7 +125,9 @@ test("manages accounts from /accounts with success and error feedback", async ({
   await page.getByLabel("Account name").fill("Savings Account");
   await page.getByLabel("Institution (optional)").fill("Nordea");
   await page.getByRole("button", { name: "Add account" }).click();
-  await expect(page.getByText("Account added.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Account added." }),
+  ).toBeVisible();
 
   await expect(
     page.getByRole("cell", { name: "Savings Account", exact: true }),
@@ -137,7 +139,9 @@ test("manages accounts from /accounts with success and error feedback", async ({
   await page.getByRole("menuitem", { name: "Rename" }).click();
   await page.getByLabel("Edit name Savings Account").fill("Rainy Day Account");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Account updated.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Account updated." }),
+  ).toBeVisible();
 
   await expect(
     page.getByRole("cell", { name: "Rainy Day Account", exact: true }),
@@ -150,7 +154,9 @@ test("manages accounts from /accounts with success and error feedback", async ({
     .getByRole("button", { name: "Actions for account Rainy Day Account" })
     .click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  await expect(page.getByText("Account removed.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Account removed." }),
+  ).toBeVisible();
 
   await expect(
     page.getByRole("cell", { name: "Rainy Day Account", exact: true }),
