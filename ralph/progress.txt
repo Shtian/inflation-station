@@ -7,6 +7,7 @@
 - In provider mappings, keep create on the Server Action (`createImportProviderMappingAction`) while edit/delete continue on `/api/import-provider-mappings/[providerMappingId]`, then refresh table state via `loadMappings()` after successful mutations.
 - In the import route, keep successful submit summary feedback in `use-import-workflow.ts` via `toast.success(...)` and keep upload/review phase components focused on inline actionable errors.
 - In import settings managers, keep success copy in Sonner toasts and reserve inline alerts for save/load failures so corrective feedback stays visible while confirmations stay transient.
+- In monthly review settings, emit save success feedback with Sonner toasts from `settings/monthly-review-settings-manager.tsx` and keep load/save failures as inline alerts.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -295,4 +296,31 @@
     - Even if previous E2E coverage only checked mutation execution, toast migrations should add explicit `[data-sonner-toast]` assertions to lock the visible feedback surface.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Message cleanup save flows (model and prompt) are both centralized in `saveSettings(...)` in the manager component, so feedback behavior is controlled in one place.
+---
+
+## 2026-03-01 15:26:48 CET - US-010
+- What was implemented
+  - Migrated monthly review settings save confirmations in `src/app/monthly-review/settings/monthly-review-settings-manager.tsx` from inline `success` banner state to Sonner `toast.success(...)` while preserving success copy (`System prompt saved.`, `Generation model saved.`).
+  - Kept existing inline error alert behavior unchanged for monthly review settings load/save failures.
+  - Updated Playwright coverage in `tests/e2e/us-020-monthly-review-route.e2e.ts` to assert save success via Sonner toast (`[data-sonner-toast]`).
+  - Added reusable monthly-review guidance in `src/app/monthly-review/AGENTS.md` for settings feedback conventions.
+  - Marked US-010 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/monthly-review/settings/monthly-review-settings-manager.tsx`
+  - `tests/e2e/us-020-monthly-review-route.e2e.ts`
+  - `src/app/monthly-review/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Monthly review settings now follow the same route convention as other settings managers: success feedback via Sonner toasts, failure feedback inline.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Toast migrations should update existing E2E success assertions away from inline `getByText(...)` checks to Sonner toast locators in the same story.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Prompt and model save feedback paths are centralized in `saveSettings(...)` within `monthly-review-settings-manager.tsx`.
 ---

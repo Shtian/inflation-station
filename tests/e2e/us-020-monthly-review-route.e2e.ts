@@ -319,7 +319,9 @@ test("opens monthly review settings from header configuration and monthly review
     promptText: "Focus on anomalies and recurring spend.",
     modelId: "gpt-5.2",
   });
-  await expect(page.getByText("System prompt saved.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "System prompt saved." }),
+  ).toBeVisible();
 
   await page.getByRole("link", { name: "Back to monthly review" }).click();
 

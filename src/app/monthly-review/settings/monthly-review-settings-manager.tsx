@@ -4,6 +4,7 @@ import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -95,7 +96,6 @@ export function MonthlyReviewSettingsManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const loadSystemPrompt = useCallback(async () => {
     setLoading(true);
@@ -142,7 +142,6 @@ export function MonthlyReviewSettingsManager() {
 
     setSaving(true);
     setError(null);
-    setSuccess(null);
 
     const response = await fetch("/api/monthly-review/system-prompt", {
       method: "PUT",
@@ -171,7 +170,7 @@ export function MonthlyReviewSettingsManager() {
     setUsesDefaultModel(body.usesDefaultModel);
     setAvailableModels(body.availableModels);
     setSaving(false);
-    setSuccess(params.successMessage);
+    toast.success(params.successMessage);
     return true;
   }
 
@@ -186,7 +185,6 @@ export function MonthlyReviewSettingsManager() {
   async function handleModelChange(value: OpenAIChatModelId) {
     const previousModelId = selectedModelId;
     setSelectedModelId(value);
-    setSuccess(null);
 
     const didSave = await saveSettings({
       promptText,
@@ -282,7 +280,6 @@ export function MonthlyReviewSettingsManager() {
                   value={promptText}
                   onChange={(event) => {
                     setPromptText(event.target.value);
-                    setSuccess(null);
                   }}
                   rows={10}
                   placeholder="Leave empty to use default prompt."
@@ -308,12 +305,6 @@ export function MonthlyReviewSettingsManager() {
                   className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
                 >
                   {error}
-                </p>
-              ) : null}
-
-              {success ? (
-                <p className="rounded-md border border-emerald-300/60 bg-emerald-50 px-3 py-2 text-emerald-700 text-sm dark:border-emerald-700/60 dark:bg-emerald-950/50 dark:text-emerald-200">
-                  {success}
                 </p>
               ) : null}
 
