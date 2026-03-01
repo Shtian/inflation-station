@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 test("manages transactions filters and pagination controls from /transactions", async ({
   page,
 }) => {
+  const transactionRequests: string[] = [];
+
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
       status: 200,
@@ -46,9 +48,87 @@ test("manages transactions filters and pagination controls from /transactions", 
 
   await page.route("**/api/transactions**", async (route, request) => {
     const url = new URL(request.url());
+    transactionRequests.push(url.search);
     const accountId = url.searchParams.get("accountId");
+    const categoryId = url.searchParams.get("categoryId");
+    const globalQuery = url.searchParams.get("globalQuery");
+    const dateFrom = url.searchParams.get("dateFrom");
+    const dateTo = url.searchParams.get("dateTo");
+    const sorting = url.searchParams.get("sorting");
     const pageParam = url.searchParams.get("page");
     const pageSizeParam = url.searchParams.get("pageSize");
+
+    if (
+      sorting === "amountNok:asc" &&
+      pageParam === "1" &&
+      pageSizeParam === "25"
+    ) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          rows: [
+            {
+              id: "txn-sort-asc-1",
+              accountId: "acc-1",
+              categoryId: "cat-groceries",
+              categoryName: "Groceries",
+              bookingDate: "2026-01-09",
+              amountNok: -50,
+              currency: "NOK",
+              normalizedMerchant: "Sorted Asc Grocery",
+              paymentType: "CARD",
+              note: null,
+              createdAt: "2026-01-09T09:00:00.000Z",
+              updatedAt: "2026-01-09T09:00:00.000Z",
+            },
+          ],
+          pagination: {
+            total: 35,
+            page: 1,
+            pageSize: 25,
+            totalPages: 2,
+          },
+        }),
+      });
+      return;
+    }
+
+    if (
+      sorting === "amountNok:desc" &&
+      pageParam === "1" &&
+      pageSizeParam === "25"
+    ) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          rows: [
+            {
+              id: "txn-sort-desc-1",
+              accountId: "acc-1",
+              categoryId: "cat-food",
+              categoryName: "Food",
+              bookingDate: "2026-01-03",
+              amountNok: -980,
+              currency: "NOK",
+              normalizedMerchant: "Sorted Desc Appliance",
+              paymentType: "CARD",
+              note: null,
+              createdAt: "2026-01-03T09:00:00.000Z",
+              updatedAt: "2026-01-03T09:00:00.000Z",
+            },
+          ],
+          pagination: {
+            total: 35,
+            page: 1,
+            pageSize: 25,
+            totalPages: 2,
+          },
+        }),
+      });
+      return;
+    }
 
     if (accountId === "acc-2" && pageParam === "1" && pageSizeParam === "25") {
       await route.fulfill({
@@ -163,6 +243,45 @@ test("manages transactions filters and pagination controls from /transactions", 
       return;
     }
 
+    if (
+      pageParam === "1" &&
+      pageSizeParam === "25" &&
+      categoryId === "cat-groceries" &&
+      globalQuery === "market" &&
+      dateFrom === "2026-02-01" &&
+      dateTo === "2026-02-28"
+    ) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          rows: [
+            {
+              id: "txn-filtered-1",
+              accountId: accountId ?? "acc-1",
+              categoryId: "cat-groceries",
+              categoryName: "Groceries",
+              bookingDate: "2026-02-11",
+              amountNok: -99,
+              currency: "NOK",
+              normalizedMerchant: "Filtered Market",
+              paymentType: "CARD",
+              note: "Matched by filters",
+              createdAt: "2026-02-11T09:00:00.000Z",
+              updatedAt: "2026-02-11T09:00:00.000Z",
+            },
+          ],
+          pagination: {
+            total: 1,
+            page: 1,
+            pageSize: 25,
+            totalPages: 1,
+          },
+        }),
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -214,12 +333,57 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(page.getByText("Page 1 of 2")).toBeVisible();
   await expect(page.getByText("35 total transactions.")).toBeVisible();
   await expect(page.getByText("Supermarket")).toBeVisible();
+  await expect(page.getByText("CARD")).toBeVisible();
   await expect(page.getByText("Groceries", { exact: true })).toBeVisible();
   await expect(
     page.getByLabel("View memo for transaction from 2026-02-05"),
   ).toBeVisible();
   await page.getByLabel("View memo for transaction from 2026-02-05").hover();
   await expect(page.getByRole("tooltip")).toHaveText("Weekly groceries");
+
+  await page.getByRole("button", { name: "Go to last page" }).click();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  await expect(page).toHaveURL(/page=2/);
+  await page.getByRole("button", { name: "Go to first page" }).click();
+  await expect(page.getByText("Page 1 of 2")).toBeVisible();
+  await expect(page.getByText("Supermarket")).toBeVisible();
+  await page.getByRole("button", { name: "Go to next page" }).click();
+  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  await page
+    .getByRole("columnheader", { name: "Amount" })
+    .getByRole("button", { name: "Amount" })
+    .click();
+  await expect(page.getByText("Page 1 of 2")).toBeVisible();
+  await expect(page).toHaveURL(/sorting=amountNok%3Aasc/);
+  await expect(page.getByText("Sorted Asc Grocery")).toBeVisible();
+
+  await page
+    .getByRole("columnheader", { name: "Amount" })
+    .getByRole("button", { name: "Amount" })
+    .click();
+  await expect(page).toHaveURL(/sorting=amountNok%3Adesc/);
+  await expect(page.getByText("Sorted Desc Appliance")).toBeVisible();
+
+  await page
+    .getByRole("columnheader", { name: "Amount" })
+    .getByRole("button", { name: "Amount" })
+    .click();
+  await expect(page).not.toHaveURL(/sorting=/);
+
+  await page.getByRole("button", { name: "Columns" }).click();
+  await page.getByRole("menuitemcheckbox", { name: "Payment type" }).click();
+  await expect(
+    page.getByRole("columnheader", { name: "Payment type" }),
+  ).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.getByRole("columnheader", { name: "Payment type" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "Columns" }).click();
+  await page.getByRole("menuitemcheckbox", { name: "Payment type" }).click();
+  await expect(
+    page.getByRole("columnheader", { name: "Payment type" }),
+  ).toBeVisible();
 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "Savings Account" }).click();
@@ -235,6 +399,36 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "All accounts" }).click();
 
+  await page.getByLabel("Search").fill("market");
+  await page.getByLabel("Date from").fill("2026-02-01");
+  await page.getByLabel("Date to").fill("2026-02-28");
+  await page.getByLabel("Category").click();
+  await page.getByRole("option", { name: "Groceries", exact: true }).click();
+  await expect(page.getByText("Filtered Market")).toBeVisible();
+  await expect(page).toHaveURL(/globalQuery=market/);
+  await expect(page).toHaveURL(/dateFrom=2026-02-01/);
+  await expect(page).toHaveURL(/dateTo=2026-02-28/);
+  await expect(page).toHaveURL(/categoryId=cat-groceries/);
+
+  await expect
+    .poll(() =>
+      transactionRequests.some(
+        (search) =>
+          search.includes("globalQuery=market") &&
+          search.includes("dateFrom=2026-02-01") &&
+          search.includes("dateTo=2026-02-28") &&
+          search.includes("categoryId=cat-groceries"),
+      ),
+    )
+    .toBe(true);
+
+  await page.getByLabel("Search").fill("");
+  await page.getByLabel("Date from").fill("");
+  await page.getByLabel("Date to").fill("");
+  await page.getByLabel("Category").click();
+  await page.getByRole("option", { name: "All categories" }).click();
+  await expect(page.getByText("Supermarket")).toBeVisible();
+
   await page.getByRole("button", { name: "Go to next page" }).click();
   await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.getByText("Corner Shop")).toBeVisible();
@@ -246,6 +440,7 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.locator("#transactions-rows-per-page").click();
   await page.getByRole("option", { name: "10", exact: true }).click();
   await expect(page.getByText("Page 1 of 4")).toBeVisible();
+  await expect(page).toHaveURL(/pageSize=10/);
   await expect(page.getByText("Metro Kiosk")).toBeVisible();
   await expect(page.getByText("Uncategorized")).toBeVisible();
   await expect(

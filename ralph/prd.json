@@ -1,16 +1,17 @@
 {
   "project": "inflation-station",
-  "branchName": "ralph/server-actions-refactor-mutations-first",
-  "description": "Refactor selected low-risk mutation workflows from client-side internal API fetch calls to Next.js Server Actions while preserving existing behavior and UI.",
+  "branchName": "ralph/transactions-table-shadcn-tanstack",
+  "description": "Migrate the transactions list to shadcn Data Table with TanStack server-driven filtering, sorting, column visibility, and URL-synced pagination state.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Define server action mutation architecture and migration guardrails",
-      "description": "As a developer, I want a standard Server Action mutation pattern so that migrated workflows are consistent, secure, and maintainable.",
+      "title": "Validate and parse extended transactions query params",
+      "description": "As a developer, I want `/api/transactions` to validate and parse table query params so that table state can be safely sent from the UI.",
       "acceptanceCriteria": [
-        "Document a standard Server Action mutation pattern covering input validation, authorization, typed success/error responses, and cache revalidation",
-        "Implement at least one shared helper or convention used by multiple server actions to reduce duplication",
-        "Create a mapping of targeted API mutation route behavior to equivalent Server Action behavior before migration implementation",
+        "Add validated query params for page, pageSize, sorting, global query, dateFrom, dateTo, accountId, and categoryId",
+        "Return explicit 400 responses for malformed values with stable error codes/messages",
+        "Update API route tests to cover valid and invalid query combinations",
+        "Tests pass",
         "Typecheck passes"
       ],
       "priority": 1,
@@ -19,14 +20,14 @@
     },
     {
       "id": "US-002",
-      "title": "Migrate one low-risk settings mutation workflow to Server Actions",
-      "description": "As a user, I want settings updates to save exactly as before so that the workflow is unchanged after server-side migration.",
+      "title": "Add server-side transaction filtering support",
+      "description": "As a user, I want transaction filters applied on the backend so that results remain correct and performant across large datasets.",
       "acceptanceCriteria": [
-        "Migrate one low-risk settings mutation flow from client-side `/api/*` fetch to a Server Action",
-        "Preserve existing success and failure UX copy and interaction behavior for the migrated settings flow",
-        "Do not introduce new user-visible fields, controls, or layout changes in the touched settings UI",
+        "Apply global text filter to agreed searchable transaction fields",
+        "Apply inclusive date range filtering on booking date with dateFrom/dateTo params",
+        "Apply account and category filtering in the transactions list query",
+        "Add domain query tests for filter combinations and empty-result behavior",
         "Tests pass",
-        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 2,
@@ -35,14 +36,14 @@
     },
     {
       "id": "US-003",
-      "title": "Migrate one low-risk entity mutation workflow to Server Actions",
-      "description": "As a user, I want create and update operations in one low-risk entity area to remain reliable after moving mutations to Server Actions.",
+      "title": "Add server-side sorting with stable pagination ordering",
+      "description": "As a user, I want sorted transaction pages to remain stable so that I do not see duplicate or missing rows while paging.",
       "acceptanceCriteria": [
-        "Migrate one entity mutation flow (for example provider mappings, categories, or category rules) from client-side API fetch to a Server Action",
-        "Validation and error handling outcomes remain equivalent to current behavior",
-        "Persisted data is correct and visible after refresh or navigation",
+        "Support sorting by booking date, amount, merchant, and category using query params",
+        "Include a deterministic secondary sort tiebreaker (for example id) for every sort mode",
+        "Pagination metadata remains correct after sorting and filtering",
+        "Add tests for sorted pagination stability and response metadata",
         "Tests pass",
-        "Verify in browser using dev-browser skill",
         "Typecheck passes"
       ],
       "priority": 3,
@@ -51,12 +52,13 @@
     },
     {
       "id": "US-004",
-      "title": "Add parity-focused regression coverage for migrated mutations",
-      "description": "As a developer, I want confidence checks around migrated mutation workflows so that refactoring does not introduce regressions.",
+      "title": "Implement URL-to-table state synchronization in transactions manager",
+      "description": "As a user, I want table state preserved in the URL so that refresh and back/forward keep my current transactions view.",
       "acceptanceCriteria": [
-        "Add or update tests for each migrated mutation workflow at the existing project-appropriate layer",
-        "Cover happy-path and at least one failure-path for each migrated workflow",
-        "Keep related existing tests passing without weakening assertions",
+        "Initialize transactions table state from URL params on page load",
+        "Write state changes for filters, sorting, page index, and page size back to URL params",
+        "Changing filters resets page index to first page",
+        "Add tests for URL parse/serialize state behavior",
         "Tests pass",
         "Typecheck passes"
       ],
@@ -66,16 +68,61 @@
     },
     {
       "id": "US-005",
-      "title": "Remove obsolete client mutation fetch logic for migrated workflows",
-      "description": "As a developer, I want legacy client mutation fetch plumbing removed so that the codebase is simpler and less error-prone.",
+      "title": "Migrate transactions table rendering to TanStack table instance",
+      "description": "As a user, I want the transactions list to use a modern table state model so that sorting, filtering, and paging interactions are consistent.",
       "acceptanceCriteria": [
-        "Remove direct client mutation calls to `/api/...` endpoints for workflows migrated in this PRD",
-        "Delete dead migration-related client code in touched modules, including unused hooks, helpers, and state branches",
-        "Keep migration scope limited to selected low-risk mutation flows and leave unrelated workflows untouched",
-        "Tests pass",
-        "Typecheck passes"
+        "Replace current table rendering loop with a TanStack table instance using existing transaction row data",
+        "Preserve existing row cells and behavior for date, merchant, notes indicator, category, payment type, amount, and action menu",
+        "Keep row edit and delete actions working after migration",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add transactions filter toolbar UI",
+      "description": "As a user, I want visible table filters so that I can quickly narrow transactions without manual paging.",
+      "acceptanceCriteria": [
+        "Add global text input, date-from/date-to controls, account filter, and category filter to the transactions table section",
+        "Filter control values are bound to URL-synced table state",
+        "Show empty-state message when active filters produce no rows",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Add sortable headers and session-only column visibility",
+      "description": "As a user, I want sortable columns and hide/show controls so that I can tailor the transactions table to my workflow.",
+      "acceptanceCriteria": [
+        "Add sortable header controls for supported columns with clear asc/desc/none visual state",
+        "Add column visibility menu with hideable-column enforcement",
+        "Persist column visibility only for the current browser session",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Adopt shadcn/TanStack pagination controls in transactions list",
+      "description": "As a user, I want pagination controls consistent with shadcn data-table patterns so that navigating transaction pages is predictable.",
+      "acceptanceCriteria": [
+        "Replace existing pagination UI with shadcn/TanStack pagination controls and page-size selector",
+        "Pagination controls are wired to URL-synced table state and backend query params",
+        "Pagination state remains valid after filters, sorting, and row mutations",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
       "passes": true,
       "notes": ""
     }

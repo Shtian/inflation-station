@@ -1,0 +1,89 @@
+{
+  "project": "inflation-station",
+  "branchName": "ralph/exclude-inter-account-transfers-from-spend-income-analytics",
+  "description": "Exclude transactions categorized as TRANSFER from spend/income analytics in Overview and Monthly Review while keeping transfer rows visible in transaction workflows.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Exclude transfer-category transactions from Overview analytics",
+      "description": "As a user, I want transactions categorized as TRANSFER excluded from Overview spend and income analytics so totals reflect real spending and earning.",
+      "acceptanceCriteria": [
+        "Overview net cashflow excludes rows where category.kind is TRANSFER",
+        "Overview inflow and outflow totals exclude rows where category.kind is TRANSFER",
+        "Overview category spend breakdown excludes rows where category.kind is TRANSFER",
+        "Uncategorized transactions remain included",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Exclude transfer-category transactions from Monthly Review overview metrics",
+      "description": "As a user, I want Monthly Review timeline and overview spend metrics to ignore TRANSFER-categorized transactions so monthly summaries are not inflated.",
+      "acceptanceCriteria": [
+        "Monthly total spend excludes rows where category.kind is TRANSFER",
+        "Monthly spend transaction count excludes rows where category.kind is TRANSFER",
+        "Monthly category spend breakdown excludes rows where category.kind is TRANSFER",
+        "Month-over-month spend delta uses transfer-excluded spend totals",
+        "Uncategorized transactions remain included",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Exclude transfer-category transactions from Monthly Review generation metrics",
+      "description": "As a user, I want Monthly Review generation-input metrics to ignore TRANSFER-categorized transactions so generated analysis reflects actual spending patterns.",
+      "acceptanceCriteria": [
+        "metrics.monthlyTotals.totalSpendNok excludes rows where category.kind is TRANSFER",
+        "metrics.categoryTotals excludes rows where category.kind is TRANSFER",
+        "metrics.merchantConcentration excludes rows where category.kind is TRANSFER",
+        "metrics.monthOverMonth uses transfer-excluded spend totals",
+        "Uncategorized transactions remain included",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add inline transfer-exclusion messaging on analytics pages",
+      "description": "As a user, I want clear inline messaging on analytics pages so I understand why spend and income totals exclude transfer-category transactions.",
+      "acceptanceCriteria": [
+        "Overview page shows inline copy explaining that Transfer-category transactions are excluded from spend and income analytics",
+        "Monthly Review page shows equivalent inline copy with consistent wording",
+        "Copy is visible in normal page flow (not hover-only)",
+        "Copy is concise and non-technical",
+        "Tests pass",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Add regression tests for transfer exclusion analytics behavior",
+      "description": "As a developer, I want regression coverage for transfer exclusion rules so future changes do not reintroduce inflated analytics totals.",
+      "acceptanceCriteria": [
+        "Add or update tests in src/lib/dashboard/analytics.test.ts for transfer excluded, non-transfer included, and uncategorized included cases",
+        "Add or update tests in src/lib/monthly-review/overview.test.ts for transfer excluded, non-transfer included, and uncategorized included cases",
+        "Add or update tests in src/lib/monthly-review/generation-input.test.ts for transfer excluded, non-transfer included, and uncategorized included cases",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}

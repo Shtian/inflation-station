@@ -33,7 +33,14 @@ export type TransactionsResponse = {
 };
 
 export const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"] as const;
+export const TRANSACTIONS_SORT_FIELDS = [
+  "bookingDate",
+  "amountNok",
+  "normalizedMerchant",
+  "category",
+] as const;
 export const ALL_ACCOUNTS_VALUE = "__all_accounts__";
+export const ALL_CATEGORIES_VALUE = "__all_categories__";
 export const UNCATEGORIZED_VALUE = "__uncategorized__";
 export const PAYMENT_TYPE_OPTIONS = [
   "CARD",
@@ -42,6 +49,12 @@ export const PAYMENT_TYPE_OPTIONS = [
   "CASH",
   "OTHER",
 ] as const;
+export type TransactionSortField = (typeof TRANSACTIONS_SORT_FIELDS)[number];
+export type TransactionSortDirection = "asc" | "desc";
+export type TransactionSorting = {
+  field: TransactionSortField;
+  direction: TransactionSortDirection;
+};
 export type PaymentTypeOption = (typeof PAYMENT_TYPE_OPTIONS)[number];
 
 export type EditFormState = {

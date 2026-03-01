@@ -1,4 +1,10 @@
+import type { Prisma } from "@prisma/client";
+
 type DecimalLike = { toString(): string } | number;
+
+type StringContainsFilter = {
+  contains: string;
+};
 
 type TransactionListRecord = {
   id: string;
@@ -19,15 +25,9 @@ type TransactionListRecord = {
 
 type TransactionListDbClient = {
   transaction: {
-    count(args: {
-      where: {
-        accountId?: string;
-      };
-    }): Promise<number>;
+    count(args: { where: Prisma.TransactionWhereInput }): Promise<number>;
     findMany(args: {
-      where: {
-        accountId?: string;
-      };
+      where: Prisma.TransactionWhereInput;
       select: {
         id: true;
         accountId: true;
@@ -46,7 +46,7 @@ type TransactionListDbClient = {
         createdAt: true;
         updatedAt: true;
       };
-      orderBy: [{ bookingDate: "desc" }, { id: "desc" }];
+      orderBy: Prisma.TransactionOrderByWithRelationInput[];
       skip: number;
       take: number;
     }): Promise<TransactionListRecord[]>;
@@ -55,6 +55,14 @@ type TransactionListDbClient = {
 
 export type TransactionsListFilters = {
   accountId?: string;
+  categoryId?: string;
+  query?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  sorting?: {
+    field: "bookingDate" | "amountNok" | "normalizedMerchant" | "category";
+    direction: "asc" | "desc";
+  };
   page: number;
   pageSize: number;
 };
@@ -88,14 +96,82 @@ function toNumber(value: DecimalLike): number {
   return Number.parseFloat(value.toString());
 }
 
+function addUtcDays(date: Date, days: number): Date {
+  const nextDate = new Date(date);
+  nextDate.setUTCDate(nextDate.getUTCDate() + days);
+  return nextDate;
+}
+
+function getOrderBy(
+  sorting: TransactionsListFilters["sorting"],
+): Prisma.TransactionOrderByWithRelationInput[] {
+  if (!sorting) {
+    return [{ bookingDate: "desc" }, { id: "desc" }];
+  }
+
+  switch (sorting.field) {
+    case "bookingDate":
+      return [{ bookingDate: sorting.direction }, { id: sorting.direction }];
+    case "amountNok":
+      return [{ amountNok: sorting.direction }, { id: sorting.direction }];
+    case "normalizedMerchant":
+      return [
+        { normalizedMerchant: sorting.direction },
+        { id: sorting.direction },
+      ];
+    case "category":
+      return [
+        {
+          category: {
+            name: sorting.direction,
+          },
+        },
+        { id: sorting.direction },
+      ];
+  }
+}
+
 export async function getTransactionsPage(
   db: TransactionListDbClient,
   filters: TransactionsListFilters,
 ): Promise<TransactionsListResult> {
-  const where = {
+  const where: Prisma.TransactionWhereInput = {
     accountId: filters.accountId,
+    categoryId: filters.categoryId,
   };
+
+  if (filters.dateFrom || filters.dateTo) {
+    where.bookingDate = {
+      gte: filters.dateFrom,
+      lt: filters.dateTo ? addUtcDays(filters.dateTo, 1) : undefined,
+    };
+  }
+
+  const normalizedQuery = filters.query?.trim();
+  if (normalizedQuery) {
+    const containsQuery: StringContainsFilter = {
+      contains: normalizedQuery,
+    };
+
+    where.OR = [
+      {
+        normalizedMerchant: containsQuery,
+      },
+      {
+        note: containsQuery,
+      },
+      {
+        category: {
+          is: {
+            name: containsQuery,
+          },
+        },
+      },
+    ];
+  }
+
   const skip = (filters.page - 1) * filters.pageSize;
+  const orderBy = getOrderBy(filters.sorting);
 
   const total = await db.transaction.count({ where });
   const records = await db.transaction.findMany({
@@ -118,7 +194,7 @@ export async function getTransactionsPage(
       createdAt: true,
       updatedAt: true,
     },
-    orderBy: [{ bookingDate: "desc" }, { id: "desc" }],
+    orderBy,
     skip,
     take: filters.pageSize,
   });

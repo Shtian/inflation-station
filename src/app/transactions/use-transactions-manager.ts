@@ -1,11 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   Account,
   Category,
+  TransactionSorting,
   TransactionsResponse,
 } from "./transactions-manager.types";
+import {
+  areTransactionsTableUrlStatesEqual,
+  parseTransactionsTableUrlState,
+  toTransactionsTableSearchParams,
+  withFilterStateChange,
+} from "./transactions-table-url-state";
 
 function getTransactionsErrorMessage(body: unknown) {
   if (typeof body === "object" && body && "message" in body) {
@@ -18,17 +26,92 @@ function getTransactionsErrorMessage(body: unknown) {
   return "Could not load transactions.";
 }
 
+function useDebouncedValue<T>(value: T, delayMs: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [delayMs, value]);
+
+  return debouncedValue;
+}
+
 export function useTransactionsManager() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const parsedUrlState = useMemo(
+    () =>
+      parseTransactionsTableUrlState(
+        new URLSearchParams(searchParams.toString()),
+      ),
+    [searchParams],
+  );
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [accountId, setAccountId] = useState("");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [tableState, setTableState] = useState(parsedUrlState);
+  const [globalQueryInput, setGlobalQueryInput] = useState(
+    parsedUrlState.globalQuery ?? "",
+  );
+  const debouncedGlobalQueryInput = useDebouncedValue(globalQueryInput, 250);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<TransactionsResponse | null>(
     null,
   );
+
+  useEffect(() => {
+    setTableState((current) =>
+      areTransactionsTableUrlStatesEqual(current, parsedUrlState)
+        ? current
+        : parsedUrlState,
+    );
+  }, [parsedUrlState]);
+
+  useEffect(() => {
+    setGlobalQueryInput(tableState.globalQuery ?? "");
+  }, [tableState.globalQuery]);
+
+  useEffect(() => {
+    const trimmed = debouncedGlobalQueryInput.trim();
+    const nextGlobalQuery = trimmed.length > 0 ? trimmed : undefined;
+
+    setTableState((current) => {
+      if (current.globalQuery === nextGlobalQuery) {
+        return current;
+      }
+
+      return withFilterStateChange(current, {
+        globalQuery: nextGlobalQuery,
+      });
+    });
+  }, [debouncedGlobalQueryInput]);
+
+  useEffect(() => {
+    const nextParams = toTransactionsTableSearchParams(
+      tableState,
+      new URLSearchParams(searchParams.toString()),
+    );
+    const nextQuery = nextParams.toString();
+    const currentQuery = searchParams.toString();
+
+    if (nextQuery === currentQuery) {
+      return;
+    }
+
+    router.replace(
+      nextQuery.length > 0 ? `${pathname}?${nextQuery}` : pathname,
+      {
+        scroll: false,
+      },
+    );
+  }, [pathname, router, searchParams, tableState]);
 
   const loadAccounts = useCallback(async () => {
     const response = await fetch("/api/accounts");
@@ -88,10 +171,28 @@ export function useTransactionsManager() {
     setError(null);
 
     const params = new URLSearchParams();
-    params.set("page", String(page));
-    params.set("pageSize", String(pageSize));
-    if (accountId) {
-      params.set("accountId", accountId);
+    params.set("page", String(tableState.page));
+    params.set("pageSize", String(tableState.pageSize));
+    if (tableState.accountId) {
+      params.set("accountId", tableState.accountId);
+    }
+    if (tableState.categoryId) {
+      params.set("categoryId", tableState.categoryId);
+    }
+    if (tableState.globalQuery) {
+      params.set("globalQuery", tableState.globalQuery);
+    }
+    if (tableState.dateFrom) {
+      params.set("dateFrom", tableState.dateFrom);
+    }
+    if (tableState.dateTo) {
+      params.set("dateTo", tableState.dateTo);
+    }
+    if (tableState.sorting) {
+      params.set(
+        "sorting",
+        `${tableState.sorting.field}:${tableState.sorting.direction}`,
+      );
     }
 
     const response = await fetch(`/api/transactions?${params.toString()}`);
@@ -112,17 +213,20 @@ export function useTransactionsManager() {
 
     const parsed = body as TransactionsResponse;
     const totalPages = Math.max(1, parsed.pagination.totalPages || 1);
-    const nextPage = Math.min(page, totalPages);
+    const nextPage = Math.min(tableState.page, totalPages);
 
-    if (nextPage !== page) {
-      setPage(nextPage);
+    if (nextPage !== tableState.page) {
+      setTableState((current) => ({
+        ...current,
+        page: nextPage,
+      }));
       setLoading(false);
       return;
     }
 
     setTransactions(parsed);
     setLoading(false);
-  }, [accountId, page, pageSize]);
+  }, [tableState]);
 
   useEffect(() => {
     void loadAccounts();
@@ -140,32 +244,92 @@ export function useTransactionsManager() {
     (nextPage: number) => {
       const max = Math.max(1, transactions?.pagination.totalPages ?? 1);
       const clamped = Math.min(Math.max(1, nextPage), max);
-      setPage(clamped);
+      setTableState((current) => ({
+        ...current,
+        page: clamped,
+      }));
     },
     [transactions?.pagination.totalPages],
   );
 
   const setAccountFilter = useCallback((nextAccountId: string) => {
-    setAccountId(nextAccountId);
-    setPage(1);
+    setTableState((current) =>
+      withFilterStateChange(current, {
+        accountId: nextAccountId || undefined,
+      }),
+    );
   }, []);
 
   const setPageSizeFilter = useCallback((nextPageSize: number) => {
-    setPageSize(nextPageSize);
-    setPage(1);
+    setTableState((current) =>
+      withFilterStateChange(current, {
+        pageSize: nextPageSize,
+      }),
+    );
   }, []);
+
+  const setGlobalQueryFilter = useCallback((nextGlobalQuery: string) => {
+    setGlobalQueryInput(nextGlobalQuery);
+  }, []);
+
+  const setDateFromFilter = useCallback((nextDateFrom: string) => {
+    const trimmed = nextDateFrom.trim();
+    setTableState((current) =>
+      withFilterStateChange(current, {
+        dateFrom: trimmed.length > 0 ? trimmed : undefined,
+      }),
+    );
+  }, []);
+
+  const setDateToFilter = useCallback((nextDateTo: string) => {
+    const trimmed = nextDateTo.trim();
+    setTableState((current) =>
+      withFilterStateChange(current, {
+        dateTo: trimmed.length > 0 ? trimmed : undefined,
+      }),
+    );
+  }, []);
+
+  const setCategoryFilter = useCallback((nextCategoryId: string) => {
+    setTableState((current) =>
+      withFilterStateChange(current, {
+        categoryId: nextCategoryId || undefined,
+      }),
+    );
+  }, []);
+
+  const setSorting = useCallback(
+    (nextSorting: TransactionSorting | undefined) => {
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          sorting: nextSorting,
+        }),
+      );
+    },
+    [],
+  );
 
   return {
     accounts,
     categories,
-    accountId,
-    pageSize,
+    accountId: tableState.accountId ?? "",
+    categoryId: tableState.categoryId ?? "",
+    globalQuery: globalQueryInput,
+    dateFrom: tableState.dateFrom ?? "",
+    dateTo: tableState.dateTo ?? "",
+    sorting: tableState.sorting,
+    pageSize: tableState.pageSize,
     loading,
     error,
     transactions,
     loadTransactions,
     goToPage,
     setAccountFilter,
+    setCategoryFilter,
+    setGlobalQueryFilter,
+    setDateFromFilter,
+    setDateToFilter,
+    setSorting,
     setPageSizeFilter,
   };
 }
