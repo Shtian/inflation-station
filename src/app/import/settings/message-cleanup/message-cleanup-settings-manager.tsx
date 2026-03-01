@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -234,41 +234,43 @@ export function MessageCleanupSettingsManager() {
             <p className="text-muted-foreground text-sm">Loading settings...</p>
           ) : (
             <>
-              <div className="space-y-2">
-                <Label htmlFor="message-cleanup-openai-model">
+              <Field>
+                <FieldLabel htmlFor="message-cleanup-openai-model">
                   Message cleanup OpenAI model
-                </Label>
-                <Select
-                  value={selectedModelId}
-                  onValueChange={(value) => {
-                    const nextModel = getModelById(value);
-                    if (
-                      !availableModels.some(
-                        (model) => model.id === nextModel.id,
-                      )
-                    ) {
-                      return;
-                    }
+                </FieldLabel>
+                <FieldContent>
+                  <Select
+                    value={selectedModelId}
+                    onValueChange={(value) => {
+                      const nextModel = getModelById(value);
+                      if (
+                        !availableModels.some(
+                          (model) => model.id === nextModel.id,
+                        )
+                      ) {
+                        return;
+                      }
 
-                    void handleModelChange(nextModel.id);
-                  }}
-                  disabled={saving}
-                >
-                  <SelectTrigger id="message-cleanup-openai-model">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableModels.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        <span className="block text-sm">{model.label}</span>
-                        <span className="block text-muted-foreground text-xs">
-                          {model.description}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                      void handleModelChange(nextModel.id);
+                    }}
+                    disabled={saving}
+                  >
+                    <SelectTrigger id="message-cleanup-openai-model">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableModels.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          <span className="block text-sm">{model.label}</span>
+                          <span className="block text-muted-foreground text-xs">
+                            {model.description}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
 
               <p className="text-muted-foreground text-xs">
                 {usesDefaultModel
@@ -276,20 +278,22 @@ export function MessageCleanupSettingsManager() {
                   : `Using saved model ${resolvedModelId}.`}
               </p>
 
-              <div className="space-y-2">
-                <Label htmlFor="message-cleanup-system-prompt">
+              <Field>
+                <FieldLabel htmlFor="message-cleanup-system-prompt">
                   Message cleanup system prompt
-                </Label>
-                <Textarea
-                  id="message-cleanup-system-prompt"
-                  value={promptText}
-                  onChange={(event) => {
-                    setPromptText(event.target.value);
-                  }}
-                  rows={8}
-                  placeholder="Leave empty to use default prompt."
-                />
-              </div>
+                </FieldLabel>
+                <FieldContent>
+                  <Textarea
+                    id="message-cleanup-system-prompt"
+                    value={promptText}
+                    onChange={(event) => {
+                      setPromptText(event.target.value);
+                    }}
+                    rows={8}
+                    placeholder="Leave empty to use default prompt."
+                  />
+                </FieldContent>
+              </Field>
 
               <div className="space-y-1">
                 <p className="text-muted-foreground text-xs">

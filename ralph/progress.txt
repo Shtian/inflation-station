@@ -14,6 +14,7 @@
 - For custom combobox-style controls migrated to Field primitives, keep the existing control `id` and pair it with `FieldLabel htmlFor` inside `FieldContent` to preserve a11y label binding and stable selectors.
 - For custom badge-input controls migrated to Field primitives, keep Enter-to-add behavior and route validator copy through `FieldError` so inline validation semantics stay accessible and consistent.
 - In the transactions edit dialog, keep note character-count and note validation copy inline in the note field area while reserving dialog-level alerts for submit failures.
+- In import settings managers, migrate `Label` wrappers to `Field` + `FieldLabel` + `FieldContent` while preserving `SelectTrigger`/`Textarea` ids so a11y bindings and tests remain stable.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -481,6 +482,32 @@
     - Transactions edit dialog fields can migrate to `Field` primitives safely by keeping existing `edit-*` control ids and wrapping combobox/select controls in `FieldContent`.
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
     - Keeping note helper/error text near the note input avoids changing current feedback semantics while still adopting shared field structure.
-  - Useful context (e.g., "the evaluation panel is in component X")
+- Useful context (e.g., "the evaluation panel is in component X")
     - `edit-transaction-dialog.tsx` owns labeled controls and note messaging for transaction edits; mutation request/response handling remains in `use-transactions-manager.ts`.
+---
+
+## 2026-03-01 18:11:19 CET - US-016
+- What was implemented
+  - Refactored `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx` to use shared `Field`, `FieldLabel`, and `FieldContent` primitives for the cleanup model select and system-prompt textarea sections.
+  - Preserved existing control ids (`message-cleanup-openai-model`, `message-cleanup-system-prompt`), placeholder text, save behavior, and fallback prompt/model helper text.
+  - Kept save/load error messaging inline and success feedback through existing Sonner toasts.
+  - Added reusable import-route guidance in `src/app/import/AGENTS.md` for Field migrations in import settings managers.
+  - Marked US-016 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx`
+  - `src/app/import/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Import settings manager forms can adopt Field primitives safely by preserving current control ids and wrapping selects/textareas in `FieldContent`.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Keeping helper/fallback copy outside the Field wrappers avoids unintentionally changing descriptive text hierarchy while migrating label semantics.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Message cleanup settings form semantics and save flows are centralized in `message-cleanup-settings-manager.tsx`, so Field/toast conventions are maintained in one place.
 ---
