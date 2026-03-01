@@ -1,0 +1,60 @@
+## Codebase Patterns
+- In Overview analytics (`src/lib/dashboard/analytics.ts`), exclude transactions with `category.kind = TRANSFER` from `netCashflow`, `inflowOutflow`, and `categoryBreakdown`, while still counting uncategorized rows.
+- In Monthly Review overview aggregation (`src/lib/monthly-review/overview.ts`), exclude `category.kind = TRANSFER` from spend totals/counts/category breakdown and MoM calculations while still including uncategorized rows.
+- In Monthly Review generation input (`src/lib/monthly-review/generation-input.ts`), compute spend-side metrics from negative transactions excluding `category.kind = TRANSFER`, while preserving uncategorized spend rows.
+- Keep a shared inline notice on `/` and `/monthly-review` that transfer-category transactions are excluded from spend/income analytics so users understand totals at a glance.
+- Keep transfer-exclusion regression coverage aligned across `src/lib/dashboard/analytics.test.ts`, `src/lib/monthly-review/overview.test.ts`, and `src/lib/monthly-review/generation-input.test.ts` whenever analytics/review metric filtering changes.
+
+## 2026-02-20 18:22 CET - US-001
+- Implemented transfer-category exclusion in Overview analytics aggregation for net cashflow, inflow/outflow, and spend breakdown.
+- Added/updated regression coverage for transfer exclusion behavior and uncategorized inclusion in dashboard analytics tests; updated existing categories E2E test flow to handle current tabbed UI so project test checks pass reliably.
+- Files changed: `src/lib/dashboard/analytics.ts`, `src/lib/dashboard/analytics.test.ts`, `tests/e2e/us-015-categories-route-management.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed (after regenerating Next type artifacts), `pnpm test` passed, `pnpm build` passed.
+- **Learnings for future iterations**
+  - Patterns discovered: Categories route UI is tabbed (`Category management` and `Category rules`), so E2E interactions must switch tabs before asserting/acting on section-specific controls.
+  - Gotchas encountered: `tsc --noEmit` can fail from stale `.next/dev/types` artifacts; regenerate with `pnpm exec next typegen` before rerunning typecheck.
+  - Useful context: Dashboard analytics now intentionally excludes transfer-category rows from spend/income views but leaves uncategorized rows included.
+---
+
+## 2026-02-20 18:29 CET - US-002
+- Implemented transfer-category exclusion in Monthly Review overview aggregation by fetching `category.kind` and skipping transfer rows before monthly spend/count/category accumulation.
+- Added regression coverage validating transfer exclusion, uncategorized inclusion, category breakdown output, and month-over-month deltas; updated timeline test mock shape to include `category.kind`.
+- Files changed: `src/lib/monthly-review/overview.ts`, `src/lib/monthly-review/overview.test.ts`, `src/lib/monthly-review/timeline.ts`, `src/lib/monthly-review/timeline.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed, `pnpm build` passed.
+- **Learnings for future iterations**
+  - Patterns discovered: Timeline wrappers that proxy `getMonthlyOverview` must keep the transaction select shape aligned with overview requirements (including nested category fields).
+  - Gotchas encountered: Tight TypeScript contract between `overview.ts` and `timeline.ts` will fail typecheck immediately when nested select fields diverge.
+  - Useful context: Monthly overview MoM deltas are derived from already-aggregated month totals, so transfer exclusion must happen before totals are persisted per month key.
+---
+
+## 2026-02-20 18:42 CET - US-003
+- Implemented transfer-category exclusion for monthly review generation-input spend metrics by including `category.kind` in transaction select shape and filtering spend rows before monthly/category/merchant/MoM calculations.
+- Added regression coverage for generation-input transfer exclusion behavior, including uncategorized inclusion and transfer-aware month-over-month spend totals; aligned generation module test DB mock category shape with `kind`.
+- Files changed: `src/lib/monthly-review/generation-input.ts`, `src/lib/monthly-review/generation-input.test.ts`, `src/lib/monthly-review/generation.ts`, `src/lib/monthly-review/generation.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed, `pnpm build` passed.
+- **Learnings for future iterations**
+  - Patterns discovered: Keep `generation.ts` DB client type and `generation-input.ts` transaction select shape in sync when adding new nested transaction fields.
+  - Gotchas encountered: Generation-flow tests that reuse DB mocks must include all required nested category fields (`id`, `name`, `kind`) after select-shape changes or typecheck fails.
+  - Useful context: Monthly review generation still sends full-month transaction rows to the model, while only spend-side metrics exclude transfer-category transactions.
+---
+
+## 2026-02-20 18:53 CET - US-004
+- Implemented concise inline transfer-exclusion messaging in normal page flow on Overview and Monthly Review using consistent wording.
+- Added Playwright assertions to verify the transfer-exclusion notice is visible on both pages.
+- Files changed: `src/app/(overview)/overview-dashboard.tsx`, `src/app/monthly-review/monthly-review-manager.tsx`, `tests/e2e/us-014-dashboard-ui.e2e.ts`, `tests/e2e/us-020-monthly-review-route.e2e.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed, `pnpm build` passed.
+- **Learnings for future iterations**
+  - Patterns discovered: Keep transfer-exclusion messaging copy identical across analytics routes to avoid user confusion and flaky text assertions.
+  - Gotchas encountered: UI copy changes on shared routes should be covered in existing route-level Playwright specs rather than creating redundant standalone specs.
+  - Useful context: Existing dashboard and monthly-review E2E mocks already cover these routes, so visibility assertions can be added with minimal test setup changes.
+---
+
+## 2026-02-20 18:56 CET - US-005
+- Strengthened transfer-exclusion regression coverage by updating analytics/monthly-review metric tests to explicitly guard transfer-row exclusion while keeping non-transfer and uncategorized rows included.
+- Files changed: `src/lib/dashboard/analytics.test.ts`, `src/lib/monthly-review/overview.test.ts`, `src/lib/monthly-review/generation-input.test.ts`, `AGENTS.md`, `ralph/prd.json`, `ralph/progress.txt`.
+- Quality checks run (and result): `pnpm lint` passed, `pnpm exec tsc --noEmit` passed, `pnpm test` passed, `pnpm build` passed.
+- **Learnings for future iterations**
+  - Patterns discovered: Keep transfer-exclusion assertions in all three analytics/review test suites synchronized so changes to shared business rules fail fast in CI.
+  - Gotchas encountered: Dashboard coverage should include both negative and positive transfer rows to protect net cashflow and inflow calculations from transfer leakage.
+  - Useful context: Existing tests already cover most transfer behavior, so this iteration primarily tightened expectations and documentation consistency.
+---

@@ -1,0 +1,83 @@
+{
+  "project": "inflation-station",
+  "branchName": "ralph/server-actions-refactor-mutations-first",
+  "description": "Refactor selected low-risk mutation workflows from client-side internal API fetch calls to Next.js Server Actions while preserving existing behavior and UI.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Define server action mutation architecture and migration guardrails",
+      "description": "As a developer, I want a standard Server Action mutation pattern so that migrated workflows are consistent, secure, and maintainable.",
+      "acceptanceCriteria": [
+        "Document a standard Server Action mutation pattern covering input validation, authorization, typed success/error responses, and cache revalidation",
+        "Implement at least one shared helper or convention used by multiple server actions to reduce duplication",
+        "Create a mapping of targeted API mutation route behavior to equivalent Server Action behavior before migration implementation",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Migrate one low-risk settings mutation workflow to Server Actions",
+      "description": "As a user, I want settings updates to save exactly as before so that the workflow is unchanged after server-side migration.",
+      "acceptanceCriteria": [
+        "Migrate one low-risk settings mutation flow from client-side `/api/*` fetch to a Server Action",
+        "Preserve existing success and failure UX copy and interaction behavior for the migrated settings flow",
+        "Do not introduce new user-visible fields, controls, or layout changes in the touched settings UI",
+        "Tests pass",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Migrate one low-risk entity mutation workflow to Server Actions",
+      "description": "As a user, I want create and update operations in one low-risk entity area to remain reliable after moving mutations to Server Actions.",
+      "acceptanceCriteria": [
+        "Migrate one entity mutation flow (for example provider mappings, categories, or category rules) from client-side API fetch to a Server Action",
+        "Validation and error handling outcomes remain equivalent to current behavior",
+        "Persisted data is correct and visible after refresh or navigation",
+        "Tests pass",
+        "Verify in browser using dev-browser skill",
+        "Typecheck passes"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add parity-focused regression coverage for migrated mutations",
+      "description": "As a developer, I want confidence checks around migrated mutation workflows so that refactoring does not introduce regressions.",
+      "acceptanceCriteria": [
+        "Add or update tests for each migrated mutation workflow at the existing project-appropriate layer",
+        "Cover happy-path and at least one failure-path for each migrated workflow",
+        "Keep related existing tests passing without weakening assertions",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Remove obsolete client mutation fetch logic for migrated workflows",
+      "description": "As a developer, I want legacy client mutation fetch plumbing removed so that the codebase is simpler and less error-prone.",
+      "acceptanceCriteria": [
+        "Remove direct client mutation calls to `/api/...` endpoints for workflows migrated in this PRD",
+        "Delete dead migration-related client code in touched modules, including unused hooks, helpers, and state branches",
+        "Keep migration scope limited to selected low-risk mutation flows and leave unrelated workflows untouched",
+        "Tests pass",
+        "Typecheck passes"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": ""
+    }
+  ]
+}
