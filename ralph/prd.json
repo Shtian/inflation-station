@@ -1,129 +1,282 @@
 {
   "project": "inflation-station",
-  "branchName": "ralph/transactions-table-shadcn-tanstack",
-  "description": "Migrate the transactions list to shadcn Data Table with TanStack server-driven filtering, sorting, column visibility, and URL-synced pagination state.",
+  "branchName": "ralph/ui-feedback-field-oklch-colors",
+  "description": "Standardize success feedback with Sonner toasts, migrate form semantics to shadcn Field primitives, and move deterministic category colors to OKLCH for consistent perceived lightness.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Validate and parse extended transactions query params",
-      "description": "As a developer, I want `/api/transactions` to validate and parse table query params so that table state can be safely sent from the UI.",
+      "title": "Refactor deterministic color generator to OKLCH profiles",
+      "description": "As a user, I want deterministic category colors generated in OKLCH so that hue changes keep more consistent perceived lightness.",
       "acceptanceCriteria": [
-        "Add validated query params for page, pageSize, sorting, global query, dateFrom, dateTo, accountId, and categoryId",
-        "Return explicit 400 responses for malformed values with stable error codes/messages",
-        "Update API route tests to cover valid and invalid query combinations",
+        "Replace HSL profile generation in `src/lib/deterministic-color.ts` with OKLCH profile generation",
+        "Preserve deterministic text-to-hue mapping for identical normalized input strings",
+        "Keep returned color API shape unchanged (`backgroundColor`, `borderColor`, text colors, contrast ratios)",
+        "Update `src/lib/deterministic-color.test.ts` for OKLCH output assertions and contrast expectations",
         "Tests pass",
         "Typecheck passes"
       ],
       "priority": 1,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Add server-side transaction filtering support",
-      "description": "As a user, I want transaction filters applied on the backend so that results remain correct and performant across large datasets.",
+      "title": "Validate OKLCH color consumers and fallback category color behavior",
+      "description": "As a user, I want badges and charts to render correctly after the OKLCH migration so that category visuals stay legible.",
       "acceptanceCriteria": [
-        "Apply global text filter to agreed searchable transaction fields",
-        "Apply inclusive date range filtering on booking date with dateFrom/dateTo params",
-        "Apply account and category filtering in the transactions list query",
-        "Add domain query tests for filter combinations and empty-result behavior",
+        "Update `src/lib/category-color.ts` and related tests if needed to align with OKLCH outputs",
+        "Confirm `src/components/category-badge.tsx` renders readable text and borders with new colors",
+        "Verify overview and monthly review category color usage still renders without regressions",
         "Tests pass",
-        "Typecheck passes"
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Add server-side sorting with stable pagination ordering",
-      "description": "As a user, I want sorted transaction pages to remain stable so that I do not see duplicate or missing rows while paging.",
+      "title": "Create migration inventory for toasts and Field standardization",
+      "description": "As a developer, I want an explicit inventory of feedback and form targets so that route-by-route migrations are complete and low risk.",
       "acceptanceCriteria": [
-        "Support sorting by booking date, amount, merchant, and category using query params",
-        "Include a deterministic secondary sort tiebreaker (for example id) for every sort mode",
-        "Pagination metadata remains correct after sorting and filtering",
-        "Add tests for sorted pagination stability and response metadata",
-        "Tests pass",
+        "Document all inline success feedback locations targeted for Sonner migration with file paths and message strings",
+        "Document all form surfaces not yet using `@/components/ui/field` and mark each as in-scope or out-of-scope",
+        "Document E2E tests that assert inline success messages and need toast assertion updates",
+        "Save the inventory under `tasks/` for implementation reference",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Implement URL-to-table state synchronization in transactions manager",
-      "description": "As a user, I want table state preserved in the URL so that refresh and back/forward keep my current transactions view.",
+      "title": "Add Sonner UI primitive and mount global toaster",
+      "description": "As a user, I want toast infrastructure available app-wide so feedback behavior is consistent across routes.",
       "acceptanceCriteria": [
-        "Initialize transactions table state from URL params on page load",
-        "Write state changes for filters, sorting, page index, and page size back to URL params",
-        "Changing filters resets page index to first page",
-        "Add tests for URL parse/serialize state behavior",
-        "Tests pass",
-        "Typecheck passes"
+        "Add shadcn Sonner component(s) under `src/components/ui`",
+        "Mount a single toaster instance in `src/app/layout.tsx`",
+        "Ensure toaster renders correctly in both light and dark themes",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Migrate transactions table rendering to TanStack table instance",
-      "description": "As a user, I want the transactions list to use a modern table state model so that sorting, filtering, and paging interactions are consistent.",
+      "title": "Migrate accounts success notices to Sonner toasts",
+      "description": "As a user, I want account CRUD confirmations shown as toasts so feedback matches other routes.",
       "acceptanceCriteria": [
-        "Replace current table rendering loop with a TanStack table instance using existing transaction row data",
-        "Preserve existing row cells and behavior for date, merchant, notes indicator, category, payment type, amount, and action menu",
-        "Keep row edit and delete actions working after migration",
+        "Replace account success notice state/rendering in `src/app/accounts/use-accounts-manager.ts` and `src/app/accounts/accounts-manager.tsx` with Sonner toasts",
+        "Keep account validation and blocking error messages inline",
+        "Update E2E assertions that currently depend on inline account success text",
+        "Tests pass",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Add transactions filter toolbar UI",
-      "description": "As a user, I want visible table filters so that I can quickly narrow transactions without manual paging.",
+      "title": "Migrate categories success notices to Sonner toasts",
+      "description": "As a user, I want category and rule CRUD confirmations shown as toasts so route feedback is consistent.",
       "acceptanceCriteria": [
-        "Add global text input, date-from/date-to controls, account filter, and category filter to the transactions table section",
-        "Filter control values are bound to URL-synced table state",
-        "Show empty-state message when active filters produce no rows",
+        "Replace success notice state/rendering in `src/app/categories/categories-manager.tsx` with Sonner toasts",
+        "Keep blocking validation and API error messages inline",
+        "Update E2E assertions for category added/removed/renamed and rule added/removed messages",
+        "Tests pass",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 6,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Add sortable headers and session-only column visibility",
-      "description": "As a user, I want sortable columns and hide/show controls so that I can tailor the transactions table to my workflow.",
+      "title": "Migrate provider mappings success notices to Sonner toasts",
+      "description": "As a user, I want provider mapping CRUD confirmations shown as toasts so feedback is uniform with other admin routes.",
       "acceptanceCriteria": [
-        "Add sortable header controls for supported columns with clear asc/desc/none visual state",
-        "Add column visibility menu with hideable-column enforcement",
-        "Persist column visibility only for the current browser session",
+        "Replace success notice state/rendering in `src/app/import-provider-mappings/provider-mappings-manager.tsx` with Sonner toasts",
+        "Keep dialog-level validation and API errors inline",
+        "Update E2E assertions for provider mapping added/updated/removed messages",
+        "Tests pass",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Adopt shadcn/TanStack pagination controls in transactions list",
-      "description": "As a user, I want pagination controls consistent with shadcn data-table patterns so that navigating transaction pages is predictable.",
+      "title": "Migrate import flow submit notices to Sonner toasts",
+      "description": "As a user, I want import parse/submit confirmations shown as toasts so I receive consistent transient feedback.",
       "acceptanceCriteria": [
-        "Replace existing pagination UI with shadcn/TanStack pagination controls and page-size selector",
-        "Pagination controls are wired to URL-synced table state and backend query params",
-        "Pagination state remains valid after filters, sorting, and row mutations",
+        "Replace inline `submitNotice` rendering in `src/app/import/components/import-upload-phase.tsx` and `src/app/import/components/import-review-phase.tsx` with Sonner toasts",
+        "Keep inline account/import/category error alerts where corrective action is required",
+        "Verify import flow still clears state and shows completion feedback after successful submit",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": true,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Migrate message cleanup settings success feedback to Sonner",
+      "description": "As a user, I want message cleanup settings save confirmations shown as toasts so settings pages behave consistently.",
+      "acceptanceCriteria": [
+        "Replace inline success banner rendering in `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx` with Sonner toasts",
+        "Keep inline error banner rendering for save/load failures",
+        "Preserve existing success copy text for model and prompt saves",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Migrate monthly review settings success feedback to Sonner",
+      "description": "As a user, I want monthly review settings save confirmations shown as toasts so settings feedback is aligned across features.",
+      "acceptanceCriteria": [
+        "Replace inline success banner rendering in `src/app/monthly-review/settings/monthly-review-settings-manager.tsx` with Sonner toasts",
+        "Keep inline error banner rendering for save/load failures",
+        "Update E2E assertions that currently target inline monthly review settings success text",
+        "Tests pass",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Adopt Field primitives in accounts create form",
+      "description": "As a user, I want account form controls to follow shared Field semantics so labels and spacing are consistent and accessible.",
+      "acceptanceCriteria": [
+        "Refactor `src/app/accounts/components/create-account-section.tsx` to use `Field`, `FieldLabel`, and `FieldContent`",
+        "Preserve existing input ids, placeholders, and button behavior",
+        "Retain accessible label association for account name and institution fields",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Adopt Field primitives in category management form",
+      "description": "As a user, I want category creation and rename fields to use shared form semantics so the management flow is consistent.",
+      "acceptanceCriteria": [
+        "Refactor form sections in `src/app/categories/components/category-management-section.tsx` to use Field primitives",
+        "Preserve select and dialog interactions for kind, scope, and rename workflows",
+        "Keep existing validation/error wiring behavior unchanged",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-013",
+      "title": "Adopt Field primitives in category rules form",
+      "description": "As a user, I want category rule input controls to use shared Field semantics so labels, descriptions, and spacing are consistent.",
+      "acceptanceCriteria": [
+        "Refactor form sections in `src/app/categories/components/rules-management-section.tsx` to use Field primitives",
+        "Preserve `CategoryCombobox`, select, number input, and add-rule behaviors",
+        "Keep existing accessibility labels and control ids intact",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-014",
+      "title": "Adopt Field primitives in provider mapping dialogs",
+      "description": "As a user, I want provider mapping dialog forms to use shared Field semantics so complex mapping workflows stay readable and accessible.",
+      "acceptanceCriteria": [
+        "Refactor provider and mapping-version inputs in `add-provider-mapping-dialog.tsx` and `edit-provider-mapping-dialog.tsx` to use Field primitives",
+        "Refactor `provider-mapping-string-badge-input.tsx` label/error structure to use Field primitives including FieldError",
+        "Preserve regex validation behavior and Enter-to-add interaction",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-015",
+      "title": "Adopt Field primitives in edit transaction dialog",
+      "description": "As a user, I want the edit transaction dialog to use shared Field semantics so editing feels consistent with other forms.",
+      "acceptanceCriteria": [
+        "Refactor labeled controls in `src/app/transactions/components/edit-transaction-dialog.tsx` to use Field primitives",
+        "Preserve existing note validation and character-count messaging behavior",
+        "Keep dialog submit/cancel and combobox/select interactions unchanged",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-016",
+      "title": "Adopt Field primitives in message cleanup settings form",
+      "description": "As a user, I want import message cleanup settings fields to use shared Field semantics so labels and help text are consistent.",
+      "acceptanceCriteria": [
+        "Refactor model select and prompt textarea sections in `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx` to use Field primitives",
+        "Preserve existing settings save behavior and fallback prompt/model helper text",
+        "Keep error messaging visible and accessible",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-017",
+      "title": "Adopt Field primitives in monthly review settings form",
+      "description": "As a user, I want monthly review settings fields to use shared Field semantics so settings pages feel coherent.",
+      "acceptanceCriteria": [
+        "Refactor model select and prompt textarea sections in `src/app/monthly-review/settings/monthly-review-settings-manager.tsx` to use Field primitives",
+        "Preserve existing settings save behavior and fallback prompt/model helper text",
+        "Keep error messaging visible and accessible",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-018",
+      "title": "Adopt Field semantics in import upload configuration inputs",
+      "description": "As a user, I want import account and file input sections to follow shared field semantics so upload configuration is clearer and more accessible.",
+      "acceptanceCriteria": [
+        "Refactor account selection and file input labeling in `src/app/import/components/import-upload-phase.tsx` to align with Field primitives",
+        "Preserve drag-and-drop and browse-file interactions",
+        "Keep existing inline import/account/category error rendering behavior",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 18,
+      "passes": false,
       "notes": ""
     }
   ]
