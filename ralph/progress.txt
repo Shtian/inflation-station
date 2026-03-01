@@ -16,6 +16,7 @@
 - In the transactions edit dialog, keep note character-count and note validation copy inline in the note field area while reserving dialog-level alerts for submit failures.
 - In import settings managers, migrate `Label` wrappers to `Field` + `FieldLabel` + `FieldContent` while preserving `SelectTrigger`/`Textarea` ids so a11y bindings and tests remain stable.
 - In monthly review settings managers, follow the same Field migration pattern as import settings: preserve `SelectTrigger`/`Textarea` ids and pair with `FieldLabel htmlFor` to keep label semantics and selectors stable.
+- In import upload forms, preserve `account-select` (`SelectTrigger`) and `csv-file` (hidden file input) ids when adopting `Field` primitives so combobox/file-input labels and Playwright locators remain stable.
 
 ## 2026-03-01 18:14:31 CET - US-017
 - What was implemented
@@ -536,4 +537,29 @@
     - Keeping helper/fallback copy outside the Field wrappers avoids unintentionally changing descriptive text hierarchy while migrating label semantics.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Message cleanup settings form semantics and save flows are centralized in `message-cleanup-settings-manager.tsx`, so Field/toast conventions are maintained in one place.
+---
+
+## 2026-03-01 18:20:57 CET - US-018
+- What was implemented
+  - Refactored import upload configuration controls in `src/app/import/components/import-upload-phase.tsx` to use shared `Field`, `FieldLabel`, and `FieldContent` primitives for the bank-account select and CSV file input sections.
+  - Preserved existing control ids and behaviors (`account-select` select trigger, hidden `csv-file` input, drag-and-drop/browse interactions, and inline import/account/category error rendering).
+  - Added reusable import-route guidance in `src/app/import/AGENTS.md` for upload-phase Field migrations that must preserve id/label wiring.
+  - Marked US-018 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/import/components/import-upload-phase.tsx`
+  - `src/app/import/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Import upload form sections can adopt Field primitives without UX changes by wrapping existing controls in `FieldContent` and preserving hidden-input/select trigger ids.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Keep the hidden CSV input labeled with `FieldLabel htmlFor="csv-file"`; changing that id breaks both accessible name resolution (`getByLabel("CSV file")`) and existing E2E selectors.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Upload-phase configuration semantics are centralized in `import-upload-phase.tsx`, while parse/submit orchestration remains in `use-import-workflow.ts`.
 ---

@@ -9,7 +9,7 @@ import {
 import type { RefObject } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -86,141 +86,137 @@ export function ImportUploadPhase({
         </div>
 
         <div className="space-y-5">
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="account-select"
-              className="font-medium text-foreground text-sm"
-            >
-              Bank Account
-            </Label>
-            <Select
-              value={selectedAccountId}
-              onValueChange={setSelectedAccountId}
-              disabled={!hasActiveAccounts}
-            >
-              <SelectTrigger id="account-select" className="w-full">
-                <div className="flex items-center gap-2">
-                  <Landmark
-                    className="h-4 w-4 shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <SelectValue
-                    placeholder={
-                      hasActiveAccounts
-                        ? "Select a bank account"
-                        : "No active accounts available"
-                    }
-                  />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                {activeAccounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-muted-foreground text-xs">
-              Choose the account this CSV data belongs to.
-            </p>
-          </div>
+          <Field>
+            <FieldLabel htmlFor="account-select">Bank Account</FieldLabel>
+            <FieldContent>
+              <Select
+                value={selectedAccountId}
+                onValueChange={setSelectedAccountId}
+                disabled={!hasActiveAccounts}
+              >
+                <SelectTrigger id="account-select" className="w-full">
+                  <div className="flex items-center gap-2">
+                    <Landmark
+                      className="h-4 w-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <SelectValue
+                      placeholder={
+                        hasActiveAccounts
+                          ? "Select a bank account"
+                          : "No active accounts available"
+                      }
+                    />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {activeAccounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-xs">
+                Choose the account this CSV data belongs to.
+              </p>
+            </FieldContent>
+          </Field>
 
           <Separator />
 
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="csv-file"
-              className="font-medium text-foreground text-sm"
-            >
-              CSV File
-            </Label>
+          <Field>
+            <FieldLabel htmlFor="csv-file">CSV File</FieldLabel>
+            <FieldContent>
+              <input
+                name="csv-file"
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,text/csv"
+                aria-label="CSV file"
+                id="csv-file"
+                className="sr-only"
+                onChange={(event) => {
+                  onFileSelected(event.target.files?.[0] ?? null);
+                }}
+              />
 
-            <input
-              name="csv-file"
-              ref={fileInputRef}
-              type="file"
-              accept=".csv,text/csv"
-              aria-label="CSV file"
-              id="csv-file"
-              className="sr-only"
-              onChange={(event) => {
-                onFileSelected(event.target.files?.[0] ?? null);
-              }}
-            />
-
-            {selectedFile ? (
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
-                <FileText className="shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p
-                    className="truncate text-foreground"
-                    title={selectedFile.name}
+              {selectedFile ? (
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
+                  <FileText className="shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="truncate text-foreground"
+                      title={selectedFile.name}
+                    >
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {formatFileSize(selectedFile.size)}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    aria-label="Clear selected file"
+                    onClick={clearSelectedFile}
+                    className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                   >
-                    {selectedFile.name}
-                  </p>
-                  <p className="text-muted-foreground">
-                    {formatFileSize(selectedFile.size)}
-                  </p>
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  aria-label="Clear selected file"
-                  onClick={clearSelectedFile}
-                  className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              ) : (
+                <button
+                  type="button"
+                  className={cn(
+                    "flex w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 text-center transition-colors",
+                    isDraggingOver
+                      ? "border-primary bg-primary/5"
+                      : "border-muted-foreground/25 hover:border-muted-foreground/50",
+                  )}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDraggingOver(true);
+                  }}
+                  onDragLeave={() => setIsDraggingOver(false)}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    setIsDraggingOver(false);
+                    const file = event.dataTransfer.files?.[0];
+                    if (!file) return;
+                    if (
+                      file.type !== "text/csv" &&
+                      !file.name.endsWith(".csv")
+                    ) {
+                      return;
+                    }
+                    onFileSelected(file);
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
                 >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className={cn(
-                  "flex w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed py-10 text-center transition-colors",
-                  isDraggingOver
-                    ? "border-primary bg-primary/5"
-                    : "border-muted-foreground/25 hover:border-muted-foreground/50",
-                )}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsDraggingOver(true);
-                }}
-                onDragLeave={() => setIsDraggingOver(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setIsDraggingOver(false);
-                  const file = event.dataTransfer.files?.[0];
-                  if (!file) return;
-                  if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
-                    return;
-                  }
-                  onFileSelected(file);
-                }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="rounded-full bg-muted p-3">
-                  <UploadCloud
-                    className="h-6 w-6 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <p className="font-medium text-foreground text-sm">
-                    Drag &amp; drop your CSV file
-                  </p>
+                  <div className="rounded-full bg-muted p-3">
+                    <UploadCloud
+                      className="h-6 w-6 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium text-foreground text-sm">
+                      Drag &amp; drop your CSV file
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      or click to browse from your computer
+                    </p>
+                  </div>
+                  <span className="pointer-events-none inline-flex items-center rounded-md bg-foreground px-3 py-1.5 font-medium text-background text-sm">
+                    Browse Files
+                  </span>
                   <p className="text-muted-foreground text-xs">
-                    or click to browse from your computer
+                    Supports .csv files up to 10MB
                   </p>
-                </div>
-                <span className="pointer-events-none inline-flex items-center rounded-md bg-foreground px-3 py-1.5 font-medium text-background text-sm">
-                  Browse Files
-                </span>
-                <p className="text-muted-foreground text-xs">
-                  Supports .csv files up to 10MB
-                </p>
-              </button>
-            )}
-          </div>
+                </button>
+              )}
+            </FieldContent>
+          </Field>
 
           {providerDetection ? (
             <div className="space-y-1">
