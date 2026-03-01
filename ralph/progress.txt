@@ -182,3 +182,30 @@
   - Useful context (e.g., "the evaluation panel is in component X")
     - Theme-aware toast rendering is handled via `next-themes` `useTheme` in the Sonner wrapper, so light/dark behavior should be validated at wrapper level.
 ---
+
+## 2026-03-01 09:28:01 CET - US-006
+- What was implemented
+  - Migrated category and category-rule success feedback in `src/app/categories/categories-manager.tsx` from inline `notice` state/rendering to Sonner `toast.success(...)` calls for add/rename/remove flows.
+  - Kept blocking validation and API error messaging inline via the existing `error` alert path.
+  - Updated categories Playwright coverage to assert Sonner toasts with `[data-sonner-toast]` for `Category added.`, `Category renamed.`, `Category rule added.`, `Category rule removed.`, and `Category removed.`.
+  - Added route-level convention guidance in `src/app/categories/AGENTS.md` for toast success + inline error behavior.
+  - Marked US-006 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/categories/categories-manager.tsx`
+  - `tests/e2e/us-015-categories-route-management.e2e.ts`
+  - `src/app/categories/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Categories route feedback now matches the app convention: successful CRUD outcomes use Sonner toasts from the manager component, while actionable failures remain inline.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Toast migrations need both UI code and Playwright updates in the same story to avoid assertions still targeting removed inline success banners.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - All category/category-rule success copy is emitted centrally in `CategoriesManager`, while section components focus on controls and table rendering.
+---

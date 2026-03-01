@@ -204,7 +204,9 @@ test("manages categories and category rules from /categories", async ({
   await page.getByLabel("Category name").fill("Transport");
   await page.getByRole("button", { name: "Add category" }).click();
 
-  await expect(page.getByText("Category added.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category added." }),
+  ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "Transport", exact: true }),
   ).toBeVisible();
@@ -217,7 +219,9 @@ test("manages categories and category rules from /categories", async ({
   await page.getByRole("dialog").getByLabel("Category name").fill("Commute");
   await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
 
-  await expect(page.getByText("Category renamed.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+  ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "Commute", exact: true }),
   ).toBeVisible();
@@ -232,7 +236,9 @@ test("manages categories and category rules from /categories", async ({
   await page.getByLabel("Priority").fill("5");
   await page.getByRole("button", { name: "Add rule" }).click();
 
-  await expect(page.getByText("Category rule added.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category rule added." }),
+  ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "ruter", exact: true }),
   ).toBeVisible();
@@ -246,7 +252,9 @@ test("manages categories and category rules from /categories", async ({
     .getByRole("row", { name: /ruter/i })
     .getByRole("button", { name: "Delete" })
     .click();
-  await expect(page.getByText("Category rule removed.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category rule removed." }),
+  ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "ruter", exact: true }),
   ).toHaveCount(0);
@@ -259,7 +267,9 @@ test("manages categories and category rules from /categories", async ({
     .getByRole("button", { name: "Actions for category Commute" })
     .click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  await expect(page.getByText("Category removed.")).toBeVisible();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category removed." }),
+  ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "Commute", exact: true }),
   ).toHaveCount(0);

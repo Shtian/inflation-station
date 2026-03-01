@@ -2,6 +2,7 @@
 
 import type { CategoryKind } from "@prisma/client";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type {
   Account,
@@ -18,7 +19,6 @@ export function CategoriesManager() {
   const [categoryRules, setCategoryRules] = useState<CategoryRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -111,13 +111,11 @@ export function CategoriesManager() {
   async function createCategory() {
     if (!newCategoryName.trim()) {
       setError("Category name is required.");
-      setNotice(null);
       return;
     }
 
     setBusyKey("new-category");
     setError(null);
-    setNotice(null);
 
     const response = await fetch("/api/categories", {
       method: "POST",
@@ -143,7 +141,7 @@ export function CategoriesManager() {
     setNewCategoryKind("EXPENSE");
     setNewCategoryScope("");
     setBusyKey(null);
-    setNotice("Category added.");
+    toast.success("Category added.");
     await loadData();
   }
 
@@ -154,7 +152,6 @@ export function CategoriesManager() {
 
     setBusyKey(`delete-category-${categoryId}`);
     setError(null);
-    setNotice(null);
 
     const response = await fetch(`/api/categories/${categoryId}`, {
       method: "DELETE",
@@ -168,7 +165,7 @@ export function CategoriesManager() {
     }
 
     setBusyKey(null);
-    setNotice("Category removed.");
+    toast.success("Category removed.");
     await loadData();
   }
 
@@ -176,7 +173,6 @@ export function CategoriesManager() {
     setEditingCategoryId(category.id);
     setEditCategoryName(category.name);
     setError(null);
-    setNotice(null);
   }
 
   function cancelRenameCategory() {
@@ -187,13 +183,11 @@ export function CategoriesManager() {
   async function renameCategory(categoryId: string) {
     if (!editCategoryName.trim()) {
       setError("Category name is required.");
-      setNotice(null);
       return;
     }
 
     setBusyKey(`rename-category-${categoryId}`);
     setError(null);
-    setNotice(null);
 
     const response = await fetch(`/api/categories/${categoryId}`, {
       method: "PATCH",
@@ -214,33 +208,29 @@ export function CategoriesManager() {
 
     setBusyKey(null);
     cancelRenameCategory();
-    setNotice("Category renamed.");
+    toast.success("Category renamed.");
     await loadData();
   }
 
   async function createRule() {
     if (!ruleCategoryId) {
       setError("Select a category for the rule.");
-      setNotice(null);
       return;
     }
 
     if (!ruleMerchantContains.trim()) {
       setError("Merchant contains is required.");
-      setNotice(null);
       return;
     }
 
     const parsedPriority = Number.parseInt(rulePriority, 10);
     if (!Number.isInteger(parsedPriority)) {
       setError("Priority must be an integer.");
-      setNotice(null);
       return;
     }
 
     setBusyKey("new-rule");
     setError(null);
-    setNotice(null);
 
     const response = await fetch("/api/category-rules", {
       method: "POST",
@@ -269,7 +259,7 @@ export function CategoriesManager() {
     setRulePriority("100");
     setRuleScope("");
     setBusyKey(null);
-    setNotice("Category rule added.");
+    toast.success("Category rule added.");
     await loadData();
   }
 
@@ -280,7 +270,6 @@ export function CategoriesManager() {
 
     setBusyKey(`delete-rule-${ruleId}`);
     setError(null);
-    setNotice(null);
 
     const response = await fetch(`/api/category-rules/${ruleId}`, {
       method: "DELETE",
@@ -294,7 +283,7 @@ export function CategoriesManager() {
     }
 
     setBusyKey(null);
-    setNotice("Category rule removed.");
+    toast.success("Category rule removed.");
     await loadData();
   }
 
@@ -370,12 +359,6 @@ export function CategoriesManager() {
           className="mt-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
         >
           {error}
-        </p>
-      ) : null}
-
-      {notice ? (
-        <p className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-700 text-sm">
-          {notice}
         </p>
       ) : null}
     </div>
