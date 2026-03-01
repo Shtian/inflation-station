@@ -1,2 +1,26 @@
 ## Codebase Patterns
-- Add patterns discovered during this Ralph run here.
+- Keep deterministic category color API shape stable even when changing color spaces (`hue`, `saturation`, `lightness`, and contrast fields), and adapt internals for conversion/contrast math.
+
+## 2026-03-01 08:38:48 CET - US-001
+- What was implemented
+  - Replaced HSL-based deterministic category color generation with OKLCH profiles in `src/lib/deterministic-color.ts` while preserving deterministic normalized text-to-hue hashing and returned object shape.
+  - Added OKLCH-to-sRGB conversion for contrast computation and switched CSS output strings to `oklch(...)` for background/border colors.
+  - Updated deterministic color tests for OKLCH output/profile expectations and retained WCAG AA contrast assertions.
+- Files changed
+  - `src/lib/deterministic-color.ts`
+  - `src/lib/deterministic-color.test.ts`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (unit + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Deterministic color tests assert both profile invariants and contrast behavior, so color-space migrations should update those tests in the same story.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Floating point precision from profile math can cause strict equality test failures; normalize values before returning/asserting.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - `getDeterministicColorFromText` is the central source of category color tokens consumed by category color helpers.
+---

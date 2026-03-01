@@ -29,16 +29,19 @@ describe("getDeterministicColorFromText", () => {
     const muted = getDeterministicColorFromText("Loan", "muted");
     const mattePastel = getDeterministicColorFromText("Loan", "mattePastel");
 
-    expect(vibrant.saturation).toBe(72);
-    expect(vibrant.lightness).toBe(46);
+    expect(vibrant.saturation).toBe(22);
+    expect(vibrant.lightness).toBe(60);
+    expect(vibrant.backgroundColor).toMatch(/^oklch\(/);
     expect(vibrant.backgroundColor).toContain("/ 1)");
 
-    expect(muted.saturation).toBe(52);
-    expect(muted.lightness).toBe(52);
+    expect(muted.saturation).toBe(14);
+    expect(muted.lightness).toBe(64);
+    expect(muted.backgroundColor).toMatch(/^oklch\(/);
     expect(muted.backgroundColor).toContain("/ 1)");
 
-    expect(mattePastel.saturation).toBe(34);
-    expect(mattePastel.lightness).toBe(78);
+    expect(mattePastel.saturation).toBe(8);
+    expect(mattePastel.lightness).toBe(82);
+    expect(mattePastel.backgroundColor).toMatch(/^oklch\(/);
     expect(mattePastel.backgroundColor).toContain("/ 1)");
   });
 

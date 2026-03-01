@@ -10,6 +10,7 @@ Inflation Station is a Next.js + TypeScript personal-finance app with Prisma-bac
 - If behavior changes and tests are feasible, add or update tests.
 - After Prisma schema changes, run `pnpm exec prisma generate` before type/build checks.
 - For Server Action mutations, use `src/lib/server-actions/mutation-result.ts` to keep validation and typed error contracts consistent with existing API error-code semantics.
+- For deterministic category color changes, keep `getDeterministicColorFromText` return shape stable and update `src/lib/deterministic-color.test.ts` in the same change.
 
 ## Validation defaults
 - Run targeted validation matching the change scope, typically once per completed change set.

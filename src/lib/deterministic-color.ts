@@ -5,7 +5,7 @@ const WCAG_SMALL_TEXT_CONTRAST = 7;
 const UNCATEGORIZED_LABEL = "uncategorized";
 
 type ColorProfile = {
-  saturation: number;
+  chroma: number;
   lightness: number;
   borderLightness: number;
   backgroundAlpha: number;
@@ -16,23 +16,23 @@ export type DeterministicColorVariation = "vibrant" | "muted" | "mattePastel";
 
 const COLOR_PROFILES: Record<DeterministicColorVariation, ColorProfile> = {
   vibrant: {
-    saturation: 72,
-    lightness: 46,
-    borderLightness: 34,
+    chroma: 0.22,
+    lightness: 60,
+    borderLightness: 48,
     backgroundAlpha: 1,
     borderAlpha: 1,
   },
   muted: {
-    saturation: 52,
-    lightness: 52,
-    borderLightness: 40,
+    chroma: 0.14,
+    lightness: 64,
+    borderLightness: 54,
     backgroundAlpha: 1,
     borderAlpha: 1,
   },
   mattePastel: {
-    saturation: 34,
-    lightness: 78,
-    borderLightness: 62,
+    chroma: 0.08,
+    lightness: 82,
+    borderLightness: 70,
     backgroundAlpha: 1,
     borderAlpha: 1,
   },
@@ -79,42 +79,47 @@ function getContrastRatio(
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-function hslToRgb(hue: number, saturation: number, lightness: number) {
-  const s = saturation / 100;
-  const l = lightness / 100;
-  const chroma = (1 - Math.abs(2 * l - 1)) * s;
-  const hueSection = hue / 60;
-  const x = chroma * (1 - Math.abs((hueSection % 2) - 1));
-  const match = l - chroma / 2;
+function oklchToRgb(hue: number, chroma: number, lightness: number) {
+  const labLightness = lightness / 100;
+  const hueRadians = (hue * Math.PI) / 180;
+  const a = chroma * Math.cos(hueRadians);
+  const b = chroma * Math.sin(hueRadians);
 
-  let redPrime = 0;
-  let greenPrime = 0;
-  let bluePrime = 0;
+  const lPrime = labLightness + 0.396_337_777_4 * a + 0.215_803_757_3 * b;
+  const mPrime = labLightness - 0.105_561_345_8 * a - 0.063_854_172_8 * b;
+  const sPrime = labLightness - 0.089_484_177_5 * a - 1.291_485_548 * b;
 
-  if (hueSection >= 0 && hueSection < 1) {
-    redPrime = chroma;
-    greenPrime = x;
-  } else if (hueSection >= 1 && hueSection < 2) {
-    redPrime = x;
-    greenPrime = chroma;
-  } else if (hueSection >= 2 && hueSection < 3) {
-    greenPrime = chroma;
-    bluePrime = x;
-  } else if (hueSection >= 3 && hueSection < 4) {
-    greenPrime = x;
-    bluePrime = chroma;
-  } else if (hueSection >= 4 && hueSection < 5) {
-    redPrime = x;
-    bluePrime = chroma;
-  } else {
-    redPrime = chroma;
-    bluePrime = x;
-  }
+  const l = lPrime ** 3;
+  const m = mPrime ** 3;
+  const s = sPrime ** 3;
 
-  const red = Math.round((redPrime + match) * 255);
-  const green = Math.round((greenPrime + match) * 255);
-  const blue = Math.round((bluePrime + match) * 255);
-  return [red, green, blue] as [number, number, number];
+  const linearRed =
+    4.076_741_662_1 * l - 3.307_711_591_3 * m + 0.230_969_929_2 * s;
+  const linearGreen =
+    -1.268_438_004_6 * l + 2.609_757_401_1 * m - 0.341_319_396_5 * s;
+  const linearBlue =
+    -0.004_196_086_3 * l - 0.703_418_614_7 * m + 1.707_614_701 * s;
+
+  const toSrgbChannel = (linearChannel: number) => {
+    const clampedLinear = Math.min(1, Math.max(0, linearChannel));
+    const srgb =
+      clampedLinear <= 0.003_130_8
+        ? 12.92 * clampedLinear
+        : 1.055 * clampedLinear ** (1 / 2.4) - 0.055;
+
+    return Math.round(Math.min(1, Math.max(0, srgb)) * 255);
+  };
+
+  return [
+    toSrgbChannel(linearRed),
+    toSrgbChannel(linearGreen),
+    toSrgbChannel(linearBlue),
+  ] as [number, number, number];
+}
+
+function formatCssNumber(value: number) {
+  const fixed = value.toFixed(4);
+  return fixed.replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
 }
 
 export type DeterministicColor = {
@@ -197,9 +202,9 @@ export function getDeterministicColorFromText(
   const profile = COLOR_PROFILES[variation];
   const normalized = normalizeText(text);
   const hue = hashText(normalized) % HUE_RANGE;
-  const saturation = profile.saturation;
+  const saturation = Number((profile.chroma * 100).toFixed(4));
   const lightness = profile.lightness;
-  const backgroundRgb = hslToRgb(hue, saturation, lightness);
+  const backgroundRgb = oklchToRgb(hue, profile.chroma, lightness);
   const lightThemeBackground = compositeRgb(
     backgroundRgb,
     LIGHT_SURFACE_RGB,
@@ -225,8 +230,8 @@ export function getDeterministicColorFromText(
     hue,
     saturation,
     lightness,
-    backgroundColor: `hsl(${hue} ${saturation}% ${lightness}% / ${profile.backgroundAlpha})`,
-    borderColor: `hsl(${hue} ${saturation}% ${profile.borderLightness}% / ${profile.borderAlpha})`,
+    backgroundColor: `oklch(${formatCssNumber(lightness)}% ${formatCssNumber(profile.chroma)} ${formatCssNumber(hue)} / ${formatCssNumber(profile.backgroundAlpha)})`,
+    borderColor: `oklch(${formatCssNumber(profile.borderLightness)}% ${formatCssNumber(profile.chroma)} ${formatCssNumber(hue)} / ${formatCssNumber(profile.borderAlpha)})`,
     lightTextColor: tunedLightThemeText.textColor,
     darkTextColor: darkThemeText.textColor,
     lightContrastRatio: tunedLightThemeText.contrastRatio,
