@@ -2,6 +2,7 @@
 - Keep deterministic category color API shape stable even when changing color spaces (`hue`, `saturation`, `lightness`, and contrast fields), and adapt internals for conversion/contrast math.
 - Keep `uncategorized` category color as an explicit neutral fallback in `src/lib/category-color.ts`, and provide separate light/dark text tokens to preserve readability in badges.
 - Inline success feedback is commonly state-driven (`notice`/`success`/`submitNotice`) in route manager hooks, and Playwright coverage usually asserts those exact strings with `getByText(...)`; toast migrations should update both surfaces together.
+- Mount the Sonner toaster once in `src/app/layout.tsx` via a shared `src/components/ui/sonner.tsx` wrapper so route-level toast migrations only call `toast(...)` and never create extra toaster instances.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -98,4 +99,57 @@
     - `ralph/progress.txt` may contain earlier failed attempts for the same story; append a new timestamped entry with final passing status instead of rewriting history.
   - Useful context (e.g., "the evaluation panel is in component X")
     - `getCategoryColor` is the single uncategorized fallback gateway, while category badges/charts consume the returned tokens directly.
+---
+
+## 2026-03-01 09:15:29 CET - US-004
+- What was implemented
+  - Added a shared Sonner UI primitive at `src/components/ui/sonner.tsx` with theme-aware `next-themes` integration and semantic token-based toast class mappings for both light and dark themes.
+  - Mounted a single app-wide `<Toaster richColors />` in `src/app/layout.tsx` so all routes can emit toasts consistently.
+  - Added reusable app-router guidance to `src/app/AGENTS.md` to keep future work on one global toaster instance.
+- Files changed
+  - `package.json`
+  - `pnpm-lock.yaml`
+  - `src/components/ui/sonner.tsx`
+  - `src/app/layout.tsx`
+  - `src/app/AGENTS.md`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ❌ (unit tests pass; Playwright consistently fails existing unrelated assertion in `tests/e2e/us-018-transactions-route-controls.e2e.ts` at `getByText("Filtered Market")`)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Sonner integration should stay behind a single wrapper (`src/components/ui/sonner.tsx`) to centralize theme + className token mapping.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Full `pnpm test` is currently blocked by a persistent transactions Playwright failure unrelated to toaster infrastructure, so story completion may require stabilizing `tests/e2e/us-018-transactions-route-controls.e2e.ts` separately.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - App shell theme verification is already covered by `tests/e2e/us-017-theme-toggle.e2e.ts`, which exercises light/dark mode behavior after layout-level changes.
+---
+
+## 2026-03-01 09:22:08 CET - US-004
+- What was implemented
+  - Added the shared Sonner primitive at `src/components/ui/sonner.tsx` with `next-themes` integration and semantic token class mappings so toasts render consistently across themes.
+  - Mounted a single global `<Toaster richColors />` in `src/app/layout.tsx` so route-level migrations can call `toast(...)` without adding additional instances.
+  - Added Sonner dependency wiring in `package.json`/`pnpm-lock.yaml` and documented the app-router toaster pattern in `src/app/AGENTS.md`.
+  - Marked US-004 as passing in `ralph/prd.json`.
+- Files changed
+  - `package.json`
+  - `pnpm-lock.yaml`
+  - `src/components/ui/sonner.tsx`
+  - `src/app/layout.tsx`
+  - `src/app/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E; passed on rerun after an intermittent `us-018-transactions-route-controls` assertion miss)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Keep Sonner setup centralized in `src/components/ui/sonner.tsx` and layout mounting only in `src/app/layout.tsx`; route stories should only emit `toast(...)` events.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Full Playwright runs can intermittently miss `Filtered Market` in `tests/e2e/us-018-transactions-route-controls.e2e.ts`; rerun once before treating it as a deterministic regression.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Theme-aware toast rendering is handled via `next-themes` `useTheme` in the Sonner wrapper, so light/dark behavior should be validated at wrapper level.
 ---

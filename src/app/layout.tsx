@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AppNavigation } from "@/components/app-navigation";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/theme-toggle";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -50,6 +51,7 @@ export default function RootLayout({
               </div>
             </header>
             {children}
+            <Toaster richColors />
           </div>
         </ThemeProvider>
       </body>
