@@ -8,6 +8,7 @@ Inflation Station is a Next.js + TypeScript personal-finance app with Prisma-bac
 - Make the smallest safe change; do not refactor unrelated code.
 - Preserve existing architecture and style unless asked to change them.
 - If behavior changes and tests are feasible, add or update tests.
+- When migrating inline success feedback to Sonner toasts, update Playwright assertions that currently use `getByText("...added/updated/removed/saved...")` so E2E coverage follows the feedback surface change.
 - After Prisma schema changes, run `pnpm exec prisma generate` before type/build checks.
 - For Server Action mutations, use `src/lib/server-actions/mutation-result.ts` to keep validation and typed error contracts consistent with existing API error-code semantics.
 - For deterministic category color changes, keep `getDeterministicColorFromText` return shape stable and update `src/lib/deterministic-color.test.ts` in the same change.

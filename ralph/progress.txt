@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - Keep deterministic category color API shape stable even when changing color spaces (`hue`, `saturation`, `lightness`, and contrast fields), and adapt internals for conversion/contrast math.
 - Keep `uncategorized` category color as an explicit neutral fallback in `src/lib/category-color.ts`, and provide separate light/dark text tokens to preserve readability in badges.
+- Inline success feedback is commonly state-driven (`notice`/`success`/`submitNotice`) in route manager hooks, and Playwright coverage usually asserts those exact strings with `getByText(...)`; toast migrations should update both surfaces together.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -24,6 +25,31 @@
     - Floating point precision from profile math can cause strict equality test failures; normalize values before returning/asserting.
   - Useful context (e.g., "the evaluation panel is in component X")
     - `getDeterministicColorFromText` is the central source of category color tokens consumed by category color helpers.
+---
+
+## 2026-03-01 09:10:12 CET - US-003
+- What was implemented
+  - Created a dedicated migration inventory at `tasks/us-003-toast-field-migration-inventory.md` covering inline success feedback targets, non-Field form surfaces, and E2E assertions that currently depend on inline success copy.
+  - Cataloged all in-scope non-Field form surfaces mapped to US-011 through US-018, plus out-of-scope surfaces discovered during grep-based audit.
+  - Captured reusable migration guidance in root `AGENTS.md` for keeping Playwright assertions aligned when success feedback moves from inline banners to Sonner toasts.
+  - Marked US-003 as passing in `ralph/prd.json`.
+- Files changed
+  - `tasks/us-003-toast-field-migration-inventory.md`
+  - `AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` skipped (docs/configuration-only changes; no runtime behavior change)
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - The migration scope for Field adoption can be derived reliably by diffing `@/components/ui/label` vs `@/components/ui/field` imports under `src/app/**` and then mapping to PRD story IDs.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Some success-copy strings (for example `Provider mapping removed.` and message-cleanup save strings) are emitted in UI code but not fully represented in existing E2E assertions, so inventory docs should capture both existing assertions and explicit coverage gaps.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Import flow submit success copy is generated in `src/app/import/use-import-workflow.ts` and rendered in both upload and review phase components via shared `submitNotice` props.
 ---
 
 ## 2026-03-01 08:58:40 CET - US-002
