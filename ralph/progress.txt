@@ -13,6 +13,7 @@
 - For `Select` controls migrated to Field primitives, keep the `SelectTrigger` id and pair it with `FieldLabel htmlFor` to preserve accessible label association and existing selectors.
 - For custom combobox-style controls migrated to Field primitives, keep the existing control `id` and pair it with `FieldLabel htmlFor` inside `FieldContent` to preserve a11y label binding and stable selectors.
 - For custom badge-input controls migrated to Field primitives, keep Enter-to-add behavior and route validator copy through `FieldError` so inline validation semantics stay accessible and consistent.
+- In the transactions edit dialog, keep note character-count and note validation copy inline in the note field area while reserving dialog-level alerts for submit failures.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -454,6 +455,32 @@
     - Provider mapping dialog forms can migrate to Field primitives without behavior regressions by preserving existing control ids and `aria-label`s.
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
     - For validator-backed badge inputs, preserve immediate input-error clearing on keystroke while routing rendered errors through `FieldError` to avoid duplicate alert structures.
-  - Useful context (e.g., "the evaluation panel is in component X")
+- Useful context (e.g., "the evaluation panel is in component X")
     - Provider detection rule badge inputs (`requiredHeaders`, `anyHeaders`, `headerPatterns`) are all centralized in `provider-mapping-string-badge-input.tsx`, so one migration updates both add/edit dialogs.
+---
+
+## 2026-03-01 18:07:34 CET - US-015
+- What was implemented
+  - Refactored labeled controls in `src/app/transactions/components/edit-transaction-dialog.tsx` to use shared `Field`, `FieldLabel`, and `FieldContent` primitives for category, date, merchant, amount, payment type, and note inputs.
+  - Preserved dialog behavior and interactions by keeping existing ids (`edit-*`), combobox/select wiring, and submit/cancel actions unchanged.
+  - Kept note validation + character-count messaging behavior in the note field area and retained submit-level inline alert rendering for `editError`.
+  - Added reusable transactions-route guidance in `src/app/transactions/AGENTS.md` for Field migrations in the edit dialog.
+  - Marked US-015 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/transactions/components/edit-transaction-dialog.tsx`
+  - `src/app/transactions/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Transactions edit dialog fields can migrate to `Field` primitives safely by keeping existing `edit-*` control ids and wrapping combobox/select controls in `FieldContent`.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Keeping note helper/error text near the note input avoids changing current feedback semantics while still adopting shared field structure.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - `edit-transaction-dialog.tsx` owns labeled controls and note messaging for transaction edits; mutation request/response handling remains in `use-transactions-manager.ts`.
 ---

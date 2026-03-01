@@ -13,7 +13,9 @@ Load this when working in `src/app/transactions`.
 - Persist transactions table column visibility in `sessionStorage` via TanStack `columnVisibility` state and only expose hideable data columns in the visibility menu.
 - For server-driven pagination controls, drive TanStack `pagination` state from API metadata (`page`, `pageSize`, `totalPages`) with `manualPagination` and route page/page-size updates through manager callbacks.
 - Keep edit/delete dialog state local to this route and dialog markup in focused components under `components/*`.
+- In `components/edit-transaction-dialog.tsx`, use shared `Field` primitives for labeled controls while preserving existing control ids (`edit-*`) so label selectors and dialog interactions remain stable.
 - Submit edits/deletes via `/api/transactions/[transactionId]` and refetch current paginated query after mutations.
 - Keep NOK-only currency in this edit flow.
 - Render a dedicated notes column with explicit empty-state text for null notes.
+- Keep transaction note validation + character-count helper text inline within the edit dialog field content; only route submit-level failures through the dialog alert.
 - In TanStack table columns, use `display` columns for note/action UI and read `row.original` so edit/delete handlers always receive the full `TransactionRow`.

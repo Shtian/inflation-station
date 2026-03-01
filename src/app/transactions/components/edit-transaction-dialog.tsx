@@ -9,8 +9,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -75,125 +75,109 @@ export function EditTransactionDialog({
 
         {editForm ? (
           <form className="space-y-4" onSubmit={onSubmit}>
-            <div className="space-y-2">
-              <Label
-                htmlFor="edit-category-id"
-                className="font-medium text-foreground text-sm"
-              >
-                Category
-              </Label>
-              <CategoryCombobox
-                value={
-                  editForm.categoryId === UNCATEGORIZED_VALUE
-                    ? ""
-                    : editForm.categoryId
-                }
-                categories={categories}
-                onValueChange={(value) =>
-                  onCategoryChange(value || UNCATEGORIZED_VALUE)
-                }
-                id="edit-category-id"
-                placeholder="Uncategorized"
-                emptyLabel="No matching categories."
-                disabled={editSaving}
-                showClear
-                portalContainer={dialogContentRef.current}
-              />
-            </div>
+            <Field>
+              <FieldLabel htmlFor="edit-category-id">Category</FieldLabel>
+              <FieldContent>
+                <CategoryCombobox
+                  value={
+                    editForm.categoryId === UNCATEGORIZED_VALUE
+                      ? ""
+                      : editForm.categoryId
+                  }
+                  categories={categories}
+                  onValueChange={(value) =>
+                    onCategoryChange(value || UNCATEGORIZED_VALUE)
+                  }
+                  id="edit-category-id"
+                  placeholder="Uncategorized"
+                  emptyLabel="No matching categories."
+                  disabled={editSaving}
+                  showClear
+                  portalContainer={dialogContentRef.current}
+                />
+              </FieldContent>
+            </Field>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="edit-booking-date"
-                className="font-medium text-foreground text-sm"
-              >
-                Date
-              </Label>
-              <Input
-                id="edit-booking-date"
-                type="date"
-                value={editForm.bookingDate}
-                onChange={(event) => onBookingDateChange(event.target.value)}
-                disabled={editSaving}
-              />
-            </div>
+            <Field>
+              <FieldLabel htmlFor="edit-booking-date">Date</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="edit-booking-date"
+                  type="date"
+                  value={editForm.bookingDate}
+                  onChange={(event) => onBookingDateChange(event.target.value)}
+                  disabled={editSaving}
+                />
+              </FieldContent>
+            </Field>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="edit-normalized-merchant"
-                className="font-medium text-foreground text-sm"
-              >
+            <Field>
+              <FieldLabel htmlFor="edit-normalized-merchant">
                 Merchant
-              </Label>
-              <Input
-                id="edit-normalized-merchant"
-                value={editForm.normalizedMerchant}
-                onChange={(event) => onMerchantChange(event.target.value)}
-                disabled={editSaving}
-              />
-            </div>
+              </FieldLabel>
+              <FieldContent>
+                <Input
+                  id="edit-normalized-merchant"
+                  value={editForm.normalizedMerchant}
+                  onChange={(event) => onMerchantChange(event.target.value)}
+                  disabled={editSaving}
+                />
+              </FieldContent>
+            </Field>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="edit-amount-nok"
-                className="font-medium text-foreground text-sm"
-              >
-                Amount (NOK)
-              </Label>
-              <Input
-                id="edit-amount-nok"
-                inputMode="decimal"
-                value={editForm.amountNok}
-                onChange={(event) => onAmountChange(event.target.value)}
-                disabled={editSaving}
-              />
-            </div>
+            <Field>
+              <FieldLabel htmlFor="edit-amount-nok">Amount (NOK)</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="edit-amount-nok"
+                  inputMode="decimal"
+                  value={editForm.amountNok}
+                  onChange={(event) => onAmountChange(event.target.value)}
+                  disabled={editSaving}
+                />
+              </FieldContent>
+            </Field>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="edit-payment-type"
-                className="font-medium text-foreground text-sm"
-              >
-                Payment type
-              </Label>
-              <Select
-                value={editForm.paymentType}
-                onValueChange={onPaymentTypeChange}
-                disabled={editSaving}
-              >
-                <SelectTrigger id="edit-payment-type">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Field>
+              <FieldLabel htmlFor="edit-payment-type">Payment type</FieldLabel>
+              <FieldContent>
+                <Select
+                  value={editForm.paymentType}
+                  onValueChange={onPaymentTypeChange}
+                  disabled={editSaving}
+                >
+                  <SelectTrigger id="edit-payment-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_TYPE_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+            </Field>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor="edit-note"
-                className="font-medium text-foreground text-sm"
-              >
-                Note
-              </Label>
-              <Input
-                id="edit-note"
-                value={editForm.note}
-                onChange={(event) => onNoteChange(event.target.value)}
-                aria-invalid={noteError !== null}
-                disabled={editSaving}
-              />
-              <p
-                className={`text-xs ${noteError ? "text-red-700" : "text-muted-foreground"}`}
-              >
-                {noteError ??
-                  `${editForm.note.length}/${MAX_TRANSACTION_NOTE_LENGTH} characters`}
-              </p>
-            </div>
+            <Field>
+              <FieldLabel htmlFor="edit-note">Note</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="edit-note"
+                  value={editForm.note}
+                  onChange={(event) => onNoteChange(event.target.value)}
+                  aria-invalid={noteError !== null}
+                  disabled={editSaving}
+                />
+                <p
+                  className={`text-xs ${noteError ? "text-red-700" : "text-muted-foreground"}`}
+                >
+                  {noteError ??
+                    `${editForm.note.length}/${MAX_TRANSACTION_NOTE_LENGTH} characters`}
+                </p>
+              </FieldContent>
+            </Field>
 
             {editError ? (
               <p
