@@ -61,6 +61,9 @@ test("submits message cleanup settings through a server action", async ({
   await page.getByRole("button", { name: "Save prompt" }).click();
 
   await expect.poll(() => serverActionRequestCount).toBe(1);
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "System prompt saved." }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Save prompt" })).toBeEnabled();
 });
 

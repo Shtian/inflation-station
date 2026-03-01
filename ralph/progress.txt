@@ -6,6 +6,7 @@
 - For Sonner feedback assertions in Playwright, target toast elements with `[data-sonner-toast]` + `hasText` instead of relying on inline banner DOM.
 - In provider mappings, keep create on the Server Action (`createImportProviderMappingAction`) while edit/delete continue on `/api/import-provider-mappings/[providerMappingId]`, then refresh table state via `loadMappings()` after successful mutations.
 - In the import route, keep successful submit summary feedback in `use-import-workflow.ts` via `toast.success(...)` and keep upload/review phase components focused on inline actionable errors.
+- In import settings managers, keep success copy in Sonner toasts and reserve inline alerts for save/load failures so corrective feedback stays visible while confirmations stay transient.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -265,6 +266,33 @@
     - Import route submit success feedback is now emitted from the workflow hook (`use-import-workflow`) so phase components can stay presentation-focused.
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
     - Removing `submitNotice` requires updating both upload/review phase prop contracts and any E2E assertion that relied on the inline `<output>` node.
-  - Useful context (e.g., "the evaluation panel is in component X")
+- Useful context (e.g., "the evaluation panel is in component X")
     - `ImportUploader` switches back to `ImportUploadPhase` immediately after successful submit (`parseResult` reset), so toast feedback is the only completion surface once preview is cleared.
+---
+
+## 2026-03-01 10:08:09 CET - US-009
+- What was implemented
+  - Migrated message cleanup settings save confirmations in `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx` from inline success banner state to Sonner `toast.success(...)` while preserving success copy (`System prompt saved.`, `Cleanup model saved.`).
+  - Kept existing inline error alert behavior unchanged for save/load failures.
+  - Updated Playwright coverage in `tests/e2e/us-021-message-cleanup-settings.e2e.ts` to assert success feedback on Sonner toasts.
+  - Added reusable import-route guidance in `src/app/import/AGENTS.md` for settings-manager success/error feedback conventions.
+  - Marked US-009 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/import/settings/message-cleanup/message-cleanup-settings-manager.tsx`
+  - `tests/e2e/us-021-message-cleanup-settings.e2e.ts`
+  - `src/app/import/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Import settings managers now follow the same route convention as other toast migrations: success via Sonner, blocking failures inline.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Even if previous E2E coverage only checked mutation execution, toast migrations should add explicit `[data-sonner-toast]` assertions to lock the visible feedback surface.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Message cleanup save flows (model and prompt) are both centralized in `saveSettings(...)` in the manager component, so feedback behavior is controlled in one place.
 ---
