@@ -75,8 +75,8 @@ export function useTransactionsManager() {
   }, [parsedUrlState]);
 
   useEffect(() => {
-    setGlobalQueryInput(tableState.globalQuery ?? "");
-  }, [tableState.globalQuery]);
+    setGlobalQueryInput(parsedUrlState.globalQuery ?? "");
+  }, [parsedUrlState.globalQuery]);
 
   useEffect(() => {
     const trimmed = debouncedGlobalQueryInput.trim();

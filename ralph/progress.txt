@@ -8,6 +8,8 @@
 - In the import route, keep successful submit summary feedback in `use-import-workflow.ts` via `toast.success(...)` and keep upload/review phase components focused on inline actionable errors.
 - In import settings managers, keep success copy in Sonner toasts and reserve inline alerts for save/load failures so corrective feedback stays visible while confirmations stay transient.
 - In monthly review settings, emit save success feedback with Sonner toasts from `settings/monthly-review-settings-manager.tsx` and keep load/save failures as inline alerts.
+- During Field primitive migrations, preserve existing form control ids/placeholders so accessible label wiring and E2E selectors remain stable.
+- In debounced filter UIs, avoid syncing raw input state from every table-state update; sync from parsed URL state to prevent typed text from being reset by unrelated filter changes.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -321,6 +323,56 @@
     - Monthly review settings now follow the same route convention as other settings managers: success feedback via Sonner toasts, failure feedback inline.
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
     - Toast migrations should update existing E2E success assertions away from inline `getByText(...)` checks to Sonner toast locators in the same story.
-  - Useful context (e.g., "the evaluation panel is in component X")
+- Useful context (e.g., "the evaluation panel is in component X")
     - Prompt and model save feedback paths are centralized in `saveSettings(...)` within `monthly-review-settings-manager.tsx`.
+---
+
+## 2026-03-01 16:08:31 CET - US-011
+- What was implemented
+  - Refactored `src/app/accounts/components/create-account-section.tsx` to use shared `Field`, `FieldLabel`, and `FieldContent` primitives for account name and institution inputs.
+  - Preserved existing form control ids, placeholders, and create-button behavior (`Saving...` state and add-account action wiring).
+  - Added reusable accounts-route guidance in `src/app/accounts/AGENTS.md` for preserving id/placeholder stability during Field migrations.
+- Files changed
+  - `src/app/accounts/components/create-account-section.tsx`
+  - `src/app/accounts/AGENTS.md`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ❌ (existing Playwright failure persists in `tests/e2e/us-018-transactions-route-controls.e2e.ts` expecting `Filtered Market` visibility; failed on two reruns)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Accounts form surfaces can migrate to `Field` primitives without behavior changes by wrapping existing controls in `Field` + `FieldContent` and keeping original input ids.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Full `pnpm test` is currently blocked by a persistent unrelated transactions E2E assertion (`Filtered Market`) even when account-form changes are isolated.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - The US-011 scope is isolated to `create-account-section.tsx`; account mutation/success behavior remains centralized in `use-accounts-manager.ts`.
+---
+
+## 2026-03-01 16:11:47 CET - US-011
+- What was implemented
+  - Fixed the persistent Playwright failure in `tests/e2e/us-018-transactions-route-controls.e2e.ts` by preventing `globalQuery` input resets during unrelated filter updates.
+  - Updated `use-transactions-manager.ts` to sync `globalQueryInput` from parsed URL state instead of table-state mutations, preserving debounced typing while date/category filters change.
+  - Marked US-011 as passing in `ralph/prd.json` after all required checks completed successfully.
+  - Added reusable transactions-route guidance in `src/app/transactions/AGENTS.md` for debounced URL-synced filter input behavior.
+- Files changed
+  - `src/app/accounts/components/create-account-section.tsx`
+  - `src/app/accounts/AGENTS.md`
+  - `src/app/transactions/use-transactions-manager.ts`
+  - `src/app/transactions/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm exec playwright test tests/e2e/us-018-transactions-route-controls.e2e.ts` ✅
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Debounced toolbar inputs should derive display state from parsed URL state changes, not every intermediate table-state mutation, to keep multi-filter interactions deterministic.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - The previous global-query sync effect could overwrite typed input before debounce settled when date/category filters were edited in quick succession.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Transactions filter orchestration is centralized in `use-transactions-manager.ts`; Playwright failures in `us-018` are often driven by state-sync sequencing there.
 ---

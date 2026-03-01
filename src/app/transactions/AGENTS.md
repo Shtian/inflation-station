@@ -8,6 +8,7 @@ Load this when working in `src/app/transactions`.
 - Reset pagination to page 1 whenever table filters/sorting/page-size change.
 - Use shadcn table primitives and keep pagination/summary text outside the table.
 - Keep transactions toolbar inputs/selects in `TransactionsTableSection` controlled from `use-transactions-manager.ts` state so URL-synced filters stay canonical.
+- Keep debounced `globalQuery` input state synced from parsed URL state (not every table-state change) so typing is not reset when other filters update.
 - Keep sortable column headers wired to `use-transactions-manager.ts` `sorting` state with a tri-state cycle (asc/desc/none) so sort intent stays URL-backed.
 - Persist transactions table column visibility in `sessionStorage` via TanStack `columnVisibility` state and only expose hideable data columns in the visibility menu.
 - For server-driven pagination controls, drive TanStack `pagination` state from API metadata (`page`, `pageSize`, `totalPages`) with `manualPagination` and route page/page-size updates through manager callbacks.
