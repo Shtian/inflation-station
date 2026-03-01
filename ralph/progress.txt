@@ -5,6 +5,7 @@
 - Mount the Sonner toaster once in `src/app/layout.tsx` via a shared `src/components/ui/sonner.tsx` wrapper so route-level toast migrations only call `toast(...)` and never create extra toaster instances.
 - For Sonner feedback assertions in Playwright, target toast elements with `[data-sonner-toast]` + `hasText` instead of relying on inline banner DOM.
 - In provider mappings, keep create on the Server Action (`createImportProviderMappingAction`) while edit/delete continue on `/api/import-provider-mappings/[providerMappingId]`, then refresh table state via `loadMappings()` after successful mutations.
+- In the import route, keep successful submit summary feedback in `use-import-workflow.ts` via `toast.success(...)` and keep upload/review phase components focused on inline actionable errors.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -234,6 +235,36 @@
     - Provider mappings now follow the same route convention as accounts/categories: success via Sonner toast, blocking errors inline.
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
     - When extending existing E2E stories with additional CRUD assertions, ensure modal state is closed (or escaped) before interacting with table rows behind dialogs.
-  - Useful context (e.g., "the evaluation panel is in component X")
+- Useful context (e.g., "the evaluation panel is in component X")
     - Provider mapping create success is emitted after Server Action completion, while update/delete success is emitted after REST endpoint responses in the same manager component.
+---
+
+## 2026-03-01 09:57:40 CET - US-008
+- What was implemented
+  - Migrated import submit completion feedback from inline `submitNotice` rendering to Sonner toast feedback by emitting `toast.success(...)` in `src/app/import/use-import-workflow.ts` after successful `/api/imports/submit`.
+  - Removed `submitNotice` state/props and inline success `<output>` rendering from `import-uploader`, `import-upload-phase`, and `import-review-phase`, while keeping inline parse/submit error alerts unchanged.
+  - Updated import Playwright coverage to assert the completion toast via `[data-sonner-toast]` with the existing success copy.
+  - Added reusable import-route guidance in `src/app/import/AGENTS.md` for toast-success + inline-error behavior.
+  - Marked US-008 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/import/use-import-workflow.ts`
+  - `src/app/import/import-uploader.tsx`
+  - `src/app/import/components/import-upload-phase.tsx`
+  - `src/app/import/components/import-review-phase.tsx`
+  - `tests/e2e/us-016-import-route-upload.e2e.ts`
+  - `src/app/import/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E; passed on rerun after an intermittent `us-018-transactions-route-controls` assertion miss)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Import route submit success feedback is now emitted from the workflow hook (`use-import-workflow`) so phase components can stay presentation-focused.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Removing `submitNotice` requires updating both upload/review phase prop contracts and any E2E assertion that relied on the inline `<output>` node.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - `ImportUploader` switches back to `ImportUploadPhase` immediately after successful submit (`parseResult` reset), so toast feedback is the only completion surface once preview is cleared.
 ---

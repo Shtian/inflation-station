@@ -78,7 +78,6 @@ type ImportReviewPhaseProps = {
   setMessageDecisions: Dispatch<SetStateAction<Record<string, MessageSource>>>;
   submitError: string | null;
   submitLoading: boolean;
-  submitNotice: string | null;
   submitReviewRows: () => void;
 };
 
@@ -110,7 +109,6 @@ export function ImportReviewPhase({
   setMessageDecisions,
   submitError,
   submitLoading,
-  submitNotice,
   submitReviewRows,
 }: ImportReviewPhaseProps) {
   const [loadingProgress, setLoadingProgress] = useState(8);
@@ -394,11 +392,6 @@ export function ImportReviewPhase({
         >
           {submitError}
         </p>
-      ) : null}
-      {submitNotice ? (
-        <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-800 text-sm">
-          {submitNotice}
-        </output>
       ) : null}
     </div>
   );

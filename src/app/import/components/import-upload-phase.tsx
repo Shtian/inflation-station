@@ -51,7 +51,6 @@ type ImportUploadPhaseProps = {
   selectedFile: File | null;
   setIsDraggingOver: (value: boolean) => void;
   setSelectedAccountId: (value: string) => void;
-  submitNotice: string | null;
 };
 
 export function ImportUploadPhase({
@@ -73,7 +72,6 @@ export function ImportUploadPhase({
   selectedFile,
   setIsDraggingOver,
   setSelectedAccountId,
-  submitNotice,
 }: ImportUploadPhaseProps) {
   return (
     <div className="mx-auto max-w-lg space-y-4">
@@ -357,12 +355,6 @@ export function ImportUploadPhase({
           headers.
         </p>
       </div>
-
-      {submitNotice ? (
-        <output className="block rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-800 text-sm">
-          {submitNotice}
-        </output>
-      ) : null}
     </div>
   );
 }

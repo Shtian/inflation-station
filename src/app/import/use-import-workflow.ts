@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
@@ -112,7 +113,6 @@ export function useImportWorkflow() {
   const [submitLoading, setSubmitLoading] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [parseResult, setParseResult] = useState<ParseResponse | null>(null);
   const [providerDetection, setProviderDetection] =
     useState<ProviderDetection | null>(null);
@@ -328,7 +328,6 @@ export function useImportWorkflow() {
     setImportLoading(true);
     setImportError(null);
     setSubmitError(null);
-    setSubmitNotice(null);
     setParseResult(null);
     setCategoryDecisions({});
     setMessageDecisions({});
@@ -425,7 +424,6 @@ export function useImportWorkflow() {
     setNoteValidationErrors({});
     setImportError(null);
     setSubmitError(null);
-    setSubmitNotice(null);
   }, []);
 
   const setNoteDecision = useCallback((rowId: string, note: string) => {
@@ -480,7 +478,6 @@ export function useImportWorkflow() {
 
     setSubmitLoading(true);
     setSubmitError(null);
-    setSubmitNotice(null);
     setNoteValidationErrors({});
 
     const response = await fetch("/api/imports/submit", {
@@ -509,7 +506,7 @@ export function useImportWorkflow() {
     }
 
     const submitResult = body as SubmitResponse;
-    setSubmitNotice(
+    toast.success(
       `Import complete. Imported ${submitResult.summary.imported}, skipped ${submitResult.summary.skipped}, potential duplicates ${submitResult.summary.potentialDuplicates}, invalid ${submitResult.summary.invalid}.`,
     );
     setParseResult(null);
@@ -562,7 +559,6 @@ export function useImportWorkflow() {
     setSelectedAccountId,
     submitError,
     submitLoading,
-    submitNotice,
     submitReviewRows,
   };
 }

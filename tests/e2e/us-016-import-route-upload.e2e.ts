@@ -219,9 +219,10 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await page.getByRole("button", { name: "Confirm Import" }).click();
 
   await expect(
-    page.getByText(
-      "Import complete. Imported 2, skipped 0, potential duplicates 1, invalid 1.",
-    ),
+    page.locator("[data-sonner-toast]", {
+      hasText:
+        "Import complete. Imported 2, skipped 0, potential duplicates 1, invalid 1.",
+    }),
   ).toBeVisible();
   await expect(page.getByText("Import Preview")).toHaveCount(0);
   await expect(page.getByLabel("CSV file")).toHaveValue("");

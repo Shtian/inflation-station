@@ -44,7 +44,6 @@ export function ImportUploader() {
     setSelectedAccountId,
     submitError,
     submitLoading,
-    submitNotice,
     submitReviewRows,
   } = useImportWorkflow();
 
@@ -83,7 +82,6 @@ export function ImportUploader() {
           setNoteDecision={setNoteDecision}
           submitError={submitError}
           submitLoading={submitLoading}
-          submitNotice={submitNotice}
           submitReviewRows={submitReviewRows}
         />
       ) : (
@@ -106,7 +104,6 @@ export function ImportUploader() {
           selectedFile={selectedFile}
           setIsDraggingOver={setIsDraggingOver}
           setSelectedAccountId={setSelectedAccountId}
-          submitNotice={submitNotice}
         />
       )}
 
