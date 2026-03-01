@@ -10,6 +10,7 @@
 - In monthly review settings, emit save success feedback with Sonner toasts from `settings/monthly-review-settings-manager.tsx` and keep load/save failures as inline alerts.
 - During Field primitive migrations, preserve existing form control ids/placeholders so accessible label wiring and E2E selectors remain stable.
 - In debounced filter UIs, avoid syncing raw input state from every table-state update; sync from parsed URL state to prevent typed text from being reset by unrelated filter changes.
+- For `Select` controls migrated to Field primitives, keep the `SelectTrigger` id and pair it with `FieldLabel htmlFor` to preserve accessible label association and existing selectors.
 
 ## 2026-03-01 08:38:48 CET - US-001
 - What was implemented
@@ -373,6 +374,32 @@
     - Debounced toolbar inputs should derive display state from parsed URL state changes, not every intermediate table-state mutation, to keep multi-filter interactions deterministic.
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
     - The previous global-query sync effect could overwrite typed input before debounce settled when date/category filters were edited in quick succession.
-  - Useful context (e.g., "the evaluation panel is in component X")
+- Useful context (e.g., "the evaluation panel is in component X")
     - Transactions filter orchestration is centralized in `use-transactions-manager.ts`; Playwright failures in `us-018` are often driven by state-sync sequencing there.
+---
+
+## 2026-03-01 17:45:58 CET - US-012
+- What was implemented
+  - Refactored category create controls in `src/app/categories/components/category-management-section.tsx` to use shared `Field`, `FieldLabel`, and `FieldContent` primitives for category name, kind, and scope inputs.
+  - Refactored the rename-category dialog field in the same component to use the shared Field primitives.
+  - Preserved all existing control ids/placeholders and select/dialog interactions (`new-category-*`, `edit-category-name`) so validation wiring and UX behavior stay unchanged.
+  - Added reusable categories-route guidance in `src/app/categories/AGENTS.md` for Field migrations that include Select controls.
+  - Marked US-012 as passing in `ralph/prd.json`.
+- Files changed
+  - `src/app/categories/components/category-management-section.tsx`
+  - `src/app/categories/AGENTS.md`
+  - `ralph/prd.json`
+  - `ralph/progress.txt`
+- Quality checks run (and result)
+  - `pnpm lint` ✅
+  - `pnpm exec tsc --noEmit` ✅
+  - `pnpm test` ✅ (Vitest + Playwright E2E; passed after rerun due intermittent `tests/e2e/us-018-transactions-route-controls.e2e.ts` assertion miss)
+  - `pnpm build` ✅
+- **Learnings for future iterations**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - In this codebase, Field migrations for select-like controls should wrap `Select` in `FieldContent` and keep `SelectTrigger` ids unchanged to preserve label wiring.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Full Playwright runs still show intermittent failures in `us-018`; rerun once before treating as deterministic regression when unrelated UI stories are isolated.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Category creation and rename form semantics are both owned by `category-management-section.tsx`, while rule-form semantics remain in `rules-management-section.tsx` for US-013.
 ---

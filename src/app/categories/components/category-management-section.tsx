@@ -18,8 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -93,63 +93,62 @@ export function CategoryManagementSection({
       </div>
 
       <div className="grid gap-3">
-        <Label
-          htmlFor="new-category-name"
-          className="font-medium text-foreground text-sm"
-        >
-          Category name
-        </Label>
-        <Input
-          id="new-category-name"
-          value={newCategoryName}
-          onChange={(event) => onNewCategoryNameChange(event.target.value)}
-          placeholder="Groceries"
-        />
-        <Label
-          htmlFor="new-category-kind"
-          className="font-medium text-foreground text-sm"
-        >
-          Kind
-        </Label>
-        <Select
-          value={newCategoryKind}
-          onValueChange={(value) =>
-            onNewCategoryKindChange(value as CategoryKind)
-          }
-        >
-          <SelectTrigger id="new-category-kind" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="EXPENSE">Expense</SelectItem>
-            <SelectItem value="INCOME">Income</SelectItem>
-            <SelectItem value="TRANSFER">Transfer</SelectItem>
-          </SelectContent>
-        </Select>
-        <Label
-          htmlFor="new-category-scope"
-          className="font-medium text-foreground text-sm"
-        >
-          Scope
-        </Label>
-        <Select
-          value={newCategoryScope || GLOBAL_SCOPE_VALUE}
-          onValueChange={(value) =>
-            onNewCategoryScopeChange(value === GLOBAL_SCOPE_VALUE ? "" : value)
-          }
-        >
-          <SelectTrigger id="new-category-scope" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={GLOBAL_SCOPE_VALUE}>Global</SelectItem>
-            {activeAccounts.map((account) => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Field>
+          <FieldLabel htmlFor="new-category-name">Category name</FieldLabel>
+          <FieldContent>
+            <Input
+              id="new-category-name"
+              value={newCategoryName}
+              onChange={(event) => onNewCategoryNameChange(event.target.value)}
+              placeholder="Groceries"
+            />
+          </FieldContent>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="new-category-kind">Kind</FieldLabel>
+          <FieldContent>
+            <Select
+              value={newCategoryKind}
+              onValueChange={(value) =>
+                onNewCategoryKindChange(value as CategoryKind)
+              }
+            >
+              <SelectTrigger id="new-category-kind" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="EXPENSE">Expense</SelectItem>
+                <SelectItem value="INCOME">Income</SelectItem>
+                <SelectItem value="TRANSFER">Transfer</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldContent>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="new-category-scope">Scope</FieldLabel>
+          <FieldContent>
+            <Select
+              value={newCategoryScope || GLOBAL_SCOPE_VALUE}
+              onValueChange={(value) =>
+                onNewCategoryScopeChange(
+                  value === GLOBAL_SCOPE_VALUE ? "" : value,
+                )
+              }
+            >
+              <SelectTrigger id="new-category-scope" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={GLOBAL_SCOPE_VALUE}>Global</SelectItem>
+                {activeAccounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FieldContent>
+        </Field>
         <Button
           variant="secondary"
           onClick={onCreateCategory}
@@ -269,24 +268,23 @@ export function CategoryManagementSection({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-2">
-            <Label
-              htmlFor="edit-category-name"
-              className="font-medium text-foreground text-sm"
-            >
-              Category name
-            </Label>
-            <Input
-              id="edit-category-name"
-              value={editCategoryName}
-              onChange={(event) => onEditCategoryNameChange(event.target.value)}
-              placeholder="Groceries"
-              disabled={
-                editingCategoryId !== null &&
-                busyKey === `rename-category-${editingCategoryId}`
-              }
-            />
-          </div>
+          <Field>
+            <FieldLabel htmlFor="edit-category-name">Category name</FieldLabel>
+            <FieldContent>
+              <Input
+                id="edit-category-name"
+                value={editCategoryName}
+                onChange={(event) =>
+                  onEditCategoryNameChange(event.target.value)
+                }
+                placeholder="Groceries"
+                disabled={
+                  editingCategoryId !== null &&
+                  busyKey === `rename-category-${editingCategoryId}`
+                }
+              />
+            </FieldContent>
+          </Field>
 
           <DialogFooter>
             <Button
