@@ -2,8 +2,8 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { CategoryBadge } from "@/components/category-badge";
 import { CategoryCombobox } from "@/components/category-combobox";
 import { Button } from "@/components/ui/button";
+import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -84,105 +84,104 @@ export function RulesManagementSection({
       </div>
 
       <div className="grid gap-3">
-        <Label
-          htmlFor="rule-category"
-          className="font-medium text-foreground text-sm"
-        >
-          Category
-        </Label>
-        <CategoryCombobox
-          value={ruleCategoryId}
-          categories={categories}
-          onValueChange={onRuleCategoryIdChange}
-          id="rule-category"
-          placeholder={
-            categories.length === 0
-              ? "No categories available"
-              : "Select category"
-          }
-          emptyLabel="No matching categories."
-          disabled={categories.length === 0}
-          showClear
-        />
+        <Field>
+          <FieldLabel htmlFor="rule-category">Category</FieldLabel>
+          <FieldContent>
+            <CategoryCombobox
+              value={ruleCategoryId}
+              categories={categories}
+              onValueChange={onRuleCategoryIdChange}
+              id="rule-category"
+              placeholder={
+                categories.length === 0
+                  ? "No categories available"
+                  : "Select category"
+              }
+              emptyLabel="No matching categories."
+              disabled={categories.length === 0}
+              showClear
+            />
+          </FieldContent>
+        </Field>
 
-        <Label
-          htmlFor="rule-merchant"
-          className="font-medium text-foreground text-sm"
-        >
-          Merchant contains
-        </Label>
-        <Input
-          id="rule-merchant"
-          value={ruleMerchantContains}
-          onChange={(event) => onRuleMerchantContainsChange(event.target.value)}
-          placeholder="joker"
-        />
+        <Field>
+          <FieldLabel htmlFor="rule-merchant">Merchant contains</FieldLabel>
+          <FieldContent>
+            <Input
+              id="rule-merchant"
+              value={ruleMerchantContains}
+              onChange={(event) =>
+                onRuleMerchantContainsChange(event.target.value)
+              }
+              placeholder="joker"
+            />
+          </FieldContent>
+        </Field>
 
-        <Label
-          htmlFor="rule-payment-type"
-          className="font-medium text-foreground text-sm"
-        >
-          Payment type (optional)
-        </Label>
-        <Select
-          value={rulePaymentType || ANY_PAYMENT_TYPE_VALUE}
-          onValueChange={(value) =>
-            onRulePaymentTypeChange(
-              value === ANY_PAYMENT_TYPE_VALUE ? "" : value,
-            )
-          }
-        >
-          <SelectTrigger id="rule-payment-type" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ANY_PAYMENT_TYPE_VALUE}>Any</SelectItem>
-            <SelectItem value="CARD">CARD</SelectItem>
-            <SelectItem value="TRANSFER">TRANSFER</SelectItem>
-            <SelectItem value="EFT">EFT</SelectItem>
-            <SelectItem value="CASH">CASH</SelectItem>
-            <SelectItem value="OTHER">OTHER</SelectItem>
-          </SelectContent>
-        </Select>
+        <Field>
+          <FieldLabel htmlFor="rule-payment-type">
+            Payment type (optional)
+          </FieldLabel>
+          <FieldContent>
+            <Select
+              value={rulePaymentType || ANY_PAYMENT_TYPE_VALUE}
+              onValueChange={(value) =>
+                onRulePaymentTypeChange(
+                  value === ANY_PAYMENT_TYPE_VALUE ? "" : value,
+                )
+              }
+            >
+              <SelectTrigger id="rule-payment-type" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ANY_PAYMENT_TYPE_VALUE}>Any</SelectItem>
+                <SelectItem value="CARD">CARD</SelectItem>
+                <SelectItem value="TRANSFER">TRANSFER</SelectItem>
+                <SelectItem value="EFT">EFT</SelectItem>
+                <SelectItem value="CASH">CASH</SelectItem>
+                <SelectItem value="OTHER">OTHER</SelectItem>
+              </SelectContent>
+            </Select>
+          </FieldContent>
+        </Field>
 
-        <Label
-          htmlFor="rule-priority"
-          className="font-medium text-foreground text-sm"
-        >
-          Priority
-        </Label>
-        <Input
-          id="rule-priority"
-          type="number"
-          value={rulePriority}
-          onChange={(event) => onRulePriorityChange(event.target.value)}
-          min={0}
-        />
+        <Field>
+          <FieldLabel htmlFor="rule-priority">Priority</FieldLabel>
+          <FieldContent>
+            <Input
+              id="rule-priority"
+              type="number"
+              value={rulePriority}
+              onChange={(event) => onRulePriorityChange(event.target.value)}
+              min={0}
+            />
+          </FieldContent>
+        </Field>
 
-        <Label
-          htmlFor="rule-scope"
-          className="font-medium text-foreground text-sm"
-        >
-          Scope
-        </Label>
-        <Select
-          value={ruleScope || GLOBAL_SCOPE_VALUE}
-          onValueChange={(value) =>
-            onRuleScopeChange(value === GLOBAL_SCOPE_VALUE ? "" : value)
-          }
-        >
-          <SelectTrigger id="rule-scope" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={GLOBAL_SCOPE_VALUE}>Global</SelectItem>
-            {activeAccounts.map((account) => (
-              <SelectItem key={account.id} value={account.id}>
-                {account.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Field>
+          <FieldLabel htmlFor="rule-scope">Scope</FieldLabel>
+          <FieldContent>
+            <Select
+              value={ruleScope || GLOBAL_SCOPE_VALUE}
+              onValueChange={(value) =>
+                onRuleScopeChange(value === GLOBAL_SCOPE_VALUE ? "" : value)
+              }
+            >
+              <SelectTrigger id="rule-scope" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={GLOBAL_SCOPE_VALUE}>Global</SelectItem>
+                {activeAccounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FieldContent>
+        </Field>
 
         <Button
           onClick={onCreateRule}
