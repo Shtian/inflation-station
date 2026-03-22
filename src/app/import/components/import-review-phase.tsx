@@ -73,12 +73,15 @@ type ImportReviewPhaseProps = {
   resetImport: () => void;
   reviewCategoryOptions: Category[];
   selectedAccountId: string;
+  selectedRowIds: Set<string>;
   setCategoryDecisions: Dispatch<SetStateAction<Record<string, string>>>;
   setNoteDecision: (rowId: string, note: string) => void;
   setMessageDecisions: Dispatch<SetStateAction<Record<string, MessageSource>>>;
   submitError: string | null;
   submitLoading: boolean;
   submitReviewRows: () => void;
+  toggleAllRows: (rowIds: string[]) => void;
+  toggleRowSelection: (rowId: string) => void;
 };
 
 function getReviewRows(parseResult: ParseResponse | null): ReviewRow[] {
@@ -104,12 +107,15 @@ export function ImportReviewPhase({
   resetImport,
   reviewCategoryOptions,
   selectedAccountId,
+  selectedRowIds,
   setCategoryDecisions,
   setNoteDecision,
   setMessageDecisions,
   submitError,
   submitLoading,
   submitReviewRows,
+  toggleAllRows,
+  toggleRowSelection,
 }: ImportReviewPhaseProps) {
   const [loadingProgress, setLoadingProgress] = useState(8);
 
@@ -226,7 +232,7 @@ export function ImportReviewPhase({
             <Button
               size="sm"
               onClick={submitReviewRows}
-              disabled={submitLoading}
+              disabled={submitLoading || selectedRowIds.size === 0}
               className="gap-1.5"
             >
               {submitLoading ? (
@@ -354,6 +360,15 @@ export function ImportReviewPhase({
 
       {parseResult.review && reviewRows.length > 0 ? (
         <div className="space-y-2">
+          {selectedRowIds.size === 0 ? (
+            <p
+              role="alert"
+              className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 text-sm"
+            >
+              No rows selected — nothing will be imported. Select at least one
+              row to continue.
+            </p>
+          ) : null}
           {parseResult.review.potentialDuplicates > 0 ? (
             <p className="text-muted-foreground text-xs">
               {parseResult.review.potentialDuplicates} potential duplicate
@@ -378,9 +393,12 @@ export function ImportReviewPhase({
             noteDecisions={noteDecisions}
             noteValidationErrors={noteValidationErrors}
             messageDecisions={messageDecisions}
+            selectedRowIds={selectedRowIds}
             setCategoryDecisions={setCategoryDecisions}
             setNoteDecision={setNoteDecision}
             setMessageDecisions={setMessageDecisions}
+            toggleAllRows={toggleAllRows}
+            toggleRowSelection={toggleRowSelection}
           />
         </div>
       ) : null}

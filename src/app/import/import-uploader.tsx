@@ -42,9 +42,12 @@ export function ImportUploader() {
     setMessageDecisions,
     setNoteDecision,
     setSelectedAccountId,
+    selectedRowIds,
     submitError,
     submitLoading,
     submitReviewRows,
+    toggleAllRows,
+    toggleRowSelection,
   } = useImportWorkflow();
 
   return (
@@ -77,12 +80,15 @@ export function ImportUploader() {
           resetImport={resetImport}
           reviewCategoryOptions={reviewCategoryOptions}
           selectedAccountId={selectedAccountId}
+          selectedRowIds={selectedRowIds}
           setCategoryDecisions={setCategoryDecisions}
           setMessageDecisions={setMessageDecisions}
           setNoteDecision={setNoteDecision}
           submitError={submitError}
           submitLoading={submitLoading}
           submitReviewRows={submitReviewRows}
+          toggleAllRows={toggleAllRows}
+          toggleRowSelection={toggleRowSelection}
         />
       ) : (
         <ImportUploadPhase

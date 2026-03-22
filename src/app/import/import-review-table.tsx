@@ -2,6 +2,7 @@
 
 import { TriangleAlert } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -62,6 +63,7 @@ function formatNok(value: number) {
 
 const SKELETON_ROWS = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"] as const;
 const TABLE_COLS = [
+  "select",
   "date",
   "message",
   "amount",
@@ -107,9 +109,12 @@ type ImportReviewTableProps = {
   noteDecisions: Record<string, string>;
   noteValidationErrors: Record<string, string>;
   messageDecisions: Record<string, MessageSource>;
+  selectedRowIds: Set<string>;
   setCategoryDecisions: Dispatch<SetStateAction<Record<string, string>>>;
   setNoteDecision: (rowId: string, note: string) => void;
   setMessageDecisions: Dispatch<SetStateAction<Record<string, MessageSource>>>;
+  toggleRowSelection: (rowId: string) => void;
+  toggleAllRows: (rowIds: string[]) => void;
 };
 
 export function ImportReviewTable({
@@ -119,15 +124,34 @@ export function ImportReviewTable({
   noteDecisions,
   noteValidationErrors,
   messageDecisions,
+  selectedRowIds,
   setCategoryDecisions,
   setNoteDecision,
   setMessageDecisions,
+  toggleRowSelection,
+  toggleAllRows,
 }: ImportReviewTableProps) {
+  const allRowIds = rows.map((row) => row.id);
+  const selectedCount = allRowIds.filter((id) => selectedRowIds.has(id)).length;
+  const headerChecked: boolean | "indeterminate" =
+    selectedCount === rows.length && rows.length > 0
+      ? true
+      : selectedCount > 0
+        ? "indeterminate"
+        : false;
+
   return (
     <div className="overflow-x-auto rounded-md border border-border">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>
+              <Checkbox
+                checked={headerChecked}
+                onCheckedChange={() => toggleAllRows(allRowIds)}
+                aria-label="Select all rows"
+              />
+            </TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Message</TableHead>
             <TableHead>Amount</TableHead>
@@ -164,7 +188,19 @@ export function ImportReviewTable({
             const selectedCategoryId =
               categoryDecisions[row.id] ?? row.categoryId ?? "";
             return (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className={
+                  !selectedRowIds.has(row.id) ? "opacity-40" : undefined
+                }
+              >
+                <TableCell>
+                  <Checkbox
+                    checked={selectedRowIds.has(row.id)}
+                    onCheckedChange={() => toggleRowSelection(row.id)}
+                    aria-label={`Select row ${row.rowNumber}`}
+                  />
+                </TableCell>
                 <TableCell>{row.bookingDate}</TableCell>
                 <TableCell>
                   <ImportReviewMessageCell

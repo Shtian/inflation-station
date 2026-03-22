@@ -136,6 +136,7 @@ export function useImportWorkflow() {
   const [noteValidationErrors, setNoteValidationErrors] = useState<
     Record<string, string>
   >({});
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadAccounts = useCallback(async () => {
@@ -256,6 +257,7 @@ export function useImportWorkflow() {
     setMessageDecisions({});
     setNoteDecisions({});
     setNoteValidationErrors({});
+    setSelectedRowIds(new Set());
     setProviderDetection(null);
     setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
     setImportError(null);
@@ -410,6 +412,7 @@ export function useImportWorkflow() {
 
     setNoteDecisions({});
     setNoteValidationErrors({});
+    setSelectedRowIds(new Set(reviewRows.map((row) => row.id)));
 
     setImportLoading(false);
   }, [selectedAccountId, selectedFile, selectedProviderId]);
@@ -422,6 +425,7 @@ export function useImportWorkflow() {
     setMessageDecisions({});
     setNoteDecisions({});
     setNoteValidationErrors({});
+    setSelectedRowIds(new Set());
     setImportError(null);
     setSubmitError(null);
   }, []);
@@ -442,23 +446,43 @@ export function useImportWorkflow() {
     });
   }, []);
 
+  const toggleRowSelection = useCallback((rowId: string) => {
+    setSelectedRowIds((current) => {
+      const next = new Set(current);
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleAllRows = useCallback((rowIds: string[]) => {
+    setSelectedRowIds((current) =>
+      current.size === rowIds.length ? new Set() : new Set(rowIds),
+    );
+  }, []);
+
   const submitReviewRows = useCallback(async () => {
     if (!parseResult?.review?.sessionId) {
       setSubmitError("No review session is available to submit.");
       return;
     }
 
-    const rows = parseResult.review.rows.map((row) => ({
-      selectedMessage:
-        messageDecisions[row.id] === MESSAGE_SOURCE_CLEANED &&
-        typeof row.cleanedMessage === "string" &&
-        row.cleanedMessage.trim().length > 0
-          ? row.cleanedMessage
-          : row.title,
-      rowId: row.id,
-      categoryId: categoryDecisions[row.id] ?? row.categoryId,
-      note: noteDecisions[row.id] ?? null,
-    }));
+    const rows = parseResult.review.rows
+      .filter((row) => selectedRowIds.has(row.id))
+      .map((row) => ({
+        selectedMessage:
+          messageDecisions[row.id] === MESSAGE_SOURCE_CLEANED &&
+          typeof row.cleanedMessage === "string" &&
+          row.cleanedMessage.trim().length > 0
+            ? row.cleanedMessage
+            : row.title,
+        rowId: row.id,
+        categoryId: categoryDecisions[row.id] ?? row.categoryId,
+        note: noteDecisions[row.id] ?? null,
+      }));
 
     const rowNoteErrors = rows.reduce<Record<string, string>>((acc, row) => {
       if (
@@ -521,7 +545,13 @@ export function useImportWorkflow() {
     }
 
     setSubmitLoading(false);
-  }, [parseResult, messageDecisions, categoryDecisions, noteDecisions]);
+  }, [
+    parseResult,
+    messageDecisions,
+    categoryDecisions,
+    noteDecisions,
+    selectedRowIds,
+  ]);
 
   return {
     accountError,
@@ -550,6 +580,7 @@ export function useImportWorkflow() {
     reviewCategoryOptions,
     selectedAccountId,
     selectedFile,
+    selectedRowIds,
     setCategoryDecisions,
     setDialogSelectedProviderId,
     setIsProviderDialogOpen,
@@ -557,6 +588,8 @@ export function useImportWorkflow() {
     setNoteDecision,
     setNoteDecisions,
     setSelectedAccountId,
+    toggleAllRows,
+    toggleRowSelection,
     submitError,
     submitLoading,
     submitReviewRows,
