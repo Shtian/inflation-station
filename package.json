@@ -14,7 +14,8 @@
     "test:e2e": "playwright test",
     "test:watch": "vitest",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:reset": "prisma migrate reset --force"
   },
   "dependencies": {
     "@ai-sdk/openai": "^3.0.30",
