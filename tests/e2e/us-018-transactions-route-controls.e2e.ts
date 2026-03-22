@@ -400,11 +400,13 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.getByRole("option", { name: "All accounts" }).click();
 
   await page.getByLabel("Search").fill("market");
+  await expect(page).toHaveURL(/globalQuery=market/);
   await page.getByLabel("Date from").fill("2026-02-01");
+  await expect(page).toHaveURL(/dateFrom=2026-02-01/);
   await page.getByLabel("Date to").fill("2026-02-28");
+  await expect(page).toHaveURL(/dateTo=2026-02-28/);
   await page.getByLabel("Category").click();
   await page.getByRole("option", { name: "Groceries", exact: true }).click();
-  await expect(page.getByText("Filtered Market")).toBeVisible();
   await expect(page).toHaveURL(/globalQuery=market/);
   await expect(page).toHaveURL(/dateFrom=2026-02-01/);
   await expect(page).toHaveURL(/dateTo=2026-02-28/);
@@ -421,6 +423,8 @@ test("manages transactions filters and pagination controls from /transactions", 
       ),
     )
     .toBe(true);
+
+  await expect(page.getByText("Filtered Market")).toBeVisible();
 
   await page.getByLabel("Search").fill("");
   await page.getByLabel("Date from").fill("");
