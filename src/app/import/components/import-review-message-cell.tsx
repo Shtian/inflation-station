@@ -41,7 +41,7 @@ export function ImportReviewMessageCell({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-sm">
+      <span className="text-sm truncate max-w-[20ch]">
         {selectedMessageSource === MESSAGE_SOURCE_CLEANED
           ? cleanedMessage
           : originalMessage}
