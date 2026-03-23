@@ -83,8 +83,8 @@ type MonthlyTimelineDbClient = {
 };
 
 function toMonthStartKey(date: Date): string {
-  const year = date.getUTCFullYear();
-  const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
 
   return `${year}-${month}-01`;
 }
