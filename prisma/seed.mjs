@@ -52,7 +52,9 @@ async function main() {
   const [checking, savings, creditCard, brukskonto] = await Promise.all([
     prisma.account.create({ data: { name: "Lønnskonto", institution: "DNB" } }),
     prisma.account.create({ data: { name: "Sparekonto", institution: "DNB" } }),
-    prisma.account.create({ data: { name: "Visa Kredittkort", institution: "DNB" } }),
+    prisma.account.create({
+      data: { name: "Visa Kredittkort", institution: "DNB" },
+    }),
     prisma.account.create({ data: { name: "Brukskonto", institution: "DNB" } }),
   ]);
 
@@ -93,22 +95,54 @@ async function main() {
     { merchantContains: "kiwi", paymentType: "CARD", category: "Dagligvarer" },
     { merchantContains: "meny", paymentType: "CARD", category: "Dagligvarer" },
     { merchantContains: "coop", paymentType: "CARD", category: "Dagligvarer" },
-    { merchantContains: "mcdonalds", paymentType: "CARD", category: "Restaurant & Takeaway" },
-    { merchantContains: "burger king", paymentType: "CARD", category: "Restaurant & Takeaway" },
-    { merchantContains: "pizza", paymentType: "CARD", category: "Restaurant & Takeaway" },
-    { merchantContains: "sushi", paymentType: "CARD", category: "Restaurant & Takeaway" },
+    {
+      merchantContains: "mcdonalds",
+      paymentType: "CARD",
+      category: "Restaurant & Takeaway",
+    },
+    {
+      merchantContains: "burger king",
+      paymentType: "CARD",
+      category: "Restaurant & Takeaway",
+    },
+    {
+      merchantContains: "pizza",
+      paymentType: "CARD",
+      category: "Restaurant & Takeaway",
+    },
+    {
+      merchantContains: "sushi",
+      paymentType: "CARD",
+      category: "Restaurant & Takeaway",
+    },
     { merchantContains: "ruter", paymentType: "CARD", category: "Transport" },
-    { merchantContains: "vy", paymentType: "TRANSFER", category: "Transport" },
-    { merchantContains: "netflix", paymentType: "CARD", category: "Abonnementer" },
-    { merchantContains: "spotify", paymentType: "CARD", category: "Abonnementer" },
-    { merchantContains: "viaplay", paymentType: "CARD", category: "Abonnementer" },
+    { merchantContains: "vy", paymentType: "EFT", category: "Transport" },
+    {
+      merchantContains: "netflix",
+      paymentType: "CARD",
+      category: "Abonnementer",
+    },
+    {
+      merchantContains: "spotify",
+      paymentType: "CARD",
+      category: "Abonnementer",
+    },
+    {
+      merchantContains: "viaplay",
+      paymentType: "CARD",
+      category: "Abonnementer",
+    },
     { merchantContains: "apotek", paymentType: "CARD", category: "Helse" },
     { merchantContains: "vitusapotek", paymentType: "CARD", category: "Helse" },
     { merchantContains: "h&m", paymentType: "CARD", category: "Shopping" },
     { merchantContains: "zalando", paymentType: "CARD", category: "Shopping" },
     { merchantContains: "elkjøp", paymentType: "CARD", category: "Shopping" },
     { merchantContains: "cubus", paymentType: "CARD", category: "Shopping" },
-    { merchantContains: "kino", paymentType: "CARD", category: "Underholdning" },
+    {
+      merchantContains: "kino",
+      paymentType: "CARD",
+      category: "Underholdning",
+    },
     { merchantContains: "husbanken", paymentType: "EFT", category: "Boliglån" },
     { merchantContains: "santander", paymentType: "EFT", category: "Billån" },
     { merchantContains: "recharge", paymentType: "CARD", category: "Bil" },
@@ -151,9 +185,11 @@ async function main() {
     ["Ut fra konto", "amountNok"],
     ["Inn på konto", "amountNok"],
   ]) {
-    await prisma.importProviderFieldMapping.create({
-      data: { providerMappingId: dnb.id, sourceField, canonicalField },
-    }).catch(() => {}); // skip duplicate canonicalField entries
+    await prisma.importProviderFieldMapping
+      .create({
+        data: { providerMappingId: dnb.id, sourceField, canonicalField },
+      })
+      .catch(() => {}); // skip duplicate canonicalField entries
   }
 
   // Nordea — semicolon-separated with full sender/recipient fields
@@ -178,9 +214,11 @@ async function main() {
     ["Tittel", "normalizedMerchant"],
     ["Tittel", "title"],
   ]) {
-    await prisma.importProviderFieldMapping.create({
-      data: { providerMappingId: nordea.id, sourceField, canonicalField },
-    }).catch(() => {});
+    await prisma.importProviderFieldMapping
+      .create({
+        data: { providerMappingId: nordea.id, sourceField, canonicalField },
+      })
+      .catch(() => {});
   }
 
   // SpareBank 1 — semicolon-separated with description field
@@ -204,15 +242,17 @@ async function main() {
     ["Avsender", "sender"],
     ["Mottaker", "recipient"],
   ]) {
-    await prisma.importProviderFieldMapping.create({
-      data: { providerMappingId: sb1.id, sourceField, canonicalField },
-    }).catch(() => {});
+    await prisma.importProviderFieldMapping
+      .create({
+        data: { providerMappingId: sb1.id, sourceField, canonicalField },
+      })
+      .catch(() => {});
   }
 
   // --- Transactions by month ---
   const months = getPreviousMonths(3);
   console.log(
-    `Creating transactions for months: ${months.map((m) => m.toISOString().slice(0, 7)).join(", ")}...`
+    `Creating transactions for months: ${months.map((m) => m.toISOString().slice(0, 7)).join(", ")}...`,
   );
 
   // Pattern → category for auto-matching and suggestion creation
@@ -252,7 +292,10 @@ async function main() {
   }
 
   function getMonthlyReviewText(monthStart) {
-    const m = monthStart.toLocaleString("nb-NO", { month: "long", year: "numeric" });
+    const m = monthStart.toLocaleString("nb-NO", {
+      month: "long",
+      year: "numeric",
+    });
     const month = monthStart.getMonth();
     if (month === 11) {
       return `${m} var preget av julehandel og høyere forbruk enn vanlig. Gaver, julepynt, ekstra dagligvarer og restaurantbesøk dyttet utgiftene godt over normalen. Faste lånekostnader på 24 500 kr gikk som planlagt, men kredittkortfakturaen endte betydelig høyere enn en vanlig måned. Tog til julebesøk la seg også til budsjettet.`;
@@ -269,9 +312,19 @@ async function main() {
     const mo = monthStart.getMonth() + 1; // 1-indexed
 
     // Creates a transaction and a RULE suggestion if merchant matches a known pattern
-    async function addTx(account, merchant, amountNok, paymentType, day, categoryOverride) {
+    async function addTx(
+      account,
+      merchant,
+      amountNok,
+      paymentType,
+      day,
+      categoryOverride,
+    ) {
       const bookingDate = monthDate(monthStart, day);
-      const category = categoryOverride !== undefined ? categoryOverride : findCategory(merchant);
+      const category =
+        categoryOverride !== undefined
+          ? categoryOverride
+          : findCategory(merchant);
       const tx = await prisma.transaction.create({
         data: {
           accountId: account.id,
@@ -286,7 +339,7 @@ async function main() {
 
       if (category) {
         const matchedRule = merchantCategoryMap.find(({ pattern }) =>
-          merchant.toLowerCase().includes(pattern)
+          merchant.toLowerCase().includes(pattern),
         );
         if (matchedRule) {
           await prisma.categorizationSuggestion.create({
@@ -309,80 +362,270 @@ async function main() {
     await prisma.transaction.create({
       data: {
         accountId: checking.id,
-        categoryId: categories["Lønn"].id,
-        bookingDate: new Date(y, mo - 2, 25),
+        categoryId: categories.Lønn.id,
+        bookingDate: new Date(y, mo - 1, 25),
         amountNok: "45000",
         currency: "NOK",
         normalizedMerchant: "Norsk Arbeidsgiver AS",
-        paymentType: "TRANSFER",
+        paymentType: "EFT",
       },
     });
 
-    await addTx(checking, "Husbanken boliglån", -20000, "EFT", 1, categories["Boliglån"]);
-    await addTx(checking, "Santander billån", -4500, "EFT", 2, categories["Billån"]);
-    await addTx(checking, "Sparekonto overføring", -5000, "TRANSFER", 2, categories["Spareoverføring"]);
+    await addTx(
+      checking,
+      "Husbanken boliglån",
+      -20000,
+      "EFT",
+      1,
+      categories.Boliglån,
+    );
+    await addTx(
+      checking,
+      "Santander billån",
+      -4500,
+      "EFT",
+      2,
+      categories.Billån,
+    );
+    await addTx(
+      checking,
+      "Sparekonto overføring",
+      -5000,
+      "TRANSFER",
+      2,
+      categories.Spareoverføring,
+    );
     await addTx(checking, "Spotify", -99, "CARD", 1);
     await addTx(checking, "Netflix", -179, "CARD", 1);
     await addTx(checking, "Viaplay", -99, "CARD", 1);
     await addTx(checking, "Rema 1000", -850, "CARD", 3);
-    await addTx(checking, "Gjensidige Forsikring", -450, "EFT", 5, categories["Forsikring"]);
+    await addTx(
+      checking,
+      "Gjensidige Forsikring",
+      -450,
+      "EFT",
+      5,
+      categories.Forsikring,
+    );
     await addTx(checking, "Recharge elbil-lading", -380, "CARD", 6);
     await addTx(checking, "Bilvask Shellstasjon", -199, "CARD", 6);
     await addTx(checking, "Kiwi", -380, "CARD", 7);
     await addTx(checking, "Burger King", -185, "CARD", 8);
     await addTx(checking, "Ruter månedskort", -420, "CARD", 10);
-    await addTx(checking, "Minibank uttak", -1000, "CASH", 12, categories["Kontantuttak"]);
+    await addTx(
+      checking,
+      "Minibank uttak",
+      -1000,
+      "CASH",
+      12,
+      categories.Kontantuttak,
+    );
     await addTx(checking, "Apotek 1", -245, "CARD", 14);
     await addTx(checking, "Meny", -1150, "CARD", 15);
     await addTx(checking, "McDonalds", -138, "CARD", 16);
-    await addTx(checking, "Telenor internett", -499, "EFT", 18, categories["Strøm & Internett"]);
+    await addTx(
+      checking,
+      "Telenor internett",
+      -499,
+      "EFT",
+      18,
+      categories["Strøm & Internett"],
+    );
     await addTx(checking, "H&M", -799, "CARD", 20);
     await addTx(checking, "Fortum lading", -290, "CARD", 21);
     await addTx(checking, "Sushi restaurant", -420, "CARD", 22);
     await addTx(checking, "Coop Extra", -640, "CARD", 24);
-    await addTx(checking, "Kredittkortbetaling DNB", -9500, "TRANSFER", 25, categories["Kredittkortbetaling"]);
+    await addTx(
+      checking,
+      "Kredittkortbetaling DNB",
+      -9500,
+      "TRANSFER",
+      25,
+      categories.Kredittkortbetaling,
+    );
     await addTx(checking, "Pizza Hut", -285, "CARD", 28);
 
     // --- Sparekonto ---
-    await addTx(savings, "Overføring fra lønnskonto", 5000, "TRANSFER", 2, categories["Spareoverføring"]);
-    await addTx(savings, "Renteinntekt DNB", 180, "TRANSFER", 15, categories["Renteinntekt"]);
+    await addTx(
+      savings,
+      "Overføring fra lønnskonto",
+      5000,
+      "TRANSFER",
+      2,
+      categories.Spareoverføring,
+    );
+    await addTx(
+      savings,
+      "Renteinntekt DNB",
+      180,
+      "EFT",
+      15,
+      categories.Renteinntekt,
+    );
 
     // --- Visa Kredittkort ---
-    await addTx(creditCard, "Zalando", -1299, "CARD", 4, categories["Shopping"]);
-    await addTx(creditCard, "Restaurant Mathallen", -680, "CARD", 9, categories["Restaurant & Takeaway"]);
-    await addTx(creditCard, "Elkjøp", -2499, "CARD", 13, categories["Shopping"]);
-    await addTx(creditCard, "Kino", -199, "CARD", 19, categories["Underholdning"]);
-    await addTx(creditCard, "Vitusapotek", -380, "CARD", 23, categories["Helse"]);
-    await addTx(creditCard, "Cubus", -899, "CARD", 27, categories["Shopping"]);
+    await addTx(creditCard, "Zalando", -1299, "CARD", 4, categories.Shopping);
+    await addTx(
+      creditCard,
+      "Restaurant Mathallen",
+      -680,
+      "CARD",
+      9,
+      categories["Restaurant & Takeaway"],
+    );
+    await addTx(creditCard, "Elkjøp", -2499, "CARD", 13, categories.Shopping);
+    await addTx(creditCard, "Kino", -199, "CARD", 19, categories.Underholdning);
+    await addTx(creditCard, "Vitusapotek", -380, "CARD", 23, categories.Helse);
+    await addTx(creditCard, "Cubus", -899, "CARD", 27, categories.Shopping);
 
     // --- Brukskonto ---
-    await addTx(brukskonto, "Narvesen kiosk", -45, "CASH", 12, categories["Restaurant & Takeaway"]);
-    await addTx(brukskonto, "Bondens marked", -220, "CASH", 19, categories["Dagligvarer"]);
-    await addTx(brukskonto, "Parkering", -80, "CASH", 26, categories["Bil"]);
+    await addTx(
+      brukskonto,
+      "Narvesen kiosk",
+      -45,
+      "CASH",
+      12,
+      categories["Restaurant & Takeaway"],
+    );
+    await addTx(
+      brukskonto,
+      "Bondens marked",
+      -220,
+      "CASH",
+      19,
+      categories.Dagligvarer,
+    );
+    await addTx(brukskonto, "Parkering", -80, "CASH", 26, categories.Bil);
 
     // --- Month-specific extras ---
     const monthNum = monthStart.getMonth();
 
+    // --- Uncategorized ---
+    await addTx(checking, "Ukjent betaling", -350, "CARD", 9, null);
+    if (monthNum === 11) {
+      await addTx(checking, "Diverse innkjøp", -180, "CARD", 16, null);
+    } else if (monthNum === 0) {
+      await addTx(creditCard, "Netthandel ukjent", -640, "CARD", 11, null);
+    }
+
     if (monthNum === 11) {
       // December: Christmas shopping, food, travel, higher CC bill
-      await addTx(checking, "Vinmonopolet", -869, "CARD", 10, categories["Shopping"]);
-      await addTx(checking, "Clas Ohlson", -1280, "CARD", 12, categories["Shopping"]);
-      await addTx(checking, "IKEA julepynt", -649, "CARD", 13, categories["Shopping"]);
-      await addTx(checking, "Julefrokost jobben", -890, "CARD", 19, categories["Restaurant & Takeaway"]);
-      await addTx(checking, "Vy tog julebesøk", -680, "TRANSFER", 23, categories["Transport"]);
-      await addTx(checking, "Meny julehandel", -2200, "CARD", 23, categories["Dagligvarer"]);
-      await addTx(checking, "Kredittkortbetaling DNB", -15500, "TRANSFER", 27, categories["Kredittkortbetaling"]);
-      await addTx(creditCard, "Pandora smykker", -1899, "CARD", 6, categories["Shopping"]);
-      await addTx(creditCard, "Boozt klær", -2199, "CARD", 14, categories["Shopping"]);
-      await addTx(creditCard, "Leketøy julehandel", -1349, "CARD", 17, categories["Shopping"]);
+      await addTx(
+        checking,
+        "Vinmonopolet",
+        -869,
+        "CARD",
+        10,
+        categories.Shopping,
+      );
+      await addTx(
+        checking,
+        "Clas Ohlson",
+        -1280,
+        "CARD",
+        12,
+        categories.Shopping,
+      );
+      await addTx(
+        checking,
+        "IKEA julepynt",
+        -649,
+        "CARD",
+        13,
+        categories.Shopping,
+      );
+      await addTx(
+        checking,
+        "Julefrokost jobben",
+        -890,
+        "CARD",
+        19,
+        categories["Restaurant & Takeaway"],
+      );
+      await addTx(
+        checking,
+        "Vy tog julebesøk",
+        -680,
+        "EFT",
+        23,
+        categories.Transport,
+      );
+      await addTx(
+        checking,
+        "Meny julehandel",
+        -2200,
+        "CARD",
+        23,
+        categories.Dagligvarer,
+      );
+      await addTx(
+        checking,
+        "Kredittkortbetaling DNB",
+        -15500,
+        "TRANSFER",
+        27,
+        categories.Kredittkortbetaling,
+      );
+      await addTx(
+        creditCard,
+        "Pandora smykker",
+        -1899,
+        "CARD",
+        6,
+        categories.Shopping,
+      );
+      await addTx(
+        creditCard,
+        "Boozt klær",
+        -2199,
+        "CARD",
+        14,
+        categories.Shopping,
+      );
+      await addTx(
+        creditCard,
+        "Leketøy julehandel",
+        -1349,
+        "CARD",
+        17,
+        categories.Shopping,
+      );
     }
 
     if (monthNum === 0) {
       // January: New Year's, resolutions, January sales
-      await addTx(checking, "Vinmonopolet nyttår", -389, "CARD", 1, categories["Shopping"]);
-      await addTx(checking, "SATS treningssenter", -399, "CARD", 3, categories["Helse"]);
-      await addTx(checking, "Komplett.no januarsalg", -1799, "CARD", 6, categories["Shopping"]);
-      await addTx(creditCard, "XXL Sport nyttårssalg", -1499, "CARD", 5, categories["Shopping"]);
+      await addTx(
+        checking,
+        "Vinmonopolet nyttår",
+        -389,
+        "CARD",
+        1,
+        categories.Shopping,
+      );
+      await addTx(
+        checking,
+        "SATS treningssenter",
+        -399,
+        "CARD",
+        3,
+        categories.Helse,
+      );
+      await addTx(
+        checking,
+        "Komplett.no januarsalg",
+        -1799,
+        "CARD",
+        6,
+        categories.Shopping,
+      );
+      await addTx(
+        creditCard,
+        "XXL Sport nyttårssalg",
+        -1499,
+        "CARD",
+        5,
+        categories.Shopping,
+      );
     }
 
     // --- Monthly Review ---
@@ -397,11 +640,15 @@ async function main() {
   }
 
   console.log("Seed complete.");
-  console.log(`  Accounts: 4 (Lønnskonto, Sparekonto, Visa Kredittkort, Brukskonto)`);
+  console.log(
+    `  Accounts: 4 (Lønnskonto, Sparekonto, Visa Kredittkort, Brukskonto)`,
+  );
   console.log(`  Categories: ${categoryDefs.length}`);
   console.log(`  Category rules: ${ruleDefs.length} (on Lønnskonto)`);
   console.log(`  Import provider mappings: 3 (DNB Bank, Nordea, SpareBank 1)`);
-  console.log(`  Months seeded: ${months.length} (${months.map((m) => m.toISOString().slice(0, 7)).join(", ")})`);
+  console.log(
+    `  Months seeded: ${months.length} (${months.map((m) => m.toISOString().slice(0, 7)).join(", ")})`,
+  );
   console.log(`  Monthly reviews: ${months.length}`);
 }
 
