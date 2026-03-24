@@ -89,7 +89,7 @@ export function ProviderMappingFieldMappingsEditor(props: {
               "bookingDate",
             ).trim() ? (
               <Check
-                className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
+                className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-success"
                 aria-hidden="true"
               />
             ) : null}
@@ -108,7 +108,7 @@ export function ProviderMappingFieldMappingsEditor(props: {
             />
             {getMappingSourceValue(props.fieldMappings, "amount").trim() ? (
               <Check
-                className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
+                className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-success"
                 aria-hidden="true"
               />
             ) : null}
@@ -157,7 +157,7 @@ export function ProviderMappingFieldMappingsEditor(props: {
               props.merchantSignalCanonicalField,
             ).trim() ? (
               <Check
-                className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-emerald-600"
+                className="pointer-events-none absolute top-1/2 right-2 h-4 w-4 -translate-y-1/2 text-success"
                 aria-hidden="true"
               />
             ) : null}

@@ -22,7 +22,7 @@ export function ImportReviewWarningsCell({
       <Tooltip>
         <TooltipTrigger asChild>
           <TriangleAlert
-            className="h-4 w-4 text-amber-500"
+            className="h-4 w-4 text-warning"
             aria-label="Potential duplicate"
           />
         </TooltipTrigger>

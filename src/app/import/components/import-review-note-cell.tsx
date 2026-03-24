@@ -28,7 +28,7 @@ export function ImportReviewNoteCell({
         className="h-8 text-xs"
       />
       {isInvalid ? (
-        <p className="text-[11px] text-red-700">{errorMessage}</p>
+        <p className="text-[11px] text-destructive">{errorMessage}</p>
       ) : null}
     </div>
   );

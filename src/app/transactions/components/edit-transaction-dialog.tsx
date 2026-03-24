@@ -171,7 +171,7 @@ export function EditTransactionDialog({
                   disabled={editSaving}
                 />
                 <p
-                  className={`text-xs ${noteError ? "text-red-700" : "text-muted-foreground"}`}
+                  className={`text-xs ${noteError ? "text-destructive" : "text-muted-foreground"}`}
                 >
                   {noteError ??
                     `${editForm.note.length}/${MAX_TRANSACTION_NOTE_LENGTH} characters`}
@@ -182,7 +182,7 @@ export function EditTransactionDialog({
             {editError ? (
               <p
                 role="alert"
-                className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
+                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
               >
                 {editError}
               </p>

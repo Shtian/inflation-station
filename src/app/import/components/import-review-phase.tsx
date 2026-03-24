@@ -210,7 +210,7 @@ export function ImportReviewPhase({
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-1 items-center gap-2">
           <CheckCircle2
-            className="h-6 w-6 shrink-0 text-emerald-600"
+            className="h-6 w-6 shrink-0 text-success"
             aria-hidden="true"
           />
           <h2 className="font-semibold text-foreground text-xl tracking-tight">
@@ -288,7 +288,7 @@ export function ImportReviewPhase({
           </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-muted-foreground text-sm">Credits</span>
-            <span className="font-bold text-emerald-600 text-sm">
+            <span className="font-bold text-success text-sm">
               +
               {formatNok(
                 reviewRows.reduce(
@@ -300,7 +300,7 @@ export function ImportReviewPhase({
           </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-muted-foreground text-sm">Debits</span>
-            <span className="font-bold text-red-600 text-sm">
+            <span className="font-bold text-destructive text-sm">
               {formatNok(
                 reviewRows.reduce(
                   (sum, row) => (row.amountNok < 0 ? sum + row.amountNok : sum),
@@ -315,7 +315,7 @@ export function ImportReviewPhase({
       {accountError ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
         >
           {accountError}
         </p>
@@ -323,7 +323,7 @@ export function ImportReviewPhase({
       {importError ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
         >
           {importError}
         </p>
@@ -331,18 +331,18 @@ export function ImportReviewPhase({
       {categoryError ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
         >
           {categoryError}
         </p>
       ) : null}
 
       {parseResult.errors.length > 0 ? (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
-          <p className="mb-1 font-semibold text-amber-800 text-xs uppercase tracking-wide">
+        <div className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2">
+          <p className="mb-1 font-semibold text-warning text-xs uppercase tracking-wide">
             Validation errors
           </p>
-          <ul className="space-y-1 text-amber-700 text-sm">
+          <ul className="space-y-1 text-warning text-sm">
             {parseResult.errors.map((error) => (
               <li key={`${error.rowNumber}-${error.code}`}>
                 Row {error.rowNumber}: {error.message}
@@ -353,7 +353,7 @@ export function ImportReviewPhase({
       ) : null}
 
       {cleanupUnavailableMessage ? (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 text-sm">
+        <p className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-warning text-sm">
           {cleanupUnavailableMessage}
         </p>
       ) : null}
@@ -363,7 +363,7 @@ export function ImportReviewPhase({
           {selectedRowIds.size === 0 ? (
             <p
               role="alert"
-              className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 text-sm"
+              className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-warning text-sm"
             >
               No rows selected — nothing will be imported. Select at least one
               row to continue.
@@ -406,7 +406,7 @@ export function ImportReviewPhase({
       {submitError ? (
         <p
           role="alert"
-          className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
         >
           {submitError}
         </p>

@@ -50,14 +50,14 @@ function getReviewStateTone(
   if (reviewState === "GENERATED") {
     return {
       dotClassName:
-        "border-emerald-500/60 text-emerald-600 dark:text-emerald-400",
+        "border-success/60 text-success",
       label: "Generated",
     };
   }
 
   if (reviewState === "GENERATING") {
     return {
-      dotClassName: "border-amber-500/60 text-amber-600 dark:text-amber-400",
+      dotClassName: "border-warning/60 text-warning",
       label: "Generating",
     };
   }
@@ -417,7 +417,7 @@ export function MonthlyReviewManager() {
                   ) : null}
 
                   {isReviewGenerating ? (
-                    <div className="space-y-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
+                    <div className="space-y-2 rounded-md border border-warning/30 bg-warning/10 p-3">
                       <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
                         AI insight
                       </p>
@@ -468,7 +468,7 @@ export function MonthlyReviewManager() {
                   ) : null}
 
                   {row.reviewState === "GENERATED" && row.reviewText ? (
-                    <div className="space-y-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
+                    <div className="space-y-2 rounded-md border border-success/30 bg-success/10 p-3">
                       <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
                         AI insight
                       </p>

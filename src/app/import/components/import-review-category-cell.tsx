@@ -31,7 +31,7 @@ export function ImportReviewCategoryCell({
       placeholder="Uncategorized"
       emptyLabel="No matching categories."
       ariaLabel={`Category for row ${rowNumber}`}
-      className={cn("w-[220px]", isUncategorized && "text-amber-500")}
+      className={cn("w-[220px]", isUncategorized && "text-warning")}
       showClear
     />
   );
