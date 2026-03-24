@@ -1,4 +1,7 @@
+import { formatNok, formatSignedNok } from "@/lib/format-nok";
 import type { MonthlyReviewTimelineRow } from "./monthly-review-manager.types";
+
+export { formatNok, formatSignedNok };
 
 const monthFormatter = new Intl.DateTimeFormat("en-US", {
   month: "long",
@@ -10,13 +13,6 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
   dateStyle: "medium",
   timeStyle: "short",
   timeZone: "UTC",
-});
-
-const nokFormatter = new Intl.NumberFormat("nb-NO", {
-  style: "currency",
-  currency: "NOK",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
 });
 
 export function formatMonthStartLabel(monthStart: string): string {
@@ -39,28 +35,6 @@ export function formatGeneratedAt(value: string | null): string {
   }
 
   return dateTimeFormatter.format(date);
-}
-
-export function formatNok(value: number): string {
-  return nokFormatter.format(value);
-}
-
-export function formatSignedNok(
-  value: number,
-  mode: "positive" | "negative" | "auto" = "auto",
-): string {
-  const absValue = Math.abs(value);
-  const formatted = formatNok(absValue);
-
-  if (mode === "positive") {
-    return `+${formatted}`;
-  }
-
-  if (mode === "negative") {
-    return `-${formatted}`;
-  }
-
-  return value < 0 ? `-${formatted}` : `+${formatted}`;
 }
 
 export function getReviewStateLabel(

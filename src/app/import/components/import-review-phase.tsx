@@ -9,6 +9,7 @@ import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Progress } from "@/components/ui/progress";
+import { formatNok } from "@/lib/format-nok";
 import {
   ImportReviewTable,
   type MessageSource,
@@ -20,15 +21,6 @@ import type {
   ParseResponse,
   ProviderDetection,
 } from "../use-import-workflow";
-
-function formatNok(value: number) {
-  return new Intl.NumberFormat("nb-NO", {
-    style: "currency",
-    currency: "NOK",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 function getCleanupUnavailableMessage(
   reason: "disabled" | "key_missing" | "timeout" | "provider_error" | null,

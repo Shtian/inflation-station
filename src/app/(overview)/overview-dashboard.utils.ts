@@ -1,15 +1,8 @@
+import { formatNok } from "@/lib/format-nok";
 import type { DashboardRangePreset } from "./overview-dashboard.types";
 
+export { formatNok };
 export const ALL_ACCOUNTS_VALUE = "__all_accounts__";
-
-export function formatNok(value: number) {
-  return new Intl.NumberFormat("nb-NO", {
-    style: "currency",
-    currency: "NOK",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
 
 export function formatCompactNok(value: number) {
   return new Intl.NumberFormat("nb-NO", {

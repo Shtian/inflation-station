@@ -57,6 +57,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatNok } from "@/lib/format-nok";
 import {
   type Account,
   ALL_ACCOUNTS_VALUE,
@@ -109,17 +110,6 @@ type TransactionsTableSectionProps = {
   onPageSizeChange: (pageSize: number) => void;
   onGoToPage: (page: number) => void;
 };
-
-const nokFormatter = new Intl.NumberFormat("nb-NO", {
-  style: "currency",
-  currency: "NOK",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
-function formatNok(value: number) {
-  return nokFormatter.format(value);
-}
 
 function getHeaderClassName(columnId: string) {
   if (columnId === "noteIndicator") {
