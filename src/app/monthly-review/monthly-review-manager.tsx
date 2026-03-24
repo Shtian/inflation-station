@@ -49,8 +49,7 @@ function getReviewStateTone(
 } {
   if (reviewState === "GENERATED") {
     return {
-      dotClassName:
-        "border-success/60 text-success",
+      dotClassName: "border-success/60 text-success",
       label: "Generated",
     };
   }
@@ -295,7 +294,9 @@ export function MonthlyReviewManager() {
       <Separator className="my-4" />
 
       {loading ? (
-        <p className="text-muted-foreground text-sm">Loading timeline...</p>
+        <output className="block text-muted-foreground text-sm">
+          Loading timeline...
+        </output>
       ) : null}
 
       {error ? (

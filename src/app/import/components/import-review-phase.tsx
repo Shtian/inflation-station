@@ -288,7 +288,7 @@ export function ImportReviewPhase({
           </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-muted-foreground text-sm">Credits</span>
-            <span className="font-bold text-success text-sm">
+            <span className="font-bold text-sm text-success">
               +
               {formatNok(
                 reviewRows.reduce(
@@ -342,7 +342,7 @@ export function ImportReviewPhase({
           <p className="mb-1 font-semibold text-warning text-xs uppercase tracking-wide">
             Validation errors
           </p>
-          <ul className="space-y-1 text-warning text-sm">
+          <ul className="space-y-1 text-sm text-warning">
             {parseResult.errors.map((error) => (
               <li key={`${error.rowNumber}-${error.code}`}>
                 Row {error.rowNumber}: {error.message}
@@ -353,7 +353,7 @@ export function ImportReviewPhase({
       ) : null}
 
       {cleanupUnavailableMessage ? (
-        <p className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-warning text-sm">
+        <p className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning">
           {cleanupUnavailableMessage}
         </p>
       ) : null}
@@ -363,7 +363,7 @@ export function ImportReviewPhase({
           {selectedRowIds.size === 0 ? (
             <p
               role="alert"
-              className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-warning text-sm"
+              className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning"
             >
               No rows selected — nothing will be imported. Select at least one
               row to continue.

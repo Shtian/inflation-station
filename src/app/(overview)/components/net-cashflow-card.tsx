@@ -36,9 +36,9 @@ export function NetCashflowCard({
       <CardContent className="space-y-3">
         <h3 className="font-semibold text-foreground text-sm">Net Cashflow</h3>
         {isLoading ? (
-          <p className="mt-3 text-muted-foreground text-sm">
+          <output className="mt-3 block text-muted-foreground text-sm">
             Loading chart data...
-          </p>
+          </output>
         ) : null}
         {!isLoading && (!netCashflow || netCashflow.length === 0) ? (
           <p className="mt-3 text-muted-foreground text-sm">

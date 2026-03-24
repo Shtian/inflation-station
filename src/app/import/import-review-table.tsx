@@ -159,12 +159,13 @@ export function ImportReviewTable({
             <TableHead>Category</TableHead>
             <TableHead>Note</TableHead>
             <TableHead>
+              <span className="sr-only">Warnings</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <TriangleAlert
                       className="h-4 w-4 text-muted-foreground"
-                      aria-label="Warnings"
+                      aria-hidden="true"
                     />
                   </TooltipTrigger>
                   <TooltipContent side="top">

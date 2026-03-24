@@ -109,8 +109,13 @@ export function OverviewDashboard() {
         </div>
 
         <div className="space-y-2">
-          <p className="font-medium text-foreground text-sm">Date range</p>
-          <ButtonGroup>
+          <p
+            id="date-range-label"
+            className="font-medium text-foreground text-sm"
+          >
+            Date range
+          </p>
+          <ButtonGroup role="group" aria-labelledby="date-range-label">
             <Button
               variant={dashboardRangePreset === "all" ? "default" : "outline"}
               onClick={() => setDashboardPreset("all")}

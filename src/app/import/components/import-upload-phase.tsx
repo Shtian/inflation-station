@@ -328,24 +328,18 @@ export function ImportUploadPhase({
         <p className="mb-2.5 font-medium text-foreground text-sm">
           Supported bank formats
         </p>
-        <div className="flex flex-wrap gap-1.5">
-          {(allProviders.length > 0
-            ? allProviders.slice(0, 5)
-            : [
-                { id: "_chase", name: "Chase Bank" },
-                { id: "_boa", name: "Bank of America" },
-                { id: "_wells", name: "Wells Fargo" },
-                { id: "_citi", name: "Citi Bank" },
-              ]
-          ).map((provider) => (
-            <Badge key={provider.id} variant="outline">
-              {provider.name}
-            </Badge>
-          ))}
-          {allProviders.length > 5 ? (
-            <Badge variant="outline">+ {allProviders.length - 5} more</Badge>
-          ) : null}
-        </div>
+        {allProviders.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {allProviders.slice(0, 5).map((provider) => (
+              <Badge key={provider.id} variant="outline">
+                {provider.name}
+              </Badge>
+            ))}
+            {allProviders.length > 5 ? (
+              <Badge variant="outline">+ {allProviders.length - 5} more</Badge>
+            ) : null}
+          </div>
+        ) : null}
         <p className="mt-2 text-muted-foreground text-xs">
           The parser automatically detects the bank based on the CSV column
           headers.

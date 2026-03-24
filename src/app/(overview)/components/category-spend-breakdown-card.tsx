@@ -43,9 +43,9 @@ export function CategorySpendBreakdownCard({
           Category Spend Breakdown
         </h3>
         {isLoading ? (
-          <p className="mt-3 text-muted-foreground text-sm">
+          <output className="mt-3 block text-muted-foreground text-sm">
             Loading chart data...
-          </p>
+          </output>
         ) : null}
         {!isLoading &&
         (!categoryBreakdown || categoryBreakdown.length === 0) ? (
