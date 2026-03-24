@@ -36,6 +36,11 @@ export function InflowOutflowCard({
         <h3 className="font-semibold text-foreground text-sm">
           Inflow vs Outflow
         </h3>
+        {isLoading ? (
+          <output className="mt-3 block text-muted-foreground text-sm">
+            Loading chart data...
+          </output>
+        ) : null}
         {!isLoading && (!inflowOutflow || inflowOutflow.length === 0) ? (
           <p className="mt-3 text-muted-foreground text-sm">
             No data for selected filters.

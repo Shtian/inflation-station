@@ -281,7 +281,6 @@ export function MonthlyReviewManager() {
             <CardTitle className="text-2xl">
               {generatedCount} of {rows.length} months
             </CardTitle>
-            <CardDescription>Generated monthly review entries</CardDescription>
           </CardHeader>
         </Card>
       </div>

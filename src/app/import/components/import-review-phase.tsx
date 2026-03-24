@@ -218,7 +218,7 @@ export function ImportReviewPhase({
             className="gap-1.5"
           >
             <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-            Start Over
+            Start over
           </Button>
           {parseResult.review ? (
             <Button
@@ -235,7 +235,7 @@ export function ImportReviewPhase({
               ) : (
                 <DownloadCloud className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              Confirm Import
+              Confirm import
             </Button>
           ) : null}
         </div>
@@ -276,11 +276,13 @@ export function ImportReviewPhase({
         <div className="grid grid-cols-3 divide-x overflow-hidden rounded-lg border">
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-muted-foreground text-sm">Total Rows</span>
-            <span className="font-bold text-sm">{reviewRows.length}</span>
+            <span className="font-bold font-mono text-sm">
+              {reviewRows.length}
+            </span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-muted-foreground text-sm">Credits</span>
-            <span className="font-bold text-sm text-success">
+            <span className="font-bold font-mono text-sm text-success">
               +
               {formatNok(
                 reviewRows.reduce(
@@ -292,7 +294,7 @@ export function ImportReviewPhase({
           </div>
           <div className="flex items-center justify-between px-4 py-3">
             <span className="text-muted-foreground text-sm">Debits</span>
-            <span className="font-bold text-destructive text-sm">
+            <span className="font-bold font-mono text-destructive text-sm">
               {formatNok(
                 reviewRows.reduce(
                   (sum, row) => (row.amountNok < 0 ? sum + row.amountNok : sum),

@@ -1,4 +1,5 @@
 import { Check, Ellipsis, Loader2, Pencil, Trash2, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -104,7 +105,18 @@ export function AccountsTableSection({
                       )}
                     </TableCell>
                     <TableCell>
-                      {account.isActive ? "Active" : "Inactive"}
+                      {account.isActive ? (
+                        <Badge className="border-success/30 bg-success/10 text-success">
+                          Active
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                        >
+                          Inactive
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">

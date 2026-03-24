@@ -208,7 +208,7 @@ export function ImportUploadPhase({
                     </p>
                   </div>
                   <span className="pointer-events-none inline-flex items-center rounded-md bg-foreground px-3 py-1.5 font-medium text-background text-sm">
-                    Browse Files
+                    Browse files
                   </span>
                   <p className="text-muted-foreground text-xs">
                     Supports .csv files up to 10MB

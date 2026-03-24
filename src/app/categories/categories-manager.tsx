@@ -298,6 +298,15 @@ export function CategoriesManager() {
         </p>
       </div>
 
+      {error ? (
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+        >
+          {error}
+        </p>
+      ) : null}
+
       <Tabs defaultValue="category-management" className="space-y-4">
         <TabsList variant="line">
           <TabsTrigger value="category-management">
@@ -352,15 +361,6 @@ export function CategoriesManager() {
           />
         </TabsContent>
       </Tabs>
-
-      {error ? (
-        <p
-          role="alert"
-          className="mt-4 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-        >
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }
