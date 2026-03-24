@@ -21,7 +21,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CategoryBadge } from "@/components/category-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,6 +77,14 @@ const HIDEABLE_COLUMN_IDS = [
   "paymentType",
   "amountNok",
 ] as const;
+const COLUMN_LABELS: Record<string, string> = {
+  bookingDate: "Date",
+  normalizedMerchant: "Merchant",
+  paymentType: "Payment type",
+  amountNok: "Amount",
+  category: "Category",
+};
+const columnHelper = createColumnHelper<TransactionRow>();
 
 type TransactionsTableSectionProps = {
   loading: boolean;
@@ -102,13 +110,15 @@ type TransactionsTableSectionProps = {
   onGoToPage: (page: number) => void;
 };
 
+const nokFormatter = new Intl.NumberFormat("nb-NO", {
+  style: "currency",
+  currency: "NOK",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 function formatNok(value: number) {
-  return new Intl.NumberFormat("nb-NO", {
-    style: "currency",
-    currency: "NOK",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+  return nokFormatter.format(value);
 }
 
 function getHeaderClassName(columnId: string) {
@@ -214,7 +224,6 @@ export function TransactionsTableSection({
   onPageSizeChange,
   onGoToPage,
 }: TransactionsTableSectionProps) {
-  const columnHelper = createColumnHelper<TransactionRow>();
   const rows = transactions?.rows ?? [];
   const currentPage = transactions?.pagination.page ?? 1;
   const totalPages = Math.max(1, transactions?.pagination.totalPages ?? 1);
@@ -256,28 +265,27 @@ export function TransactionsTableSection({
     );
   }, [columnVisibility, hasHydratedColumnVisibility]);
 
-  const sortableHeader = (
-    label: string,
-    field: TransactionSorting["field"],
-  ) => {
-    const isSorted = sorting?.field === field ? sorting : undefined;
+  const sortableHeader = useCallback(
+    (label: string, field: TransactionSorting["field"]) => {
+      const isSorted = sorting?.field === field ? sorting : undefined;
 
-    return (
-      <Button
-        type="button"
-        variant="ghost"
-        className="-ml-3 h-8 gap-1"
-        onClick={() => onSortingChange(getNextSorting(sorting, field))}
-      >
-        <span>{label}</span>
-        {getSortingIcon(isSorted)}
-      </Button>
-    );
-  };
+      return (
+        <Button
+          type="button"
+          variant="ghost"
+          className="-ml-3 h-8 gap-1"
+          onClick={() => onSortingChange(getNextSorting(sorting, field))}
+        >
+          <span>{label}</span>
+          {getSortingIcon(isSorted)}
+        </Button>
+      );
+    },
+    [sorting, onSortingChange],
+  );
 
-  const table = useReactTable({
-    data: rows,
-    columns: [
+  const columns = useMemo(
+    () => [
       columnHelper.accessor("bookingDate", {
         enableHiding: true,
         header: () => sortableHeader("Date", "bookingDate"),
@@ -389,6 +397,12 @@ export function TransactionsTableSection({
         },
       }),
     ],
+    [sortableHeader, onEdit, onDelete],
+  );
+
+  const table = useReactTable({
+    data: rows,
+    columns,
     state: {
       columnVisibility,
       pagination: paginationState,
@@ -530,15 +544,7 @@ export function TransactionsTableSection({
                   column.toggleVisibility(Boolean(checked))
                 }
               >
-                {column.id === "bookingDate"
-                  ? "Date"
-                  : column.id === "normalizedMerchant"
-                    ? "Merchant"
-                    : column.id === "paymentType"
-                      ? "Payment type"
-                      : column.id === "amountNok"
-                        ? "Amount"
-                        : "Category"}
+                {COLUMN_LABELS[column.id] ?? column.id}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>

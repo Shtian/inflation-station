@@ -1,7 +1,7 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import { type Dispatch, type SetStateAction, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -52,13 +52,15 @@ type Category = {
   accountId: string | null;
 };
 
+const nokFormatter = new Intl.NumberFormat("nb-NO", {
+  style: "currency",
+  currency: "NOK",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 function formatNok(value: number) {
-  return new Intl.NumberFormat("nb-NO", {
-    style: "currency",
-    currency: "NOK",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
+  return nokFormatter.format(value);
 }
 
 const SKELETON_ROWS = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"] as const;
@@ -131,7 +133,7 @@ export function ImportReviewTable({
   toggleRowSelection,
   toggleAllRows,
 }: ImportReviewTableProps) {
-  const allRowIds = rows.map((row) => row.id);
+  const allRowIds = useMemo(() => rows.map((row) => row.id), [rows]);
   const selectedCount = allRowIds.filter((id) => selectedRowIds.has(id)).length;
   const headerChecked: boolean | "indeterminate" =
     selectedCount === rows.length && rows.length > 0
