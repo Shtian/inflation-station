@@ -219,8 +219,6 @@ export function TransactionsManager() {
         </p>
       </div>
 
-      <Separator className="my-4" />
-
       {error ? (
         <p
           role="alert"
