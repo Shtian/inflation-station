@@ -23,7 +23,7 @@ type NetCashflowCardProps = {
 
 const netCashflowChartConfig = {
   netNok: { label: "Net cashflow" },
-  positive: { label: "Inflow", color: "var(--chart-2)" },
+  positive: { label: "Inflow", color: "var(--success)" },
   negative: { label: "Outflow", color: "var(--destructive)" },
 };
 

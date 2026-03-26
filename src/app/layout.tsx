@@ -43,7 +43,7 @@ export default function RootLayout({
           <div className="min-h-screen">
             <header className="relative z-nav-header border-border border-b bg-background/95 backdrop-blur">
               <div className="mx-auto flex w-full max-w-6xl items-center gap-6 px-5 py-3 md:px-10">
-                <Link href="/" className="font-semibold text-sm tracking-tight">
+                <Link href="/" className="font-semibold text-brand text-sm tracking-tight">
                   Inflation Station
                 </Link>
                 <AppNavigation />

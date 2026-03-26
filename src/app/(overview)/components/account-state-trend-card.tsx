@@ -24,7 +24,7 @@ type AccountStateTrendCardProps = {
 const accountTrendChartConfig = {
   cumulativeNok: {
     label: "Cumulative balance",
-    color: "var(--chart-1)",
+    color: "var(--brand)",
   },
 };
 

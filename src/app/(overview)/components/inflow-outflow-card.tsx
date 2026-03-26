@@ -22,7 +22,7 @@ type InflowOutflowCardProps = {
 };
 
 const inflowOutflowChartConfig = {
-  inflowNok: { label: "Inflow", color: "var(--chart-2)" },
+  inflowNok: { label: "Inflow", color: "var(--success)" },
   outflowNok: { label: "Outflow", color: "var(--destructive)" },
 };
 

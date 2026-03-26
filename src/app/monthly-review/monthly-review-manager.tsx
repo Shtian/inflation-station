@@ -155,6 +155,14 @@ export function MonthlyReviewManager() {
     (row) => row.monthOverMonthSpendDeltaNok !== null,
   );
 
+  const trendDelta = latestTrendRow?.monthOverMonthSpendDeltaNok ?? null;
+  const trendColor =
+    trendDelta !== null && trendDelta !== 0
+      ? trendDelta > 0
+        ? "text-destructive"
+        : "text-success"
+      : "";
+
   const generatedCount = rows.filter(
     (row) => row.reviewState === "GENERATED",
   ).length;
@@ -263,7 +271,7 @@ export function MonthlyReviewManager() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Trending</CardDescription>
-            <CardTitle className="text-2xl">
+            <CardTitle className={`text-2xl ${trendColor}`}>
               {latestTrendRow
                 ? formatNok(latestTrendRow.monthOverMonthSpendDeltaNok ?? 0)
                 : "No change data"}
@@ -285,7 +293,7 @@ export function MonthlyReviewManager() {
         </Card>
       </div>
 
-      <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-sm">
+      <p className="rounded-md border border-brand/20 bg-brand/5 px-3 py-2 text-muted-foreground text-sm">
         Transfer-category transactions are excluded from spend and income
         analytics.
       </p>
@@ -361,7 +369,7 @@ export function MonthlyReviewManager() {
                     <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
                       Monthly balance
                     </p>
-                    <p className="font-semibold text-3xl text-foreground tracking-tight">
+                    <p className={`font-semibold text-3xl tracking-tight ${row.monthlyBalanceNok >= 0 ? "text-success" : "text-destructive"}`}>
                       {formatSignedNok(row.monthlyBalanceNok, "auto")}
                     </p>
                     <p className="text-muted-foreground text-sm">
@@ -377,7 +385,7 @@ export function MonthlyReviewManager() {
                     <p className="text-muted-foreground text-xs uppercase tracking-wide">
                       Total spend
                     </p>
-                    <p className="font-medium text-foreground">
+                    <p className="font-medium text-destructive">
                       {formatSignedNok(row.totalSpendNok, "negative")}
                     </p>
                   </div>
@@ -385,7 +393,7 @@ export function MonthlyReviewManager() {
                     <p className="text-muted-foreground text-xs uppercase tracking-wide">
                       Total income
                     </p>
-                    <p className="font-medium text-foreground">
+                    <p className="font-medium text-success">
                       {formatSignedNok(row.totalIncomeNok, "positive")}
                     </p>
                   </div>
