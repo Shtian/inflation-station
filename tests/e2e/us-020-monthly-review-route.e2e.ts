@@ -141,12 +141,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await expect(
     page.getByRole("link", { name: "Open monthly review settings" }),
   ).toBeVisible();
-  await expect(
-    page.getByText(
-      "Transfer-category transactions are excluded from spend and income analytics.",
-    ),
-  ).toBeVisible();
-
   const monthHeadings = page.locator("article h2");
   await expect(monthHeadings).toHaveCount(4);
   await expect(monthHeadings.nth(0)).toHaveText("April 2026");

@@ -188,6 +188,11 @@ test("manages categories and category rules from /categories", async ({
   await page.goto("/categories");
 
   await expect(
+    page.getByText(
+      "Transfer-category transactions are excluded from spend and income analytics.",
+    ),
+  ).toBeVisible();
+  await expect(
     page.getByRole("heading", { name: "Category Management" }),
   ).toBeVisible();
   await expect(

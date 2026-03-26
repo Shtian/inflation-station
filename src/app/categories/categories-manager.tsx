@@ -298,6 +298,11 @@ export function CategoriesManager() {
         </p>
       </div>
 
+      <p className="rounded-md border border-brand/20 bg-brand/5 px-3 py-2 text-muted-foreground text-sm">
+        Transfer-category transactions are excluded from spend and income
+        analytics.
+      </p>
+
       {error ? (
         <p
           role="alert"
