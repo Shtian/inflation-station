@@ -24,6 +24,10 @@ pnpm db:migrate:deploy
 echo "==> Building..."
 pnpm build
 
+echo "==> Copying static assets to standalone..."
+cp -r .next/static .next/standalone/.next/static
+cp -r public .next/standalone/public
+
 echo "==> Restarting pm2..."
 pm2 restart inflation-station || pm2 start ecosystem.config.js
 
