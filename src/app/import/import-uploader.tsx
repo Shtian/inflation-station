@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Separator } from "@/components/ui/separator";
 import { ImportReviewPhase } from "./components/import-review-phase";
 import { ImportUploadPhase } from "./components/import-upload-phase";
 import { ProviderSelectionDialog } from "./components/provider-selection-dialog";
@@ -52,16 +51,9 @@ export function ImportUploader() {
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
-      <div className="mb-4 space-y-1">
-        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Import
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Choose an account and CSV file to start the parse and validation flow.
-        </p>
-      </div>
-
-      <Separator className="my-4" />
+      <h1 className="mb-6 font-semibold text-2xl text-foreground tracking-tight">
+        Import
+      </h1>
 
       {importLoading || parseResult ? (
         <ImportReviewPhase
