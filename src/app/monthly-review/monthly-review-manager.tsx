@@ -364,7 +364,9 @@ export function MonthlyReviewManager() {
                     <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
                       Monthly balance
                     </p>
-                    <p className={`font-semibold text-3xl tracking-tight ${row.monthlyBalanceNok >= 0 ? "text-success" : "text-destructive"}`}>
+                    <p
+                      className={`font-semibold text-3xl tracking-tight ${row.monthlyBalanceNok >= 0 ? "text-success" : "text-destructive"}`}
+                    >
                       {formatSignedNok(row.monthlyBalanceNok, "auto")}
                     </p>
                     <p className="text-muted-foreground text-sm">

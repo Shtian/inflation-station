@@ -10,7 +10,7 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -100,7 +100,9 @@ export function ImportUploadPhase({
   setIsDraggingOver,
   setSelectedAccountId,
 }: ImportUploadPhaseProps) {
-  const selectedAccount = activeAccounts.find((a) => a.id === selectedAccountId);
+  const selectedAccount = activeAccounts.find(
+    (a) => a.id === selectedAccountId,
+  );
 
   // Step 1: no account selected — show selectable account cards
   if (!selectedAccount) {
