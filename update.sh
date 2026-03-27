@@ -21,6 +21,9 @@ pnpm install --frozen-lockfile
 echo "==> Running migrations..."
 pnpm db:migrate:deploy
 
+echo "==> Cleaning output..."
+rm -rf .next
+
 echo "==> Building..."
 pnpm build
 
