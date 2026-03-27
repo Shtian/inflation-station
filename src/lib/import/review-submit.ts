@@ -314,38 +314,22 @@ export async function submitImportReview(
     return count;
   }, 0);
 
-  const seenFingerprints = new Set(existingFingerprints);
-  const rowsToInsert = finalizedRows.filter((row) => {
-    const fingerprint = buildTransactionFingerprint({
-      accountId: session.accountId,
-      bookingDate: row.bookingDate.toISOString().slice(0, 10),
-      amountNok: row.amountNok,
-      normalizedMerchant: row.normalizedMerchant,
-      paymentType: row.paymentType,
-    });
-
-    if (seenFingerprints.has(fingerprint)) {
-      return false;
-    }
-
-    seenFingerprints.add(fingerprint);
-    return true;
-  });
-
-  if (rowsToInsert.length > 0) {
-    await db.transaction.createMany({
-      data: rowsToInsert.map((row) => ({
-        accountId: session.accountId,
-        categoryId: row.categoryId,
-        bookingDate: row.bookingDate,
-        amountNok: row.amountNok,
-        currency: "NOK",
-        normalizedMerchant: row.normalizedMerchant,
-        paymentType: row.paymentType,
-        note: row.note,
-      })),
-    });
-  }
+  const { count } =
+    finalizedRows.length > 0
+      ? await db.transaction.createMany({
+          data: finalizedRows.map((row) => ({
+            accountId: session.accountId,
+            categoryId: row.categoryId,
+            bookingDate: row.bookingDate,
+            amountNok: row.amountNok,
+            currency: "NOK",
+            normalizedMerchant: row.normalizedMerchant,
+            paymentType: row.paymentType,
+            note: row.note,
+          })),
+          skipDuplicates: true,
+        })
+      : { count: 0 };
 
   await db.importReviewSession.delete({
     where: {
@@ -355,10 +339,10 @@ export async function submitImportReview(
 
   return {
     summary: {
-      imported: rowsToInsert.length,
+      imported: count,
       potentialDuplicates,
       invalid: toNormalizedInvalidCount(params.invalidCount),
-      skipped: finalizedRows.length - rowsToInsert.length,
+      skipped: finalizedRows.length - count,
     },
   };
 }

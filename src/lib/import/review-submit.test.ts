@@ -7,6 +7,7 @@ import {
 } from "./review-submit";
 
 function createDbMock(options?: {
+  createManyCount?: number;
   session?: {
     id: string;
     accountId: string;
@@ -68,7 +69,9 @@ function createDbMock(options?: {
     },
     transaction: {
       findMany: vi.fn(async () => options?.existingTransactions ?? []),
-      createMany: vi.fn(async ({ data }) => ({ count: data.length })),
+      createMany: vi.fn(async ({ data }) => ({
+        count: options?.createManyCount ?? data.length,
+      })),
     },
   };
 }
@@ -104,6 +107,7 @@ describe("submitImportReview", () => {
           note: null,
         },
       ],
+      skipDuplicates: true,
     });
     expect(db.importReviewSession.delete).toHaveBeenCalledWith({
       where: {
@@ -120,6 +124,7 @@ describe("submitImportReview", () => {
 
   it("skips duplicates while keeping potential duplicate count in summary", async () => {
     const db = createDbMock({
+      createManyCount: 1,
       session: {
         id: "session-1",
         accountId: "account-1",
@@ -175,7 +180,18 @@ describe("submitImportReview", () => {
           paymentType: PaymentType.CARD,
           note: null,
         },
+        {
+          accountId: "account-1",
+          categoryId: null,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          note: null,
+        },
       ],
+      skipDuplicates: true,
     });
     expect(result.summary).toEqual({
       imported: 1,
@@ -255,6 +271,7 @@ describe("submitImportReview", () => {
           note: null,
         },
       ],
+      skipDuplicates: true,
     });
   });
 
@@ -289,6 +306,7 @@ describe("submitImportReview", () => {
           note: "Split dinner with family",
         },
       ],
+      skipDuplicates: true,
     });
   });
 });
