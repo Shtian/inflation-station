@@ -163,7 +163,7 @@ export function useImportWorkflow() {
         return current;
       }
 
-      return nextAccounts[0]?.id ?? "";
+      return "";
     });
   }, []);
 

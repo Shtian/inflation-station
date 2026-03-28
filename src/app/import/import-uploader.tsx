@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ImportReviewPhase } from "./components/import-review-phase";
+import { ImportStepper } from "./components/import-stepper";
 import { ImportUploadPhase } from "./components/import-upload-phase";
 import { ProviderSelectionDialog } from "./components/provider-selection-dialog";
 import { useImportWorkflow } from "./use-import-workflow";
@@ -49,11 +50,16 @@ export function ImportUploader() {
     toggleRowSelection,
   } = useImportWorkflow();
 
+  const currentStep =
+    importLoading || parseResult ? 3 : selectedAccountId ? 2 : 1;
+
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
       <h1 className="mb-6 font-semibold text-2xl text-foreground tracking-tight">
         Import
       </h1>
+
+      <ImportStepper currentStep={currentStep as 1 | 2 | 3} />
 
       {importLoading || parseResult ? (
         <ImportReviewPhase
