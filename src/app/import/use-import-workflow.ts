@@ -469,7 +469,7 @@ export function useImportWorkflow() {
             ? row.cleanedMessage
             : row.title,
         rowId: row.id,
-        categoryId: categoryDecisions[row.id] ?? row.categoryId,
+        categoryId: (categoryDecisions[row.id] ?? row.categoryId) || null,
         note: noteDecisions[row.id] ?? null,
       }));
 
