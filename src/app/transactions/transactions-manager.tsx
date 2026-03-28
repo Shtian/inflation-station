@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
 } from "@/lib/transactions/note";
+import { BulkDeleteTransactionsDialog } from "./components/bulk-delete-transactions-dialog";
 import { DeleteTransactionDialog } from "./components/delete-transaction-dialog";
 import { EditTransactionDialog } from "./components/edit-transaction-dialog";
 import { TransactionsTableSection } from "./components/transactions-table-section";
@@ -89,6 +91,9 @@ export function TransactionsManager() {
     useState<TransactionRow | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSaving, setDeleteSaving] = useState(false);
+  const [bulkDeleteIds, setBulkDeleteIds] = useState<string[]>([]);
+  const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
+  const [bulkDeleteSaving, setBulkDeleteSaving] = useState(false);
   const noteError =
     editForm && editForm.note.trim().length > MAX_TRANSACTION_NOTE_LENGTH
       ? MAX_TRANSACTION_NOTE_LENGTH_MESSAGE
@@ -116,6 +121,17 @@ export function TransactionsManager() {
   const openDeleteDialog = useCallback((row: TransactionRow) => {
     setDeletingTransaction(row);
     setDeleteError(null);
+  }, []);
+
+  const closeBulkDeleteDialog = useCallback(() => {
+    setBulkDeleteIds([]);
+    setBulkDeleteError(null);
+    setBulkDeleteSaving(false);
+  }, []);
+
+  const openBulkDeleteDialog = useCallback((ids: string[]) => {
+    setBulkDeleteIds(ids);
+    setBulkDeleteError(null);
   }, []);
 
   async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -208,6 +224,35 @@ export function TransactionsManager() {
     closeDeleteDialog();
   }
 
+  async function handleBulkDeleteConfirm() {
+    if (bulkDeleteIds.length === 0) {
+      return;
+    }
+
+    setBulkDeleteSaving(true);
+    setBulkDeleteError(null);
+
+    const response = await fetch("/api/transactions", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: bulkDeleteIds }),
+    });
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      setBulkDeleteError(
+        getMutationErrorMessage(body, "Could not delete transactions."),
+      );
+      setBulkDeleteSaving(false);
+      return;
+    }
+
+    const count = bulkDeleteIds.length;
+    closeBulkDeleteDialog();
+    await loadTransactions();
+    toast.success(`Deleted ${count} transaction${count !== 1 ? "s" : ""}`);
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -243,6 +288,7 @@ export function TransactionsManager() {
         sorting={sorting}
         onEdit={openEditDialog}
         onDelete={openDeleteDialog}
+        onBulkDelete={openBulkDeleteDialog}
         onAccountFilterChange={setAccountFilter}
         onCategoryFilterChange={setCategoryFilter}
         onGlobalQueryChange={setGlobalQueryFilter}
@@ -313,6 +359,20 @@ export function TransactionsManager() {
         }}
         onCancel={closeDeleteDialog}
         onConfirm={handleDeleteConfirm}
+      />
+
+      <BulkDeleteTransactionsDialog
+        open={bulkDeleteIds.length > 0}
+        count={bulkDeleteIds.length}
+        deleteError={bulkDeleteError}
+        deleteSaving={bulkDeleteSaving}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !bulkDeleteSaving) {
+            closeBulkDeleteDialog();
+          }
+        }}
+        onCancel={closeBulkDeleteDialog}
+        onConfirm={handleBulkDeleteConfirm}
       />
     </div>
   );

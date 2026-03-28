@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "./route";
+import { DELETE, GET } from "./route";
 
-const { getTransactionsPageMock, prismaMock } = vi.hoisted(() => ({
-  getTransactionsPageMock: vi.fn(),
-  prismaMock: { _tag: "prisma-mock" },
-}));
+const { getTransactionsPageMock, deleteTransactionsMock, prismaMock } =
+  vi.hoisted(() => ({
+    getTransactionsPageMock: vi.fn(),
+    deleteTransactionsMock: vi.fn(),
+    prismaMock: { _tag: "prisma-mock" },
+  }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
@@ -12,6 +14,10 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/transactions/list", () => ({
   getTransactionsPage: getTransactionsPageMock,
+}));
+
+vi.mock("@/lib/transactions/delete", () => ({
+  deleteTransactions: deleteTransactionsMock,
 }));
 
 describe("GET /api/transactions", () => {
@@ -141,5 +147,80 @@ describe("GET /api/transactions", () => {
       message: "dateFrom must be less than or equal to dateTo.",
     });
     expect(getTransactionsPageMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("DELETE /api/transactions", () => {
+  beforeEach(() => {
+    deleteTransactionsMock.mockReset();
+    deleteTransactionsMock.mockResolvedValue(0);
+  });
+
+  it("returns 200 with deleted count on valid ids", async () => {
+    deleteTransactionsMock.mockResolvedValue(3);
+
+    const response = await DELETE(
+      new Request("http://localhost/api/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: ["tx-1", "tx-2", "tx-3"] }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ deleted: 3 });
+    expect(deleteTransactionsMock).toHaveBeenCalledWith(prismaMock, [
+      "tx-1",
+      "tx-2",
+      "tx-3",
+    ]);
+  });
+
+  it("returns 400 when ids is empty array", async () => {
+    const response = await DELETE(
+      new Request("http://localhost/api/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [] }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "INVALID_IDS",
+    });
+    expect(deleteTransactionsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when ids is missing", async () => {
+    const response = await DELETE(
+      new Request("http://localhost/api/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "INVALID_IDS",
+    });
+    expect(deleteTransactionsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for invalid body shape", async () => {
+    const response = await DELETE(
+      new Request("http://localhost/api/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: "not-an-array" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "INVALID_IDS",
+    });
+    expect(deleteTransactionsMock).not.toHaveBeenCalled();
   });
 });

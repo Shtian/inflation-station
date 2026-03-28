@@ -4,6 +4,7 @@ import {
   functionalUpdate,
   getCoreRowModel,
   type PaginationState,
+  type RowSelectionState,
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
@@ -21,9 +22,10 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CategoryBadge } from "@/components/category-badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -100,6 +102,7 @@ type TransactionsTableSectionProps = {
   sorting?: TransactionSorting;
   onEdit: (row: TransactionRow) => void;
   onDelete: (row: TransactionRow) => void;
+  onBulkDelete: (ids: string[]) => void;
   onAccountFilterChange: (accountId: string) => void;
   onCategoryFilterChange: (categoryId: string) => void;
   onGlobalQueryChange: (globalQuery: string) => void;
@@ -112,7 +115,7 @@ type TransactionsTableSectionProps = {
 };
 
 function getHeaderClassName(columnId: string) {
-  if (columnId === "noteIndicator") {
+  if (columnId === "select" || columnId === "noteIndicator") {
     return "w-0";
   }
 
@@ -128,7 +131,7 @@ function getHeaderClassName(columnId: string) {
 }
 
 function getCellClassName(columnId: string) {
-  if (columnId === "noteIndicator") {
+  if (columnId === "select" || columnId === "noteIndicator") {
     return "w-0";
   }
 
@@ -204,6 +207,7 @@ export function TransactionsTableSection({
   sorting,
   onEdit,
   onDelete,
+  onBulkDelete,
   onAccountFilterChange,
   onCategoryFilterChange,
   onGlobalQueryChange,
@@ -224,6 +228,38 @@ export function TransactionsTableSection({
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [hasHydratedColumnVisibility, setHasHydratedColumnVisibility] =
     useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+  // Reset selection on filter/page/sort changes
+  const resetKeyRef = useRef(
+    [accountId, categoryId, globalQuery, dateFrom, dateTo, sorting, currentPage]
+      .map(String)
+      .join("|"),
+  );
+  useEffect(() => {
+    const nextKey = [
+      accountId,
+      categoryId,
+      globalQuery,
+      dateFrom,
+      dateTo,
+      sorting ? `${sorting.field}:${sorting.direction}` : "",
+      currentPage,
+    ].join("|");
+
+    if (nextKey !== resetKeyRef.current) {
+      resetKeyRef.current = nextKey;
+      setRowSelection({});
+    }
+  }, [
+    accountId,
+    categoryId,
+    globalQuery,
+    dateFrom,
+    dateTo,
+    sorting,
+    currentPage,
+  ]);
 
   useEffect(() => {
     const storedValue = sessionStorage.getItem(COLUMN_VISIBILITY_STORAGE_KEY);
@@ -276,6 +312,32 @@ export function TransactionsTableSection({
 
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: "select",
+        enableHiding: false,
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              table.getIsAllPageRowsSelected()
+                ? true
+                : table.getIsSomePageRowsSelected()
+                  ? "indeterminate"
+                  : false
+            }
+            onCheckedChange={(checked) =>
+              table.toggleAllPageRowsSelected(Boolean(checked))
+            }
+            aria-label="Select all rows"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(checked) => row.toggleSelected(Boolean(checked))}
+            aria-label={`Select transaction from ${row.original.bookingDate}`}
+          />
+        ),
+      }),
       columnHelper.accessor("bookingDate", {
         enableHiding: true,
         header: () => sortableHeader("Date", "bookingDate"),
@@ -397,7 +459,11 @@ export function TransactionsTableSection({
     state: {
       columnVisibility,
       pagination: paginationState,
+      rowSelection,
     },
+    getRowId: (row) => row.id,
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     onColumnVisibilityChange: setColumnVisibility,
     manualPagination: true,
     pageCount: totalPages,
@@ -419,6 +485,9 @@ export function TransactionsTableSection({
   const visibleColumns = table
     .getAllLeafColumns()
     .filter((column) => column.getCanHide() && column.id !== "actions");
+
+  const selectedIds = Object.keys(rowSelection);
+  const selectedCount = selectedIds.length;
 
   if (loading && !transactions) {
     return (
@@ -516,31 +585,56 @@ export function TransactionsTableSection({
         </div>
       </div>
 
-      <div className="flex justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" className="gap-2">
-              <Columns3 className="h-4 w-4" aria-hidden="true" />
-              Columns
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {visibleColumns.map((column) => (
-              <DropdownMenuCheckboxItem
-                key={column.id}
-                checked={column.getIsVisible()}
-                onCheckedChange={(checked) =>
-                  column.toggleVisibility(Boolean(checked))
-                }
-              >
-                {COLUMN_LABELS[column.id] ?? column.id}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {selectedCount > 0 ? (
+        <div className="flex items-center gap-3">
+          <span className="text-sm">
+            {selectedCount} row{selectedCount !== 1 ? "s" : ""} selected
+          </span>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => onBulkDelete(selectedIds)}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            Delete selected
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setRowSelection({})}
+          >
+            Clear selection
+          </Button>
+        </div>
+      ) : (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" className="gap-2">
+                <Columns3 className="h-4 w-4" aria-hidden="true" />
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {visibleColumns.map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(checked) =>
+                    column.toggleVisibility(Boolean(checked))
+                  }
+                >
+                  {COLUMN_LABELS[column.id] ?? column.id}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
       <p className="text-muted-foreground text-sm">
         {transactions.pagination.total} total transactions.
