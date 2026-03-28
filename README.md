@@ -72,7 +72,7 @@ git pull origin main
 bash update.sh
 ```
 
-The script installs dependencies, runs migrations, rebuilds, and restarts pm2 automatically.
+The script installs dependencies, runs migrations, rebuilds, and restarts pm2 automatically. The currently running build is displayed in the app footer.
 
 ## Prisma Migration and Seed Workflow
 
