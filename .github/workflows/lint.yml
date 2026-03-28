@@ -23,3 +23,29 @@ jobs:
 
       - name: Run Biome CI
         run: biome ci .
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4.2.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.2.0
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run typecheck
+        run: pnpm typecheck
