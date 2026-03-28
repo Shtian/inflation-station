@@ -107,7 +107,7 @@ OpenAI-based categorization suggestions are optional.
 
 - `pnpm lint`
 - `pnpm lint:fix` (applies Biome lint/format/assist fixes via `biome check --write`)
-- `pnpm exec tsc --noEmit`
+- `pnpm typecheck`
 - `pnpm test`
 - `pnpm test:unit`
 - `pnpm test:e2e`
