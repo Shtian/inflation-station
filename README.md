@@ -107,6 +107,6 @@ OpenAI-based categorization suggestions are optional.
 
 ## Theming
 
-- Global semantic theme tokens are defined in `src/app/globals.css` using shadcn-compatible names (`background`, `foreground`, `card`, `muted`, `primary`, `accent`, `destructive`, `border`, `input`, `ring`).
-- Shared UI primitives in `src/components/ui/*` should consume semantic token utilities (for example `bg-card`, `text-foreground`, `border-border`) instead of hardcoded palette classes.
-- Theme switching is managed with `next-themes` in `src/components/theme-provider.tsx`, using the `html` class strategy and a header toggle in `src/components/theme-toggle.tsx`.
+- Global semantic theme tokens use shadcn-compatible names (`background`, `foreground`, `card`, `muted`, `primary`, `accent`, `destructive`, `border`, `input`, `ring`).
+- Shared UI primitives should consume semantic token utilities (e.g. `bg-card`, `text-foreground`, `border-border`) instead of hardcoded palette classes.
+- Theme switching is managed with `next-themes` using the `html` class strategy.
