@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { AppNavigation } from "@/components/app-navigation";
+import { BuildInfoFooter } from "@/components/build-info-footer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/sonner";
@@ -40,7 +41,7 @@ export default function RootLayout({
           disableTransitionOnChange
           storageKey="inflation-station-theme"
         >
-          <div className="min-h-screen">
+          <div className="flex min-h-screen flex-col">
             <header className="relative z-nav-header border-border border-b bg-background/95 backdrop-blur">
               <div className="mx-auto flex w-full max-w-6xl items-center gap-6 px-5 py-3 md:px-10">
                 <Link
@@ -55,6 +56,7 @@ export default function RootLayout({
             </header>
             {children}
             <Toaster richColors />
+            <BuildInfoFooter />
           </div>
         </ThemeProvider>
       </body>
