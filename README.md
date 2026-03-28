@@ -32,34 +32,47 @@ Local-first personal economy dashboard built with Next.js, TypeScript, Prisma, a
    ```
 6. Open `http://localhost:3000`.
 
-## Local Setup (Raspberry Pi Linux)
+## Self-Hosting (Raspberry Pi / Linux)
 
-1. Install Node.js 20+ and pnpm:
-   ```bash
-   node -v
-   pnpm -v
+The app runs as a production build managed by pm2, served on port 3000.
+
+### Prerequisites
+
+- Node.js 20+
+- pnpm 10+
+- pm2 (`npm install -g pm2`)
+- Git
+
+### First-time Setup
+
+1. Clone the repo and enter the directory.
+2. Copy `.env.example` to `.env` and configure `DATABASE_URL` to a path **outside** the repo (so it survives pulls):
    ```
-2. Install dependencies:
-   ```bash
-   pnpm install
+   DATABASE_URL=file:/path/to/data.db
    ```
-3. Generate Prisma client:
+3. Update `ecosystem.config.js` so `cwd` points to your local clone path.
+4. Run the update script to install, migrate, build, and start:
    ```bash
-   pnpm exec prisma generate
+   bash update.sh
    ```
-4. Apply migrations:
+5. Optionally save the pm2 process list to auto-start on reboot:
    ```bash
-   pnpm exec prisma migrate deploy
+   pm2 save
+   pm2 startup
    ```
-5. Seed default data:
-   ```bash
-   pnpm db:seed
-   ```
-6. Start app:
-   ```bash
-   pnpm dev
-   ```
-7. Open `http://<raspberry-pi-ip>:3000` from another device on your network, or `http://localhost:3000` directly on the Pi.
+
+The app will be reachable at `http://<host-ip>:3000`.
+
+### Updating
+
+Pull the latest changes, then run the update script:
+
+```bash
+git pull origin main
+bash update.sh
+```
+
+The script installs dependencies, runs migrations, rebuilds, and restarts pm2 automatically.
 
 ## Prisma Migration and Seed Workflow
 
