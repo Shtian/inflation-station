@@ -142,8 +142,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "INVALID_IMPORT_REVIEW_CATEGORY",
-          message:
-            "One or more selected categories are invalid for the selected account.",
+          message: "One or more selected categories do not exist.",
           categoryIds: error.categoryIds,
         },
         { status: 400 },
