@@ -74,9 +74,7 @@ describe("POST /api/imports/submit", () => {
     submitImportReviewMock.mockResolvedValue({
       summary: {
         imported: 1,
-        potentialDuplicates: 0,
         invalid: 0,
-        skipped: 0,
       },
     });
 

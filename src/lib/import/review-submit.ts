@@ -1,12 +1,9 @@
 import type { PaymentType } from "@prisma/client";
 import { normalizeImportMerchant } from "./normalization";
-import { buildTransactionFingerprint } from "./transaction-dedupe";
 
 export type SubmitImportReviewSummary = {
   imported: number;
-  potentialDuplicates: number;
   invalid: number;
-  skipped: number;
 };
 
 export type SubmitImportReviewResult = {
@@ -49,13 +46,6 @@ type ImportReviewSubmitSession = {
   }>;
 };
 
-type ExistingTransactionFingerprintSource = {
-  bookingDate: Date;
-  amountNok: { toString(): string } | number;
-  normalizedMerchant: string;
-  paymentType: PaymentType;
-};
-
 type ImportReviewSubmitDbClient = {
   importReviewSession: {
     findUnique(args: {
@@ -96,15 +86,6 @@ type ImportReviewSubmitDbClient = {
     }): Promise<Array<{ id: string }>>;
   };
   transaction: {
-    findMany(args: {
-      where: { accountId: string };
-      select: {
-        bookingDate: true;
-        amountNok: true;
-        normalizedMerchant: true;
-        paymentType: true;
-      };
-    }): Promise<ExistingTransactionFingerprintSource[]>;
     createMany(args: {
       data: Array<{
         accountId: string;
@@ -134,23 +115,6 @@ function toNormalizedInvalidCount(value: number) {
   }
 
   return Math.floor(value);
-}
-
-function buildExistingFingerprints(
-  accountId: string,
-  transactions: ExistingTransactionFingerprintSource[],
-): Set<string> {
-  return new Set(
-    transactions.map((transaction) =>
-      buildTransactionFingerprint({
-        accountId,
-        bookingDate: transaction.bookingDate.toISOString().slice(0, 10),
-        amountNok: Number.parseFloat(transaction.amountNok.toString()),
-        normalizedMerchant: transaction.normalizedMerchant,
-        paymentType: transaction.paymentType,
-      }),
-    ),
-  );
 }
 
 export async function submitImportReview(
@@ -266,55 +230,6 @@ export async function submitImportReview(
     }
   }
 
-  const existingTransactions = await db.transaction.findMany({
-    where: {
-      accountId: session.accountId,
-    },
-    select: {
-      bookingDate: true,
-      amountNok: true,
-      normalizedMerchant: true,
-      paymentType: true,
-    },
-  });
-
-  const existingFingerprints = buildExistingFingerprints(
-    session.accountId,
-    existingTransactions,
-  );
-
-  const uploadFingerprintCounts = finalizedRows.reduce((counts, row) => {
-    const fingerprint = buildTransactionFingerprint({
-      accountId: session.accountId,
-      bookingDate: row.bookingDate.toISOString().slice(0, 10),
-      amountNok: row.amountNok,
-      normalizedMerchant: row.normalizedMerchant,
-      paymentType: row.paymentType,
-    });
-
-    counts.set(fingerprint, (counts.get(fingerprint) ?? 0) + 1);
-    return counts;
-  }, new Map<string, number>());
-
-  const potentialDuplicates = finalizedRows.reduce((count, row) => {
-    const fingerprint = buildTransactionFingerprint({
-      accountId: session.accountId,
-      bookingDate: row.bookingDate.toISOString().slice(0, 10),
-      amountNok: row.amountNok,
-      normalizedMerchant: row.normalizedMerchant,
-      paymentType: row.paymentType,
-    });
-
-    if (
-      existingFingerprints.has(fingerprint) ||
-      (uploadFingerprintCounts.get(fingerprint) ?? 0) > 1
-    ) {
-      return count + 1;
-    }
-
-    return count;
-  }, 0);
-
   const { count } =
     finalizedRows.length > 0
       ? await db.transaction.createMany({
@@ -329,7 +244,6 @@ export async function submitImportReview(
             paymentType: row.paymentType,
             note: row.note,
           })),
-          skipDuplicates: true,
         })
       : { count: 0 };
 
@@ -342,9 +256,7 @@ export async function submitImportReview(
   return {
     summary: {
       imported: count,
-      potentialDuplicates,
       invalid: toNormalizedInvalidCount(params.invalidCount),
-      skipped: finalizedRows.length - count,
     },
   };
 }

@@ -76,9 +76,7 @@ export type ParseResponse = {
 type SubmitResponse = {
   summary: {
     imported: number;
-    potentialDuplicates: number;
     invalid: number;
-    skipped: number;
   };
 };
 
@@ -531,7 +529,7 @@ export function useImportWorkflow() {
 
     const submitResult = body as SubmitResponse;
     toast.success(
-      `Import complete. Imported ${submitResult.summary.imported}, skipped ${submitResult.summary.skipped}, potential duplicates ${submitResult.summary.potentialDuplicates}, invalid ${submitResult.summary.invalid}.`,
+      `Import complete. Imported ${submitResult.summary.imported}, invalid ${submitResult.summary.invalid}.`,
     );
     setParseResult(null);
     setCategoryDecisions({});

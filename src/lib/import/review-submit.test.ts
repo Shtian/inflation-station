@@ -7,7 +7,6 @@ import {
 } from "./review-submit";
 
 function createDbMock(options?: {
-  createManyCount?: number;
   session?: {
     id: string;
     accountId: string;
@@ -27,12 +26,6 @@ function createDbMock(options?: {
     }>;
   } | null;
   validCategories?: Array<{ id: string }>;
-  existingTransactions?: Array<{
-    bookingDate: Date;
-    amountNok: number;
-    normalizedMerchant: string;
-    paymentType: PaymentType;
-  }>;
 }) {
   return {
     importReviewSession: {
@@ -68,9 +61,8 @@ function createDbMock(options?: {
       ),
     },
     transaction: {
-      findMany: vi.fn(async () => options?.existingTransactions ?? []),
       createMany: vi.fn(async ({ data }) => ({
-        count: options?.createManyCount ?? data.length,
+        count: data.length,
       })),
     },
   };
@@ -108,7 +100,6 @@ describe("submitImportReview", () => {
           note: null,
         },
       ],
-      skipDuplicates: true,
     });
     expect(db.importReviewSession.delete).toHaveBeenCalledWith({
       where: {
@@ -117,15 +108,12 @@ describe("submitImportReview", () => {
     });
     expect(result.summary).toEqual({
       imported: 1,
-      potentialDuplicates: 0,
       invalid: 1,
-      skipped: 0,
     });
   });
 
-  it("skips duplicates while keeping potential duplicate count in summary", async () => {
+  it("inserts both occurrences when identical rows are submitted", async () => {
     const db = createDbMock({
-      createManyCount: 1,
       session: {
         id: "session-1",
         accountId: "account-1",
@@ -194,13 +182,10 @@ describe("submitImportReview", () => {
           note: null,
         },
       ],
-      skipDuplicates: true,
     });
     expect(result.summary).toEqual({
-      imported: 1,
-      potentialDuplicates: 2,
+      imported: 2,
       invalid: 0,
-      skipped: 1,
     });
   });
 
@@ -275,7 +260,6 @@ describe("submitImportReview", () => {
           note: null,
         },
       ],
-      skipDuplicates: true,
     });
   });
 
@@ -311,7 +295,6 @@ describe("submitImportReview", () => {
           note: "Split dinner with family",
         },
       ],
-      skipDuplicates: true,
     });
   });
 });
