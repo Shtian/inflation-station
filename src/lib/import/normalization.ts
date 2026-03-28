@@ -1,6 +1,6 @@
 import { PaymentType } from "@prisma/client";
 
-function foldLocaleCharacters(value: string): string {
+export function foldLocaleCharacters(value: string): string {
   return value
     .replaceAll("æ", "ae")
     .replaceAll("Æ", "ae")

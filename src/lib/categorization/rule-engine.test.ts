@@ -84,6 +84,30 @@ describe("buildRuleBasedSuggestions", () => {
     expect(suggestions[0]?.suggestedCategoryId).toBe("cat-grocery");
   });
 
+  it("matches rules with Norwegian characters against normalised merchant tokens", () => {
+    const suggestions = buildRuleBasedSuggestions(
+      [
+        {
+          id: "tx-1",
+          normalizedMerchant: "osteras bakeri",
+          paymentType: PaymentType.CARD,
+        },
+      ],
+      [
+        {
+          id: "rule-1",
+          categoryId: "cat-food",
+          merchantContains: "Østerås",
+          paymentType: null,
+          priority: 10,
+        },
+      ],
+    );
+
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0]?.suggestedCategoryId).toBe("cat-food");
+  });
+
   it("leaves unmatched transactions without a suggestion", () => {
     const suggestions = buildRuleBasedSuggestions(
       [

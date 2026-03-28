@@ -1,4 +1,5 @@
 import { type PaymentType, SuggestionSource } from "@prisma/client";
+import { foldLocaleCharacters } from "@/lib/import/normalization";
 
 export type RuleMatchTransaction = {
   id: string;
@@ -23,7 +24,7 @@ export type RuleBasedSuggestion = {
 };
 
 function normalizeToken(value: string): string {
-  return value
+  return foldLocaleCharacters(value)
     .trim()
     .toLowerCase()
     .replaceAll(/[^a-z0-9]/g, " ")
