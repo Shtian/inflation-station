@@ -35,20 +35,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Account, Category } from "../categories-manager.types";
-import { GLOBAL_SCOPE_VALUE, getScopeLabel } from "../categories-manager.utils";
+import type { Category } from "../categories-manager.types";
 
 type CategoryManagementSectionProps = {
-  accounts: Account[];
   categories: Category[];
   loading: boolean;
   busyKey: string | null;
   newCategoryName: string;
   newCategoryKind: CategoryKind;
-  newCategoryScope: string;
   onNewCategoryNameChange: (value: string) => void;
   onNewCategoryKindChange: (value: CategoryKind) => void;
-  onNewCategoryScopeChange: (value: string) => void;
   editingCategoryId: string | null;
   editCategoryName: string;
   onCreateCategory: () => void;
@@ -60,16 +56,13 @@ type CategoryManagementSectionProps = {
 };
 
 export function CategoryManagementSection({
-  accounts,
   categories,
   loading,
   busyKey,
   newCategoryName,
   newCategoryKind,
-  newCategoryScope,
   onNewCategoryNameChange,
   onNewCategoryKindChange,
-  onNewCategoryScopeChange,
   editingCategoryId,
   editCategoryName,
   onCreateCategory,
@@ -79,8 +72,6 @@ export function CategoryManagementSection({
   onEditCategoryNameChange,
   onRenameCategory,
 }: CategoryManagementSectionProps) {
-  const activeAccounts = accounts.filter((account) => account.isActive);
-
   return (
     <section className="space-y-4">
       <div className="space-y-1">
@@ -124,31 +115,6 @@ export function CategoryManagementSection({
             </Select>
           </FieldContent>
         </Field>
-        <Field>
-          <FieldLabel htmlFor="new-category-scope">Scope</FieldLabel>
-          <FieldContent>
-            <Select
-              value={newCategoryScope || GLOBAL_SCOPE_VALUE}
-              onValueChange={(value) =>
-                onNewCategoryScopeChange(
-                  value === GLOBAL_SCOPE_VALUE ? "" : value,
-                )
-              }
-            >
-              <SelectTrigger id="new-category-scope" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={GLOBAL_SCOPE_VALUE}>Global</SelectItem>
-                {activeAccounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FieldContent>
-        </Field>
         <Button
           variant="secondary"
           onClick={onCreateCategory}
@@ -172,19 +138,18 @@ export function CategoryManagementSection({
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Kind</TableHead>
-              <TableHead>Scope</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={4}>Loading categories...</TableCell>
+                <TableCell colSpan={3}>Loading categories...</TableCell>
               </TableRow>
             ) : null}
             {!loading && categories.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4}>No categories yet.</TableCell>
+                <TableCell colSpan={3}>No categories yet.</TableCell>
               </TableRow>
             ) : null}
             {!loading
@@ -194,9 +159,6 @@ export function CategoryManagementSection({
                       <CategoryBadge label={category.name} />
                     </TableCell>
                     <TableCell>{category.kind}</TableCell>
-                    <TableCell>
-                      {getScopeLabel(category.accountId, accounts)}
-                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

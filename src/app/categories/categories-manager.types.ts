@@ -11,7 +11,6 @@ export type Category = {
   id: string;
   name: string;
   kind: CategoryKind;
-  accountId: string | null;
 };
 
 export type CategoryRule = {

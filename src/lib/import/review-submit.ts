@@ -80,7 +80,6 @@ type ImportReviewSubmitDbClient = {
     findMany(args: {
       where: {
         id: { in: string[] };
-        OR: Array<{ accountId: string } | { accountId: null }>;
       };
       select: { id: true };
     }): Promise<Array<{ id: string }>>;
@@ -211,7 +210,6 @@ export async function submitImportReview(
     const validCategories = await db.category.findMany({
       where: {
         id: { in: selectedCategoryIds },
-        OR: [{ accountId: session.accountId }, { accountId: null }],
       },
       select: {
         id: true,

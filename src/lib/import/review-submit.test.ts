@@ -206,7 +206,7 @@ describe("submitImportReview", () => {
     expect(db.importReviewSession.delete).not.toHaveBeenCalled();
   });
 
-  it("throws when selected categories are not valid for the session account", async () => {
+  it("throws when selected categories do not exist", async () => {
     const db = createDbMock({
       validCategories: [],
     });

@@ -38,7 +38,6 @@ model Account {
   isActive    Boolean        @default(true)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-  categories  Category[]
   transactions Transaction[]
   categoryRules CategoryRule[]
   importReviewSessions ImportReviewSession[]
@@ -46,17 +45,13 @@ model Account {
 
 model Category {
   id                      String                   @id @default(cuid())
-  name                    String
+  name                    String                   @unique
   kind                    CategoryKind             @default(EXPENSE)
-  accountId               String?
-  account                 Account?                 @relation(fields: [accountId], references: [id], onDelete: SetNull)
   transactions            Transaction[]
   categoryRules           CategoryRule[]
   categorizationSuggestions CategorizationSuggestion[]
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
-
-  @@unique([name, accountId])
 }
 
 model Transaction {

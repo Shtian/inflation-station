@@ -24,7 +24,6 @@ export function CategoriesManager() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryKind, setNewCategoryKind] =
     useState<CategoryKind>("EXPENSE");
-  const [newCategoryScope, setNewCategoryScope] = useState("");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
     null,
   );
@@ -125,7 +124,6 @@ export function CategoriesManager() {
       body: JSON.stringify({
         name: newCategoryName.trim(),
         kind: newCategoryKind,
-        accountId: newCategoryScope || null,
       }),
     });
 
@@ -139,7 +137,6 @@ export function CategoriesManager() {
 
     setNewCategoryName("");
     setNewCategoryKind("EXPENSE");
-    setNewCategoryScope("");
     setBusyKey(null);
     toast.success("Category added.");
     await loadData();
@@ -322,16 +319,13 @@ export function CategoriesManager() {
 
         <TabsContent value="category-management">
           <CategoryManagementSection
-            accounts={accounts}
             categories={categories}
             loading={loading}
             busyKey={busyKey}
             newCategoryName={newCategoryName}
             newCategoryKind={newCategoryKind}
-            newCategoryScope={newCategoryScope}
             onNewCategoryNameChange={setNewCategoryName}
             onNewCategoryKindChange={setNewCategoryKind}
-            onNewCategoryScopeChange={setNewCategoryScope}
             editingCategoryId={editingCategoryId}
             editCategoryName={editCategoryName}
             onCreateCategory={createCategory}
