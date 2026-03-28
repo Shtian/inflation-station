@@ -18,6 +18,7 @@ export type TransactionRow = {
   amountNok: number;
   currency: string;
   normalizedMerchant: string;
+  merchant: string | null;
   paymentType: string;
   note: string | null;
 };
@@ -36,7 +37,7 @@ export const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"] as const;
 export const TRANSACTIONS_SORT_FIELDS = [
   "bookingDate",
   "amountNok",
-  "normalizedMerchant",
+  "merchant",
   "category",
 ] as const;
 export const ALL_ACCOUNTS_VALUE = "__all_accounts__";
@@ -61,7 +62,7 @@ export type EditFormState = {
   categoryId: string;
   bookingDate: string;
   amountNok: string;
-  normalizedMerchant: string;
+  merchant: string;
   paymentType: PaymentTypeOption;
   note: string;
 };

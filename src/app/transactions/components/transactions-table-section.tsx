@@ -73,14 +73,14 @@ const COLUMN_VISIBILITY_STORAGE_KEY =
   "transactions-table-section-column-visibility";
 const HIDEABLE_COLUMN_IDS = [
   "bookingDate",
-  "normalizedMerchant",
+  "merchant",
   "category",
   "paymentType",
   "amountNok",
 ] as const;
 const COLUMN_LABELS: Record<string, string> = {
   bookingDate: "Date",
-  normalizedMerchant: "Merchant",
+  merchant: "Merchant",
   paymentType: "Payment type",
   amountNok: "Amount",
   category: "Category",
@@ -281,10 +281,11 @@ export function TransactionsTableSection({
         header: () => sortableHeader("Date", "bookingDate"),
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor("normalizedMerchant", {
+      columnHelper.accessor("merchant", {
         enableHiding: true,
-        header: () => sortableHeader("Merchant", "normalizedMerchant"),
-        cell: (info) => info.getValue() || "Unknown",
+        header: () => sortableHeader("Merchant", "merchant"),
+        cell: (info) =>
+          info.getValue() ?? info.row.original.normalizedMerchant ?? "Unknown",
       }),
       columnHelper.display({
         id: "noteIndicator",

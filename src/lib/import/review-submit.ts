@@ -113,6 +113,7 @@ type ImportReviewSubmitDbClient = {
         amountNok: number;
         currency: "NOK";
         normalizedMerchant: string;
+        merchant: string;
         paymentType: PaymentType;
         note: string | null;
       }>;
@@ -324,6 +325,7 @@ export async function submitImportReview(
             amountNok: row.amountNok,
             currency: "NOK",
             normalizedMerchant: row.normalizedMerchant,
+            merchant: row.title,
             paymentType: row.paymentType,
             note: row.note,
           })),

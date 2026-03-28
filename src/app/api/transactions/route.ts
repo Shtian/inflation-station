@@ -8,7 +8,7 @@ const MAX_PAGE_SIZE = 100;
 const SORT_FIELDS = [
   "bookingDate",
   "amountNok",
-  "normalizedMerchant",
+  "merchant",
   "category",
 ] as const;
 
@@ -121,7 +121,7 @@ export async function GET(request: Request) {
       {
         error: "INVALID_SORTING",
         message:
-          "Expected sorting in <field>:<direction> format using bookingDate, amountNok, normalizedMerchant, or category fields.",
+          "Expected sorting in <field>:<direction> format using bookingDate, amountNok, merchant, or category fields.",
       },
       { status: 400 },
     );

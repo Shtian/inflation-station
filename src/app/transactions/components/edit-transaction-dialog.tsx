@@ -112,13 +112,11 @@ export function EditTransactionDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="edit-normalized-merchant">
-                Merchant
-              </FieldLabel>
+              <FieldLabel htmlFor="edit-merchant">Merchant</FieldLabel>
               <FieldContent>
                 <Input
-                  id="edit-normalized-merchant"
-                  value={editForm.normalizedMerchant}
+                  id="edit-merchant"
+                  value={editForm.merchant}
                   onChange={(event) => onMerchantChange(event.target.value)}
                   disabled={editSaving}
                 />

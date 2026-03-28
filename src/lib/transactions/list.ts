@@ -17,6 +17,7 @@ type TransactionListRecord = {
   amountNok: DecimalLike;
   currency: string;
   normalizedMerchant: string;
+  merchant: string | null;
   paymentType: string;
   note: string | null;
   createdAt: Date;
@@ -41,6 +42,7 @@ type TransactionListDbClient = {
         amountNok: true;
         currency: true;
         normalizedMerchant: true;
+        merchant: true;
         paymentType: true;
         note: true;
         createdAt: true;
@@ -60,7 +62,7 @@ export type TransactionsListFilters = {
   dateFrom?: Date;
   dateTo?: Date;
   sorting?: {
-    field: "bookingDate" | "amountNok" | "normalizedMerchant" | "category";
+    field: "bookingDate" | "amountNok" | "merchant" | "category";
     direction: "asc" | "desc";
   };
   page: number;
@@ -76,6 +78,7 @@ export type TransactionListRow = {
   amountNok: number;
   currency: string;
   normalizedMerchant: string;
+  merchant: string | null;
   paymentType: string;
   note: string | null;
   createdAt: string;
@@ -114,11 +117,8 @@ function getOrderBy(
       return [{ bookingDate: sorting.direction }, { id: sorting.direction }];
     case "amountNok":
       return [{ amountNok: sorting.direction }, { id: sorting.direction }];
-    case "normalizedMerchant":
-      return [
-        { normalizedMerchant: sorting.direction },
-        { id: sorting.direction },
-      ];
+    case "merchant":
+      return [{ merchant: sorting.direction }, { id: sorting.direction }];
     case "category":
       return [
         {
@@ -158,6 +158,9 @@ export async function getTransactionsPage(
         normalizedMerchant: containsQuery,
       },
       {
+        merchant: containsQuery,
+      },
+      {
         note: containsQuery,
       },
       {
@@ -189,6 +192,7 @@ export async function getTransactionsPage(
       amountNok: true,
       currency: true,
       normalizedMerchant: true,
+      merchant: true,
       paymentType: true,
       note: true,
       createdAt: true,
@@ -208,6 +212,7 @@ export async function getTransactionsPage(
     amountNok: toNumber(record.amountNok),
     currency: record.currency,
     normalizedMerchant: record.normalizedMerchant,
+    merchant: record.merchant,
     paymentType: record.paymentType,
     note: record.note,
     createdAt: record.createdAt.toISOString(),

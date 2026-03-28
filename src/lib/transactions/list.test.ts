@@ -17,6 +17,7 @@ function createTransactionsDbMock(total: number) {
           amountNok: { toString: () => "-123.45" },
           currency: "NOK",
           normalizedMerchant: "shop b",
+          merchant: null,
           paymentType: "CARD",
           note: "Monthly groceries",
           createdAt: new Date("2026-02-04T10:00:00.000Z"),
@@ -66,6 +67,7 @@ describe("getTransactionsPage", () => {
         amountNok: true,
         currency: true,
         normalizedMerchant: true,
+        merchant: true,
         paymentType: true,
         note: true,
         createdAt: true,
@@ -101,6 +103,7 @@ describe("getTransactionsPage", () => {
         amountNok: -123.45,
         currency: "NOK",
         normalizedMerchant: "shop b",
+        merchant: null,
         paymentType: "CARD",
         note: "Monthly groceries",
         createdAt: "2026-02-04T10:00:00.000Z",
@@ -132,6 +135,11 @@ describe("getTransactionsPage", () => {
       OR: [
         {
           normalizedMerchant: {
+            contains: "coffee",
+          },
+        },
+        {
+          merchant: {
             contains: "coffee",
           },
         },
@@ -228,7 +236,7 @@ describe("getTransactionsPage", () => {
     );
   });
 
-  it("applies bookingDate and normalizedMerchant sort fields", async () => {
+  it("applies bookingDate and merchant sort fields", async () => {
     const db = createTransactionsDbMock(1);
 
     await getTransactionsPage(db, {
@@ -248,14 +256,14 @@ describe("getTransactionsPage", () => {
     await getTransactionsPage(db, {
       ...createTransactionListFilters(),
       sorting: {
-        field: "normalizedMerchant",
+        field: "merchant",
         direction: "desc",
       },
     });
 
     expect(db.transaction.findMany).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        orderBy: [{ normalizedMerchant: "desc" }, { id: "desc" }],
+        orderBy: [{ merchant: "desc" }, { id: "desc" }],
       }),
     );
   });

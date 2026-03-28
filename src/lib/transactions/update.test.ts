@@ -17,6 +17,7 @@ function createUpdateDbMock() {
         amountNok: { toString: () => "-100.25" },
         currency: "NOK",
         normalizedMerchant: "updated shop",
+        merchant: null,
         paymentType: PaymentType.CARD,
         note: "Monthly grocery refill",
         createdAt: new Date("2026-02-01T10:00:00.000Z"),
@@ -31,7 +32,7 @@ describe("parseTransactionUpdatePayload", () => {
     const parsed = parseTransactionUpdatePayload({
       bookingDate: "2026-02-05",
       amountNok: -100.25,
-      normalizedMerchant: "updated shop",
+      merchant: "updated shop",
       paymentType: PaymentType.CARD,
       categoryId: "cat-1",
     });
@@ -125,7 +126,7 @@ describe("updateTransaction", () => {
     const parsed = parseTransactionUpdatePayload({
       categoryId: "cat-2",
       amountNok: -100.25,
-      normalizedMerchant: "updated shop",
+      merchant: "updated shop",
       paymentType: PaymentType.CARD,
       note: "Monthly grocery refill",
     });
@@ -146,7 +147,7 @@ describe("updateTransaction", () => {
         currency: "NOK",
         categoryId: "cat-2",
         amountNok: -100.25,
-        normalizedMerchant: "updated shop",
+        merchant: "updated shop",
         paymentType: PaymentType.CARD,
         note: "Monthly grocery refill",
       },
@@ -163,6 +164,7 @@ describe("updateTransaction", () => {
         amountNok: true,
         currency: true,
         normalizedMerchant: true,
+        merchant: true,
         paymentType: true,
         note: true,
         createdAt: true,
@@ -178,6 +180,7 @@ describe("updateTransaction", () => {
       amountNok: -100.25,
       currency: "NOK",
       normalizedMerchant: "updated shop",
+      merchant: null,
       paymentType: PaymentType.CARD,
       note: "Monthly grocery refill",
       createdAt: "2026-02-01T10:00:00.000Z",

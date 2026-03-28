@@ -19,6 +19,7 @@ type TransactionUpdateRecord = {
   amountNok: DecimalLike;
   currency: string;
   normalizedMerchant: string;
+  merchant: string | null;
   paymentType: PaymentType;
   note: string | null;
   createdAt: Date;
@@ -34,7 +35,7 @@ type TransactionUpdateDbClient = {
         bookingDate?: Date;
         amountNok?: number;
         currency: string;
-        normalizedMerchant?: string;
+        merchant?: string;
         paymentType?: PaymentType;
         note?: string | null;
       };
@@ -51,6 +52,7 @@ type TransactionUpdateDbClient = {
         amountNok: true;
         currency: true;
         normalizedMerchant: true;
+        merchant: true;
         paymentType: true;
         note: true;
         createdAt: true;
@@ -64,7 +66,7 @@ const MUTABLE_FIELD_KEYS = [
   "categoryId",
   "bookingDate",
   "amountNok",
-  "normalizedMerchant",
+  "merchant",
   "paymentType",
   "note",
 ] as const;
@@ -108,7 +110,7 @@ const transactionUpdatePayloadSchema = z
     categoryId: z.string().trim().min(1).nullable().optional(),
     bookingDate: bookingDateSchema.optional(),
     amountNok: z.number().finite().optional(),
-    normalizedMerchant: z.string().trim().min(1).optional(),
+    merchant: z.string().trim().min(1).optional(),
     paymentType: z.nativeEnum(PaymentType).optional(),
     note: z
       .string()
@@ -148,6 +150,7 @@ function toTransactionListRow(
     amountNok: toNumber(record.amountNok),
     currency: record.currency,
     normalizedMerchant: record.normalizedMerchant,
+    merchant: record.merchant,
     paymentType: record.paymentType,
     note: record.note,
     createdAt: record.createdAt.toISOString(),
@@ -179,8 +182,8 @@ export async function updateTransaction(
       ...(params.updates.amountNok !== undefined
         ? { amountNok: params.updates.amountNok }
         : {}),
-      ...(params.updates.normalizedMerchant !== undefined
-        ? { normalizedMerchant: params.updates.normalizedMerchant }
+      ...(params.updates.merchant !== undefined
+        ? { merchant: params.updates.merchant }
         : {}),
       ...(params.updates.paymentType !== undefined
         ? { paymentType: params.updates.paymentType }
@@ -202,6 +205,7 @@ export async function updateTransaction(
       amountNok: true,
       currency: true,
       normalizedMerchant: true,
+      merchant: true,
       paymentType: true,
       note: true,
       createdAt: true,

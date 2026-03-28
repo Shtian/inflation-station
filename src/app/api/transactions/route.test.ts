@@ -104,14 +104,16 @@ describe("GET /api/transactions", () => {
 
   it("returns 400 for malformed sorting", async () => {
     const response = await GET(
-      new Request("http://localhost/api/transactions?sorting=merchant:asc"),
+      new Request(
+        "http://localhost/api/transactions?sorting=normalizedMerchant:asc",
+      ),
     );
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_SORTING",
       message:
-        "Expected sorting in <field>:<direction> format using bookingDate, amountNok, normalizedMerchant, or category fields.",
+        "Expected sorting in <field>:<direction> format using bookingDate, amountNok, merchant, or category fields.",
     });
     expect(getTransactionsPageMock).not.toHaveBeenCalled();
   });

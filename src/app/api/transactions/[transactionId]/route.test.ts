@@ -78,7 +78,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
       data: {
         categoryId: "cat-1",
         paymentType: PaymentType.CARD,
-        normalizedMerchant: "Store",
+        merchant: "Store",
       },
     });
     updateTransactionMock.mockResolvedValue({
@@ -88,7 +88,8 @@ describe("PATCH /api/transactions/[transactionId]", () => {
       bookingDate: "2026-02-01",
       amountNok: -100,
       currency: "NOK",
-      normalizedMerchant: "Store",
+      normalizedMerchant: "store",
+      merchant: "Store",
       paymentType: PaymentType.CARD,
       createdAt: "2026-02-01T00:00:00.000Z",
       updatedAt: "2026-02-02T00:00:00.000Z",
@@ -100,7 +101,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
         body: JSON.stringify({
           categoryId: "cat-1",
           paymentType: PaymentType.CARD,
-          normalizedMerchant: "Store",
+          merchant: "Store",
         }),
         headers: { "Content-Type": "application/json" },
       }),
@@ -115,7 +116,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
       updates: {
         categoryId: "cat-1",
         paymentType: PaymentType.CARD,
-        normalizedMerchant: "Store",
+        merchant: "Store",
       },
     });
     await expect(response.json()).resolves.toEqual({
@@ -126,7 +127,8 @@ describe("PATCH /api/transactions/[transactionId]", () => {
         bookingDate: "2026-02-01",
         amountNok: -100,
         currency: "NOK",
-        normalizedMerchant: "Store",
+        normalizedMerchant: "store",
+        merchant: "Store",
         paymentType: PaymentType.CARD,
         createdAt: "2026-02-01T00:00:00.000Z",
         updatedAt: "2026-02-02T00:00:00.000Z",

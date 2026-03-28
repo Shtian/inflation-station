@@ -69,6 +69,7 @@ model Transaction {
   amountNok        Decimal
   currency         String
   normalizedMerchant String
+  merchant         String?
   paymentType      PaymentType                @default(OTHER)
   note             String?
   suggestions      CategorizationSuggestion[]
