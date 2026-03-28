@@ -22,7 +22,6 @@ export type Account = {
 export type Category = {
   id: string;
   name: string;
-  accountId: string | null;
 };
 
 type ImportSummary = {
@@ -225,15 +224,7 @@ export function useImportWorkflow() {
 
   const hasActiveAccounts = activeAccounts.length > 0;
 
-  const reviewCategoryOptions = useMemo(
-    () =>
-      categories.filter(
-        (category) =>
-          category.accountId === null ||
-          category.accountId === selectedAccountId,
-      ),
-    [categories, selectedAccountId],
-  );
+  const reviewCategoryOptions = useMemo(() => categories, [categories]);
 
   const dialogProviderOptions = useMemo(() => {
     if (
