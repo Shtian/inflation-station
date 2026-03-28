@@ -154,7 +154,10 @@ describe("submitImportReview", () => {
     const result = await submitImportReview(db, {
       sessionId: "session-1",
       invalidCount: 0,
-      rows: [],
+      rows: [
+        { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
+        { rowId: "row-2", categoryId: null, selectedMessage: "Friday" },
+      ],
     });
 
     expect(db.transaction.createMany).toHaveBeenCalledWith({
@@ -261,6 +264,185 @@ describe("submitImportReview", () => {
         },
       ],
     });
+  });
+
+  it("only imports selected rows when a partial subset is submitted", async () => {
+    const db = createDbMock({
+      session: {
+        id: "session-1",
+        accountId: "account-1",
+        rows: [
+          {
+            id: "row-1",
+            rowNumber: 2,
+            bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+            amountNok: 100,
+            currency: "NOK",
+            normalizedMerchant: "groceries friday",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shop A",
+            name: "Groceries",
+            title: "Friday",
+            categoryId: null,
+          },
+          {
+            id: "row-2",
+            rowNumber: 3,
+            bookingDate: new Date("2026-01-02T00:00:00.000Z"),
+            amountNok: 200,
+            currency: "NOK",
+            normalizedMerchant: "fuel station",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shell",
+            name: "Fuel",
+            title: "Shell",
+            categoryId: null,
+          },
+          {
+            id: "row-3",
+            rowNumber: 4,
+            bookingDate: new Date("2026-01-03T00:00:00.000Z"),
+            amountNok: 50,
+            currency: "NOK",
+            normalizedMerchant: "coffee shop",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Kaffebrenneriet",
+            name: "Coffee",
+            title: "Kaffebrenneriet",
+            categoryId: null,
+          },
+        ],
+      },
+      validCategories: [],
+    });
+
+    const result = await submitImportReview(db, {
+      sessionId: "session-1",
+      invalidCount: 0,
+      rows: [
+        { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
+        {
+          rowId: "row-3",
+          categoryId: null,
+          selectedMessage: "Kaffebrenneriet",
+        },
+      ],
+    });
+
+    expect(db.transaction.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+        }),
+        expect.objectContaining({
+          bookingDate: new Date("2026-01-03T00:00:00.000Z"),
+          amountNok: 50,
+        }),
+      ],
+    });
+    expect(result.summary.imported).toBe(2);
+  });
+
+  it("summary.imported reflects only the selected rows, not all session rows", async () => {
+    const db = createDbMock({
+      session: {
+        id: "session-1",
+        accountId: "account-1",
+        rows: [
+          {
+            id: "row-1",
+            rowNumber: 2,
+            bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+            amountNok: 100,
+            currency: "NOK",
+            normalizedMerchant: "groceries friday",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shop A",
+            name: "Groceries",
+            title: "Friday",
+            categoryId: null,
+          },
+          {
+            id: "row-2",
+            rowNumber: 3,
+            bookingDate: new Date("2026-01-02T00:00:00.000Z"),
+            amountNok: 200,
+            currency: "NOK",
+            normalizedMerchant: "fuel station",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shell",
+            name: "Fuel",
+            title: "Shell",
+            categoryId: null,
+          },
+        ],
+      },
+      validCategories: [],
+    });
+
+    const result = await submitImportReview(db, {
+      sessionId: "session-1",
+      invalidCount: 0,
+      rows: [{ rowId: "row-1", categoryId: null, selectedMessage: "Friday" }],
+    });
+
+    expect(result.summary.imported).toBe(1);
+  });
+
+  it("rows not in params.rows are excluded from transaction.createMany", async () => {
+    const db = createDbMock({
+      session: {
+        id: "session-1",
+        accountId: "account-1",
+        rows: [
+          {
+            id: "row-1",
+            rowNumber: 2,
+            bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+            amountNok: 100,
+            currency: "NOK",
+            normalizedMerchant: "groceries friday",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shop A",
+            name: "Groceries",
+            title: "Friday",
+            categoryId: null,
+          },
+          {
+            id: "row-2",
+            rowNumber: 3,
+            bookingDate: new Date("2026-01-02T00:00:00.000Z"),
+            amountNok: 200,
+            currency: "NOK",
+            normalizedMerchant: "fuel station",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shell",
+            name: "Fuel",
+            title: "Shell",
+            categoryId: null,
+          },
+        ],
+      },
+      validCategories: [],
+    });
+
+    await submitImportReview(db, {
+      sessionId: "session-1",
+      invalidCount: 0,
+      rows: [{ rowId: "row-1", categoryId: null, selectedMessage: "Friday" }],
+    });
+
+    const callData = db.transaction.createMany.mock.calls[0][0].data;
+    expect(callData).toHaveLength(1);
+    expect(callData[0]).toMatchObject({ amountNok: 100 });
   });
 
   it("persists provided row note values", async () => {

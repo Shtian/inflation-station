@@ -235,7 +235,7 @@ export function ImportReviewPhase({
               ) : (
                 <DownloadCloud className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              Confirm import
+              Import {selectedRowIds.size} / {reviewRows.length}
             </Button>
           ) : null}
         </div>
