@@ -179,22 +179,25 @@ export async function submitImportReview(
     {},
   );
 
-  const finalizedRows = session.rows.map((row) => {
-    const selectedMessage =
-      row.id in selectedMessageByRowId
-        ? selectedMessageByRowId[row.id]
-        : row.title;
+  const submittedRowIds = new Set(params.rows.map((r) => r.rowId));
+  const finalizedRows = session.rows
+    .filter((row) => submittedRowIds.has(row.id))
+    .map((row) => {
+      const selectedMessage =
+        row.id in selectedMessageByRowId
+          ? selectedMessageByRowId[row.id]
+          : row.title;
 
-    return {
-      ...row,
-      title: selectedMessage,
-      normalizedMerchant: normalizeImportMerchant(row.name, selectedMessage),
-      categoryId:
-        row.id in categoryByRowId ? categoryByRowId[row.id] : row.categoryId,
-      amountNok: Number.parseFloat(row.amountNok.toString()),
-      note: row.id in noteByRowId ? noteByRowId[row.id] : null,
-    };
-  });
+      return {
+        ...row,
+        title: selectedMessage,
+        normalizedMerchant: normalizeImportMerchant(row.name, selectedMessage),
+        categoryId:
+          row.id in categoryByRowId ? categoryByRowId[row.id] : row.categoryId,
+        amountNok: Number.parseFloat(row.amountNok.toString()),
+        note: row.id in noteByRowId ? noteByRowId[row.id] : null,
+      };
+    });
 
   const selectedCategoryIds = Array.from(
     new Set(
