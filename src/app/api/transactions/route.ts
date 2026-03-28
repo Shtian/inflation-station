@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { deleteTransactions } from "@/lib/transactions/delete";
 import { getTransactionsPage } from "@/lib/transactions/list";
 
 const DEFAULT_PAGE = 1;
@@ -171,4 +172,29 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json(response);
+}
+
+export async function DELETE(request: Request) {
+  const body = await request.json().catch(() => null);
+
+  if (
+    !body ||
+    typeof body !== "object" ||
+    !("ids" in body) ||
+    !Array.isArray(body.ids) ||
+    body.ids.length === 0 ||
+    !body.ids.every((id: unknown) => typeof id === "string")
+  ) {
+    return NextResponse.json(
+      {
+        error: "INVALID_IDS",
+        message: "Expected ids to be a non-empty array of strings.",
+      },
+      { status: 400 },
+    );
+  }
+
+  const deleted = await deleteTransactions(prisma, body.ids as string[]);
+
+  return NextResponse.json({ deleted });
 }
