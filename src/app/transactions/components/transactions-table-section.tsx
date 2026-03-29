@@ -409,7 +409,23 @@ export function TransactionsTableSection({
       columnHelper.display({
         id: "actions",
         enableHiding: false,
-        header: () => <span className="sr-only">Actions</span>,
+        header: ({ table }) => {
+          const selectedIds = Object.keys(table.getState().rowSelection);
+          if (selectedIds.length === 0)
+            return <span className="sr-only">Actions</span>;
+          return (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              aria-label={`Delete ${selectedIds.length} selected transaction${selectedIds.length !== 1 ? "s" : ""}`}
+              title={`Delete ${selectedIds.length} selected`}
+              onClick={() => onBulkDelete(selectedIds)}
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          );
+        },
         cell: (info) => {
           const row = info.row.original;
 
@@ -450,7 +466,7 @@ export function TransactionsTableSection({
         },
       }),
     ],
-    [sortableHeader, onEdit, onDelete],
+    [sortableHeader, onEdit, onDelete, onBulkDelete],
   );
 
   const table = useReactTable({
@@ -485,9 +501,6 @@ export function TransactionsTableSection({
   const visibleColumns = table
     .getAllLeafColumns()
     .filter((column) => column.getCanHide() && column.id !== "actions");
-
-  const selectedIds = Object.keys(rowSelection);
-  const selectedCount = selectedIds.length;
 
   if (loading && !transactions) {
     return (
@@ -585,56 +598,31 @@ export function TransactionsTableSection({
         </div>
       </div>
 
-      {selectedCount > 0 ? (
-        <div className="flex items-center gap-3">
-          <span className="text-sm">
-            {selectedCount} row{selectedCount !== 1 ? "s" : ""} selected
-          </span>
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={() => onBulkDelete(selectedIds)}
-          >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
-            Delete selected
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setRowSelection({})}
-          >
-            Clear selection
-          </Button>
-        </div>
-      ) : (
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" className="gap-2">
-                <Columns3 className="h-4 w-4" aria-hidden="true" />
-                Columns
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {visibleColumns.map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(checked) =>
-                    column.toggleVisibility(Boolean(checked))
-                  }
-                >
-                  {COLUMN_LABELS[column.id] ?? column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="outline" className="gap-2">
+              <Columns3 className="h-4 w-4" aria-hidden="true" />
+              Columns
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {visibleColumns.map((column) => (
+              <DropdownMenuCheckboxItem
+                key={column.id}
+                checked={column.getIsVisible()}
+                onCheckedChange={(checked) =>
+                  column.toggleVisibility(Boolean(checked))
+                }
+              >
+                {COLUMN_LABELS[column.id] ?? column.id}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <p className="text-muted-foreground text-sm">
         {transactions.pagination.total} total transactions.
