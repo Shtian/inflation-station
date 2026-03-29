@@ -7,7 +7,7 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
 } from "@/lib/transactions/note";
-import { validateAddForm } from "./add-transaction-form";
+import { buildInitialAddForm, validateAddForm } from "./add-transaction-form";
 import { AddTransactionDialog } from "./components/add-transaction-dialog";
 import { BulkDeleteTransactionsDialog } from "./components/bulk-delete-transactions-dialog";
 import { DeleteTransactionDialog } from "./components/delete-transaction-dialog";
@@ -151,17 +151,9 @@ export function TransactionsManager() {
   }, []);
 
   const openAddDialog = useCallback(() => {
-    setAddForm({
-      accountId: "",
-      categoryId: UNCATEGORIZED_VALUE,
-      bookingDate: "",
-      amountNok: "",
-      merchant: "",
-      paymentType: "OTHER",
-      note: "",
-    });
+    setAddForm(buildInitialAddForm({ accountId, categoryId, dateFrom }));
     setAddError(null);
-  }, []);
+  }, [accountId, categoryId, dateFrom]);
 
   async function handleAddSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
