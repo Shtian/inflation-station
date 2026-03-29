@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CategoryBadge } from "@/components/category-badge";
+import { CategoryCombobox } from "@/components/category-combobox";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -64,7 +65,6 @@ import { formatNok } from "@/lib/format-nok";
 import {
   type Account,
   ALL_ACCOUNTS_VALUE,
-  ALL_CATEGORIES_VALUE,
   type Category,
   PAGE_SIZE_OPTIONS,
   type TransactionRow,
@@ -576,28 +576,15 @@ export function TransactionsTableSection({
         </div>
         <div className="space-y-2">
           <Label htmlFor="transactions-category-filter">Category</Label>
-          <Select
-            value={categoryId || ALL_CATEGORIES_VALUE}
-            onValueChange={(value) =>
-              onCategoryFilterChange(
-                value === ALL_CATEGORIES_VALUE ? "" : value,
-              )
-            }
-          >
-            <SelectTrigger id="transactions-category-filter" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_CATEGORIES_VALUE}>
-                All categories
-              </SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <CategoryCombobox
+            id="transactions-category-filter"
+            value={categoryId}
+            categories={categories}
+            onValueChange={(value) => onCategoryFilterChange(value)}
+            placeholder="All categories"
+            emptyLabel="No matching categories."
+            showClear
+          />
         </div>
       </div>
 
