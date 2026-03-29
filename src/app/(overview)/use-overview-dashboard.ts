@@ -30,12 +30,12 @@ export function useOverviewDashboard(): UseOverviewDashboardResult {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [dashboardAccountId, setDashboardAccountId] = useState("");
   const [dashboardRangePreset, setDashboardRangePreset] =
-    useState<DashboardRangePreset>("all");
+    useState<DashboardRangePreset>("30d");
   const [dashboardStartDate, setDashboardStartDate] = useState(
-    () => getPresetRange("all").startDate,
+    () => getPresetRange("30d").startDate,
   );
   const [dashboardEndDate, setDashboardEndDate] = useState(
-    () => getPresetRange("all").endDate,
+    () => getPresetRange("30d").endDate,
   );
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);

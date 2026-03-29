@@ -112,13 +112,6 @@ export function OverviewDashboard() {
           </p>
           <ButtonGroup role="group" aria-labelledby="date-range-label">
             <Button
-              variant={dashboardRangePreset === "all" ? "default" : "outline"}
-              onClick={() => setDashboardPreset("all")}
-              aria-pressed={dashboardRangePreset === "all"}
-            >
-              All time
-            </Button>
-            <Button
               variant={dashboardRangePreset === "30d" ? "default" : "outline"}
               onClick={() => setDashboardPreset("30d")}
               aria-pressed={dashboardRangePreset === "30d"}
