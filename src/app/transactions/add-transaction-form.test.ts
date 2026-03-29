@@ -1,0 +1,116 @@
+import { describe, expect, it } from "vitest";
+import { MAX_TRANSACTION_NOTE_LENGTH } from "@/lib/transactions/note";
+import { validateAddForm } from "./add-transaction-form";
+
+function baseForm() {
+  return {
+    accountId: "acc-1",
+    categoryId: "__uncategorized__",
+    bookingDate: "2026-03-29",
+    amountNok: "100",
+    merchant: "My Shop",
+    paymentType: "OTHER" as const,
+    note: "",
+  };
+}
+
+describe("validateAddForm", () => {
+  it("returns valid result for a correct form", () => {
+    const result = validateAddForm(baseForm());
+
+    expect(result.valid).toBe(true);
+    if (!result.valid) return;
+
+    expect(result.accountId).toBe("acc-1");
+    expect(result.bookingDate).toBe("2026-03-29");
+    expect(result.amountNok).toBe(100);
+    expect(result.merchant).toBe("My Shop");
+    expect(result.note).toBe("");
+  });
+
+  it("accepts negative amounts", () => {
+    const result = validateAddForm({ ...baseForm(), amountNok: "-42.50" });
+    expect(result.valid).toBe(true);
+    if (!result.valid) return;
+    expect(result.amountNok).toBe(-42.5);
+  });
+
+  it("accepts amounts with comma as decimal separator", () => {
+    const result = validateAddForm({ ...baseForm(), amountNok: "1,50" });
+    expect(result.valid).toBe(true);
+    if (!result.valid) return;
+    expect(result.amountNok).toBe(1.5);
+  });
+
+  it("trims whitespace from text fields before validation", () => {
+    const result = validateAddForm({
+      ...baseForm(),
+      accountId: "  acc-1  ",
+      merchant: "  My Shop  ",
+    });
+    expect(result.valid).toBe(true);
+    if (!result.valid) return;
+    expect(result.accountId).toBe("acc-1");
+    expect(result.merchant).toBe("My Shop");
+  });
+
+  it("rejects empty accountId", () => {
+    const result = validateAddForm({ ...baseForm(), accountId: "" });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.error).toBe("Account is required.");
+  });
+
+  it("rejects whitespace-only accountId", () => {
+    const result = validateAddForm({ ...baseForm(), accountId: "   " });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.error).toBe("Account is required.");
+  });
+
+  it("rejects empty bookingDate", () => {
+    const result = validateAddForm({ ...baseForm(), bookingDate: "" });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.error).toContain("Date");
+  });
+
+  it("rejects empty merchant", () => {
+    const result = validateAddForm({ ...baseForm(), merchant: "" });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.error).toContain("merchant");
+  });
+
+  it("rejects non-numeric amountNok", () => {
+    const result = validateAddForm({ ...baseForm(), amountNok: "abc" });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.error).toBe("Amount must be a valid number.");
+  });
+
+  it("rejects empty amountNok", () => {
+    const result = validateAddForm({ ...baseForm(), amountNok: "" });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.error).toBe("Amount must be a valid number.");
+  });
+
+  it("rejects note exceeding max length", () => {
+    const result = validateAddForm({
+      ...baseForm(),
+      note: "a".repeat(MAX_TRANSACTION_NOTE_LENGTH + 1),
+    });
+    expect(result.valid).toBe(false);
+    if (result.valid) return;
+    expect(result.error).toMatch(/500/);
+  });
+
+  it("accepts note at exact max length", () => {
+    const result = validateAddForm({
+      ...baseForm(),
+      note: "a".repeat(MAX_TRANSACTION_NOTE_LENGTH),
+    });
+    expect(result.valid).toBe(true);
+  });
+});

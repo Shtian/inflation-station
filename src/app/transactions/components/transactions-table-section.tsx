@@ -20,6 +20,7 @@ import {
   Ellipsis,
   FileText,
   Pencil,
+  Plus,
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -100,6 +101,7 @@ type TransactionsTableSectionProps = {
   dateFrom: string;
   dateTo: string;
   sorting?: TransactionSorting;
+  onAdd: () => void;
   onEdit: (row: TransactionRow) => void;
   onDelete: (row: TransactionRow) => void;
   onBulkDelete: (ids: string[]) => void;
@@ -205,6 +207,7 @@ export function TransactionsTableSection({
   dateFrom,
   dateTo,
   sorting,
+  onAdd,
   onEdit,
   onDelete,
   onBulkDelete,
@@ -598,7 +601,16 @@ export function TransactionsTableSection({
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="gap-2"
+          onClick={onAdd}
+        >
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Add transaction
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button type="button" variant="outline" className="gap-2">
