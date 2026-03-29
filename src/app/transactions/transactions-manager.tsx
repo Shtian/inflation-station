@@ -7,11 +7,14 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
 } from "@/lib/transactions/note";
+import { validateAddForm } from "./add-transaction-form";
+import { AddTransactionDialog } from "./components/add-transaction-dialog";
 import { BulkDeleteTransactionsDialog } from "./components/bulk-delete-transactions-dialog";
 import { DeleteTransactionDialog } from "./components/delete-transaction-dialog";
 import { EditTransactionDialog } from "./components/edit-transaction-dialog";
 import { TransactionsTableSection } from "./components/transactions-table-section";
 import {
+  type AddFormState,
   type EditFormState,
   PAYMENT_TYPE_OPTIONS,
   type PaymentTypeOption,
@@ -94,8 +97,15 @@ export function TransactionsManager() {
   const [bulkDeleteIds, setBulkDeleteIds] = useState<string[]>([]);
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
   const [bulkDeleteSaving, setBulkDeleteSaving] = useState(false);
+  const [addForm, setAddForm] = useState<AddFormState | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addSaving, setAddSaving] = useState(false);
   const noteError =
     editForm && editForm.note.trim().length > MAX_TRANSACTION_NOTE_LENGTH
+      ? MAX_TRANSACTION_NOTE_LENGTH_MESSAGE
+      : null;
+  const addNoteError =
+    addForm && addForm.note.trim().length > MAX_TRANSACTION_NOTE_LENGTH
       ? MAX_TRANSACTION_NOTE_LENGTH_MESSAGE
       : null;
 
@@ -133,6 +143,71 @@ export function TransactionsManager() {
     setBulkDeleteIds(ids);
     setBulkDeleteError(null);
   }, []);
+
+  const closeAddDialog = useCallback(() => {
+    setAddForm(null);
+    setAddError(null);
+    setAddSaving(false);
+  }, []);
+
+  const openAddDialog = useCallback(() => {
+    setAddForm({
+      accountId: "",
+      categoryId: UNCATEGORIZED_VALUE,
+      bookingDate: "",
+      amountNok: "",
+      merchant: "",
+      paymentType: "OTHER",
+      note: "",
+    });
+    setAddError(null);
+  }, []);
+
+  async function handleAddSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!addForm) {
+      return;
+    }
+
+    const validation = validateAddForm(addForm);
+    if (!validation.valid) {
+      setAddError(validation.error);
+      return;
+    }
+
+    setAddSaving(true);
+    setAddError(null);
+
+    const response = await fetch("/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        accountId: validation.accountId,
+        bookingDate: validation.bookingDate,
+        amountNok: validation.amountNok,
+        merchant: validation.merchant,
+        paymentType: addForm.paymentType,
+        categoryId:
+          addForm.categoryId === UNCATEGORIZED_VALUE
+            ? undefined
+            : addForm.categoryId,
+        note: validation.note.length > 0 ? validation.note : undefined,
+      }),
+    });
+
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      setAddError(getMutationErrorMessage(body, "Could not add transaction."));
+      setAddSaving(false);
+      return;
+    }
+
+    closeAddDialog();
+    await loadTransactions();
+    toast.success("Transaction added");
+  }
 
   async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -286,6 +361,7 @@ export function TransactionsManager() {
         dateFrom={dateFrom}
         dateTo={dateTo}
         sorting={sorting}
+        onAdd={openAddDialog}
         onEdit={openEditDialog}
         onDelete={openDeleteDialog}
         onBulkDelete={openBulkDeleteDialog}
@@ -298,6 +374,60 @@ export function TransactionsManager() {
         pageSize={pageSize}
         onPageSizeChange={setPageSizeFilter}
         onGoToPage={goToPage}
+      />
+
+      <AddTransactionDialog
+        open={addForm !== null}
+        accounts={accounts}
+        categories={categories}
+        addForm={addForm}
+        addError={addError}
+        noteError={addNoteError}
+        addSaving={addSaving}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen && !addSaving) {
+            closeAddDialog();
+          }
+        }}
+        onAccountChange={(value) =>
+          setAddForm((current) =>
+            current ? { ...current, accountId: value } : current,
+          )
+        }
+        onCategoryChange={(value) =>
+          setAddForm((current) =>
+            current ? { ...current, categoryId: value } : current,
+          )
+        }
+        onBookingDateChange={(value) =>
+          setAddForm((current) =>
+            current ? { ...current, bookingDate: value } : current,
+          )
+        }
+        onMerchantChange={(value) =>
+          setAddForm((current) =>
+            current ? { ...current, merchant: value } : current,
+          )
+        }
+        onAmountChange={(value) =>
+          setAddForm((current) =>
+            current ? { ...current, amountNok: value } : current,
+          )
+        }
+        onPaymentTypeChange={(value) =>
+          setAddForm((current) =>
+            current
+              ? { ...current, paymentType: toPaymentTypeOption(value) }
+              : current,
+          )
+        }
+        onNoteChange={(value) =>
+          setAddForm((current) =>
+            current ? { ...current, note: value } : current,
+          )
+        }
+        onCancel={closeAddDialog}
+        onSubmit={handleAddSubmit}
       />
 
       <EditTransactionDialog

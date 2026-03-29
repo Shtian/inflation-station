@@ -66,3 +66,13 @@ export type EditFormState = {
   paymentType: PaymentTypeOption;
   note: string;
 };
+
+export type AddFormState = {
+  accountId: string;
+  categoryId: string;
+  bookingDate: string;
+  amountNok: string;
+  merchant: string;
+  paymentType: PaymentTypeOption;
+  note: string;
+};
