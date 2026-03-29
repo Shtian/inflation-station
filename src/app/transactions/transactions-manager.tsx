@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { Separator } from "@/components/ui/separator";
 import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
@@ -339,8 +338,6 @@ export function TransactionsManager() {
           {error}
         </p>
       ) : null}
-
-      <Separator className="my-4" />
 
       <TransactionsTableSection
         loading={loading}

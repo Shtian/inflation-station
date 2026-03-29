@@ -8,25 +8,27 @@ import {
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
+import { format, parseISO } from "date-fns";
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Columns3,
   Ellipsis,
   FileText,
   Pencil,
   Plus,
+  Search,
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CategoryBadge } from "@/components/category-badge";
 import { CategoryCombobox } from "@/components/category-combobox";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -40,20 +42,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -433,23 +434,7 @@ export function TransactionsTableSection({
       columnHelper.display({
         id: "actions",
         enableHiding: false,
-        header: ({ table }) => {
-          const selectedIds = Object.keys(table.getState().rowSelection);
-          if (selectedIds.length === 0)
-            return <span className="sr-only">Actions</span>;
-          return (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              aria-label={`Delete ${selectedIds.length} selected transaction${selectedIds.length !== 1 ? "s" : ""}`}
-              title={`Delete ${selectedIds.length} selected`}
-              onClick={() => onBulkDelete(selectedIds)}
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-            </Button>
-          );
-        },
+        header: () => <span className="sr-only">Actions</span>,
         cell: (info) => {
           const row = info.row.original;
 
@@ -491,7 +476,7 @@ export function TransactionsTableSection({
         },
       }),
     ],
-    [sortableHeader, onEdit, onDelete, onBulkDelete],
+    [sortableHeader, onEdit, onDelete],
   );
 
   const table = useReactTable({
@@ -546,113 +531,223 @@ export function TransactionsTableSection({
 
   return (
     <section className="space-y-2" aria-live="polite">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="space-y-2">
-          <Label htmlFor="transactions-global-query">Search</Label>
-          <Input
-            id="transactions-global-query"
-            type="search"
-            value={globalQuery}
-            onChange={(event) => onGlobalQueryChange(event.target.value)}
-            placeholder="Search merchant or notes..."
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="transactions-date-from">Date from</Label>
-          <Input
-            id="transactions-date-from"
-            type="date"
-            value={dateFrom}
-            onChange={(event) => onDateFromChange(event.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="transactions-date-to">Date to</Label>
-          <Input
-            id="transactions-date-to"
-            type="date"
-            value={dateTo}
-            onChange={(event) => onDateToChange(event.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="transactions-account-filter">Account</Label>
-          <Select
-            value={accountId || ALL_ACCOUNTS_VALUE}
-            onValueChange={(value) =>
-              onAccountFilterChange(value === ALL_ACCOUNTS_VALUE ? "" : value)
-            }
-          >
-            <SelectTrigger id="transactions-account-filter" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_ACCOUNTS_VALUE}>All accounts</SelectItem>
-              {accounts.map((account) => (
-                <SelectItem key={account.id} value={account.id}>
-                  {account.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="transactions-category-filter">Category</Label>
-          <CategoryCombobox
-            id="transactions-category-filter"
-            value={categoryId}
-            categories={categories}
-            onValueChange={(value) => onCategoryFilterChange(value)}
-            placeholder="All categories"
-            emptyLabel="No matching categories."
-            showClear
-          />
-        </div>
-      </div>
+      {/* Filters and Actions Card */}
+      <div className="rounded-xl border border-border p-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-50 flex-1">
+            <label
+              htmlFor="transactions-global-query"
+              className="mb-1.5 block font-medium text-muted-foreground text-xs"
+            >
+              Search
+            </label>
+            <div className="relative">
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="transactions-global-query"
+                type="search"
+                value={globalQuery}
+                onChange={(event) => onGlobalQueryChange(event.target.value)}
+                placeholder="Search merchant or notes..."
+                className="h-9 bg-background pl-9"
+              />
+            </div>
+          </div>
 
-      <div className="flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="gap-2"
-          onClick={onAdd}
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          Add transaction
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" className="gap-2">
-              <Columns3 className="h-4 w-4" aria-hidden="true" />
-              Columns
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {visibleColumns.map((column) => (
-              <DropdownMenuCheckboxItem
-                key={column.id}
-                checked={column.getIsVisible()}
-                onCheckedChange={(checked) =>
-                  column.toggleVisibility(Boolean(checked))
-                }
+          <div className="flex gap-2">
+            <div>
+              <label
+                htmlFor="transactions-date-from"
+                className="mb-1.5 block font-medium text-muted-foreground text-xs"
               >
-                {COLUMN_LABELS[column.id] ?? column.id}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                Date from
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="transactions-date-from"
+                    variant="outline"
+                    className={cn(
+                      "h-9 w-35 justify-start bg-background text-left font-normal",
+                      !dateFrom && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom
+                      ? format(parseISO(dateFrom), "dd/MM/yyyy")
+                      : "Pick date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateFrom ? parseISO(dateFrom) : undefined}
+                    onSelect={(date) =>
+                      onDateFromChange(date ? format(date, "yyyy-MM-dd") : "")
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
+              <label
+                htmlFor="transactions-date-to"
+                className="mb-1.5 block font-medium text-muted-foreground text-xs"
+              >
+                Date to
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="transactions-date-to"
+                    variant="outline"
+                    className={cn(
+                      "h-9 w-35 justify-start bg-background text-left font-normal",
+                      !dateTo && "text-muted-foreground",
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateTo
+                      ? format(parseISO(dateTo), "dd/MM/yyyy")
+                      : "Pick date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={dateTo ? parseISO(dateTo) : undefined}
+                    onSelect={(date) =>
+                      onDateToChange(date ? format(date, "yyyy-MM-dd") : "")
+                    }
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="transactions-account-filter"
+              className="mb-1.5 block font-medium text-muted-foreground text-xs"
+            >
+              Account
+            </label>
+            <Select
+              value={accountId || ALL_ACCOUNTS_VALUE}
+              onValueChange={(value) =>
+                onAccountFilterChange(value === ALL_ACCOUNTS_VALUE ? "" : value)
+              }
+            >
+              <SelectTrigger
+                id="transactions-account-filter"
+                className="h-9 w-40 bg-background"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_ACCOUNTS_VALUE}>All accounts</SelectItem>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="transactions-category-filter"
+              className="mb-1.5 block font-medium text-muted-foreground text-xs"
+            >
+              Category
+            </label>
+            <CategoryCombobox
+              id="transactions-category-filter"
+              value={categoryId}
+              categories={categories}
+              onValueChange={(value) => onCategoryFilterChange(value)}
+              placeholder="All categories"
+              emptyLabel="No matching categories."
+              showClear
+            />
+          </div>
+        </div>
       </div>
 
-      <p className="text-muted-foreground text-sm">
-        {transactions.pagination.total} total transactions.
-      </p>
+      {/* Table Info & Actions */}
+      <div className="mt-8 flex items-center justify-between">
+        <span className="text-muted-foreground text-sm">
+          {Object.keys(rowSelection).length > 0 ? (
+            <>
+              <span className="font-medium text-foreground">
+                {Object.keys(rowSelection).length}
+              </span>{" "}
+              of {transactions.pagination.total} selected
+            </>
+          ) : (
+            <>
+              {transactions.pagination.total} total transactions.
+              {loading ? " Updating..." : null}
+            </>
+          )}
+        </span>
 
-      {loading ? (
-        <p className="text-muted-foreground text-sm">Updating results...</p>
-      ) : null}
+        <div className="flex items-center gap-2">
+          {Object.keys(rowSelection).length > 0 && (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2 text-destructive hover:text-destructive"
+                onClick={() => onBulkDelete(Object.keys(rowSelection))}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                Delete
+              </Button>
+              <div className="mx-1 h-4 w-px bg-border" />
+            </>
+          )}
 
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Columns3 className="h-4 w-4" aria-hidden="true" />
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {visibleColumns.map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(checked) =>
+                    column.toggleVisibility(Boolean(checked))
+                  }
+                >
+                  {COLUMN_LABELS[column.id] ?? column.id}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button type="button" size="sm" className="gap-2" onClick={onAdd}>
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Add transaction
+          </Button>
+        </div>
+      </div>
+
+      {/* Transactions Table */}
       {transactions.rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           {hasActiveFilters
@@ -660,7 +755,7 @@ export function TransactionsTableSection({
             : "No transactions found."}
         </p>
       ) : (
-        <div className="rounded-xl border border-border">
+        <div className="mt-4 rounded-xl border border-border">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
