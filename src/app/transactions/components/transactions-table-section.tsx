@@ -38,11 +38,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -62,6 +73,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatNok } from "@/lib/format-nok";
+import { cn } from "@/lib/utils";
 import {
   type Account,
   ALL_ACCOUNTS_VALUE,
@@ -134,11 +146,11 @@ function getHeaderClassName(columnId: string) {
 
 function getCellClassName(columnId: string) {
   if (columnId === "select" || columnId === "noteIndicator") {
-    return "w-0";
+    return "w-12";
   }
 
-  if (columnId === "amountNok" || columnId === "actions") {
-    return "text-right";
+  if (columnId === "amountNok") {
+    return "text-right tabular-nums font-mono";
   }
 
   return undefined;
@@ -228,7 +240,9 @@ export function TransactionsTableSection({
     pageIndex: currentPage - 1,
     pageSize,
   };
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
+    paymentType: false,
+  });
   const [hasHydratedColumnVisibility, setHasHydratedColumnVisibility] =
     useState(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -407,7 +421,14 @@ export function TransactionsTableSection({
       columnHelper.accessor("amountNok", {
         enableHiding: true,
         header: () => sortableHeader("Amount", "amountNok"),
-        cell: (info) => formatNok(info.getValue()),
+        cell: (info) => {
+          const value = info.getValue();
+          return (
+            <span className={cn(value > 0 && "text-success")}>
+              {formatNok(info.getValue())}
+            </span>
+          );
+        },
       }),
       columnHelper.display({
         id: "actions",
@@ -437,7 +458,8 @@ export function TransactionsTableSection({
               <DropdownMenuTrigger asChild>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
+                  className="invisible cursor-pointer group-hover/row:visible"
                   size="icon-sm"
                   aria-label={`Actions for transaction from ${row.bookingDate}`}
                   title={`Actions for transaction from ${row.bookingDate}`}
@@ -532,7 +554,7 @@ export function TransactionsTableSection({
             type="search"
             value={globalQuery}
             onChange={(event) => onGlobalQueryChange(event.target.value)}
-            placeholder="Search merchant or note"
+            placeholder="Search merchant or notes..."
           />
         </div>
         <div className="space-y-2">
@@ -638,11 +660,11 @@ export function TransactionsTableSection({
             : "No transactions found."}
         </p>
       ) : (
-        <>
+        <div className="rounded-xl border border-border">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
+                <TableRow className="bg-muted/30" key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
@@ -659,9 +681,9 @@ export function TransactionsTableSection({
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody>
+            <TableBody className="[&_tr:last-child]:border-b">
               {table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow className="group/row" key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
@@ -678,20 +700,19 @@ export function TransactionsTableSection({
             </TableBody>
           </Table>
 
-          <div className="flex w-full justify-center sm:justify-end">
-            <div className="flex flex-col items-center gap-2 text-foreground text-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Rows per page:</span>
+          <div className="flex w-full justify-center p-2 sm:justify-end">
+            <div className="flex items-center justify-between gap-4">
+              <Field orientation="horizontal" className="w-fit">
+                <FieldLabel htmlFor="select-rows-per-page">
+                  Rows per page
+                </FieldLabel>
                 <Select
                   value={String(pageSize)}
                   onValueChange={(value) =>
                     onPageSizeChange(Number.parseInt(value, 10))
                   }
                 >
-                  <SelectTrigger
-                    id="transactions-rows-per-page"
-                    className="h-8 w-21"
-                  >
+                  <SelectTrigger id="transactions-rows-per-page">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -702,55 +723,40 @@ export function TransactionsTableSection({
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-              <span>
-                Page {table.getState().pagination.pageIndex + 1} of {totalPages}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Go to first page"
-                  onClick={() => table.setPageIndex(0)}
-                  disabled={loading || !table.getCanPreviousPage()}
-                >
-                  <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Go to previous page"
-                  onClick={() => table.previousPage()}
-                  disabled={loading || !table.getCanPreviousPage()}
-                >
-                  <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Go to next page"
-                  onClick={() => table.nextPage()}
-                  disabled={loading || !table.getCanNextPage()}
-                >
-                  <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Go to last page"
-                  onClick={() => table.setPageIndex(totalPages - 1)}
-                  disabled={loading || !table.getCanNextPage()}
-                >
-                  <ChevronsRight className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
+              </Field>
+              <Pagination className="mx-0 w-auto">
+                <PaginationContent>
+                  <PaginationItem>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      aria-label="Go to previous page"
+                      className="cursor-pointer"
+                      onClick={() => table.previousPage()}
+                      disabled={loading || !table.getCanPreviousPage()}
+                    >
+                      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                      Previous
+                    </Button>
+                  </PaginationItem>
+                  <PaginationItem>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      aria-label="Go to next page"
+                      className="cursor-pointer"
+                      onClick={() => table.nextPage()}
+                      disabled={loading || !table.getCanNextPage()}
+                    >
+                      Next{" "}
+                      <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           </div>
-        </>
+        </div>
       )}
     </section>
   );
