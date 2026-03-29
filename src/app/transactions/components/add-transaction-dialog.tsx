@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MAX_TRANSACTION_NOTE_LENGTH } from "@/lib/transactions/note";
+import { isFutureDate } from "../add-transaction-form";
 import {
   type Account,
   type AddFormState,
@@ -112,6 +113,11 @@ export function AddTransactionDialog({
                   onChange={(event) => onBookingDateChange(event.target.value)}
                   disabled={addSaving}
                 />
+                {isFutureDate(addForm.bookingDate) ? (
+                  <p className="text-warning text-xs">
+                    This date is in the future.
+                  </p>
+                ) : null}
               </FieldContent>
             </Field>
 

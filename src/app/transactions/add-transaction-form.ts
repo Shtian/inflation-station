@@ -2,7 +2,10 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
 } from "@/lib/transactions/note";
-import type { AddFormState } from "./transactions-manager.types";
+import {
+  type AddFormState,
+  UNCATEGORIZED_VALUE,
+} from "./transactions-manager.types";
 
 type ValidAddForm = {
   valid: true;
@@ -19,6 +22,30 @@ type InvalidAddForm = {
 };
 
 export type AddFormValidationResult = ValidAddForm | InvalidAddForm;
+
+type InitialFormFilters = {
+  accountId: string;
+  categoryId: string;
+  dateFrom: string;
+};
+
+export function buildInitialAddForm(filters: InitialFormFilters): AddFormState {
+  return {
+    accountId: filters.accountId,
+    categoryId: filters.categoryId || UNCATEGORIZED_VALUE,
+    bookingDate: filters.dateFrom,
+    amountNok: "",
+    merchant: "",
+    paymentType: "OTHER",
+    note: "",
+  };
+}
+
+export function isFutureDate(dateStr: string): boolean {
+  if (!dateStr) return false;
+  const today = new Date().toISOString().slice(0, 10);
+  return dateStr > today;
+}
 
 export function validateAddForm(form: AddFormState): AddFormValidationResult {
   const accountId = form.accountId.trim();
