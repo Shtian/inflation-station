@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import {
+  createTransaction,
+  parseTransactionCreatePayload,
+} from "@/lib/transactions/create";
 import { deleteTransactions } from "@/lib/transactions/delete";
 import { getTransactionsPage } from "@/lib/transactions/list";
 
@@ -197,4 +201,24 @@ export async function DELETE(request: Request) {
   const deleted = await deleteTransactions(prisma, body.ids as string[]);
 
   return NextResponse.json({ deleted });
+}
+
+export async function POST(request: Request) {
+  const body = await request.json().catch(() => null);
+
+  const parsed = parseTransactionCreatePayload(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      {
+        error: "INVALID_PAYLOAD",
+        details: parsed.error.flatten().fieldErrors,
+      },
+      { status: 400 },
+    );
+  }
+
+  const transaction = await createTransaction(prisma, parsed.data);
+
+  return NextResponse.json(transaction, { status: 201 });
 }
