@@ -1,12 +1,18 @@
+import { PaymentType } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DELETE, GET } from "./route";
+import { DELETE, GET, POST } from "./route";
 
-const { getTransactionsPageMock, deleteTransactionsMock, prismaMock } =
-  vi.hoisted(() => ({
-    getTransactionsPageMock: vi.fn(),
-    deleteTransactionsMock: vi.fn(),
-    prismaMock: { _tag: "prisma-mock" },
-  }));
+const {
+  getTransactionsPageMock,
+  deleteTransactionsMock,
+  createTransactionMock,
+  prismaMock,
+} = vi.hoisted(() => ({
+  getTransactionsPageMock: vi.fn(),
+  deleteTransactionsMock: vi.fn(),
+  createTransactionMock: vi.fn(),
+  prismaMock: { _tag: "prisma-mock" },
+}));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
@@ -19,6 +25,15 @@ vi.mock("@/lib/transactions/list", () => ({
 vi.mock("@/lib/transactions/delete", () => ({
   deleteTransactions: deleteTransactionsMock,
 }));
+
+vi.mock("@/lib/transactions/create", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/transactions/create")>();
+  return {
+    ...actual,
+    createTransaction: createTransactionMock,
+  };
+});
 
 describe("GET /api/transactions", () => {
   beforeEach(() => {
@@ -222,5 +237,102 @@ describe("DELETE /api/transactions", () => {
       error: "INVALID_IDS",
     });
     expect(deleteTransactionsMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/transactions", () => {
+  const validPayload = {
+    accountId: "acc-1",
+    bookingDate: "2026-03-01",
+    amountNok: -50,
+    merchant: "My Shop",
+    paymentType: PaymentType.CARD,
+  };
+
+  const createdTransaction = {
+    id: "tx-new",
+    accountId: "acc-1",
+    categoryId: null,
+    categoryName: null,
+    bookingDate: "2026-03-01",
+    amountNok: -50,
+    currency: "NOK",
+    normalizedMerchant: "my shop",
+    merchant: "My Shop",
+    paymentType: PaymentType.CARD,
+    note: null,
+    createdAt: "2026-03-01T10:00:00.000Z",
+    updatedAt: "2026-03-01T10:00:00.000Z",
+  };
+
+  beforeEach(() => {
+    createTransactionMock.mockReset();
+    createTransactionMock.mockResolvedValue(createdTransaction);
+  });
+
+  it("returns 201 with created transaction on valid payload", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toEqual(createdTransaction);
+    expect(createTransactionMock).toHaveBeenCalledWith(
+      prismaMock,
+      expect.objectContaining({
+        accountId: "acc-1",
+        amountNok: -50,
+        merchant: "My Shop",
+        paymentType: PaymentType.CARD,
+      }),
+    );
+  });
+
+  it("returns 400 with validation details on missing required fields", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amountNok: 100 }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("INVALID_PAYLOAD");
+    expect(body.details).toBeDefined();
+    expect(createTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when body is not valid JSON", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not-json",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("INVALID_PAYLOAD");
+    expect(createTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts negative amountNok and returns 201", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...validPayload, amountNok: -999.99 }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createTransactionMock).toHaveBeenCalled();
   });
 });
