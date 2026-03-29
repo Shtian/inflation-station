@@ -166,12 +166,20 @@ export async function getDashboardAnalytics(
   const accountNames = new Map<string, string>();
 
   for (const transaction of transactions) {
-    if (transaction.category?.kind === "TRANSFER") {
-      continue;
-    }
-
+    const isTransfer = transaction.category?.kind === "TRANSFER";
     const dateKey = toDateKey(transaction.bookingDate);
     const amount = toNumber(transaction.amountNok);
+
+    // Account trend includes transfers to reflect true account movement
+    accountNames.set(transaction.account.id, transaction.account.name);
+    const accountSeries =
+      trendByAccount.get(transaction.account.id) ?? new Map();
+    accountSeries.set(dateKey, (accountSeries.get(dateKey) ?? 0) + amount);
+    trendByAccount.set(transaction.account.id, accountSeries);
+
+    if (isTransfer) {
+      continue;
+    }
 
     const dayTotals = totalsByDate.get(dateKey) ?? {
       netNok: 0,
@@ -200,12 +208,6 @@ export async function getDashboardAnalytics(
       categoryTotals.transactionCount += 1;
       spendByCategory.set(categoryKey, categoryTotals);
     }
-
-    accountNames.set(transaction.account.id, transaction.account.name);
-    const accountSeries =
-      trendByAccount.get(transaction.account.id) ?? new Map();
-    accountSeries.set(dateKey, (accountSeries.get(dateKey) ?? 0) + amount);
-    trendByAccount.set(transaction.account.id, accountSeries);
   }
 
   const sortedDates = [...totalsByDate.keys()].sort((a, b) =>
