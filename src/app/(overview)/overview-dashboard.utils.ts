@@ -70,13 +70,6 @@ export function fromDateInputValue(value: string) {
 export function getPresetRange(
   preset: Exclude<DashboardRangePreset, "custom">,
 ) {
-  if (preset === "all") {
-    return {
-      startDate: "",
-      endDate: "",
-    };
-  }
-
   const endDate = new Date();
   endDate.setHours(0, 0, 0, 0);
   const startDate = new Date(endDate);
