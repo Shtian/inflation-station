@@ -54,6 +54,12 @@ export function CategoryCombobox({
       itemToStringLabel={(itemValue) =>
         categoriesById.get(itemValue as string) ?? (itemValue as string)
       }
+      filter={(inputValue, categoryId) => {
+        if (!inputValue) return true;
+        const name =
+          categoriesById.get(categoryId as string) ?? String(categoryId);
+        return name.toLowerCase().includes(inputValue.toLowerCase());
+      }}
       autoHighlight
       disabled={disabled}
       modal={false}
