@@ -8,10 +8,10 @@ import {
 
 describe("chat-model-registry", () => {
   it("resolves a known model by id", () => {
-    const model = getModelById("gpt-5.2");
+    const model = getModelById("gpt-5.4");
 
-    expect(model.id).toBe("gpt-5.2");
-    expect(model.label).toBe("GPT-5.2");
+    expect(model.id).toBe("gpt-5.4");
+    expect(model.label).toBe("GPT-5.4");
   });
 
   it("falls back safely for unknown model ids", () => {

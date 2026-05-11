@@ -113,7 +113,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
       monthStart: "2026-02-01",
       systemPrompt: "Focus on major spending shifts.",
       usesDefaultPrompt: false,
-      modelId: "gpt-5.2",
+      modelId: "gpt-5.4",
       usesDefaultModel: true,
       metrics: {
         monthlyTotals: {
@@ -216,7 +216,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
 
     expect(result.systemPrompt).toBe(DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT);
     expect(result.usesDefaultPrompt).toBe(true);
-    expect(result.modelId).toBe("gpt-5.2");
+    expect(result.modelId).toBe("gpt-5.4");
     expect(result.usesDefaultModel).toBe(true);
     expect(result.metrics.monthOverMonth).toBeNull();
     expect(result.metrics.categoryTotals).toEqual([
