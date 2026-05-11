@@ -15,7 +15,7 @@ export type ChatModelEntry = {
   tier: ChatModelTier;
 };
 
-const DEFAULT_CHAT_MODEL_ID = "gpt-5.2" as const satisfies OpenAIChatModelId;
+const DEFAULT_CHAT_MODEL_ID = "gpt-5.4" as const satisfies OpenAIChatModelId;
 
 const CHAT_MODEL_METADATA_BY_ID = {
   "gpt-4.1-mini": {
@@ -33,14 +33,31 @@ const CHAT_MODEL_METADATA_BY_ID = {
     description: "Good quality with controlled cost for regular use.",
     tier: "balanced",
   },
-  [DEFAULT_CHAT_MODEL_ID]: {
+  "gpt-5.2": {
     label: "GPT-5.2",
-    description: "Best default quality/cost tradeoff for monthly analysis.",
+    description: "Solid quality/cost tradeoff for monthly analysis.",
     tier: "balanced",
   },
   "gpt-5.2-pro": {
     label: "GPT-5.2 Pro",
-    description: "Highest quality for deeper, more nuanced spending insights.",
+    description: "High quality for deeper, more nuanced spending insights.",
+    tier: "premium",
+  },
+  "gpt-5.4-mini": {
+    label: "GPT-5.4 Mini",
+    description:
+      "Fast and affordable, ideal for routine message cleanup and lightweight tasks.",
+    tier: "balanced",
+  },
+  [DEFAULT_CHAT_MODEL_ID]: {
+    label: "GPT-5.4",
+    description: "Best default quality/cost tradeoff for monthly analysis.",
+    tier: "balanced",
+  },
+  "gpt-5.4-pro": {
+    label: "GPT-5.4 Pro",
+    description:
+      "Highest quality for in-depth spending insights and complex analysis.",
     tier: "premium",
   },
 } as const satisfies Partial<Record<OpenAIChatModelId, ChatModelMetadata>>;

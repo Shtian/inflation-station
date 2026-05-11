@@ -41,7 +41,7 @@ describe("message cleanup settings", () => {
     expect(result).toEqual({
       prompt: DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
       isDefaultPrompt: true,
-      modelId: "gpt-5-mini",
+      modelId: "gpt-5.4-mini",
       isDefaultModel: true,
     });
   });
@@ -56,7 +56,7 @@ describe("message cleanup settings", () => {
     expect(result).toEqual({
       prompt: "Keep merchant names concise.",
       isDefaultPrompt: false,
-      modelId: "gpt-5-mini",
+      modelId: "gpt-5.4-mini",
       isDefaultModel: true,
     });
   });
@@ -71,7 +71,7 @@ describe("message cleanup settings", () => {
       resolvedPrompt: DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
       isDefaultPrompt: true,
       storedModelId: null,
-      resolvedModelId: "gpt-5-mini",
+      resolvedModelId: "gpt-5.4-mini",
       isDefaultModel: true,
     });
   });
@@ -112,15 +112,15 @@ describe("message cleanup settings", () => {
 
     const result = await updateMessageCleanupSettings(db, {
       promptText: "   ",
-      modelId: "gpt-5-mini",
+      modelId: "gpt-5.4-mini",
     });
 
     expect(result).toEqual({
       storedPromptText: null,
       resolvedPrompt: DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
       isDefaultPrompt: true,
-      storedModelId: "gpt-5-mini",
-      resolvedModelId: "gpt-5-mini",
+      storedModelId: "gpt-5.4-mini",
+      resolvedModelId: "gpt-5.4-mini",
       isDefaultModel: true,
     });
   });

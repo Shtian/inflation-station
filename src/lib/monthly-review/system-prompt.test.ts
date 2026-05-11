@@ -42,7 +42,7 @@ describe("monthly review system prompt", () => {
     expect(result).toEqual({
       prompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
       isDefault: true,
-      modelId: "gpt-5.2",
+      modelId: "gpt-5.4",
       isDefaultModel: true,
     });
   });
@@ -55,7 +55,7 @@ describe("monthly review system prompt", () => {
     expect(result).toEqual({
       prompt: "Use structured bullet points.",
       isDefault: false,
-      modelId: "gpt-5.2",
+      modelId: "gpt-5.4",
       isDefaultModel: true,
     });
   });
@@ -70,7 +70,7 @@ describe("monthly review system prompt", () => {
       resolvedPrompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
       isDefault: true,
       storedModelId: null,
-      resolvedModelId: "gpt-5.2",
+      resolvedModelId: "gpt-5.4",
       isDefaultModel: true,
     });
   });
@@ -86,7 +86,7 @@ describe("monthly review system prompt", () => {
     expect(result).toEqual({
       prompt: "Focus on outliers and recurring merchants.",
       isDefault: false,
-      modelId: "gpt-5.2",
+      modelId: "gpt-5.4",
       isDefaultModel: true,
     });
     expect(db.monthlyReviewSystemPrompt.upsert).toHaveBeenCalledWith({
@@ -112,7 +112,7 @@ describe("monthly review system prompt", () => {
     expect(result).toEqual({
       prompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
       isDefault: true,
-      modelId: "gpt-5.2",
+      modelId: "gpt-5.4",
       isDefaultModel: true,
     });
     expect(db.monthlyReviewSystemPrompt.upsert).toHaveBeenCalledWith({
