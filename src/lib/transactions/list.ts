@@ -9,6 +9,9 @@ type StringContainsFilter = {
 type TransactionListRecord = {
   id: string;
   accountId: string;
+  account: {
+    name: string;
+  };
   categoryId: string | null;
   category: {
     name: string;
@@ -32,6 +35,11 @@ type TransactionListDbClient = {
       select: {
         id: true;
         accountId: true;
+        account: {
+          select: {
+            name: true;
+          };
+        };
         categoryId: true;
         category: {
           select: {
@@ -72,6 +80,7 @@ export type TransactionsListFilters = {
 export type TransactionListRow = {
   id: string;
   accountId: string;
+  accountName: string;
   categoryId: string | null;
   categoryName: string | null;
   bookingDate: string;
@@ -182,6 +191,11 @@ export async function getTransactionsPage(
     select: {
       id: true,
       accountId: true,
+      account: {
+        select: {
+          name: true,
+        },
+      },
       categoryId: true,
       category: {
         select: {
@@ -206,6 +220,7 @@ export async function getTransactionsPage(
   const rows = records.map((record) => ({
     id: record.id,
     accountId: record.accountId,
+    accountName: record.account.name,
     categoryId: record.categoryId,
     categoryName: record.category?.name ?? null,
     bookingDate: record.bookingDate.toISOString().slice(0, 10),
