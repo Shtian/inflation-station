@@ -4,7 +4,7 @@ import { getModelById } from "../monthly-review/chat-model-registry";
 const MESSAGE_CLEANUP_SETTINGS_ID = "message-cleanup-settings";
 
 export const DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL: OpenAIChatModelId =
-  "gpt-5.4-mini";
+  "gpt-5.4-nano";
 
 export const DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT =
   "You clean transaction messages. Return strict JSON with top-level suggestions only.";

@@ -43,6 +43,12 @@ const CHAT_MODEL_METADATA_BY_ID = {
     description: "High quality for deeper, more nuanced spending insights.",
     tier: "premium",
   },
+  "gpt-5.4-nano": {
+    label: "GPT-5.4 Nano",
+    description:
+      "Lowest cost, fastest response for simple message cleanup tasks.",
+    tier: "cheap",
+  },
   "gpt-5.4-mini": {
     label: "GPT-5.4 Mini",
     description:
