@@ -9,6 +9,9 @@ function createDbMock() {
       create: vi.fn(async () => ({
         id: "tx-new",
         accountId: "acc-1",
+        account: {
+          name: "Test Account",
+        },
         categoryId: "cat-1",
         category: {
           name: "Groceries",
@@ -223,6 +226,11 @@ describe("createTransaction", () => {
       select: {
         id: true,
         accountId: true,
+        account: {
+          select: {
+            name: true,
+          },
+        },
         categoryId: true,
         category: {
           select: {
@@ -244,6 +252,7 @@ describe("createTransaction", () => {
     expect(transaction).toEqual({
       id: "tx-new",
       accountId: "acc-1",
+      accountName: "Test Account",
       categoryId: "cat-1",
       categoryName: "Groceries",
       bookingDate: "2026-03-01",
