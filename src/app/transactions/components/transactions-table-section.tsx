@@ -90,6 +90,7 @@ const COLUMN_VISIBILITY_STORAGE_KEY =
 const HIDEABLE_COLUMN_IDS = [
   "bookingDate",
   "merchant",
+  "account",
   "category",
   "paymentType",
   "amountNok",
@@ -97,6 +98,7 @@ const HIDEABLE_COLUMN_IDS = [
 const COLUMN_LABELS: Record<string, string> = {
   bookingDate: "Date",
   merchant: "Merchant",
+  account: "Account",
   paymentType: "Payment type",
   amountNok: "Amount",
   category: "Category",
@@ -243,6 +245,7 @@ export function TransactionsTableSection({
   };
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     paymentType: false,
+    account: false,
   });
   const [hasHydratedColumnVisibility, setHasHydratedColumnVisibility] =
     useState(false);
@@ -403,6 +406,12 @@ export function TransactionsTableSection({
             </TooltipProvider>
           );
         },
+      }),
+      columnHelper.accessor("accountName", {
+        id: "account",
+        enableHiding: true,
+        header: "Account",
+        cell: (info) => info.getValue(),
       }),
       columnHelper.display({
         id: "category",
