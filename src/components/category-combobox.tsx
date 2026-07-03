@@ -54,11 +54,11 @@ export function CategoryCombobox({
       itemToStringLabel={(itemValue) =>
         categoriesById.get(itemValue as string) ?? (itemValue as string)
       }
-      filter={(inputValue, categoryId) => {
-        if (!inputValue) return true;
+      filter={(categoryId, query) => {
+        if (!query) return true;
         const name =
           categoriesById.get(categoryId as string) ?? String(categoryId);
-        return name.toLowerCase().includes(inputValue.toLowerCase());
+        return name.toLowerCase().includes(query.toLowerCase());
       }}
       autoHighlight
       disabled={disabled}
