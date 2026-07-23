@@ -20,6 +20,16 @@ Inflation Station is a Next.js + TypeScript personal-finance app with Prisma-bac
 - Useful targeted loops: `pnpm test:unit`, `pnpm test:e2e`, `pnpm typecheck`.
 - If any validation is skipped, state what was skipped and why.
 
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues (Shtian/inflation-station), managed via `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context layout - CONTEXT.md + docs/adr/ at repo root (created lazily as needed). See `docs/agents/domain.md`.
+
 ## Folder-specific guidance (load only when working there)
 - `src/app/AGENTS.md`
 - `src/app/(overview)/AGENTS.md`
