@@ -20,12 +20,14 @@ export function ImportReviewWarningsCell({
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <TriangleAlert
-            className="h-4 w-4 text-warning"
-            aria-label="Potential duplicate"
-          />
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <TriangleAlert
+              className="h-4 w-4 text-warning"
+              aria-label="Potential duplicate"
+            />
+          }
+        />
         <TooltipContent side="top">Potential duplicate</TooltipContent>
       </Tooltip>
     </TooltipProvider>

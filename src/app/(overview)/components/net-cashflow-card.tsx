@@ -68,7 +68,7 @@ export function NetCashflowCard({
                 content={
                   <ChartTooltipContent
                     formatter={formatTooltipNok}
-                    labelFormatter={formatChartDate}
+                    labelFormatter={(label) => formatChartDate(String(label))}
                   />
                 }
               />

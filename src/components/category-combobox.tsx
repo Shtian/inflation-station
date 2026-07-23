@@ -24,9 +24,7 @@ type CategoryComboboxProps = {
   className?: string;
   disabled?: boolean;
   showClear?: boolean;
-  portalContainer?: React.ComponentProps<
-    typeof ComboboxContent
-  >["portalContainer"];
+  container?: React.ComponentProps<typeof ComboboxContent>["container"];
 };
 
 export function CategoryCombobox({
@@ -40,7 +38,7 @@ export function CategoryCombobox({
   className,
   disabled,
   showClear = true,
-  portalContainer,
+  container,
 }: CategoryComboboxProps) {
   const categoriesById = new Map(
     categories.map((category) => [category.id, category.name]),
@@ -71,7 +69,7 @@ export function CategoryCombobox({
         placeholder={placeholder}
         showClear={showClear}
       />
-      <ComboboxContent portalContainer={portalContainer}>
+      <ComboboxContent container={container}>
         <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
         <ComboboxList>
           {(categoryId) => (

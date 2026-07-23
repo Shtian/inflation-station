@@ -125,12 +125,8 @@ export function ImportReviewTable({
 }: ImportReviewTableProps) {
   const allRowIds = useMemo(() => rows.map((row) => row.id), [rows]);
   const selectedCount = allRowIds.filter((id) => selectedRowIds.has(id)).length;
-  const headerChecked: boolean | "indeterminate" =
-    selectedCount === rows.length && rows.length > 0
-      ? true
-      : selectedCount > 0
-        ? "indeterminate"
-        : false;
+  const headerChecked = selectedCount === rows.length && rows.length > 0;
+  const headerIndeterminate = selectedCount > 0 && !headerChecked;
 
   return (
     <div className="overflow-x-auto rounded-md border border-border">
@@ -140,6 +136,7 @@ export function ImportReviewTable({
             <TableHead>
               <Checkbox
                 checked={headerChecked}
+                indeterminate={headerIndeterminate}
                 onCheckedChange={() => toggleAllRows(allRowIds)}
                 aria-label="Select all rows"
               />
@@ -154,12 +151,14 @@ export function ImportReviewTable({
               <span className="sr-only">Warnings</span>
               <TooltipProvider>
                 <Tooltip>
-                  <TooltipTrigger asChild>
-                    <TriangleAlert
-                      className="h-4 w-4 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  </TooltipTrigger>
+                  <TooltipTrigger
+                    render={
+                      <TriangleAlert
+                        className="h-4 w-4 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                    }
+                  />
                   <TooltipContent side="top">
                     Potential duplicates or other import warnings
                   </TooltipContent>

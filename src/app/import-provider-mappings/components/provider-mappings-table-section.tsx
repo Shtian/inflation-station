@@ -68,31 +68,33 @@ export function ProviderMappingsTableSection(props: {
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon-sm"
-                            aria-label={`Actions for ${mapping.providerName}`}
-                            disabled={isDeleting}
-                          >
-                            {isDeleting ? (
-                              <Loader2
-                                className="h-4 w-4 animate-spin"
-                                aria-hidden="true"
-                              />
-                            ) : (
-                              <Ellipsis
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                              />
-                            )}
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon-sm"
+                              aria-label={`Actions for ${mapping.providerName}`}
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? (
+                                <Loader2
+                                  className="h-4 w-4 animate-spin"
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <Ellipsis
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                />
+                              )}
+                            </Button>
+                          }
+                        />
                         <DropdownMenuContent align="end">
                           <DropdownMenuGroup>
                             <DropdownMenuItem
-                              onSelect={() => props.onEdit(mapping)}
+                              onClick={() => props.onEdit(mapping)}
                             >
                               <Pencil className="h-4 w-4" aria-hidden="true" />
                               Edit
@@ -102,7 +104,7 @@ export function ProviderMappingsTableSection(props: {
                           <DropdownMenuGroup>
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => props.onDelete(mapping.id)}
+                              onClick={() => props.onDelete(mapping.id)}
                             >
                               <Trash2 className="h-4 w-4" aria-hidden="true" />
                               Delete
