@@ -161,29 +161,31 @@ export function CategoryManagementSection({
                     <TableCell>{category.kind}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon-sm"
-                            aria-label={`Actions for category ${category.name}`}
-                            title={`Actions for category ${category.name}`}
-                            disabled={busyKey !== null}
-                          >
-                            {busyKey === `delete-category-${category.id}` ? (
-                              <Loader2
-                                className="h-4 w-4 animate-spin"
-                                aria-hidden="true"
-                              />
-                            ) : (
-                              <Ellipsis
-                                className="h-4 w-4"
-                                aria-hidden="true"
-                              />
-                            )}
-                            <span className="sr-only">Actions</span>
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon-sm"
+                              aria-label={`Actions for category ${category.name}`}
+                              title={`Actions for category ${category.name}`}
+                              disabled={busyKey !== null}
+                            >
+                              {busyKey === `delete-category-${category.id}` ? (
+                                <Loader2
+                                  className="h-4 w-4 animate-spin"
+                                  aria-hidden="true"
+                                />
+                              ) : (
+                                <Ellipsis
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                />
+                              )}
+                              <span className="sr-only">Actions</span>
+                            </Button>
+                          }
+                        />
                         <DropdownMenuContent align="end">
                           <DropdownMenuGroup>
                             <DropdownMenuItem

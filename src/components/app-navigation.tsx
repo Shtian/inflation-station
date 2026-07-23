@@ -48,16 +48,14 @@ const configurationLinks = [
 export function AppNavigation() {
   return (
     <nav aria-label="Primary" className="flex-1">
-      <NavigationMenu viewport={false}>
+      <NavigationMenu>
         <NavigationMenuList className="justify-start gap-1">
           {primaryLinks.map((link) => (
             <NavigationMenuItem key={link.href}>
               <NavigationMenuLink
-                asChild
                 className={navigationMenuTriggerStyle()}
-              >
-                <Link href={link.href}>{link.label}</Link>
-              </NavigationMenuLink>
+                render={<Link href={link.href}>{link.label}</Link>}
+              />
             </NavigationMenuItem>
           ))}
           <NavigationMenuItem>
@@ -66,14 +64,16 @@ export function AppNavigation() {
               <ul className="grid w-55 gap-1 p-2">
                 {configurationLinks.map((link) => (
                   <li key={link.href}>
-                    <NavigationMenuLink asChild>
-                      <Link href={link.href}>
-                        <div className="font-medium">{link.label}</div>
-                        <p className="line-clamp-2 text-muted-foreground text-xs">
-                          {link.description}
-                        </p>
-                      </Link>
-                    </NavigationMenuLink>
+                    <NavigationMenuLink
+                      render={
+                        <Link href={link.href}>
+                          <div className="font-medium">{link.label}</div>
+                          <p className="line-clamp-2 text-muted-foreground text-xs">
+                            {link.description}
+                          </p>
+                        </Link>
+                      }
+                    />
                   </li>
                 ))}
               </ul>

@@ -338,12 +338,10 @@ export function TransactionsTableSection({
         enableHiding: false,
         header: ({ table }) => (
           <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected()
-                ? true
-                : table.getIsSomePageRowsSelected()
-                  ? "indeterminate"
-                  : false
+            checked={table.getIsAllPageRowsSelected()}
+            indeterminate={
+              !table.getIsAllPageRowsSelected() &&
+              table.getIsSomePageRowsSelected()
             }
             onCheckedChange={(checked) =>
               table.toggleAllPageRowsSelected(Boolean(checked))
@@ -385,17 +383,22 @@ export function TransactionsTableSection({
           return (
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="h-6 w-6"
-                    aria-label={`View memo for transaction from ${bookingDate}`}
-                  >
-                    <FileText className="size-4 shrink-0" aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="h-6 w-6"
+                      aria-label={`View memo for transaction from ${bookingDate}`}
+                    >
+                      <FileText
+                        className="size-4 shrink-0"
+                        aria-hidden="true"
+                      />
+                    </Button>
+                  }
+                />
                 <TooltipContent
                   side="top"
                   className="wrap-break-word max-w-xs whitespace-pre-wrap"
@@ -449,19 +452,21 @@ export function TransactionsTableSection({
 
           return (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="invisible cursor-pointer group-hover/row:visible"
-                  size="icon-sm"
-                  aria-label={`Actions for transaction from ${row.bookingDate}`}
-                  title={`Actions for transaction from ${row.bookingDate}`}
-                >
-                  <Ellipsis className="h-4 w-4" aria-hidden="true" />
-                  <span className="sr-only">Actions</span>
-                </Button>
-              </DropdownMenuTrigger>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="invisible cursor-pointer group-hover/row:visible"
+                    size="icon-sm"
+                    aria-label={`Actions for transaction from ${row.bookingDate}`}
+                    title={`Actions for transaction from ${row.bookingDate}`}
+                  >
+                    <Ellipsis className="h-4 w-4" aria-hidden="true" />
+                    <span className="sr-only">Actions</span>
+                  </Button>
+                }
+              />
               <DropdownMenuContent align="end">
                 <DropdownMenuGroup>
                   <DropdownMenuItem onSelect={() => onEdit(row)}>
@@ -572,21 +577,23 @@ export function TransactionsTableSection({
                 Date from
               </label>
               <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="transactions-date-from"
-                    variant="outline"
-                    className={cn(
-                      "h-9 w-35 justify-start bg-background text-left font-normal",
-                      !dateFrom && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateFrom
-                      ? format(parseISO(dateFrom), "dd/MM/yyyy")
-                      : "Pick date"}
-                  </Button>
-                </PopoverTrigger>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      id="transactions-date-from"
+                      variant="outline"
+                      className={cn(
+                        "h-9 w-35 justify-start bg-background text-left font-normal",
+                        !dateFrom && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFrom
+                        ? format(parseISO(dateFrom), "dd/MM/yyyy")
+                        : "Pick date"}
+                    </Button>
+                  }
+                />
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
@@ -607,21 +614,23 @@ export function TransactionsTableSection({
                 Date to
               </label>
               <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="transactions-date-to"
-                    variant="outline"
-                    className={cn(
-                      "h-9 w-35 justify-start bg-background text-left font-normal",
-                      !dateTo && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateTo
-                      ? format(parseISO(dateTo), "dd/MM/yyyy")
-                      : "Pick date"}
-                  </Button>
-                </PopoverTrigger>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      id="transactions-date-to"
+                      variant="outline"
+                      className={cn(
+                        "h-9 w-35 justify-start bg-background text-left font-normal",
+                        !dateTo && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateTo
+                        ? format(parseISO(dateTo), "dd/MM/yyyy")
+                        : "Pick date"}
+                    </Button>
+                  }
+                />
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
@@ -644,9 +653,12 @@ export function TransactionsTableSection({
             </label>
             <Select
               value={accountId || ALL_ACCOUNTS_VALUE}
-              onValueChange={(value) =>
-                onAccountFilterChange(value === ALL_ACCOUNTS_VALUE ? "" : value)
-              }
+              onValueChange={(value) => {
+                if (value === null) return;
+                onAccountFilterChange(
+                  value === ALL_ACCOUNTS_VALUE ? "" : value,
+                );
+              }}
             >
               <SelectTrigger
                 id="transactions-account-filter"
@@ -721,17 +733,19 @@ export function TransactionsTableSection({
           )}
 
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
-                <Columns3 className="h-4 w-4" aria-hidden="true" />
-                Columns
-              </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Columns3 className="h-4 w-4" aria-hidden="true" />
+                  Columns
+                </Button>
+              }
+            />
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
               <DropdownMenuSeparator />
@@ -812,9 +826,10 @@ export function TransactionsTableSection({
                 </FieldLabel>
                 <Select
                   value={String(pageSize)}
-                  onValueChange={(value) =>
-                    onPageSizeChange(Number.parseInt(value, 10))
-                  }
+                  onValueChange={(value) => {
+                    if (value === null) return;
+                    onPageSizeChange(Number.parseInt(value, 10));
+                  }}
                 >
                   <SelectTrigger id="transactions-rows-per-page">
                     <SelectValue />

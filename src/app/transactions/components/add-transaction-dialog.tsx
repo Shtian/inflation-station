@@ -86,7 +86,10 @@ export function AddTransactionDialog({
               <FieldContent>
                 <Select
                   value={addForm.accountId}
-                  onValueChange={onAccountChange}
+                  onValueChange={(value) => {
+                    if (value === null) return;
+                    onAccountChange(value);
+                  }}
                   disabled={addSaving}
                 >
                   <SelectTrigger id="add-account-id">
@@ -151,7 +154,10 @@ export function AddTransactionDialog({
               <FieldContent>
                 <Select
                   value={addForm.paymentType}
-                  onValueChange={onPaymentTypeChange}
+                  onValueChange={(value) => {
+                    if (value === null) return;
+                    onPaymentTypeChange(value);
+                  }}
                   disabled={addSaving}
                 >
                   <SelectTrigger id="add-payment-type">
@@ -191,7 +197,7 @@ export function AddTransactionDialog({
                   emptyLabel="No matching categories."
                   disabled={addSaving}
                   showClear
-                  portalContainer={dialogContentRef}
+                  container={dialogContentRef}
                 />
               </FieldContent>
             </Field>

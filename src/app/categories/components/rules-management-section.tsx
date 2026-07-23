@@ -125,11 +125,12 @@ export function RulesManagementSection({
           <FieldContent>
             <Select
               value={rulePaymentType || ANY_PAYMENT_TYPE_VALUE}
-              onValueChange={(value) =>
+              onValueChange={(value) => {
+                if (value === null) return;
                 onRulePaymentTypeChange(
                   value === ANY_PAYMENT_TYPE_VALUE ? "" : value,
-                )
-              }
+                );
+              }}
             >
               <SelectTrigger id="rule-payment-type" className="w-full">
                 <SelectValue />
@@ -164,9 +165,10 @@ export function RulesManagementSection({
           <FieldContent>
             <Select
               value={ruleScope || GLOBAL_SCOPE_VALUE}
-              onValueChange={(value) =>
-                onRuleScopeChange(value === GLOBAL_SCOPE_VALUE ? "" : value)
-              }
+              onValueChange={(value) => {
+                if (value === null) return;
+                onRuleScopeChange(value === GLOBAL_SCOPE_VALUE ? "" : value);
+              }}
             >
               <SelectTrigger id="rule-scope" className="w-full">
                 <SelectValue />

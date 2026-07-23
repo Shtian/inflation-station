@@ -206,12 +206,17 @@ export function MessageCleanupSettingsManager() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <Button type="button" variant="ghost" size="sm" asChild>
-          <Link href="/import">
-            <ArrowLeft aria-hidden />
-            Back to import
-          </Link>
-        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          render={
+            <Link href="/import">
+              <ArrowLeft aria-hidden />
+              Back to import
+            </Link>
+          }
+        />
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Message Cleanup Settings
         </h1>
@@ -242,6 +247,7 @@ export function MessageCleanupSettingsManager() {
                   <Select
                     value={selectedModelId}
                     onValueChange={(value) => {
+                      if (value === null) return;
                       const nextModel = getModelById(value);
                       if (
                         !availableModels.some(

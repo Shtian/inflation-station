@@ -49,21 +49,23 @@ export function ImportReviewMessageCell({
       {hasCleanedMessage ? (
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label={`Toggle message source for row ${rowNumber}`}
-                onClick={() => onToggleMessageSource(rowId)}
-                className={cn(
-                  "shrink-0 rounded p-0.5 transition-colors hover:bg-accent",
-                  selectedMessageSource === MESSAGE_SOURCE_CLEANED
-                    ? "text-violet-500"
-                    : "text-muted-foreground",
-                )}
-              >
-                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  aria-label={`Toggle message source for row ${rowNumber}`}
+                  onClick={() => onToggleMessageSource(rowId)}
+                  className={cn(
+                    "shrink-0 rounded p-0.5 transition-colors hover:bg-accent",
+                    selectedMessageSource === MESSAGE_SOURCE_CLEANED
+                      ? "text-violet-500"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              }
+            />
             <TooltipContent
               side="top"
               className="max-w-xs space-y-1 p-3 text-xs"

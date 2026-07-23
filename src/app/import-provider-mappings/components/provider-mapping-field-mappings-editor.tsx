@@ -200,9 +200,10 @@ export function ProviderMappingFieldMappingsEditor(props: {
                 >
                   <Select
                     value={fieldMapping.canonicalField}
-                    onValueChange={(value) =>
-                      props.onOptionalCanonicalFieldChange(index, value)
-                    }
+                    onValueChange={(value) => {
+                      if (value === null) return;
+                      props.onOptionalCanonicalFieldChange(index, value);
+                    }}
                   >
                     <SelectTrigger
                       aria-label={canonicalLabel}

@@ -200,12 +200,17 @@ export function MonthlyReviewSettingsManager() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <Button type="button" variant="ghost" size="sm" asChild>
-          <Link href="/monthly-review">
-            <ArrowLeft aria-hidden />
-            Back to monthly review
-          </Link>
-        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          render={
+            <Link href="/monthly-review">
+              <ArrowLeft aria-hidden />
+              Back to monthly review
+            </Link>
+          }
+        />
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Monthly Review Settings
         </h1>
@@ -237,6 +242,7 @@ export function MonthlyReviewSettingsManager() {
                   <Select
                     value={selectedModelId}
                     onValueChange={(value) => {
+                      if (value === null) return;
                       const nextModel = getModelById(value);
                       if (
                         !availableModels.some(

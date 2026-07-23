@@ -87,7 +87,9 @@ export function AccountStateTrendCard({
                         <ChartTooltipContent
                           indicator="line"
                           formatter={formatTooltipNok}
-                          labelFormatter={formatChartDate}
+                          labelFormatter={(label) =>
+                            formatChartDate(String(label))
+                          }
                         />
                       }
                     />
