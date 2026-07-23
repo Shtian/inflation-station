@@ -93,7 +93,7 @@ export function EditTransactionDialog({
                   emptyLabel="No matching categories."
                   disabled={editSaving}
                   showClear
-                  portalContainer={dialogContentRef.current}
+                  portalContainer={dialogContentRef}
                 />
               </FieldContent>
             </Field>

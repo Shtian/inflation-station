@@ -191,7 +191,7 @@ export function AddTransactionDialog({
                   emptyLabel="No matching categories."
                   disabled={addSaving}
                   showClear
-                  portalContainer={dialogContentRef.current}
+                  portalContainer={dialogContentRef}
                 />
               </FieldContent>
             </Field>
