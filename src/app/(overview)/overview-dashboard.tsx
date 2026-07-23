@@ -84,6 +84,13 @@ export function OverviewDashboard() {
             Account filter
           </Label>
           <Select
+            items={[
+              { value: ALL_ACCOUNTS_VALUE, label: "All accounts" },
+              ...accounts.map((account) => ({
+                value: account.id,
+                label: account.name,
+              })),
+            ]}
             value={dashboardAccountId || ALL_ACCOUNTS_VALUE}
             onValueChange={(value) => {
               if (value === null) return;

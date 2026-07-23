@@ -171,7 +171,7 @@ export function AccountsTableSection({
                             <DropdownMenuContent align="end">
                               <DropdownMenuGroup>
                                 <DropdownMenuItem
-                                  onSelect={() => onStartEdit(account)}
+                                  onClick={() => onStartEdit(account)}
                                 >
                                   <Pencil
                                     className="h-4 w-4"
@@ -184,7 +184,7 @@ export function AccountsTableSection({
                               <DropdownMenuGroup>
                                 <DropdownMenuItem
                                   variant="destructive"
-                                  onSelect={() =>
+                                  onClick={() =>
                                     void onDeleteAccount(account.id)
                                   }
                                 >

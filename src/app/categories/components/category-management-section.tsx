@@ -189,7 +189,7 @@ export function CategoryManagementSection({
                         <DropdownMenuContent align="end">
                           <DropdownMenuGroup>
                             <DropdownMenuItem
-                              onSelect={() => onStartRenameCategory(category)}
+                              onClick={() => onStartRenameCategory(category)}
                             >
                               <Pencil className="h-4 w-4" aria-hidden="true" />
                               Rename
@@ -199,7 +199,7 @@ export function CategoryManagementSection({
                           <DropdownMenuGroup>
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => onDeleteCategory(category.id)}
+                              onClick={() => onDeleteCategory(category.id)}
                             >
                               <Trash2 className="h-4 w-4" aria-hidden="true" />
                               Delete

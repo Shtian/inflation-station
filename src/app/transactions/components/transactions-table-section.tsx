@@ -469,7 +469,7 @@ export function TransactionsTableSection({
               />
               <DropdownMenuContent align="end">
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onSelect={() => onEdit(row)}>
+                  <DropdownMenuItem onClick={() => onEdit(row)}>
                     <Pencil className="h-4 w-4" aria-hidden="true" />
                     Edit
                   </DropdownMenuItem>
@@ -478,7 +478,7 @@ export function TransactionsTableSection({
                 <DropdownMenuGroup>
                   <DropdownMenuItem
                     variant="destructive"
-                    onSelect={() => onDelete(row)}
+                    onClick={() => onDelete(row)}
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                     Delete
@@ -652,6 +652,13 @@ export function TransactionsTableSection({
               Account
             </label>
             <Select
+              items={[
+                { value: ALL_ACCOUNTS_VALUE, label: "All accounts" },
+                ...accounts.map((account) => ({
+                  value: account.id,
+                  label: account.name,
+                })),
+              ]}
               value={accountId || ALL_ACCOUNTS_VALUE}
               onValueChange={(value) => {
                 if (value === null) return;

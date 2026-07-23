@@ -124,6 +124,14 @@ export function RulesManagementSection({
           </FieldLabel>
           <FieldContent>
             <Select
+              items={[
+                { value: ANY_PAYMENT_TYPE_VALUE, label: "Any" },
+                { value: "CARD", label: "CARD" },
+                { value: "TRANSFER", label: "TRANSFER" },
+                { value: "EFT", label: "EFT" },
+                { value: "CASH", label: "CASH" },
+                { value: "OTHER", label: "OTHER" },
+              ]}
               value={rulePaymentType || ANY_PAYMENT_TYPE_VALUE}
               onValueChange={(value) => {
                 if (value === null) return;
@@ -164,6 +172,13 @@ export function RulesManagementSection({
           <FieldLabel htmlFor="rule-scope">Scope</FieldLabel>
           <FieldContent>
             <Select
+              items={[
+                { value: GLOBAL_SCOPE_VALUE, label: "Global" },
+                ...activeAccounts.map((account) => ({
+                  value: account.id,
+                  label: account.name,
+                })),
+              ]}
               value={ruleScope || GLOBAL_SCOPE_VALUE}
               onValueChange={(value) => {
                 if (value === null) return;

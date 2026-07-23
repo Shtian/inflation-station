@@ -85,6 +85,10 @@ export function AddTransactionDialog({
               <FieldLabel htmlFor="add-account-id">Account</FieldLabel>
               <FieldContent>
                 <Select
+                  items={accounts.map((account) => ({
+                    value: account.id,
+                    label: account.name,
+                  }))}
                   value={addForm.accountId}
                   onValueChange={(value) => {
                     if (value === null) return;

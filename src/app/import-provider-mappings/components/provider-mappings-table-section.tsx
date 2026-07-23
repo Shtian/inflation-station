@@ -94,7 +94,7 @@ export function ProviderMappingsTableSection(props: {
                         <DropdownMenuContent align="end">
                           <DropdownMenuGroup>
                             <DropdownMenuItem
-                              onSelect={() => props.onEdit(mapping)}
+                              onClick={() => props.onEdit(mapping)}
                             >
                               <Pencil className="h-4 w-4" aria-hidden="true" />
                               Edit
@@ -104,7 +104,7 @@ export function ProviderMappingsTableSection(props: {
                           <DropdownMenuGroup>
                             <DropdownMenuItem
                               variant="destructive"
-                              onSelect={() => props.onDelete(mapping.id)}
+                              onClick={() => props.onDelete(mapping.id)}
                             >
                               <Trash2 className="h-4 w-4" aria-hidden="true" />
                               Delete

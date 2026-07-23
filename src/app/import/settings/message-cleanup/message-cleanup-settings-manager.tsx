@@ -245,6 +245,10 @@ export function MessageCleanupSettingsManager() {
                 </FieldLabel>
                 <FieldContent>
                   <Select
+                    items={availableModels.map((model) => ({
+                      value: model.id,
+                      label: model.label,
+                    }))}
                     value={selectedModelId}
                     onValueChange={(value) => {
                       if (value === null) return;
