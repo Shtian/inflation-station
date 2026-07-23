@@ -253,6 +253,7 @@ export function MonthlyReviewManager() {
           type="button"
           variant="outline"
           size="icon"
+          nativeButton={false}
           render={
             <Link
               href="/monthly-review/settings"

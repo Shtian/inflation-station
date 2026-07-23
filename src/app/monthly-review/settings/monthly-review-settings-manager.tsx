@@ -204,6 +204,7 @@ export function MonthlyReviewSettingsManager() {
           type="button"
           variant="ghost"
           size="sm"
+          nativeButton={false}
           render={
             <Link href="/monthly-review">
               <ArrowLeft aria-hidden />
@@ -266,10 +267,7 @@ export function MonthlyReviewSettingsManager() {
                     <SelectContent>
                       {availableModels.map((model) => (
                         <SelectItem key={model.id} value={model.id}>
-                          <span className="block text-sm">{model.label}</span>
-                          <span className="block text-muted-foreground text-xs">
-                            {model.description}
-                          </span>
+                          {model.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
