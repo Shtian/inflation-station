@@ -68,6 +68,7 @@ export function CategoryCombobox({
         className={cn("w-full", className)}
         placeholder={placeholder}
         showClear={showClear}
+        onFocus={(event) => event.currentTarget.select()}
       />
       <ComboboxContent container={container}>
         <ComboboxEmpty>{emptyLabel}</ComboboxEmpty>
