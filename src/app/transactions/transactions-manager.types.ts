@@ -12,6 +12,7 @@ export type Category = {
 export type TransactionRow = {
   id: string;
   accountId: string;
+  accountName: string;
   categoryId: string | null;
   categoryName: string | null;
   bookingDate: string;

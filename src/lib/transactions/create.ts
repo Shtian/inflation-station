@@ -11,6 +11,9 @@ type DecimalLike = { toString(): string } | number;
 type TransactionCreateRecord = {
   id: string;
   accountId: string;
+  account: {
+    name: string;
+  };
   categoryId: string | null;
   category: {
     name: string;
@@ -43,6 +46,11 @@ type TransactionCreateDbClient = {
       select: {
         id: true;
         accountId: true;
+        account: {
+          select: {
+            name: true;
+          };
+        };
         categoryId: true;
         category: {
           select: {
@@ -126,6 +134,7 @@ function toTransactionListRow(
   return {
     id: record.id,
     accountId: record.accountId,
+    accountName: record.account.name,
     categoryId: record.categoryId,
     categoryName: record.category?.name ?? null,
     bookingDate: record.bookingDate.toISOString().slice(0, 10),
@@ -165,6 +174,11 @@ export async function createTransaction(
     select: {
       id: true,
       accountId: true,
+      account: {
+        select: {
+          name: true,
+        },
+      },
       categoryId: true,
       category: {
         select: {

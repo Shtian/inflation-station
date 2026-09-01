@@ -206,12 +206,18 @@ export function MessageCleanupSettingsManager() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <Button type="button" variant="ghost" size="sm" asChild>
-          <Link href="/import">
-            <ArrowLeft aria-hidden />
-            Back to import
-          </Link>
-        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          nativeButton={false}
+          render={
+            <Link href="/import">
+              <ArrowLeft aria-hidden />
+              Back to import
+            </Link>
+          }
+        />
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Message Cleanup Settings
         </h1>
@@ -240,8 +246,13 @@ export function MessageCleanupSettingsManager() {
                 </FieldLabel>
                 <FieldContent>
                   <Select
+                    items={availableModels.map((model) => ({
+                      value: model.id,
+                      label: model.label,
+                    }))}
                     value={selectedModelId}
                     onValueChange={(value) => {
+                      if (value === null) return;
                       const nextModel = getModelById(value);
                       if (
                         !availableModels.some(
@@ -261,10 +272,7 @@ export function MessageCleanupSettingsManager() {
                     <SelectContent>
                       {availableModels.map((model) => (
                         <SelectItem key={model.id} value={model.id}>
-                          <span className="block text-sm">{model.label}</span>
-                          <span className="block text-muted-foreground text-xs">
-                            {model.description}
-                          </span>
+                          {model.label}
                         </SelectItem>
                       ))}
                     </SelectContent>

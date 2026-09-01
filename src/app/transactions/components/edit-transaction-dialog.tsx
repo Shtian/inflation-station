@@ -93,7 +93,7 @@ export function EditTransactionDialog({
                   emptyLabel="No matching categories."
                   disabled={editSaving}
                   showClear
-                  portalContainer={dialogContentRef.current}
+                  container={dialogContentRef}
                 />
               </FieldContent>
             </Field>
@@ -141,7 +141,10 @@ export function EditTransactionDialog({
               <FieldContent>
                 <Select
                   value={editForm.paymentType}
-                  onValueChange={onPaymentTypeChange}
+                  onValueChange={(value) => {
+                    if (value === null) return;
+                    onPaymentTypeChange(value);
+                  }}
                   disabled={editSaving}
                 >
                   <SelectTrigger id="edit-payment-type">

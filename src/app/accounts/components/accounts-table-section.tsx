@@ -143,33 +143,35 @@ export function AccountsTableSection({
                           </>
                         ) : (
                           <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon-sm"
-                                aria-label={`Actions for account ${account.name}`}
-                                title={`Actions for account ${account.name}`}
-                                disabled={isBusy}
-                              >
-                                {isBusy ? (
-                                  <Loader2
-                                    className="h-4 w-4 animate-spin"
-                                    aria-hidden="true"
-                                  />
-                                ) : (
-                                  <Ellipsis
-                                    className="h-4 w-4"
-                                    aria-hidden="true"
-                                  />
-                                )}
-                                <span className="sr-only">Actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon-sm"
+                                  aria-label={`Actions for account ${account.name}`}
+                                  title={`Actions for account ${account.name}`}
+                                  disabled={isBusy}
+                                >
+                                  {isBusy ? (
+                                    <Loader2
+                                      className="h-4 w-4 animate-spin"
+                                      aria-hidden="true"
+                                    />
+                                  ) : (
+                                    <Ellipsis
+                                      className="h-4 w-4"
+                                      aria-hidden="true"
+                                    />
+                                  )}
+                                  <span className="sr-only">Actions</span>
+                                </Button>
+                              }
+                            />
                             <DropdownMenuContent align="end">
                               <DropdownMenuGroup>
                                 <DropdownMenuItem
-                                  onSelect={() => onStartEdit(account)}
+                                  onClick={() => onStartEdit(account)}
                                 >
                                   <Pencil
                                     className="h-4 w-4"
@@ -182,7 +184,7 @@ export function AccountsTableSection({
                               <DropdownMenuGroup>
                                 <DropdownMenuItem
                                   variant="destructive"
-                                  onSelect={() =>
+                                  onClick={() =>
                                     void onDeleteAccount(account.id)
                                   }
                                 >

@@ -84,10 +84,18 @@ export function OverviewDashboard() {
             Account filter
           </Label>
           <Select
+            items={[
+              { value: ALL_ACCOUNTS_VALUE, label: "All accounts" },
+              ...accounts.map((account) => ({
+                value: account.id,
+                label: account.name,
+              })),
+            ]}
             value={dashboardAccountId || ALL_ACCOUNTS_VALUE}
-            onValueChange={(value) =>
-              setDashboardAccountId(value === ALL_ACCOUNTS_VALUE ? "" : value)
-            }
+            onValueChange={(value) => {
+              if (value === null) return;
+              setDashboardAccountId(value === ALL_ACCOUNTS_VALUE ? "" : value);
+            }}
           >
             <SelectTrigger id="dashboard-account-filter" className="w-full">
               <SelectValue />
@@ -136,17 +144,19 @@ export function OverviewDashboard() {
               open={customDatePopoverOpen}
               onOpenChange={setCustomDatePopoverOpen}
             >
-              <PopoverTrigger asChild>
-                <Button
-                  variant={
-                    dashboardRangePreset === "custom" ? "default" : "outline"
-                  }
-                  onClick={() => setDashboardRangePreset("custom")}
-                  aria-pressed={dashboardRangePreset === "custom"}
-                >
-                  Custom
-                </Button>
-              </PopoverTrigger>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant={
+                      dashboardRangePreset === "custom" ? "default" : "outline"
+                    }
+                    onClick={() => setDashboardRangePreset("custom")}
+                    aria-pressed={dashboardRangePreset === "custom"}
+                  >
+                    Custom
+                  </Button>
+                }
+              />
               <PopoverContent className="w-auto p-0" align="end">
                 <Calendar
                   mode="range"
