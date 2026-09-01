@@ -26,6 +26,10 @@ Inflation Station is a Next.js + TypeScript personal-finance app with Prisma-bac
 
 Issues live as GitHub issues (Shtian/inflation-station), managed via `gh` CLI. See `docs/agents/issue-tracker.md`.
 
+### Triage labels
+
+Triage uses the default `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix` labels. See `docs/agents/triage-labels.md`.
+
 ### Domain docs
 
 Single-context layout - CONTEXT.md + docs/adr/ at repo root (created lazily as needed). See `docs/agents/domain.md`.
