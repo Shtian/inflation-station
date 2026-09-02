@@ -4,6 +4,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { isInputJsonValue } from "../../../../lib/import/json-value";
 import {
+  compileProviderMappingDefinition,
+  ProviderMappingCompilationError,
+} from "../../../../lib/import/provider-adapter";
+import {
   findMissingRequiredCanonicalFields,
   hasMerchantSignalCanonicalField,
 } from "../../../../lib/import/provider-mapping-contract";
@@ -138,6 +142,55 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         { status: 400 },
       );
     }
+  }
+
+  const existing = await prisma.importProviderMapping.findUnique({
+    where: { id: providerMappingId },
+    select: {
+      providerName: true,
+      mappingVersion: true,
+      normalizationRules: true,
+      fieldMappings: {
+        select: {
+          sourceField: true,
+          canonicalField: true,
+          transformRules: true,
+        },
+      },
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json(
+      { error: "PROVIDER_MAPPING_NOT_FOUND" },
+      { status: 404 },
+    );
+  }
+
+  // Validate the fully-merged mapping (existing fields plus this patch)
+  // through the same compiler runtime detection/parsing uses, so a partial
+  // update cannot leave a mapping saved in a configured-but-unusable state.
+  try {
+    compileProviderMappingDefinition({
+      id: providerMappingId,
+      providerName: parsed.data.providerName ?? existing.providerName,
+      mappingVersion: parsed.data.mappingVersion ?? existing.mappingVersion,
+      normalizationRules:
+        parsed.data.normalizationRules ?? existing.normalizationRules,
+      fieldMappings: parsed.data.fieldMappings ?? existing.fieldMappings,
+    });
+  } catch (error) {
+    if (error instanceof ProviderMappingCompilationError) {
+      return NextResponse.json(
+        {
+          error: "PROVIDER_MAPPING_CONFIGURATION_INVALID",
+          message: error.message,
+          code: error.code,
+        },
+        { status: 400 },
+      );
+    }
+    throw error;
   }
 
   try {

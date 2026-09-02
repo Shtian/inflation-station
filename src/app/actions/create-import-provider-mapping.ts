@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { isInputJsonValue } from "@/lib/import/json-value";
 import {
+  compileProviderMappingDefinition,
+  ProviderMappingCompilationError,
+} from "@/lib/import/provider-adapter";
+import {
   findMissingRequiredCanonicalFields,
   hasMerchantSignalCanonicalField,
 } from "@/lib/import/provider-mapping-contract";
@@ -39,6 +43,7 @@ type CreateProviderMappingActionErrorCode =
   | "DUPLICATE_CANONICAL_FIELD_MAPPINGS"
   | "REQUIRED_CANONICAL_FIELDS_MISSING"
   | "MERCHANT_SIGNAL_FIELD_REQUIRED"
+  | "PROVIDER_MAPPING_CONFIGURATION_INVALID"
   | "PROVIDER_MAPPING_MUST_BE_UNIQUE"
   | "PROVIDER_MAPPING_CREATE_FAILED";
 
@@ -113,6 +118,30 @@ export async function createImportProviderMappingAction(
       "MERCHANT_SIGNAL_FIELD_REQUIRED",
       "At least one merchant signal field mapping is required (name or title).",
     );
+  }
+
+  // Runtime detection/parsing and this mutation both compile a mapping
+  // through the same validator, so a mapping cannot be saved as "configured"
+  // while being unusable by the executable adapter contract (unsupported
+  // mapping version, unknown normalization rule keys, malformed regex,
+  // or unsupported field transforms).
+  try {
+    compileProviderMappingDefinition({
+      id: "pending",
+      providerName: parsedInput.data.providerName,
+      mappingVersion: parsedInput.data.mappingVersion ?? 1,
+      normalizationRules: parsedInput.data.normalizationRules,
+      fieldMappings: parsedInput.data.fieldMappings,
+    });
+  } catch (error) {
+    if (error instanceof ProviderMappingCompilationError) {
+      return mutationError(
+        "PROVIDER_MAPPING_CONFIGURATION_INVALID",
+        error.message,
+        { code: error.code, details: error.details },
+      );
+    }
+    throw error;
   }
 
   return executeServerMutation({

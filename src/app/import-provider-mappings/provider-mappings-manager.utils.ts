@@ -1,4 +1,14 @@
 import {
+  type CsvDelimiter,
+  SUPPORTED_CSV_DELIMITERS,
+} from "../../lib/import/provider-adapter/csv-tokenizer";
+import {
+  SUPPORTED_DATE_FORMATS,
+  SUPPORTED_DECIMAL_SEPARATORS,
+  type SupportedDateFormat,
+  type SupportedDecimalSeparator,
+} from "../../lib/import/provider-adapter/mapping-definition";
+import {
   PROVIDER_CANONICAL_FIELDS,
   REQUIRED_PROVIDER_CANONICAL_FIELDS,
 } from "../../lib/import/provider-mapping-contract";
@@ -8,11 +18,19 @@ export type EditableFieldMapping = {
   canonicalField: string;
 };
 
+export {
+  SUPPORTED_CSV_DELIMITERS,
+  SUPPORTED_DATE_FORMATS,
+  SUPPORTED_DECIMAL_SEPARATORS,
+};
+
 export type NormalizationFormState = {
   requiredHeaders: string[];
   anyHeaders: string[];
   headerPatterns: string[];
-  extraRules: Record<string, unknown>;
+  delimiter: CsvDelimiter | undefined;
+  decimalSeparator: SupportedDecimalSeparator | undefined;
+  dateFormat: SupportedDateFormat | undefined;
 };
 
 export const MERCHANT_SIGNAL_CANONICAL_FIELDS = ["name", "title"] as const;
@@ -134,7 +152,9 @@ export function createEmptyNormalizationFormState(): NormalizationFormState {
     requiredHeaders: [],
     anyHeaders: [],
     headerPatterns: [],
-    extraRules: {},
+    delimiter: undefined,
+    decimalSeparator: undefined,
+    dateFormat: undefined,
   };
 }
 
@@ -149,6 +169,22 @@ function parseStringArray(value: unknown): string[] {
     .filter((item) => item.length > 0);
 }
 
+function parseEnumValue<T extends string>(
+  value: unknown,
+  allowed: ReadonlyArray<T>,
+): T | undefined {
+  return typeof value === "string" &&
+    (allowed as readonly string[]).includes(value)
+    ? (value as T)
+    : undefined;
+}
+
+/**
+ * Parses a persisted mapping's normalizationRules JSON into form state
+ * covering only the closed rule vocabulary. Unlike the pre-adapter form,
+ * unrecognized keys are dropped rather than round-tripped, so the admin UI
+ * cannot resurrect rules the runtime compiler will reject.
+ */
 export function parseNormalizationFormState(
   value: unknown,
 ): NormalizationFormState {
@@ -157,22 +193,24 @@ export function parseNormalizationFormState(
   }
 
   const rules = value as Record<string, unknown>;
-  const { requiredHeaders, anyHeaders, headerPatterns, ...extraRules } = rules;
 
   return {
-    requiredHeaders: parseStringArray(requiredHeaders),
-    anyHeaders: parseStringArray(anyHeaders),
-    headerPatterns: parseStringArray(headerPatterns),
-    extraRules,
+    requiredHeaders: parseStringArray(rules.requiredHeaders),
+    anyHeaders: parseStringArray(rules.anyHeaders),
+    headerPatterns: parseStringArray(rules.headerPatterns),
+    delimiter: parseEnumValue(rules.delimiter, SUPPORTED_CSV_DELIMITERS),
+    decimalSeparator: parseEnumValue(
+      rules.decimalSeparator,
+      SUPPORTED_DECIMAL_SEPARATORS,
+    ),
+    dateFormat: parseEnumValue(rules.dateFormat, SUPPORTED_DATE_FORMATS),
   };
 }
 
 export function buildNormalizationRulesPayload(
   state: NormalizationFormState,
 ): unknown {
-  const payload: Record<string, unknown> = {
-    ...state.extraRules,
-  };
+  const payload: Record<string, unknown> = {};
 
   if (state.requiredHeaders.length > 0) {
     payload.requiredHeaders = state.requiredHeaders;
@@ -182,6 +220,15 @@ export function buildNormalizationRulesPayload(
   }
   if (state.headerPatterns.length > 0) {
     payload.headerPatterns = state.headerPatterns;
+  }
+  if (state.delimiter) {
+    payload.delimiter = state.delimiter;
+  }
+  if (state.decimalSeparator) {
+    payload.decimalSeparator = state.decimalSeparator;
+  }
+  if (state.dateFormat) {
+    payload.dateFormat = state.dateFormat;
   }
 
   return payload;

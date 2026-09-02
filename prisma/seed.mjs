@@ -165,14 +165,16 @@ async function main() {
   // --- Import Provider Mappings (Norwegian banks) ---
   console.log("Creating import provider mappings...");
 
-  // DNB Bank — semicolon-separated CSV with debit/credit in separate columns
+  // DNB Bank — semicolon-separated CSV, one signed amount column.
+  // Debit/credit composition from separate columns is not silently
+  // approximated (no supported transform for it in mapping version 1), so
+  // this mapping expects a single "Beløp" column with a signed amount.
   const dnb = await prisma.importProviderMapping.create({
     data: {
       providerName: "DNB Bank",
       normalizationRules: {
         dateFormat: "DD.MM.YYYY",
         decimalSeparator: ",",
-        encoding: "UTF-8",
         delimiter: ";",
       },
       mappingVersion: 1,
@@ -180,16 +182,12 @@ async function main() {
   });
   for (const [sourceField, canonicalField] of [
     ["Dato", "bookingDate"],
-    ["Forklaring", "normalizedMerchant"],
     ["Forklaring", "title"],
-    ["Ut fra konto", "amountNok"],
-    ["Inn på konto", "amountNok"],
+    ["Beløp", "amount"],
   ]) {
-    await prisma.importProviderFieldMapping
-      .create({
-        data: { providerMappingId: dnb.id, sourceField, canonicalField },
-      })
-      .catch(() => {}); // skip duplicate canonicalField entries
+    await prisma.importProviderFieldMapping.create({
+      data: { providerMappingId: dnb.id, sourceField, canonicalField },
+    });
   }
 
   // Nordea — semicolon-separated with full sender/recipient fields
@@ -199,7 +197,6 @@ async function main() {
       normalizationRules: {
         dateFormat: "DD.MM.YYYY",
         decimalSeparator: ",",
-        encoding: "UTF-8",
         delimiter: ";",
       },
       mappingVersion: 1,
@@ -207,18 +204,15 @@ async function main() {
   });
   for (const [sourceField, canonicalField] of [
     ["Bokføringsdato", "bookingDate"],
-    ["Beløp", "amountNok"],
+    ["Beløp", "amount"],
     ["Avsender", "sender"],
     ["Mottaker", "recipient"],
     ["Navn", "name"],
-    ["Tittel", "normalizedMerchant"],
     ["Tittel", "title"],
   ]) {
-    await prisma.importProviderFieldMapping
-      .create({
-        data: { providerMappingId: nordea.id, sourceField, canonicalField },
-      })
-      .catch(() => {});
+    await prisma.importProviderFieldMapping.create({
+      data: { providerMappingId: nordea.id, sourceField, canonicalField },
+    });
   }
 
   // SpareBank 1 — semicolon-separated with description field
@@ -228,7 +222,6 @@ async function main() {
       normalizationRules: {
         dateFormat: "DD.MM.YYYY",
         decimalSeparator: ",",
-        encoding: "UTF-8",
         delimiter: ";",
       },
       mappingVersion: 1,
@@ -236,17 +229,14 @@ async function main() {
   });
   for (const [sourceField, canonicalField] of [
     ["Dato", "bookingDate"],
-    ["Beskrivelse", "normalizedMerchant"],
     ["Beskrivelse", "title"],
-    ["Beløp", "amountNok"],
+    ["Beløp", "amount"],
     ["Avsender", "sender"],
     ["Mottaker", "recipient"],
   ]) {
-    await prisma.importProviderFieldMapping
-      .create({
-        data: { providerMappingId: sb1.id, sourceField, canonicalField },
-      })
-      .catch(() => {});
+    await prisma.importProviderFieldMapping.create({
+      data: { providerMappingId: sb1.id, sourceField, canonicalField },
+    });
   }
 
   // --- Transactions by month ---

@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getMessageCleanupSettings } from "@/lib/import/message-cleanup-settings";
-import { detectProviderFromCsv } from "@/lib/import/provider-detection";
+import {
+  builtInProviderAdapter,
+  detectProvider,
+  loadProviderAdapters,
+} from "@/lib/import/provider-adapter";
 import { stageParsedImportRows } from "@/lib/import/review-stage";
 import { prisma } from "@/lib/prisma";
 
@@ -115,16 +119,40 @@ export async function POST(request: Request) {
     );
   }
 
-  const detectedProvider = await detectProviderFromCsv(prisma, csvContent);
+  // Load and compile every persisted provider mapping once, at the
+  // repository seam, so detection and parsing run against the same compiled
+  // adapters instead of re-querying and re-interpreting raw JSON per phase.
+  const { adapters, compilationFailures } = await loadProviderAdapters(prisma);
+  const detectedProvider = detectProvider(csvContent, adapters);
   let detection = detectedProvider;
+  let selectedAdapter = adapters.find(
+    (adapter) => adapter.id === detection.providerId,
+  );
 
   if (payload.providerId) {
-    const selectedProvider = await prisma.importProviderMapping.findUnique({
-      where: { id: payload.providerId },
-      select: { id: true, providerName: true },
-    });
+    selectedAdapter = adapters.find(
+      (adapter) => adapter.id === payload.providerId,
+    );
 
-    if (!selectedProvider) {
+    if (!selectedAdapter) {
+      const invalidMapping = compilationFailures.find(
+        (failure) => failure.providerId === payload.providerId,
+      );
+
+      if (invalidMapping) {
+        // Mapping configuration failures return a stable diagnostic; an
+        // explicitly selected provider that fails compilation is never
+        // silently swapped for another adapter.
+        return NextResponse.json(
+          {
+            error: "PROVIDER_MAPPING_INVALID",
+            message: invalidMapping.message,
+            code: invalidMapping.code,
+          },
+          { status: 422 },
+        );
+      }
+
       return badRequest(
         "PROVIDER_NOT_FOUND",
         "The selected provider could not be found.",
@@ -132,14 +160,14 @@ export async function POST(request: Request) {
     }
 
     const selectedCandidate = detectedProvider.candidates.find(
-      (candidate) => candidate.providerId === selectedProvider.id,
+      (candidate) => candidate.providerId === selectedAdapter?.id,
     );
 
     detection = {
       ...detectedProvider,
       state: "certain",
-      providerId: selectedProvider.id,
-      providerName: selectedProvider.providerName,
+      providerId: selectedAdapter.id,
+      providerName: selectedAdapter.providerName,
       score: selectedCandidate?.score ?? detectedProvider.score,
     };
   } else if (detection.state !== "certain" && detection.candidates.length > 0) {
@@ -154,23 +182,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const providerMapping = detection.providerId
-    ? await prisma.importProviderMapping.findUnique({
-        where: { id: detection.providerId },
-        select: {
-          id: true,
-          providerName: true,
-          normalizationRules: true,
-          fieldMappings: {
-            select: {
-              sourceField: true,
-              canonicalField: true,
-              transformRules: true,
-            },
-          },
-        },
-      })
-    : null;
+  // No persisted provider matched at all: fall back to the built-in
+  // Norwegian bank adapter, itself compiled behind the same interface.
+  const activeAdapter = selectedAdapter ?? builtInProviderAdapter;
 
   const messageCleanupSettings = await getMessageCleanupSettings(prisma);
 
@@ -179,7 +193,7 @@ export async function POST(request: Request) {
     {
       accountId,
       csvContent,
-      providerMapping,
+      adapter: activeAdapter,
     },
     {
       openAiCleanupModel: messageCleanupSettings.modelId,

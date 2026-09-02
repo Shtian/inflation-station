@@ -18,10 +18,9 @@ import type {
 import {
   createEmptyFieldMapping,
   removeMappingByIndex,
-  validateRegexPattern,
 } from "../provider-mappings-manager.utils";
 import { ProviderMappingFieldMappingsEditor } from "./provider-mapping-field-mappings-editor";
-import { ProviderMappingStringBadgeInput } from "./provider-mapping-string-badge-input";
+import { ProviderMappingNormalizationRulesSection } from "./provider-mapping-normalization-rules-section";
 
 export function AddProviderMappingDialog(props: {
   open: boolean;
@@ -82,57 +81,11 @@ export function AddProviderMappingDialog(props: {
               />
             </FieldContent>
           </Field>
-          <section className="space-y-3 rounded-md border border-border p-3">
-            <div className="space-y-1">
-              <h3 className="font-semibold text-foreground text-sm">
-                Provider detection rules
-              </h3>
-              <p className="text-muted-foreground text-xs">
-                Used when matching the uploaded CSV to a provider mapping during
-                import parsing.
-              </p>
-            </div>
-            <ProviderMappingStringBadgeInput
-              id="new-required-headers"
-              label="Required headers"
-              inputAriaLabel="Add required header"
-              placeholder="Type header and press Enter"
-              values={props.normalizationRules.requiredHeaders}
-              onChange={(values) =>
-                props.onNormalizationRulesChange({
-                  ...props.normalizationRules,
-                  requiredHeaders: values,
-                })
-              }
-            />
-            <ProviderMappingStringBadgeInput
-              id="new-any-headers"
-              label="Optional headers (any)"
-              inputAriaLabel="Add optional header"
-              placeholder="Type header and press Enter"
-              values={props.normalizationRules.anyHeaders}
-              onChange={(values) =>
-                props.onNormalizationRulesChange({
-                  ...props.normalizationRules,
-                  anyHeaders: values,
-                })
-              }
-            />
-            <ProviderMappingStringBadgeInput
-              id="new-header-patterns"
-              label="Header patterns (regex)"
-              inputAriaLabel="Add header pattern"
-              placeholder="Type regex and press Enter"
-              values={props.normalizationRules.headerPatterns}
-              onChange={(values) =>
-                props.onNormalizationRulesChange({
-                  ...props.normalizationRules,
-                  headerPatterns: values,
-                })
-              }
-              validator={validateRegexPattern}
-            />
-          </section>
+          <ProviderMappingNormalizationRulesSection
+            idPrefix="new"
+            normalizationRules={props.normalizationRules}
+            onChange={props.onNormalizationRulesChange}
+          />
           <ProviderMappingFieldMappingsEditor
             mode="new"
             fieldMappings={props.fieldMappings}

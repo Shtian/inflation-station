@@ -65,6 +65,15 @@ function getProviderMappingErrorMessage(status: number, body: unknown) {
     if (status === 400 && code === "MERCHANT_SIGNAL_FIELD_REQUIRED") {
       return "At least one merchant signal field mapping is required (name or title).";
     }
+
+    if (
+      status === 400 &&
+      code === "PROVIDER_MAPPING_CONFIGURATION_INVALID" &&
+      "message" in body &&
+      typeof body.message === "string"
+    ) {
+      return body.message;
+    }
   }
 
   return "Request failed. Please try again.";
@@ -72,8 +81,16 @@ function getProviderMappingErrorMessage(status: number, body: unknown) {
 
 function getProviderMappingActionErrorMessage(error: {
   code: string;
+  message?: string;
   details?: unknown;
 }) {
+  if (
+    error.code === "PROVIDER_MAPPING_CONFIGURATION_INVALID" &&
+    error.message
+  ) {
+    return error.message;
+  }
+
   if (error.code === "PROVIDER_MAPPING_MUST_BE_UNIQUE") {
     return "A provider mapping with this name already exists.";
   }

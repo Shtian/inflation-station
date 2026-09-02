@@ -1,6 +1,9 @@
 import { PaymentType } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import type { CategoryRuleCandidate } from "../categorization/rule-engine";
+import { compileProviderAdapter } from "./provider-adapter/adapter";
+import { builtInProviderAdapter } from "./provider-adapter/built-in-adapter";
+import { compileProviderMappingDefinition } from "./provider-adapter/mapping-definition";
 import { stageParsedImportRows } from "./review-stage";
 
 const HEADER =
@@ -75,57 +78,30 @@ describe("stageParsedImportRows", () => {
       ],
     });
 
+    const providerAdapter = compileProviderAdapter(
+      compileProviderMappingDefinition({
+        id: "provider-1",
+        providerName: "Bank B",
+        mappingVersion: 1,
+        normalizationRules: {},
+        fieldMappings: [
+          { sourceField: "Dato", canonicalField: "bookingDate" },
+          { sourceField: "Belastning", canonicalField: "amount" },
+          { sourceField: "Fra", canonicalField: "sender" },
+          { sourceField: "Til", canonicalField: "recipient" },
+          { sourceField: "Beskrivelse", canonicalField: "name" },
+          { sourceField: "Melding", canonicalField: "title" },
+          { sourceField: "Valuta", canonicalField: "currency" },
+          { sourceField: "Type", canonicalField: "paymentType" },
+        ],
+      }),
+    );
+
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
       csvContent:
         "Dato;Belastning;Fra;Til;Beskrivelse;Melding;Valuta;Type\n2026-01-01;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort",
-      providerMapping: {
-        id: "provider-1",
-        providerName: "Bank B",
-        normalizationRules: {},
-        fieldMappings: [
-          {
-            sourceField: "Dato",
-            canonicalField: "bookingDate",
-            transformRules: null,
-          },
-          {
-            sourceField: "Belastning",
-            canonicalField: "amount",
-            transformRules: null,
-          },
-          {
-            sourceField: "Fra",
-            canonicalField: "sender",
-            transformRules: null,
-          },
-          {
-            sourceField: "Til",
-            canonicalField: "recipient",
-            transformRules: null,
-          },
-          {
-            sourceField: "Beskrivelse",
-            canonicalField: "name",
-            transformRules: null,
-          },
-          {
-            sourceField: "Melding",
-            canonicalField: "title",
-            transformRules: null,
-          },
-          {
-            sourceField: "Valuta",
-            canonicalField: "currency",
-            transformRules: null,
-          },
-          {
-            sourceField: "Type",
-            canonicalField: "paymentType",
-            transformRules: null,
-          },
-        ],
-      },
+      adapter: providerAdapter,
     });
 
     expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
@@ -183,6 +159,7 @@ describe("stageParsedImportRows", () => {
       db,
       {
         accountId: "account-1",
+        adapter: builtInProviderAdapter,
         csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
       },
       {
@@ -253,6 +230,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
+      adapter: builtInProviderAdapter,
       csvContent: `${HEADER}\n32.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
     });
 
@@ -303,6 +281,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
+      adapter: builtInProviderAdapter,
       csvContent: `${HEADER}\n03.01.26;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
     });
 
@@ -338,6 +317,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
+      adapter: builtInProviderAdapter,
       csvContent: "",
     });
 
@@ -388,6 +368,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
+      adapter: builtInProviderAdapter,
       csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
     });
 
@@ -449,6 +430,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
+      adapter: builtInProviderAdapter,
       csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
     });
 
@@ -500,6 +482,7 @@ describe("stageParsedImportRows", () => {
       db,
       {
         accountId: "account-1",
+        adapter: builtInProviderAdapter,
         csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Joker #1234;Oslo;NOK;Kort`,
       },
       {
@@ -539,6 +522,7 @@ describe("stageParsedImportRows", () => {
       db,
       {
         accountId: "account-1",
+        adapter: builtInProviderAdapter,
         csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Joker #1234;Oslo;NOK;Kort`,
       },
       {
@@ -586,6 +570,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
+      adapter: builtInProviderAdapter,
       csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
     });
 
@@ -623,6 +608,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
+      adapter: builtInProviderAdapter,
       csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Bær;Øl;NOK;Overføring`,
     });
 
@@ -684,6 +670,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
+      adapter: builtInProviderAdapter,
       csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
     });
 

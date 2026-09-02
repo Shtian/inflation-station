@@ -4,11 +4,7 @@ import {
   buildRuleBasedSuggestions,
   type CategoryRuleCandidate,
 } from "../categorization/rule-engine";
-import {
-  type CsvValidationError,
-  type ParsedCsvRow,
-  parseNorwegianBankCsv,
-} from "./csv-parser";
+import type { CsvValidationError, ParsedCsvRow } from "./csv-parser";
 import {
   normalizeImportMerchant,
   normalizeImportPaymentType,
@@ -17,10 +13,7 @@ import {
   buildOpenAiMessageCleanup,
   type MessageCleanupUnavailableReason,
 } from "./openai-message-cleanup";
-import {
-  type ProviderCsvMapping,
-  parseProviderMappedCsv,
-} from "./provider-csv-parser";
+import type { ProviderAdapter } from "./provider-adapter";
 import { buildTransactionFingerprint } from "./transaction-dedupe";
 
 export type ReviewStageSummary = {
@@ -423,7 +416,7 @@ export async function stageParsedImportRows(
   params: {
     accountId: string;
     csvContent: string;
-    providerMapping?: ProviderCsvMapping | null;
+    adapter: ProviderAdapter;
   },
   options?: {
     openAiCleanupEnabled?: boolean;
@@ -433,9 +426,10 @@ export async function stageParsedImportRows(
     buildOpenAiMessageCleanup?: BuildOpenAiMessageCleanup;
   },
 ): Promise<StageParsedImportResult> {
-  const parsed = params.providerMapping
-    ? parseProviderMappedCsv(params.csvContent, params.providerMapping)
-    : parseNorwegianBankCsv(params.csvContent);
+  // Staging consumes canonical rows and diagnostics from whichever adapter
+  // the caller selected (a compiled persisted mapping or the built-in
+  // adapter); it never branches on which parser implementation produced them.
+  const parsed = params.adapter.parse(params.csvContent);
 
   if (parsed.rows.length === 0) {
     return {

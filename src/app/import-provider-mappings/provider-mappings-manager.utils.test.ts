@@ -7,33 +7,53 @@ import {
 } from "./provider-mappings-manager.utils";
 
 describe("provider-mappings-manager normalization helpers", () => {
-  it("parses known header arrays and preserves extra normalization rules", () => {
+  it("parses known header arrays and drops unsupported normalization keys", () => {
     const parsed = parseNormalizationFormState({
       requiredHeaders: [" Bokfort ", 123, ""],
       anyHeaders: ["Melding"],
       headerPatterns: ["^amount$", true],
       stripQuotes: true,
+      encoding: "UTF-8",
     });
 
     expect(parsed).toEqual({
       requiredHeaders: ["Bokfort"],
       anyHeaders: ["Melding"],
       headerPatterns: ["^amount$"],
-      extraRules: { stripQuotes: true },
+      delimiter: undefined,
+      decimalSeparator: undefined,
+      dateFormat: undefined,
     });
   });
 
-  it("builds payload with only non-empty header arrays", () => {
+  it("parses the closed delimiter, decimal separator, and date format rules", () => {
+    const parsed = parseNormalizationFormState({
+      delimiter: ";",
+      decimalSeparator: ",",
+      dateFormat: "DD.MM.YYYY",
+      unsupportedDelimiter: "|",
+    });
+
+    expect(parsed).toMatchObject({
+      delimiter: ";",
+      decimalSeparator: ",",
+      dateFormat: "DD.MM.YYYY",
+    });
+  });
+
+  it("builds payload with only non-empty header arrays and set rules", () => {
     const payload = buildNormalizationRulesPayload({
       requiredHeaders: ["A"],
       anyHeaders: [],
       headerPatterns: [],
-      extraRules: { lowercase: true },
+      delimiter: ";",
+      decimalSeparator: undefined,
+      dateFormat: undefined,
     });
 
     expect(payload).toEqual({
       requiredHeaders: ["A"],
-      lowercase: true,
+      delimiter: ";",
     });
   });
 });

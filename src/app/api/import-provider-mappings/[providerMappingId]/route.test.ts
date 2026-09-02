@@ -4,6 +4,7 @@ import { DELETE, PATCH } from "./route";
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
     importProviderMapping: {
+      findUnique: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
@@ -27,7 +28,14 @@ const requiredFieldMappings = [
 
 describe("PATCH /api/import-provider-mappings/[providerMappingId]", () => {
   beforeEach(() => {
+    prismaMock.importProviderMapping.findUnique.mockReset();
     prismaMock.importProviderMapping.update.mockReset();
+    prismaMock.importProviderMapping.findUnique.mockResolvedValue({
+      providerName: "Bank A",
+      mappingVersion: 1,
+      normalizationRules: {},
+      fieldMappings: requiredFieldMappings,
+    });
   });
 
   it("returns 400 when providerMappingId route param is invalid", async () => {
@@ -88,8 +96,8 @@ describe("PATCH /api/import-provider-mappings/[providerMappingId]", () => {
     prismaMock.importProviderMapping.update.mockResolvedValue({
       id: "provider-1",
       providerName: "Bank A Updated",
-      normalizationRules: { normalize: true },
-      mappingVersion: 2,
+      normalizationRules: { requiredHeaders: ["Bokfort"] },
+      mappingVersion: 1,
       createdAt: "2026-02-17T00:00:00.000Z",
       updatedAt: "2026-02-17T00:10:00.000Z",
       fieldMappings: [],
@@ -100,8 +108,8 @@ describe("PATCH /api/import-provider-mappings/[providerMappingId]", () => {
         method: "PATCH",
         body: JSON.stringify({
           providerName: "Bank A Updated",
-          normalizationRules: { normalize: true },
-          mappingVersion: 2,
+          normalizationRules: { requiredHeaders: ["Bokfort"] },
+          mappingVersion: 1,
           fieldMappings: requiredFieldMappings,
         }),
         headers: { "Content-Type": "application/json" },
@@ -117,8 +125,8 @@ describe("PATCH /api/import-provider-mappings/[providerMappingId]", () => {
         where: { id: "provider-1" },
         data: expect.objectContaining({
           providerName: "Bank A Updated",
-          normalizationRules: { normalize: true },
-          mappingVersion: 2,
+          normalizationRules: { requiredHeaders: ["Bokfort"] },
+          mappingVersion: 1,
           fieldMappings: {
             deleteMany: {},
             create: requiredFieldMappings.map((fieldMapping) => ({
@@ -134,13 +142,55 @@ describe("PATCH /api/import-provider-mappings/[providerMappingId]", () => {
       mapping: {
         id: "provider-1",
         providerName: "Bank A Updated",
-        normalizationRules: { normalize: true },
-        mappingVersion: 2,
+        normalizationRules: { requiredHeaders: ["Bokfort"] },
+        mappingVersion: 1,
         createdAt: "2026-02-17T00:00:00.000Z",
         updatedAt: "2026-02-17T00:10:00.000Z",
         fieldMappings: [],
       },
     });
+  });
+
+  it("returns 400 when normalization rules use an unsupported key", async () => {
+    const response = await PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({
+          normalizationRules: { encoding: "UTF-8" },
+        }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      {
+        params: Promise.resolve({ providerMappingId: "provider-1" }),
+      },
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "PROVIDER_MAPPING_CONFIGURATION_INVALID",
+    });
+    expect(prismaMock.importProviderMapping.update).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the mapping to update does not exist", async () => {
+    prismaMock.importProviderMapping.findUnique.mockResolvedValueOnce(null);
+
+    const response = await PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ providerName: "Bank A Updated" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      {
+        params: Promise.resolve({ providerMappingId: "missing-provider" }),
+      },
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: "PROVIDER_MAPPING_NOT_FOUND",
+    });
+    expect(prismaMock.importProviderMapping.update).not.toHaveBeenCalled();
   });
 });
 
