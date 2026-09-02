@@ -143,9 +143,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await expect(
     page.getByRole("heading", { name: "Import", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("combobox", { name: "Bank Account", exact: true }),
-  ).toHaveText("Main Account");
+  await page.getByRole("button", { name: "Main Account DNB" }).click();
 
   await page.getByLabel("CSV file").setInputFiles({
     name: "transactions.csv",
@@ -163,7 +161,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     ),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Confirm Import" }),
+    page.getByRole("button", { name: "Import 2 / 2" }),
   ).toBeVisible();
   await expect(
     page.getByText(
@@ -193,20 +191,26 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     page.getByText("JOKER TRONDHEIM", { exact: true }),
   ).toBeVisible();
 
-  const rowTwoCategory = page.getByRole("combobox", {
-    name: "Category for row 2",
+  const rowThreeCategory = page.getByRole("combobox", {
+    name: "Category for row 3",
   });
-  await expect(rowTwoCategory).toHaveValue("");
-  await expect(rowTwoCategory).toHaveAttribute("placeholder", "Uncategorized");
-  await rowTwoCategory.click();
+  await expect(rowThreeCategory).toHaveValue("Transport");
+  await rowThreeCategory.click();
+  await rowThreeCategory.pressSequentially("foo");
+  await expect(
+    page.getByRole("option", { name: "Transport", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("option", { name: "Food", exact: true }),
+  ).toBeVisible();
   await page.getByRole("option", { name: "Food", exact: true }).click();
-  await expect(rowTwoCategory).toHaveValue("Food");
+  await expect(rowThreeCategory).toHaveValue("Food");
 
   const rowOneNote = page.getByRole("textbox", {
     name: "Note for row 2",
   });
   await rowOneNote.fill("x".repeat(501));
-  await page.getByRole("button", { name: "Confirm Import" }).click();
+  await page.getByRole("button", { name: "Import 2 / 2" }).click();
   await expect(
     page.getByText("Fix note validation errors before confirming import."),
   ).toBeVisible();
@@ -216,12 +220,11 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   expect(submitRequestCount).toBe(0);
   await rowOneNote.fill("Split groceries with roommate");
 
-  await page.getByRole("button", { name: "Confirm Import" }).click();
+  await page.getByRole("button", { name: "Import 2 / 2" }).click();
 
   await expect(
     page.locator("[data-sonner-toast]", {
-      hasText:
-        "Import complete. Imported 2, skipped 0, potential duplicates 1, invalid 1.",
+      hasText: "Import complete. Imported 2, invalid 1.",
     }),
   ).toBeVisible();
   await expect(page.getByText("Import Preview")).toHaveCount(0);
@@ -233,13 +236,13 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     rows: [
       {
         rowId: "row-1",
-        categoryId: "cat-food",
+        categoryId: null,
         selectedMessage: "JOKER TRONDHEIM",
         note: "Split groceries with roommate",
       },
       {
         rowId: "row-2",
-        categoryId: "cat-transport",
+        categoryId: "cat-food",
         selectedMessage: "RUTER BILLETT",
         note: null,
       },

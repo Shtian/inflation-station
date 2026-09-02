@@ -15,6 +15,7 @@ process.env.NEXT_PUBLIC_BUILD_TIME = new Date().toISOString();
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: true,
+  allowedDevOrigins: ["127.0.0.1"],
 };
 
 export default nextConfig;

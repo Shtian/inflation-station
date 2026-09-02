@@ -467,14 +467,14 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   page,
 }) => {
   let updatedMerchant = "Corner Shop";
-  let updatedCategoryId: string | null = null;
-  let updatedCategoryName = "Uncategorized";
+  let updatedCategoryId: string | null = "cat-transport";
+  let updatedCategoryName = "Transport";
   let updatedNote: string | null = "Legacy reminder";
   let lastPatchPayload: null | {
     categoryId: string | null;
     bookingDate: string;
     amountNok: number;
-    normalizedMerchant: string;
+    merchant: string;
     paymentType: string;
     note: string | null;
   } = null;
@@ -522,13 +522,13 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
       categoryId: string | null;
       bookingDate: string;
       amountNok: number;
-      normalizedMerchant: string;
+      merchant: string;
       paymentType: string;
       note: string | null;
     };
 
     lastPatchPayload = payload;
-    updatedMerchant = payload.normalizedMerchant;
+    updatedMerchant = payload.merchant;
     updatedCategoryId = payload.categoryId;
     updatedCategoryName =
       payload.categoryId === "cat-food" ? "Food" : "Uncategorized";
@@ -545,7 +545,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
           bookingDate: payload.bookingDate,
           amountNok: payload.amountNok,
           currency: "NOK",
-          normalizedMerchant: payload.normalizedMerchant,
+          normalizedMerchant: payload.merchant,
           paymentType: payload.paymentType,
           note: payload.note,
           createdAt: "2026-01-15T08:00:00.000Z",
@@ -627,12 +627,11 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     });
   });
 
-  await page.goto("/transactions");
+  await page.goto("/transactions?page=2");
 
-  await page.getByRole("button", { name: "Go to next page" }).click();
-  await expect(page.getByText("Page 2 of 2")).toBeVisible();
   await expect(page.getByText("Corner Shop")).toBeVisible();
 
+  await page.getByRole("row", { name: /Corner Shop/ }).hover();
   await page
     .getByRole("button", { name: "Actions for transaction from 2026-01-15" })
     .click();
@@ -655,12 +654,20 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   const categoryCombobox = page
     .getByRole("dialog", { name: "Edit transaction" })
     .getByRole("combobox", { name: "Category" });
+  await expect(categoryCombobox).toHaveValue("Transport");
   await categoryCombobox.click();
+  await categoryCombobox.pressSequentially("foo");
+  await expect(
+    page.getByRole("option", { name: "Transport", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("option", { name: "Food", exact: true }),
+  ).toBeVisible();
   await page.getByRole("option", { name: "Food", exact: true }).click();
   await expect(categoryCombobox).toHaveValue("Food");
   await page.getByRole("button", { name: "Save changes" }).click();
 
-  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  await expect(page).toHaveURL(/page=2/);
   await expect(page.getByText("Updated Corner Shop")).toBeVisible();
   await expect(page.getByText("Food")).toBeVisible();
   await expect.poll(() => lastPatchPayload?.categoryId).toBe("cat-food");
@@ -668,7 +675,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     .poll(() => Object.hasOwn(lastPatchPayload ?? {}, "currency"))
     .toBe(false);
   await expect
-    .poll(() => lastPatchPayload?.normalizedMerchant)
+    .poll(() => lastPatchPayload?.merchant)
     .toBe("Updated Corner Shop");
   await expect.poll(() => lastPatchPayload?.note).toBeNull();
 });
