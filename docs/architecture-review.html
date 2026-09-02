@@ -57,10 +57,9 @@ flowchart TD
   E[Submit adapter] --> F[Insert transactions]
   F --> G[Delete session]
   H[Legacy import adapter] --> I[Direct insert]
-  C -. partial state .-> X[(SQLite)]
-  F -. duplicate retry .-> X
-  I -. bypass .-> X
-  linkStyle 7,8,9 stroke:#dc2626,stroke-width:2px
+  C -.->|partial state| X[(SQLite)]
+  F -.->|duplicate retry| X
+  I -.->|bypass| X
             </pre>
           </div>
           <div class="diagram deep p-5 text-white">
