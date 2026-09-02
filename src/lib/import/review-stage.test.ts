@@ -30,7 +30,7 @@ function createDbMock(options?: {
     paymentType: PaymentType;
   }>;
 }) {
-  return {
+  const db = {
     categoryRule: {
       findMany: vi.fn(async () => {
         if (options?.throwOnCategoryRuleLookup) {
@@ -51,7 +51,11 @@ function createDbMock(options?: {
     transaction: {
       findMany: vi.fn(async () => options?.existingTransactions ?? []),
     },
+    // biome-ignore lint/suspicious/noExplicitAny: mock transaction hands the same mock db back as the tx client
+    $transaction: <T>(fn: (tx: any) => Promise<T>): Promise<T> => fn(db),
   };
+
+  return db;
 }
 
 describe("stageParsedImportRows", () => {
@@ -193,6 +197,7 @@ describe("stageParsedImportRows", () => {
     expect(db.importReviewSession.create).toHaveBeenCalledWith({
       data: {
         accountId: "account-1",
+        invalidCount: 0,
       },
       select: {
         id: true,

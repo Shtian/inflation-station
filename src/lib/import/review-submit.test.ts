@@ -10,6 +10,7 @@ function createDbMock(options?: {
   session?: {
     id: string;
     accountId: string;
+    invalidCount: number;
     rows: Array<{
       id: string;
       rowNumber: number;
@@ -27,13 +28,14 @@ function createDbMock(options?: {
   } | null;
   validCategories?: Array<{ id: string }>;
 }) {
-  return {
+  const db = {
     importReviewSession: {
       findUnique: vi.fn(async () =>
         options?.session === undefined
           ? {
               id: "session-1",
               accountId: "account-1",
+              invalidCount: 1,
               rows: [
                 {
                   id: "row-1",
@@ -61,11 +63,15 @@ function createDbMock(options?: {
       ),
     },
     transaction: {
-      createMany: vi.fn(async ({ data }) => ({
+      createMany: vi.fn(async ({ data }: { data: unknown[] }) => ({
         count: data.length,
       })),
     },
+    // biome-ignore lint/suspicious/noExplicitAny: mock transaction hands the same mock db back as the tx client
+    $transaction: <T>(fn: (tx: any) => Promise<T>): Promise<T> => fn(db),
   };
+
+  return db;
 }
 
 describe("submitImportReview", () => {
@@ -76,7 +82,6 @@ describe("submitImportReview", () => {
 
     const result = await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 1,
       rows: [
         {
           rowId: "row-1",
@@ -117,6 +122,7 @@ describe("submitImportReview", () => {
       session: {
         id: "session-1",
         accountId: "account-1",
+        invalidCount: 0,
         rows: [
           {
             id: "row-1",
@@ -153,7 +159,6 @@ describe("submitImportReview", () => {
 
     const result = await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
         { rowId: "row-2", categoryId: null, selectedMessage: "Friday" },
@@ -200,7 +205,6 @@ describe("submitImportReview", () => {
     await expect(
       submitImportReview(db, {
         sessionId: "missing-session",
-        invalidCount: 0,
         rows: [],
       }),
     ).rejects.toBeInstanceOf(ImportReviewSessionNotFoundError);
@@ -217,7 +221,6 @@ describe("submitImportReview", () => {
     await expect(
       submitImportReview(db, {
         sessionId: "session-1",
-        invalidCount: 0,
         rows: [
           {
             rowId: "row-1",
@@ -239,7 +242,6 @@ describe("submitImportReview", () => {
 
     await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         {
           rowId: "row-1",
@@ -271,6 +273,7 @@ describe("submitImportReview", () => {
       session: {
         id: "session-1",
         accountId: "account-1",
+        invalidCount: 0,
         rows: [
           {
             id: "row-1",
@@ -321,7 +324,6 @@ describe("submitImportReview", () => {
 
     const result = await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
         {
@@ -352,6 +354,7 @@ describe("submitImportReview", () => {
       session: {
         id: "session-1",
         accountId: "account-1",
+        invalidCount: 0,
         rows: [
           {
             id: "row-1",
@@ -388,7 +391,6 @@ describe("submitImportReview", () => {
 
     const result = await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [{ rowId: "row-1", categoryId: null, selectedMessage: "Friday" }],
     });
 
@@ -400,6 +402,7 @@ describe("submitImportReview", () => {
       session: {
         id: "session-1",
         accountId: "account-1",
+        invalidCount: 0,
         rows: [
           {
             id: "row-1",
@@ -436,7 +439,6 @@ describe("submitImportReview", () => {
 
     await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [{ rowId: "row-1", categoryId: null, selectedMessage: "Friday" }],
     });
 
@@ -452,7 +454,6 @@ describe("submitImportReview", () => {
 
     await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         {
           rowId: "row-1",

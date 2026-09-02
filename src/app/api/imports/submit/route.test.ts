@@ -32,6 +32,24 @@ vi.mock("@/lib/import/review-submit", () => ({
       this.categoryIds = categoryIds;
     }
   },
+  DuplicateImportReviewRowDecisionError: class DuplicateImportReviewRowDecisionError extends Error {
+    readonly rowIds: string[];
+
+    constructor(rowIds: string[]) {
+      super(rowIds.join(","));
+      this.name = "DuplicateImportReviewRowDecisionError";
+      this.rowIds = rowIds;
+    }
+  },
+  UnknownImportReviewRowDecisionError: class UnknownImportReviewRowDecisionError extends Error {
+    readonly rowIds: string[];
+
+    constructor(rowIds: string[]) {
+      super(rowIds.join(","));
+      this.name = "UnknownImportReviewRowDecisionError";
+      this.rowIds = rowIds;
+    }
+  },
 }));
 
 describe("POST /api/imports/submit", () => {
@@ -48,7 +66,6 @@ describe("POST /api/imports/submit", () => {
         },
         body: JSON.stringify({
           sessionId: "session-1",
-          invalidCount: 0,
           rows: [
             {
               rowId: "row-1",
@@ -66,7 +83,7 @@ describe("POST /api/imports/submit", () => {
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_IMPORT_REVIEW_SUBMIT_PAYLOAD",
       message:
-        "Expected sessionId, invalidCount, and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. Note must be 500 characters or fewer.",
+        "Expected sessionId and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. Note must be 500 characters or fewer.",
     });
   });
 
@@ -86,7 +103,6 @@ describe("POST /api/imports/submit", () => {
         },
         body: JSON.stringify({
           sessionId: "session-1",
-          invalidCount: 0,
           rows: [
             {
               rowId: "row-1",
@@ -102,7 +118,6 @@ describe("POST /api/imports/submit", () => {
     expect(response.status).toBe(200);
     expect(submitImportReviewMock).toHaveBeenCalledWith(prismaMock, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         {
           rowId: "row-1",
@@ -111,6 +126,136 @@ describe("POST /api/imports/submit", () => {
           note: "x".repeat(500),
         },
       ],
+    });
+  });
+
+  it("ignores a legacy invalidCount field in the request body instead of rejecting it", async () => {
+    submitImportReviewMock.mockResolvedValue({
+      summary: {
+        imported: 1,
+        invalid: 3,
+      },
+    });
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          sessionId: "session-1",
+          invalidCount: 0,
+          rows: [
+            {
+              rowId: "row-1",
+              categoryId: null,
+              selectedMessage: "message",
+              note: null,
+            },
+          ],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(submitImportReviewMock).toHaveBeenCalledWith(prismaMock, {
+      sessionId: "session-1",
+      rows: [
+        {
+          rowId: "row-1",
+          categoryId: null,
+          selectedMessage: "message",
+          note: null,
+        },
+      ],
+    });
+    await expect(response.json()).resolves.toEqual({
+      summary: { imported: 1, invalid: 3 },
+    });
+  });
+
+  it("maps a not-found session to a 404 response", async () => {
+    const { ImportReviewSessionNotFoundError } = await import(
+      "@/lib/import/review-submit"
+    );
+    submitImportReviewMock.mockRejectedValue(
+      new ImportReviewSessionNotFoundError("session-1"),
+    );
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "session-1",
+          rows: [],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: "IMPORT_REVIEW_SESSION_NOT_FOUND",
+      message: "Import review session was not found or already submitted.",
+    });
+  });
+
+  it("maps a duplicate row decision to a 400 response", async () => {
+    const { DuplicateImportReviewRowDecisionError } = await import(
+      "@/lib/import/review-submit"
+    );
+    submitImportReviewMock.mockRejectedValue(
+      new DuplicateImportReviewRowDecisionError(["row-1"]),
+    );
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "session-1",
+          rows: [
+            { rowId: "row-1", categoryId: null, selectedMessage: "a" },
+            { rowId: "row-1", categoryId: null, selectedMessage: "a" },
+          ],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "DUPLICATE_IMPORT_REVIEW_ROW_DECISION",
+      message: "Duplicate decisions were submitted for the same staged row.",
+      rowIds: ["row-1"],
+    });
+  });
+
+  it("maps an unknown row decision to a 400 response", async () => {
+    const { UnknownImportReviewRowDecisionError } = await import(
+      "@/lib/import/review-submit"
+    );
+    submitImportReviewMock.mockRejectedValue(
+      new UnknownImportReviewRowDecisionError(["row-x"]),
+    );
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "session-1",
+          rows: [{ rowId: "row-x", categoryId: null, selectedMessage: "a" }],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "UNKNOWN_IMPORT_REVIEW_ROW_DECISION",
+      message:
+        "One or more submitted row IDs do not belong to this review session.",
+      rowIds: ["row-x"],
     });
   });
 });

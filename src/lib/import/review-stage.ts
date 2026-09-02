@@ -72,33 +72,27 @@ type StagedImportRow = {
   categoryId: string | null;
 };
 
-type ImportReviewStageDbClient = {
-  categoryRule: {
-    findMany(args: {
-      where: {
-        OR: Array<
-          | {
-              accountId: string;
-            }
-          | {
-              accountId: null;
-            }
-        >;
-      };
-      select: {
-        id: true;
-        categoryId: true;
-        merchantContains: true;
-        paymentType: true;
-        priority: true;
-      };
-      orderBy: [{ priority: "asc" }, { id: "asc" }];
-    }): Promise<CategoryRuleCandidate[]>;
-  };
+type StagedReviewRow = {
+  id: string;
+  rowNumber: number;
+  bookingDate: Date;
+  amountNok: { toString(): string } | number;
+  currency: string;
+  normalizedMerchant: string;
+  paymentType: PaymentType;
+  sender: string;
+  recipient: string;
+  name: string;
+  title: string;
+  categoryId: string | null;
+};
+
+type ImportReviewStageTxClient = {
   importReviewSession: {
     create(args: {
       data: {
         accountId: string;
+        invalidCount: number;
       };
       select: {
         id: true;
@@ -141,22 +135,32 @@ type ImportReviewStageDbClient = {
         categoryId: true;
       };
       orderBy: [{ bookingDate: "desc" }, { rowNumber: "asc" }];
-    }): Promise<
-      Array<{
-        id: string;
-        rowNumber: number;
-        bookingDate: Date;
-        amountNok: { toString(): string } | number;
-        currency: string;
-        normalizedMerchant: string;
-        paymentType: PaymentType;
-        sender: string;
-        recipient: string;
-        name: string;
-        title: string;
-        categoryId: string | null;
-      }>
-    >;
+    }): Promise<StagedReviewRow[]>;
+  };
+};
+
+type ImportReviewStageDbClient = ImportReviewStageTxClient & {
+  categoryRule: {
+    findMany(args: {
+      where: {
+        OR: Array<
+          | {
+              accountId: string;
+            }
+          | {
+              accountId: null;
+            }
+        >;
+      };
+      select: {
+        id: true;
+        categoryId: true;
+        merchantContains: true;
+        paymentType: true;
+        priority: true;
+      };
+      orderBy: [{ priority: "asc" }, { id: "asc" }];
+    }): Promise<CategoryRuleCandidate[]>;
   };
   transaction: {
     findMany(args: {
@@ -176,6 +180,9 @@ type ImportReviewStageDbClient = {
       }>
     >;
   };
+  $transaction<T>(
+    fn: (tx: ImportReviewStageTxClient) => Promise<T>,
+  ): Promise<T>;
 };
 
 type ValidatedStageRow = {
@@ -524,46 +531,53 @@ export async function stageParsedImportRows(
     prefilledCategoryByRowNumber = new Map<number, string>();
   }
 
-  const session = await db.importReviewSession.create({
-    data: {
-      accountId: params.accountId,
-    },
-    select: {
-      id: true,
-    },
-  });
+  const invalidCount = parsed.summary.invalid + invalidRows.length;
 
-  await db.importReviewRow.createMany({
-    data: toStagedRows(validRows).map((row) => {
-      const prefilledCategoryId =
-        prefilledCategoryByRowNumber.get(row.rowNumber) ?? null;
-      return {
+  const { session, stagedRows } = await db.$transaction(async (tx) => {
+    const session = await tx.importReviewSession.create({
+      data: {
+        accountId: params.accountId,
+        invalidCount,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await tx.importReviewRow.createMany({
+      data: toStagedRows(validRows).map((row) => {
+        const prefilledCategoryId =
+          prefilledCategoryByRowNumber.get(row.rowNumber) ?? null;
+        return {
+          sessionId: session.id,
+          ...row,
+          categoryId: prefilledCategoryId,
+        };
+      }),
+    });
+
+    const stagedRows = await tx.importReviewRow.findMany({
+      where: {
         sessionId: session.id,
-        ...row,
-        categoryId: prefilledCategoryId,
-      };
-    }),
-  });
+      },
+      select: {
+        id: true,
+        rowNumber: true,
+        bookingDate: true,
+        amountNok: true,
+        currency: true,
+        normalizedMerchant: true,
+        paymentType: true,
+        sender: true,
+        recipient: true,
+        name: true,
+        title: true,
+        categoryId: true,
+      },
+      orderBy: [{ bookingDate: "desc" }, { rowNumber: "asc" }],
+    });
 
-  const stagedRows = await db.importReviewRow.findMany({
-    where: {
-      sessionId: session.id,
-    },
-    select: {
-      id: true,
-      rowNumber: true,
-      bookingDate: true,
-      amountNok: true,
-      currency: true,
-      normalizedMerchant: true,
-      paymentType: true,
-      sender: true,
-      recipient: true,
-      name: true,
-      title: true,
-      categoryId: true,
-    },
-    orderBy: [{ bookingDate: "desc" }, { rowNumber: "asc" }],
+    return { session, stagedRows };
   });
 
   return {

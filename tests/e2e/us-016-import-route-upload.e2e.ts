@@ -229,7 +229,6 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   expect(submitRequestCount).toBe(1);
   expect(submitRequestBody).toEqual({
     sessionId: "session-1",
-    invalidCount: 1,
     rows: [
       {
         rowId: "row-1",
