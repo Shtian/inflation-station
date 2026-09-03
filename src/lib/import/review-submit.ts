@@ -27,6 +27,28 @@ export class InvalidImportReviewCategoryError extends Error {
   }
 }
 
+/**
+ * Thrown when the submitted decision list could silently change the
+ * user-approved subset: a rowId appears more than once, or a rowId doesn't
+ * match any staged row of the targeted session (either because it's unknown
+ * outright, or because it belongs to a different, unrelated review session -
+ * both cases are indistinguishable from this function's perspective, since
+ * `session.rows` is already scoped to `params.sessionId`).
+ */
+export class InvalidImportReviewDecisionsError extends Error {
+  readonly duplicateRowIds: string[];
+  readonly unknownRowIds: string[];
+
+  constructor(duplicateRowIds: string[], unknownRowIds: string[]) {
+    super(
+      "One or more submitted row decisions are invalid: duplicate or unknown row IDs.",
+    );
+    this.name = "InvalidImportReviewDecisionsError";
+    this.duplicateRowIds = duplicateRowIds;
+    this.unknownRowIds = unknownRowIds;
+  }
+}
+
 type ImportReviewSubmitSession = {
   id: string;
   accountId: string;
@@ -187,6 +209,29 @@ export async function submitImportReview(
 
     if (!session) {
       throw new ImportReviewSessionNotFoundError(params.sessionId);
+    }
+
+    const stagedRowIds = new Set(session.rows.map((row) => row.id));
+    const seenRowIds = new Set<string>();
+    const duplicateRowIds = new Set<string>();
+    const unknownRowIds = new Set<string>();
+
+    for (const row of params.rows) {
+      if (seenRowIds.has(row.rowId)) {
+        duplicateRowIds.add(row.rowId);
+      }
+      seenRowIds.add(row.rowId);
+
+      if (!stagedRowIds.has(row.rowId)) {
+        unknownRowIds.add(row.rowId);
+      }
+    }
+
+    if (duplicateRowIds.size > 0 || unknownRowIds.size > 0) {
+      throw new InvalidImportReviewDecisionsError(
+        Array.from(duplicateRowIds),
+        Array.from(unknownRowIds),
+      );
     }
 
     const categoryByRowId = params.rows.reduce<Record<string, string | null>>(

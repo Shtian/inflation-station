@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ImportReviewSessionNotFoundError,
   InvalidImportReviewCategoryError,
+  InvalidImportReviewDecisionsError,
   submitImportReview,
 } from "./review-submit";
 
@@ -504,6 +505,96 @@ describe("submitImportReview", () => {
         },
       ],
     });
+  });
+
+  it("throws when the same rowId is submitted more than once", async () => {
+    const db = createDbMock({
+      session: {
+        id: "session-1",
+        accountId: "account-1",
+        invalidCount: 0,
+        rows: [
+          {
+            id: "row-1",
+            rowNumber: 2,
+            bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+            amountNok: 100,
+            currency: "NOK",
+            normalizedMerchant: "groceries friday",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shop A",
+            name: "Groceries",
+            title: "Friday",
+            categoryId: null,
+          },
+        ],
+      },
+      validCategories: [],
+    });
+
+    const error = await submitImportReview(db, {
+      sessionId: "session-1",
+      rows: [
+        { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
+        { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
+      ],
+    }).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(InvalidImportReviewDecisionsError);
+    expect(
+      (error as InvalidImportReviewDecisionsError).duplicateRowIds,
+    ).toEqual(["row-1"]);
+    expect((error as InvalidImportReviewDecisionsError).unknownRowIds).toEqual(
+      [],
+    );
+    expect(db.transaction.createMany).not.toHaveBeenCalled();
+    expect(db.importReviewSession.delete).not.toHaveBeenCalled();
+  });
+
+  it("throws when a submitted rowId does not belong to the session", async () => {
+    const db = createDbMock({
+      session: {
+        id: "session-1",
+        accountId: "account-1",
+        invalidCount: 0,
+        rows: [
+          {
+            id: "row-1",
+            rowNumber: 2,
+            bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+            amountNok: 100,
+            currency: "NOK",
+            normalizedMerchant: "groceries friday",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shop A",
+            name: "Groceries",
+            title: "Friday",
+            categoryId: null,
+          },
+        ],
+      },
+      validCategories: [],
+    });
+
+    const error = await submitImportReview(db, {
+      sessionId: "session-1",
+      rows: [
+        { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
+        { rowId: "row-does-not-exist", categoryId: null, selectedMessage: "?" },
+      ],
+    }).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(InvalidImportReviewDecisionsError);
+    expect(
+      (error as InvalidImportReviewDecisionsError).duplicateRowIds,
+    ).toEqual([]);
+    expect((error as InvalidImportReviewDecisionsError).unknownRowIds).toEqual([
+      "row-does-not-exist",
+    ]);
+    expect(db.transaction.createMany).not.toHaveBeenCalled();
+    expect(db.importReviewSession.delete).not.toHaveBeenCalled();
   });
 
   it("reads summary.invalid from the session's persisted invalidCount", async () => {

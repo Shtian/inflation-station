@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   ImportReviewSessionNotFoundError,
   InvalidImportReviewCategoryError,
+  InvalidImportReviewDecisionsError,
   submitImportReview,
 } from "@/lib/import/review-submit";
 import { prisma } from "@/lib/prisma";
@@ -144,6 +145,19 @@ export async function POST(request: Request) {
           error: "INVALID_IMPORT_REVIEW_CATEGORY",
           message: "One or more selected categories do not exist.",
           categoryIds: error.categoryIds,
+        },
+        { status: 400 },
+      );
+    }
+
+    if (error instanceof InvalidImportReviewDecisionsError) {
+      return NextResponse.json(
+        {
+          error: "INVALID_IMPORT_REVIEW_DECISIONS",
+          message:
+            "One or more submitted row decisions are invalid: duplicate or unknown row IDs.",
+          duplicateRowIds: error.duplicateRowIds,
+          unknownRowIds: error.unknownRowIds,
         },
         { status: 400 },
       );
