@@ -43,7 +43,8 @@ export type CsvValidationError = {
     | "INVALID_COLUMN_COUNT"
     | "INVALID_AMOUNT"
     | "INVALID_CURRENCY"
-    | "INVALID_BOOKING_DATE";
+    | "INVALID_BOOKING_DATE"
+    | "PROVIDER_MAPPING_CONFIGURATION_ERROR";
   message: string;
 };
 

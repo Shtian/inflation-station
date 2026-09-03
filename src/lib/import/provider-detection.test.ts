@@ -1,14 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 import { detectProviderFromCsv } from "./provider-detection";
 
-function createDbMock(
-  mappings: Array<{
-    id: string;
-    providerName: string;
-    normalizationRules: unknown;
-    fieldMappings: Array<{ sourceField: string }>;
-  }>,
-) {
+type MockFieldMapping = {
+  sourceField: string;
+  canonicalField: string;
+  transformRules: unknown;
+};
+
+type MockMapping = {
+  id: string;
+  providerName: string;
+  mappingVersion: number | null;
+  normalizationRules: unknown;
+  fieldMappings: MockFieldMapping[];
+};
+
+function createDbMock(mappings: MockMapping[]) {
   return {
     importProviderMapping: {
       findMany: vi.fn(async () => mappings),
@@ -16,25 +23,56 @@ function createDbMock(
   };
 }
 
+// Minimal executable field mappings (bookingDate + amount + a merchant
+// signal) so compileProviderMapping succeeds; detection itself is driven by
+// each mapping's explicit `requiredHeaders`/`anyHeaders`/`headerPatterns`.
+const executableFieldMappings: MockFieldMapping[] = [
+  {
+    sourceField: "Bokføringsdato",
+    canonicalField: "bookingDate",
+    transformRules: null,
+  },
+  { sourceField: "Beløp", canonicalField: "amount", transformRules: null },
+  { sourceField: "Beskrivelse", canonicalField: "name", transformRules: null },
+];
+
 describe("detectProviderFromCsv", () => {
   it("marks detection as certain when a provider fully matches required headers", async () => {
     const db = createDbMock([
       {
         id: "provider-1",
         providerName: "Bank A",
+        mappingVersion: 1,
         normalizationRules: {
           requiredHeaders: ["Bokføringsdato", "Beløp", "Betalingstype"],
           headerPatterns: ["Bokføringsdato;Beløp"],
         },
-        fieldMappings: [],
+        fieldMappings: executableFieldMappings,
       },
       {
         id: "provider-2",
         providerName: "Bank B",
+        mappingVersion: 1,
         normalizationRules: {
           requiredHeaders: ["Dato", "Belastning"],
         },
-        fieldMappings: [],
+        fieldMappings: [
+          {
+            sourceField: "Dato",
+            canonicalField: "bookingDate",
+            transformRules: null,
+          },
+          {
+            sourceField: "Belastning",
+            canonicalField: "amount",
+            transformRules: null,
+          },
+          {
+            sourceField: "Konto",
+            canonicalField: "name",
+            transformRules: null,
+          },
+        ],
       },
     ]);
 
@@ -59,10 +97,27 @@ describe("detectProviderFromCsv", () => {
       {
         id: "provider-2",
         providerName: "Bank B",
+        mappingVersion: 1,
         normalizationRules: {
           requiredHeaders: ["Dato", "Beløp", "Referanse", "Konto"],
         },
-        fieldMappings: [],
+        fieldMappings: [
+          {
+            sourceField: "Dato",
+            canonicalField: "bookingDate",
+            transformRules: null,
+          },
+          {
+            sourceField: "Beløp",
+            canonicalField: "amount",
+            transformRules: null,
+          },
+          {
+            sourceField: "Konto",
+            canonicalField: "name",
+            transformRules: null,
+          },
+        ],
       },
     ]);
 
@@ -82,10 +137,11 @@ describe("detectProviderFromCsv", () => {
       {
         id: "provider-1",
         providerName: "Bank A",
+        mappingVersion: 1,
         normalizationRules: {
           requiredHeaders: ["Bokføringsdato", "Beløp"],
         },
-        fieldMappings: [],
+        fieldMappings: executableFieldMappings,
       },
     ]);
 
@@ -102,11 +158,24 @@ describe("detectProviderFromCsv", () => {
       {
         id: "provider-1",
         providerName: "Bank A",
+        mappingVersion: 1,
         normalizationRules: {},
         fieldMappings: [
-          { sourceField: "Bokføringsdato" },
-          { sourceField: "Beløp" },
-          { sourceField: "Betalingstype" },
+          {
+            sourceField: "Bokføringsdato",
+            canonicalField: "bookingDate",
+            transformRules: null,
+          },
+          {
+            sourceField: "Beløp",
+            canonicalField: "amount",
+            transformRules: null,
+          },
+          {
+            sourceField: "Betalingstype",
+            canonicalField: "name",
+            transformRules: null,
+          },
         ],
       },
     ]);
@@ -123,5 +192,35 @@ describe("detectProviderFromCsv", () => {
       requiredMatches: 3,
       requiredTotal: 3,
     });
+  });
+
+  it("skips a mapping record that fails compilation rather than crashing detection", async () => {
+    const db = createDbMock([
+      {
+        id: "provider-1",
+        providerName: "Broken Bank",
+        mappingVersion: 1,
+        normalizationRules: { encoding: "utf-8" },
+        fieldMappings: executableFieldMappings,
+      },
+      {
+        id: "provider-2",
+        providerName: "Bank B",
+        mappingVersion: 1,
+        normalizationRules: {
+          requiredHeaders: ["Bokføringsdato", "Beløp"],
+        },
+        fieldMappings: executableFieldMappings,
+      },
+    ]);
+
+    const result = await detectProviderFromCsv(
+      db,
+      "Bokføringsdato;Beløp;Betalingstype\n01.01.2026;100,00;Kort",
+    );
+
+    expect(result.state).toBe("certain");
+    expect(result.providerId).toBe("provider-2");
+    expect(result.candidates).toHaveLength(1);
   });
 });
