@@ -15,8 +15,14 @@ import type {
 import { normalizeCsvHeader } from "./csv-statement";
 import type {
   ProviderCanonicalField,
+  ProviderFieldDefinition,
   ProviderMappingDefinition,
 } from "./mapping-definition";
+import {
+  applyProviderTransforms,
+  parseProviderAmount,
+  parseProviderBookingDate,
+} from "./values";
 
 export type ProviderAdapterDetectionCandidate = {
   providerId: string;
@@ -57,22 +63,6 @@ function extractHeaderLineText(
 ): string {
   const lines = statement.content.split(/\r\n|\n/);
   return (lines[headerRow.sourceRowNumber - 1] ?? "").trim();
-}
-
-// NOTE: value coercion is isolated here so #53 (values.ts) can replace it
-// with declared date-format/decimal-separator/transform execution.
-function parseNokAmount(value: string): number | null {
-  const normalized = value
-    .replaceAll(/\s/g, "")
-    .replaceAll(".", "")
-    .replace(",", ".");
-  const numeric = Number.parseFloat(normalized);
-
-  if (!Number.isFinite(numeric)) {
-    return null;
-  }
-
-  return numeric;
 }
 
 function isReservedBookingDate(value: string): boolean {
@@ -129,6 +119,40 @@ function buildHeaderIndexMap(
   return indexByCanonicalField;
 }
 
+function buildFieldsByCanonical(
+  definition: ProviderMappingDefinition,
+): Partial<Record<ProviderCanonicalField, ProviderFieldDefinition>> {
+  const fieldsByCanonical: Partial<
+    Record<ProviderCanonicalField, ProviderFieldDefinition>
+  > = {};
+
+  for (const field of definition.fields) {
+    fieldsByCanonical[field.canonicalField] = field;
+  }
+
+  return fieldsByCanonical;
+}
+
+function extractTransformedFieldValues(
+  cells: string[],
+  headerIndexMap: HeaderIndexMap,
+  fieldsByCanonical: Partial<
+    Record<ProviderCanonicalField, ProviderFieldDefinition>
+  >,
+): Partial<Record<ProviderCanonicalField, string>> {
+  const fieldValues: Partial<Record<ProviderCanonicalField, string>> = {};
+
+  for (const [canonicalField, sourceIndex] of Object.entries(
+    headerIndexMap,
+  ) as Array<[ProviderCanonicalField, number]>) {
+    const rawValue = cells[sourceIndex] ?? "";
+    const transforms = fieldsByCanonical[canonicalField]?.transforms ?? [];
+    fieldValues[canonicalField] = applyProviderTransforms(rawValue, transforms);
+  }
+
+  return fieldValues;
+}
+
 export function createProviderAdapter(
   definition: ProviderMappingDefinition,
 ): ProviderAdapter {
@@ -137,6 +161,7 @@ export function createProviderAdapter(
     normalizeCsvHeader(header),
   );
   const headerPatterns = definition.detection.headerPatterns;
+  const fieldsByCanonical = buildFieldsByCanonical(definition);
 
   function resolveDelimiter(statement: CsvStatement) {
     return definition.delimiter ?? statement.inferredDelimiter;
@@ -207,10 +232,14 @@ export function createProviderAdapter(
 
     for (const dataRow of tokenized.dataRows) {
       const rowNumber = dataRow.sourceRowNumber;
-      const cells = dataRow.cells;
+      const fieldValues = extractTransformedFieldValues(
+        dataRow.cells,
+        headerIndexMap,
+        fieldsByCanonical,
+      );
 
-      const bookingDate = cells[headerIndexMap.bookingDate ?? -1] ?? "";
-      if (!bookingDate.trim()) {
+      const bookingDateRaw = fieldValues.bookingDate ?? "";
+      if (!bookingDateRaw.trim()) {
         errors.push({
           rowNumber,
           code: "INVALID_COLUMN_COUNT",
@@ -219,66 +248,59 @@ export function createProviderAdapter(
         continue;
       }
 
-      if (isReservedBookingDate(bookingDate)) {
+      if (isReservedBookingDate(bookingDateRaw)) {
         ignoredReserved += 1;
         continue;
       }
 
-      const amountValue = cells[headerIndexMap.amount ?? -1] ?? "";
-      const amountNok = parseNokAmount(amountValue);
+      const bookingDate = parseProviderBookingDate(
+        bookingDateRaw,
+        definition.dateFormat,
+      );
+      if (bookingDate === null) {
+        errors.push({
+          rowNumber,
+          code: "INVALID_BOOKING_DATE",
+          message: `Row ${rowNumber} has booking date "${bookingDateRaw}" that does not match the expected format ${definition.dateFormat}.`,
+        });
+        continue;
+      }
+
+      const amountRaw = fieldValues.amount ?? "";
+      const amountNok = parseProviderAmount(
+        amountRaw,
+        definition.decimalSeparator,
+      );
       if (amountNok === null) {
         errors.push({
           rowNumber,
           code: "INVALID_AMOUNT",
-          message: `Row ${rowNumber} has invalid amount "${amountValue}". Expected Norwegian decimal format like 123,45.`,
+          message: `Row ${rowNumber} has invalid amount "${amountRaw}". Expected decimal format using "${definition.decimalSeparator}" as the decimal separator.`,
         });
         continue;
       }
 
-      const currencyIndex = headerIndexMap.currency;
-      const currencyRaw =
-        currencyIndex === undefined ? "" : (cells[currencyIndex] ?? "");
+      const currencyRaw = fieldValues.currency;
       const currencyValue =
-        currencyIndex === undefined ? "NOK" : currencyRaw.toUpperCase();
+        currencyRaw === undefined ? "NOK" : currencyRaw.toUpperCase();
       if (currencyValue !== "NOK") {
         errors.push({
           rowNumber,
           code: "INVALID_CURRENCY",
-          message: `Row ${rowNumber} has unsupported currency "${currencyRaw}". Only NOK is accepted.`,
+          message: `Row ${rowNumber} has unsupported currency "${currencyRaw ?? ""}". Only NOK is accepted.`,
         });
         continue;
       }
-
-      const sender =
-        headerIndexMap.sender === undefined
-          ? ""
-          : (cells[headerIndexMap.sender] ?? "");
-      const recipient =
-        headerIndexMap.recipient === undefined
-          ? ""
-          : (cells[headerIndexMap.recipient] ?? "");
-      const name =
-        headerIndexMap.name === undefined
-          ? ""
-          : (cells[headerIndexMap.name] ?? "");
-      const title =
-        headerIndexMap.title === undefined
-          ? ""
-          : (cells[headerIndexMap.title] ?? "");
-      const paymentType =
-        headerIndexMap.paymentType === undefined
-          ? ""
-          : (cells[headerIndexMap.paymentType] ?? "");
 
       rows.push({
         bookingDate,
         amountNok,
         currency: "NOK",
-        sender,
-        recipient,
-        name,
-        title,
-        paymentType,
+        sender: fieldValues.sender ?? "",
+        recipient: fieldValues.recipient ?? "",
+        name: fieldValues.name ?? "",
+        title: fieldValues.title ?? "",
+        paymentType: fieldValues.paymentType ?? "",
       });
     }
 

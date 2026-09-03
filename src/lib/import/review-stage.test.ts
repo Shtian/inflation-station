@@ -97,7 +97,7 @@ describe("stageParsedImportRows", () => {
       providerMapping: {
         id: "provider-1",
         providerName: "Bank B",
-        normalizationRules: {},
+        normalizationRules: { dateFormat: "YYYY-MM-DD" },
         fieldMappings: [
           {
             sourceField: "Dato",

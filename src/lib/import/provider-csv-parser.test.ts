@@ -4,7 +4,7 @@ import { parseProviderMappedCsv } from "./provider-csv-parser";
 const mapping = {
   id: "provider-1",
   providerName: "Bank B",
-  normalizationRules: {},
+  normalizationRules: { dateFormat: "YYYY-MM-DD" },
   fieldMappings: [
     {
       sourceField: "Dato",
@@ -73,7 +73,7 @@ describe("parseProviderMappedCsv", () => {
         rowNumber: 2,
         code: "INVALID_AMOUNT",
         message:
-          'Row 2 has invalid amount "abc". Expected Norwegian decimal format like 123,45.',
+          'Row 2 has invalid amount "abc". Expected decimal format using "," as the decimal separator.',
       },
       {
         rowNumber: 3,
