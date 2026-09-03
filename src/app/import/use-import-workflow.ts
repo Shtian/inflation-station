@@ -500,7 +500,6 @@ export function useImportWorkflow() {
       },
       body: JSON.stringify({
         sessionId: parseResult.review.sessionId,
-        invalidCount: parseResult.summary.invalid,
         rows,
       }),
     });

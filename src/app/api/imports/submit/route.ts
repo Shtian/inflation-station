@@ -13,7 +13,6 @@ import {
 
 type SubmitImportPayload = {
   sessionId: string;
-  invalidCount: number;
   rows: Array<{
     rowId: string;
     categoryId: string | null;
@@ -35,13 +34,6 @@ function parsePayload(payload: unknown): SubmitImportPayload | null {
     !("sessionId" in payload) ||
     typeof payload.sessionId !== "string" ||
     payload.sessionId.trim().length === 0
-  ) {
-    return null;
-  }
-
-  if (
-    !("invalidCount" in payload) ||
-    typeof payload.invalidCount !== "number"
   ) {
     return null;
   }
@@ -110,7 +102,6 @@ function parsePayload(payload: unknown): SubmitImportPayload | null {
 
   return {
     sessionId: payload.sessionId.trim(),
-    invalidCount: payload.invalidCount,
     rows,
   };
 }
@@ -121,7 +112,7 @@ export async function POST(request: Request) {
   if (!payload) {
     return badRequest(
       "INVALID_IMPORT_REVIEW_SUBMIT_PAYLOAD",
-      `Expected sessionId, invalidCount, and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. ${MAX_TRANSACTION_NOTE_LENGTH_MESSAGE}`,
+      `Expected sessionId and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. ${MAX_TRANSACTION_NOTE_LENGTH_MESSAGE}`,
     );
   }
 

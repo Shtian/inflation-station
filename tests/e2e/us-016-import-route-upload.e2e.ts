@@ -220,7 +220,14 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   expect(submitRequestCount).toBe(0);
   await rowOneNote.fill("Split groceries with roommate");
 
-  await page.getByRole("button", { name: "Import 2 / 2" }).click();
+  // Deselect row 2 (rowNumber 3) so only row 1's finalized decisions should
+  // be submitted for the selected subset.
+  await page.getByRole("checkbox", { name: "Select row 3" }).click();
+  await expect(
+    page.getByRole("button", { name: "Import 1 / 2" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Import 1 / 2" }).click();
 
   await expect(
     page.locator("[data-sonner-toast]", {
@@ -232,7 +239,6 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   expect(submitRequestCount).toBe(1);
   expect(submitRequestBody).toEqual({
     sessionId: "session-1",
-    invalidCount: 1,
     rows: [
       {
         rowId: "row-1",
@@ -240,14 +246,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
         selectedMessage: "JOKER TRONDHEIM",
         note: "Split groceries with roommate",
       },
-      {
-        rowId: "row-2",
-        categoryId: "cat-food",
-        selectedMessage: "RUTER BILLETT",
-        note: null,
-      },
     ],
   });
+  expect(submitRequestBody).not.toHaveProperty("invalidCount");
 });
 
 test("requires provider override when detection is uncertain and continues after manual selection", async ({
@@ -381,6 +382,7 @@ test("requires provider override when detection is uncertain and continues after
   });
 
   await page.goto("/import");
+  await page.getByRole("button", { name: "Main Account DNB" }).click();
   await page.getByLabel("CSV file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
@@ -401,4 +403,142 @@ test("requires provider override when detection is uncertain and continues after
   await expect(page.getByText("Import Preview")).toBeVisible();
   await expect(page.getByText("Detected provider:")).toBeVisible();
   await expect(page.getByText("Bank B")).toBeVisible();
+});
+
+test("keeps review state visible when a blocking submit failure occurs", async ({
+  page,
+}) => {
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [
+          {
+            id: "acc-1",
+            name: "Main Account",
+            institution: "DNB",
+            isActive: true,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ categories: [] }),
+    });
+  });
+
+  await page.route("**/api/imports/parse", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        detection: {
+          state: "certain",
+          providerId: "provider-1",
+          providerName: "DNB",
+          score: 1,
+          matchedHeaders: ["bokforingsdato", "belop"],
+          candidates: [],
+        },
+        summary: {
+          imported: 2,
+          duplicates: 0,
+          ignoredReserved: 0,
+          invalid: 0,
+        },
+        errors: [],
+        review: {
+          sessionId: "session-failing",
+          potentialDuplicates: 0,
+          messageCleanupUnavailableReason: null,
+          rows: [
+            {
+              id: "row-1",
+              rowNumber: 2,
+              bookingDate: "2026-01-01",
+              amountNok: -123.45,
+              currency: "NOK",
+              normalizedMerchant: "joker",
+              paymentType: "CARD",
+              name: "joker",
+              title: "JOKER TRONDHEIM",
+              cleanedMessage: null,
+              categoryId: null,
+              potentialDuplicate: false,
+            },
+            {
+              id: "row-2",
+              rowNumber: 3,
+              bookingDate: "2026-01-02",
+              amountNok: -50,
+              currency: "NOK",
+              normalizedMerchant: "ruter",
+              paymentType: "CARD",
+              name: "ruter",
+              title: "RUTER BILLETT",
+              cleanedMessage: null,
+              categoryId: null,
+              potentialDuplicate: false,
+            },
+          ],
+        },
+      }),
+    });
+  });
+
+  let submitRequestCount = 0;
+  await page.route("**/api/imports/submit", async (route) => {
+    submitRequestCount += 1;
+    await route.fulfill({
+      status: 404,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error: "IMPORT_REVIEW_SESSION_NOT_FOUND",
+        message: "Import review session was not found or already submitted.",
+      }),
+    });
+  });
+
+  await page.goto("/import");
+  await page.getByRole("button", { name: "Main Account DNB" }).click();
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "transactions.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;123,45", "utf8"),
+  });
+  await page.getByRole("button", { name: /Parse/ }).click();
+  await expect(page.getByText("Import Preview")).toBeVisible();
+
+  // Deselect row 2 (rowNumber 3) before the failing submit, to confirm the
+  // selection is still intact afterward.
+  await page.getByRole("checkbox", { name: "Select row 3" }).click();
+  await expect(
+    page.getByRole("button", { name: "Import 1 / 2" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Import 1 / 2" }).click();
+
+  await expect(
+    page.getByText("Import review session was not found or already submitted."),
+  ).toBeVisible();
+  expect(submitRequestCount).toBe(1);
+
+  // Review state remains available: the table, its rows, and the selection
+  // made before the failed submit are all still present.
+  await expect(page.getByText("Import Preview")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Import 1 / 2" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("checkbox", { name: "Select row 2" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("checkbox", { name: "Select row 3" }),
+  ).not.toBeChecked();
 });
