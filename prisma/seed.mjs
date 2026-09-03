@@ -182,8 +182,8 @@ async function main() {
     ["Dato", "bookingDate"],
     ["Forklaring", "normalizedMerchant"],
     ["Forklaring", "title"],
-    ["Ut fra konto", "amountNok"],
-    ["Inn på konto", "amountNok"],
+    ["Ut fra konto", "amount"],
+    ["Inn på konto", "amount"],
   ]) {
     await prisma.importProviderFieldMapping
       .create({
@@ -207,7 +207,7 @@ async function main() {
   });
   for (const [sourceField, canonicalField] of [
     ["Bokføringsdato", "bookingDate"],
-    ["Beløp", "amountNok"],
+    ["Beløp", "amount"],
     ["Avsender", "sender"],
     ["Mottaker", "recipient"],
     ["Navn", "name"],
@@ -238,7 +238,7 @@ async function main() {
     ["Dato", "bookingDate"],
     ["Beskrivelse", "normalizedMerchant"],
     ["Beskrivelse", "title"],
-    ["Beløp", "amountNok"],
+    ["Beløp", "amount"],
     ["Avsender", "sender"],
     ["Mottaker", "recipient"],
   ]) {
