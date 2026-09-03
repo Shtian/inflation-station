@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseNorwegianBankCsv } from "@/lib/import/csv-parser";
 import { getMessageCleanupSettings } from "@/lib/import/message-cleanup-settings";
 import type { ProviderAdapter } from "@/lib/import/provider-adapter/adapter";
 import { createCsvStatement } from "@/lib/import/provider-adapter/csv-statement";
@@ -184,13 +185,15 @@ export async function POST(request: Request) {
   }
 
   const messageCleanupSettings = await getMessageCleanupSettings(prisma);
+  const parsed = selectedAdapter
+    ? selectedAdapter.parse(statement)
+    : parseNorwegianBankCsv(csvContent);
 
   const staged = await stageParsedImportRows(
     prisma,
     {
       accountId,
-      csvContent,
-      parsed: selectedAdapter ? selectedAdapter.parse(statement) : undefined,
+      parsed,
     },
     {
       openAiCleanupModel: messageCleanupSettings.modelId,

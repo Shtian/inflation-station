@@ -11,5 +11,5 @@ Load this when working in `src/lib/import`.
 - Keep AI categorization optional behind `OPENAI_API_KEY`; provider/network failures must not fail parse/staging/submit flow.
 - OpenAI cleanup is best-effort only; surface stable unavailable reason codes: `disabled`, `key_missing`, `timeout`, `provider_error`.
 - Provider detection returns diagnostics with confidence (`certain`, `uncertain`, `missing`) and must require explicit `providerId` for unresolved detection.
-- Provider transforms must load `ImportProviderMapping` + `ImportProviderFieldMapping` before canonical row staging.
+- `stageParsedImportRows` takes canonical `CsvParserResult` (`{ accountId, parsed }`) and must not import a parser module or choose between parser implementations; callers resolve a provider adapter (persisted or built-in) and pass its `parse()` output in.
 - CSV tokenization and header normalization (`normalizeCsvHeader`, `tokenizeCsv`, `inferCsvDelimiter`, `createCsvStatement`) live in `provider-adapter/csv-statement.ts`; new CSV lexical logic belongs there, not re-implemented per parser.
