@@ -1,3 +1,8 @@
+import {
+  normalizeCsvHeader,
+  tokenizeCsv,
+} from "./provider-adapter/csv-statement";
+
 type ProviderMappingRecord = {
   id: string;
   providerName: string;
@@ -50,50 +55,13 @@ type DetectionRules = {
   headerPatterns?: string[];
 };
 
-function normalizeHeader(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replaceAll("ø", "o")
-    .replaceAll("æ", "ae")
-    .replaceAll("å", "a")
-    .replaceAll(/[^a-z0-9]/g, "");
-}
-
-function parseDelimitedLine(line: string): string[] {
-  const cells: string[] = [];
-  let value = "";
-  let inQuotes = false;
-
-  for (let index = 0; index < line.length; index += 1) {
-    const char = line[index];
-
-    if (char === '"') {
-      if (inQuotes && line[index + 1] === '"') {
-        value += '"';
-        index += 1;
-        continue;
-      }
-
-      inQuotes = !inQuotes;
-      continue;
-    }
-
-    if (char === ";" && !inQuotes) {
-      cells.push(value.trim());
-      value = "";
-      continue;
-    }
-
-    value += char;
-  }
-
-  cells.push(value.trim());
-  return cells;
-}
-
+// NOTE: the comma fallback below intentionally differs from
+// provider-adapter/csv-statement.ts's quote-aware `inferCsvDelimiter`
+// (it splits on raw commas and drops empty cells). #52 unifies detection
+// onto the shared CsvStatement contract; until then this preserves today's
+// detection behavior exactly.
 function parseHeaderCells(line: string): string[] {
-  const semicolonCells = parseDelimitedLine(line);
+  const semicolonCells = tokenizeCsv(line, ";").headerRow?.cells ?? [];
   if (semicolonCells.length > 1) {
     return semicolonCells;
   }
@@ -165,7 +133,7 @@ export async function detectProviderFromCsv(
   const headerLine = readHeaderLine(csvContent);
   const headerCells = headerLine ? parseHeaderCells(headerLine) : [];
   const normalizedHeaderCells = headerCells.map((cell) =>
-    normalizeHeader(cell),
+    normalizeCsvHeader(cell),
   );
   const headerSet = new Set(normalizedHeaderCells);
   const mappings = await db.importProviderMapping.findMany({
@@ -198,14 +166,14 @@ export async function detectProviderFromCsv(
         const rules = parseDetectionRules(mapping.normalizationRules);
         const requiredHeaders =
           rules.requiredHeaders && rules.requiredHeaders.length > 0
-            ? rules.requiredHeaders.map((header) => normalizeHeader(header))
+            ? rules.requiredHeaders.map((header) => normalizeCsvHeader(header))
             : mapping.fieldMappings
                 .map((fieldMapping) =>
-                  normalizeHeader(fieldMapping.sourceField),
+                  normalizeCsvHeader(fieldMapping.sourceField),
                 )
                 .filter((header) => header.length > 0);
         const anyHeaders =
-          rules.anyHeaders?.map((header) => normalizeHeader(header)) ?? [];
+          rules.anyHeaders?.map((header) => normalizeCsvHeader(header)) ?? [];
 
         const requiredMatches = requiredHeaders.filter((header) =>
           headerSet.has(header),
