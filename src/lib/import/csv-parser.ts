@@ -3,7 +3,7 @@ import {
   normalizeCsvHeader,
 } from "./provider-adapter/csv-statement";
 
-const REQUIRED_HEADERS = [
+export const REQUIRED_HEADERS = [
   "bookingDate",
   "amount",
   "sender",
@@ -14,7 +14,10 @@ const REQUIRED_HEADERS = [
   "paymentType",
 ] as const;
 
-const HEADER_ALIASES: Record<(typeof REQUIRED_HEADERS)[number], string[]> = {
+export const HEADER_ALIASES: Record<
+  (typeof REQUIRED_HEADERS)[number],
+  string[]
+> = {
   bookingDate: ["Bokforingsdato", "Bokføringsdato", "BookingDate"],
   amount: ["Belop", "Beløp", "Amount"],
   sender: ["Avsender", "Sender"],

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { parseNorwegianBankCsv } from "@/lib/import/csv-parser";
 import { getMessageCleanupSettings } from "@/lib/import/message-cleanup-settings";
 import type { ProviderAdapter } from "@/lib/import/provider-adapter/adapter";
+import { createBuiltInNorwegianAdapter } from "@/lib/import/provider-adapter/built-in-norwegian";
 import { createCsvStatement } from "@/lib/import/provider-adapter/csv-statement";
 import { detectProviderFromAdapters } from "@/lib/import/provider-adapter/detection";
 import { loadProviderAdapters } from "@/lib/import/provider-adapter/repository";
@@ -185,9 +185,8 @@ export async function POST(request: Request) {
   }
 
   const messageCleanupSettings = await getMessageCleanupSettings(prisma);
-  const parsed = selectedAdapter
-    ? selectedAdapter.parse(statement)
-    : parseNorwegianBankCsv(csvContent);
+  const adapter = selectedAdapter ?? createBuiltInNorwegianAdapter();
+  const parsed = adapter.parse(statement);
 
   const staged = await stageParsedImportRows(
     prisma,
