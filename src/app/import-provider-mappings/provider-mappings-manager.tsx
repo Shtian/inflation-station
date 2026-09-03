@@ -22,7 +22,9 @@ import {
   DEFAULT_MERCHANT_SIGNAL_CANONICAL_FIELD,
   ensureRequiredFieldMappings,
   getMappingSourceValue,
+  getMappingTransforms,
   isMerchantSignalCanonicalField,
+  parseFieldTransforms,
   parseMappingVersion,
   parseNormalizationFormState,
   validateFieldMappings,
@@ -53,9 +55,12 @@ function getProviderMappingErrorMessage(status: number, body: unknown) {
       status === 400 &&
       code === "DUPLICATE_CANONICAL_FIELD_MAPPINGS" &&
       "duplicateCanonicalFields" in body &&
-      Array.isArray(body.duplicateCanonicalFields)
+      Array.isArray(body.duplicateCanonicalFields) &&
+      body.duplicateCanonicalFields.length > 0
     ) {
-      return `Duplicate canonical field mappings: ${body.duplicateCanonicalFields.join(", ")}.`;
+      // duplicateCanonicalFields may report only the first duplicate found, not
+      // an exhaustive list, so copy must not imply completeness.
+      return `Canonical field "${body.duplicateCanonicalFields[0]}" is mapped more than once. Each canonical field can only be mapped once.`;
     }
 
     if (status === 400 && code === "INVALID_PROVIDER_MAPPING_UPDATE_PAYLOAD") {
@@ -65,6 +70,15 @@ function getProviderMappingErrorMessage(status: number, body: unknown) {
     if (status === 400 && code === "MERCHANT_SIGNAL_FIELD_REQUIRED") {
       return "At least one merchant signal field mapping is required (name or title).";
     }
+
+    if (
+      status === 400 &&
+      code === "INVALID_PROVIDER_MAPPING_DEFINITION" &&
+      "message" in body &&
+      typeof body.message === "string"
+    ) {
+      return body.message;
+    }
   }
 
   return "Request failed. Please try again.";
@@ -72,6 +86,7 @@ function getProviderMappingErrorMessage(status: number, body: unknown) {
 
 function getProviderMappingActionErrorMessage(error: {
   code: string;
+  message: string;
   details?: unknown;
 }) {
   if (error.code === "PROVIDER_MAPPING_MUST_BE_UNIQUE") {
@@ -93,9 +108,12 @@ function getProviderMappingActionErrorMessage(error: {
     typeof error.details === "object" &&
     error.details !== null &&
     "duplicateCanonicalFields" in error.details &&
-    Array.isArray(error.details.duplicateCanonicalFields)
+    Array.isArray(error.details.duplicateCanonicalFields) &&
+    error.details.duplicateCanonicalFields.length > 0
   ) {
-    return `Duplicate canonical field mappings: ${error.details.duplicateCanonicalFields.join(", ")}.`;
+    // duplicateCanonicalFields may report only the first duplicate found, not
+    // an exhaustive list, so copy must not imply completeness.
+    return `Canonical field "${error.details.duplicateCanonicalFields[0]}" is mapped more than once. Each canonical field can only be mapped once.`;
   }
 
   if (error.code === "MERCHANT_SIGNAL_FIELD_REQUIRED") {
@@ -104,6 +122,10 @@ function getProviderMappingActionErrorMessage(error: {
 
   if (error.code === "INVALID_PROVIDER_MAPPING_PAYLOAD") {
     return "Invalid provider mapping payload.";
+  }
+
+  if (error.code === "INVALID_PROVIDER_MAPPING_DEFINITION") {
+    return error.message;
   }
 
   return "Request failed. Please try again.";
@@ -189,7 +211,15 @@ export function ProviderMappingsManager() {
       newFieldMappings,
       currentCanonicalField,
     );
+    const currentTransforms = getMappingTransforms(
+      newFieldMappings,
+      currentCanonicalField,
+    );
     const existingNextSourceField = getMappingSourceValue(
+      newFieldMappings,
+      nextCanonicalField,
+    );
+    const existingNextTransforms = getMappingTransforms(
       newFieldMappings,
       nextCanonicalField,
     );
@@ -205,6 +235,10 @@ export function ProviderMappingsManager() {
         {
           canonicalField: nextCanonicalField,
           sourceField: existingNextSourceField || currentSourceField,
+          transforms:
+            existingNextTransforms.length > 0
+              ? existingNextTransforms
+              : currentTransforms,
         },
       ];
     });
@@ -219,7 +253,15 @@ export function ProviderMappingsManager() {
       editFieldMappings,
       currentCanonicalField,
     );
+    const currentTransforms = getMappingTransforms(
+      editFieldMappings,
+      currentCanonicalField,
+    );
     const existingNextSourceField = getMappingSourceValue(
+      editFieldMappings,
+      nextCanonicalField,
+    );
+    const existingNextTransforms = getMappingTransforms(
       editFieldMappings,
       nextCanonicalField,
     );
@@ -235,6 +277,10 @@ export function ProviderMappingsManager() {
         {
           canonicalField: nextCanonicalField,
           sourceField: existingNextSourceField || currentSourceField,
+          transforms:
+            existingNextTransforms.length > 0
+              ? existingNextTransforms
+              : currentTransforms,
         },
       ];
     });
@@ -269,6 +315,10 @@ export function ProviderMappingsManager() {
       fieldMappings: newFieldMappings.map((fieldMapping) => ({
         sourceField: fieldMapping.sourceField.trim(),
         canonicalField: fieldMapping.canonicalField.trim(),
+        transformRules:
+          fieldMapping.transforms.length > 0
+            ? fieldMapping.transforms
+            : undefined,
       })),
     });
 
@@ -305,6 +355,7 @@ export function ProviderMappingsManager() {
         mapping.fieldMappings.map((fieldMapping) => ({
           sourceField: fieldMapping.sourceField,
           canonicalField: fieldMapping.canonicalField,
+          transforms: parseFieldTransforms(fieldMapping.transformRules),
         })),
         merchantSignalCanonicalField,
       ),
@@ -360,6 +411,10 @@ export function ProviderMappingsManager() {
         fieldMappings: editFieldMappings.map((fieldMapping) => ({
           sourceField: fieldMapping.sourceField.trim(),
           canonicalField: fieldMapping.canonicalField.trim(),
+          transformRules:
+            fieldMapping.transforms.length > 0
+              ? fieldMapping.transforms
+              : undefined,
         })),
       }),
     });
