@@ -30,7 +30,26 @@ function createDbMock(options?: {
     paymentType: PaymentType;
   }>;
 }) {
-  return {
+  const importReviewSession = {
+    create: vi.fn(async () => ({ id: "session-1" })),
+  };
+  const importReviewRow = {
+    createMany: vi.fn(async () => ({
+      count: options?.stagedRows?.length ?? 0,
+    })),
+    findMany: vi.fn(async () => options?.stagedRows ?? []),
+  };
+
+  async function runTransaction<T>(
+    fn: (tx: {
+      importReviewSession: typeof importReviewSession;
+      importReviewRow: typeof importReviewRow;
+    }) => Promise<T>,
+  ): Promise<T> {
+    return fn({ importReviewSession, importReviewRow });
+  }
+
+  const db = {
     categoryRule: {
       findMany: vi.fn(async () => {
         if (options?.throwOnCategoryRuleLookup) {
@@ -39,19 +58,15 @@ function createDbMock(options?: {
         return options?.categoryRules ?? [];
       }),
     },
-    importReviewSession: {
-      create: vi.fn(async () => ({ id: "session-1" })),
-    },
-    importReviewRow: {
-      createMany: vi.fn(async () => ({
-        count: options?.stagedRows?.length ?? 0,
-      })),
-      findMany: vi.fn(async () => options?.stagedRows ?? []),
-    },
+    importReviewSession,
+    importReviewRow,
     transaction: {
       findMany: vi.fn(async () => options?.existingTransactions ?? []),
     },
+    $transaction: runTransaction,
   };
+
+  return db;
 }
 
 describe("stageParsedImportRows", () => {
@@ -193,6 +208,7 @@ describe("stageParsedImportRows", () => {
     expect(db.importReviewSession.create).toHaveBeenCalledWith({
       data: {
         accountId: "account-1",
+        invalidCount: 0,
       },
       select: {
         id: true,

@@ -1,4 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  ImportReviewSessionNotFoundError,
+  InvalidImportReviewCategoryError,
+  InvalidImportReviewDecisionsError,
+} from "@/lib/import/review-submit";
 import { POST } from "./route";
 
 const { prismaMock, submitImportReviewMock } = vi.hoisted(() => ({
@@ -32,6 +37,17 @@ vi.mock("@/lib/import/review-submit", () => ({
       this.categoryIds = categoryIds;
     }
   },
+  InvalidImportReviewDecisionsError: class InvalidImportReviewDecisionsError extends Error {
+    readonly duplicateRowIds: string[];
+    readonly unknownRowIds: string[];
+
+    constructor(duplicateRowIds: string[], unknownRowIds: string[]) {
+      super("invalid decisions");
+      this.name = "InvalidImportReviewDecisionsError";
+      this.duplicateRowIds = duplicateRowIds;
+      this.unknownRowIds = unknownRowIds;
+    }
+  },
 }));
 
 describe("POST /api/imports/submit", () => {
@@ -48,7 +64,6 @@ describe("POST /api/imports/submit", () => {
         },
         body: JSON.stringify({
           sessionId: "session-1",
-          invalidCount: 0,
           rows: [
             {
               rowId: "row-1",
@@ -66,7 +81,7 @@ describe("POST /api/imports/submit", () => {
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_IMPORT_REVIEW_SUBMIT_PAYLOAD",
       message:
-        "Expected sessionId, invalidCount, and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. Note must be 500 characters or fewer.",
+        "Expected sessionId and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. Note must be 500 characters or fewer.",
     });
   });
 
@@ -86,7 +101,6 @@ describe("POST /api/imports/submit", () => {
         },
         body: JSON.stringify({
           sessionId: "session-1",
-          invalidCount: 0,
           rows: [
             {
               rowId: "row-1",
@@ -102,7 +116,6 @@ describe("POST /api/imports/submit", () => {
     expect(response.status).toBe(200);
     expect(submitImportReviewMock).toHaveBeenCalledWith(prismaMock, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         {
           rowId: "row-1",
@@ -112,5 +125,186 @@ describe("POST /api/imports/submit", () => {
         },
       ],
     });
+  });
+
+  it("accepts a payload without invalidCount and serializes the server-owned summary", async () => {
+    submitImportReviewMock.mockResolvedValue({
+      summary: {
+        imported: 3,
+        invalid: 2,
+      },
+    });
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "session-1",
+          rows: [
+            { rowId: "row-1", categoryId: null, selectedMessage: "message" },
+          ],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(submitImportReviewMock).toHaveBeenCalledWith(prismaMock, {
+      sessionId: "session-1",
+      rows: [
+        {
+          rowId: "row-1",
+          categoryId: null,
+          selectedMessage: "message",
+          note: null,
+        },
+      ],
+    });
+    await expect(response.json()).resolves.toEqual({
+      summary: {
+        imported: 3,
+        invalid: 2,
+      },
+    });
+  });
+
+  it("ignores a browser-provided invalidCount instead of forwarding it", async () => {
+    submitImportReviewMock.mockResolvedValue({
+      summary: {
+        imported: 1,
+        invalid: 0,
+      },
+    });
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "session-1",
+          invalidCount: 999,
+          rows: [
+            { rowId: "row-1", categoryId: null, selectedMessage: "message" },
+          ],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(submitImportReviewMock).toHaveBeenCalledWith(prismaMock, {
+      sessionId: "session-1",
+      rows: [
+        {
+          rowId: "row-1",
+          categoryId: null,
+          selectedMessage: "message",
+          note: null,
+        },
+      ],
+    });
+  });
+
+  it("returns 404 when the review session is not found", async () => {
+    submitImportReviewMock.mockRejectedValue(
+      new ImportReviewSessionNotFoundError("session-1"),
+    );
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "session-1",
+          rows: [],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: "IMPORT_REVIEW_SESSION_NOT_FOUND",
+      message: "Import review session was not found or already submitted.",
+    });
+  });
+
+  it("returns 400 with categoryIds when selected categories are invalid", async () => {
+    submitImportReviewMock.mockRejectedValue(
+      new InvalidImportReviewCategoryError(["cat-missing"]),
+    );
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "session-1",
+          rows: [
+            {
+              rowId: "row-1",
+              categoryId: "cat-missing",
+              selectedMessage: "message",
+            },
+          ],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_IMPORT_REVIEW_CATEGORY",
+      message: "One or more selected categories do not exist.",
+      categoryIds: ["cat-missing"],
+    });
+  });
+
+  it("returns 400 with duplicate/unknown row IDs when decisions are invalid", async () => {
+    submitImportReviewMock.mockRejectedValue(
+      new InvalidImportReviewDecisionsError(["row-1"], ["row-ghost"]),
+    );
+
+    const response = await POST(
+      new Request("http://localhost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          sessionId: "session-1",
+          rows: [
+            { rowId: "row-1", categoryId: null, selectedMessage: "message" },
+            { rowId: "row-1", categoryId: null, selectedMessage: "message" },
+            {
+              rowId: "row-ghost",
+              categoryId: null,
+              selectedMessage: "message",
+            },
+          ],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_IMPORT_REVIEW_DECISIONS",
+      message:
+        "One or more submitted row decisions are invalid: duplicate or unknown row IDs.",
+      duplicateRowIds: ["row-1"],
+      unknownRowIds: ["row-ghost"],
+    });
+  });
+
+  it("propagates unexpected errors instead of mapping them to a stable response", async () => {
+    submitImportReviewMock.mockRejectedValue(new Error("db exploded"));
+
+    await expect(
+      POST(
+        new Request("http://localhost", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            sessionId: "session-1",
+            rows: [],
+          }),
+        }),
+      ),
+    ).rejects.toThrow("db exploded");
   });
 });

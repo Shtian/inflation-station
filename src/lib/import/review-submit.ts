@@ -27,9 +27,32 @@ export class InvalidImportReviewCategoryError extends Error {
   }
 }
 
+/**
+ * Thrown when the submitted decision list could silently change the
+ * user-approved subset: a rowId appears more than once, or a rowId doesn't
+ * match any staged row of the targeted session (either because it's unknown
+ * outright, or because it belongs to a different, unrelated review session -
+ * both cases are indistinguishable from this function's perspective, since
+ * `session.rows` is already scoped to `params.sessionId`).
+ */
+export class InvalidImportReviewDecisionsError extends Error {
+  readonly duplicateRowIds: string[];
+  readonly unknownRowIds: string[];
+
+  constructor(duplicateRowIds: string[], unknownRowIds: string[]) {
+    super(
+      "One or more submitted row decisions are invalid: duplicate or unknown row IDs.",
+    );
+    this.name = "InvalidImportReviewDecisionsError";
+    this.duplicateRowIds = duplicateRowIds;
+    this.unknownRowIds = unknownRowIds;
+  }
+}
+
 type ImportReviewSubmitSession = {
   id: string;
   accountId: string;
+  invalidCount: number;
   rows: Array<{
     id: string;
     rowNumber: number;
@@ -46,59 +69,81 @@ type ImportReviewSubmitSession = {
   }>;
 };
 
-type ImportReviewSubmitDbClient = {
-  importReviewSession: {
-    findUnique(args: {
-      where: { id: string };
-      select: {
-        id: true;
-        accountId: true;
-        rows: {
-          select: {
-            id: true;
-            rowNumber: true;
-            bookingDate: true;
-            amountNok: true;
-            currency: true;
-            normalizedMerchant: true;
-            paymentType: true;
-            sender: true;
-            recipient: true;
-            name: true;
-            title: true;
-            categoryId: true;
-          };
-          orderBy: {
-            rowNumber: "asc";
-          };
+type ImportReviewSubmitSessionClient = {
+  findUnique(args: {
+    where: { id: string };
+    select: {
+      id: true;
+      accountId: true;
+      invalidCount: true;
+      rows: {
+        select: {
+          id: true;
+          rowNumber: true;
+          bookingDate: true;
+          amountNok: true;
+          currency: true;
+          normalizedMerchant: true;
+          paymentType: true;
+          sender: true;
+          recipient: true;
+          name: true;
+          title: true;
+          categoryId: true;
+        };
+        orderBy: {
+          rowNumber: "asc";
         };
       };
-    }): Promise<ImportReviewSubmitSession | null>;
-    delete(args: { where: { id: string } }): Promise<{ id: string }>;
-  };
-  category: {
-    findMany(args: {
-      where: {
-        id: { in: string[] };
-      };
-      select: { id: true };
-    }): Promise<Array<{ id: string }>>;
-  };
-  transaction: {
-    createMany(args: {
-      data: Array<{
-        accountId: string;
-        categoryId: string | null;
-        bookingDate: Date;
-        amountNok: number;
-        currency: "NOK";
-        normalizedMerchant: string;
-        merchant: string;
-        paymentType: PaymentType;
-        note: string | null;
-      }>;
-    }): Promise<{ count: number }>;
-  };
+    };
+  }): Promise<ImportReviewSubmitSession | null>;
+  delete(args: { where: { id: string } }): Promise<{ id: string }>;
+};
+
+type ImportReviewSubmitCategoryClient = {
+  findMany(args: {
+    where: {
+      id: { in: string[] };
+    };
+    select: { id: true };
+  }): Promise<Array<{ id: string }>>;
+};
+
+type ImportReviewSubmitTransactionRecordClient = {
+  createMany(args: {
+    data: Array<{
+      accountId: string;
+      categoryId: string | null;
+      bookingDate: Date;
+      amountNok: number;
+      currency: "NOK";
+      normalizedMerchant: string;
+      merchant: string;
+      paymentType: PaymentType;
+      note: string | null;
+    }>;
+  }): Promise<{ count: number }>;
+};
+
+type ImportReviewSubmitDbClient = {
+  importReviewSession: ImportReviewSubmitSessionClient;
+  category: ImportReviewSubmitCategoryClient;
+  transaction: ImportReviewSubmitTransactionRecordClient;
+  $transaction<T>(
+    fn: (tx: ImportReviewSubmitTransactionClient) => Promise<T>,
+  ): Promise<T>;
+};
+
+/**
+ * The subset of the db client's session/category/transaction operations
+ * available inside the atomic consume transaction. Structurally identical to
+ * the outer client's shapes - Prisma's transaction client (`tx`) exposes the
+ * same model API as the top-level client.
+ */
+type ImportReviewSubmitTransactionClient = {
+  importReviewSession: ImportReviewSubmitSessionClient;
+  category: ImportReviewSubmitCategoryClient;
+  transaction: ImportReviewSubmitTransactionRecordClient;
 };
 
 type SubmitReviewRow = {
@@ -108,6 +153,14 @@ type SubmitReviewRow = {
   note?: string | null;
 };
 
+/**
+ * Defensive floor/guard against a malformed `invalidCount`. The value is now
+ * sourced entirely from server-owned session state (never from caller
+ * input), so this is no longer defending against an untrusted client - it's
+ * cheap insurance against the field ending up negative or non-finite via a
+ * future bug or manual db edit, and it keeps the summary contract (a
+ * non-negative integer) honest regardless of where the number came from.
+ */
 function toNormalizedInvalidCount(value: number) {
   if (!Number.isFinite(value) || value < 0) {
     return 0;
@@ -121,143 +174,176 @@ export async function submitImportReview(
   params: {
     sessionId: string;
     rows: SubmitReviewRow[];
-    invalidCount: number;
   },
 ): Promise<SubmitImportReviewResult> {
-  const session = await db.importReviewSession.findUnique({
-    where: {
-      id: params.sessionId,
-    },
-    select: {
-      id: true,
-      accountId: true,
-      rows: {
-        select: {
-          id: true,
-          rowNumber: true,
-          bookingDate: true,
-          amountNok: true,
-          currency: true,
-          normalizedMerchant: true,
-          paymentType: true,
-          sender: true,
-          recipient: true,
-          name: true,
-          title: true,
-          categoryId: true,
-        },
-        orderBy: {
-          rowNumber: "asc",
-        },
-      },
-    },
-  });
-
-  if (!session) {
-    throw new ImportReviewSessionNotFoundError(params.sessionId);
-  }
-
-  const categoryByRowId = params.rows.reduce<Record<string, string | null>>(
-    (acc, row) => {
-      acc[row.rowId] = row.categoryId;
-      return acc;
-    },
-    {},
-  );
-  const selectedMessageByRowId = params.rows.reduce<Record<string, string>>(
-    (acc, row) => {
-      acc[row.rowId] = row.selectedMessage;
-      return acc;
-    },
-    {},
-  );
-  const noteByRowId = params.rows.reduce<Record<string, string | null>>(
-    (acc, row) => {
-      acc[row.rowId] = row.note ?? null;
-      return acc;
-    },
-    {},
-  );
-
-  const submittedRowIds = new Set(params.rows.map((r) => r.rowId));
-  const finalizedRows = session.rows
-    .filter((row) => submittedRowIds.has(row.id))
-    .map((row) => {
-      const selectedMessage =
-        row.id in selectedMessageByRowId
-          ? selectedMessageByRowId[row.id]
-          : row.title;
-
-      return {
-        ...row,
-        title: selectedMessage,
-        normalizedMerchant: normalizeImportMerchant(row.name, selectedMessage),
-        categoryId:
-          row.id in categoryByRowId ? categoryByRowId[row.id] : row.categoryId,
-        amountNok: Number.parseFloat(row.amountNok.toString()),
-        note: row.id in noteByRowId ? noteByRowId[row.id] : null,
-      };
-    });
-
-  const selectedCategoryIds = Array.from(
-    new Set(
-      finalizedRows
-        .map((row) => row.categoryId)
-        .filter(
-          (categoryId): categoryId is string => typeof categoryId === "string",
-        ),
-    ),
-  );
-
-  if (selectedCategoryIds.length > 0) {
-    const validCategories = await db.category.findMany({
+  const { count, invalidCount } = await db.$transaction(async (tx) => {
+    const session = await tx.importReviewSession.findUnique({
       where: {
-        id: { in: selectedCategoryIds },
+        id: params.sessionId,
       },
       select: {
         id: true,
+        accountId: true,
+        invalidCount: true,
+        rows: {
+          select: {
+            id: true,
+            rowNumber: true,
+            bookingDate: true,
+            amountNok: true,
+            currency: true,
+            normalizedMerchant: true,
+            paymentType: true,
+            sender: true,
+            recipient: true,
+            name: true,
+            title: true,
+            categoryId: true,
+          },
+          orderBy: {
+            rowNumber: "asc",
+          },
+        },
       },
     });
 
-    const validCategoryIds = new Set(
-      validCategories.map((category) => category.id),
-    );
-    const invalidCategoryIds = selectedCategoryIds.filter(
-      (categoryId) => !validCategoryIds.has(categoryId),
-    );
-
-    if (invalidCategoryIds.length > 0) {
-      throw new InvalidImportReviewCategoryError(invalidCategoryIds);
+    if (!session) {
+      throw new ImportReviewSessionNotFoundError(params.sessionId);
     }
-  }
 
-  const { count } =
-    finalizedRows.length > 0
-      ? await db.transaction.createMany({
-          data: finalizedRows.map((row) => ({
-            accountId: session.accountId,
-            categoryId: row.categoryId,
-            bookingDate: row.bookingDate,
-            amountNok: row.amountNok,
-            currency: "NOK",
-            normalizedMerchant: row.normalizedMerchant,
-            merchant: row.title,
-            paymentType: row.paymentType,
-            note: row.note,
-          })),
-        })
-      : { count: 0 };
+    const stagedRowIds = new Set(session.rows.map((row) => row.id));
+    const seenRowIds = new Set<string>();
+    const duplicateRowIds = new Set<string>();
+    const unknownRowIds = new Set<string>();
 
-  await db.importReviewSession.delete({
-    where: {
-      id: session.id,
-    },
+    for (const row of params.rows) {
+      if (seenRowIds.has(row.rowId)) {
+        duplicateRowIds.add(row.rowId);
+      }
+      seenRowIds.add(row.rowId);
+
+      if (!stagedRowIds.has(row.rowId)) {
+        unknownRowIds.add(row.rowId);
+      }
+    }
+
+    if (duplicateRowIds.size > 0 || unknownRowIds.size > 0) {
+      throw new InvalidImportReviewDecisionsError(
+        Array.from(duplicateRowIds),
+        Array.from(unknownRowIds),
+      );
+    }
+
+    const categoryByRowId = params.rows.reduce<Record<string, string | null>>(
+      (acc, row) => {
+        acc[row.rowId] = row.categoryId;
+        return acc;
+      },
+      {},
+    );
+    const selectedMessageByRowId = params.rows.reduce<Record<string, string>>(
+      (acc, row) => {
+        acc[row.rowId] = row.selectedMessage;
+        return acc;
+      },
+      {},
+    );
+    const noteByRowId = params.rows.reduce<Record<string, string | null>>(
+      (acc, row) => {
+        acc[row.rowId] = row.note ?? null;
+        return acc;
+      },
+      {},
+    );
+
+    const submittedRowIds = new Set(params.rows.map((r) => r.rowId));
+    const finalizedRows = session.rows
+      .filter((row) => submittedRowIds.has(row.id))
+      .map((row) => {
+        const selectedMessage =
+          row.id in selectedMessageByRowId
+            ? selectedMessageByRowId[row.id]
+            : row.title;
+
+        return {
+          ...row,
+          title: selectedMessage,
+          normalizedMerchant: normalizeImportMerchant(
+            row.name,
+            selectedMessage,
+          ),
+          categoryId:
+            row.id in categoryByRowId
+              ? categoryByRowId[row.id]
+              : row.categoryId,
+          amountNok: Number.parseFloat(row.amountNok.toString()),
+          note: row.id in noteByRowId ? noteByRowId[row.id] : null,
+        };
+      });
+
+    const selectedCategoryIds = Array.from(
+      new Set(
+        finalizedRows
+          .map((row) => row.categoryId)
+          .filter(
+            (categoryId): categoryId is string =>
+              typeof categoryId === "string",
+          ),
+      ),
+    );
+
+    if (selectedCategoryIds.length > 0) {
+      const validCategories = await tx.category.findMany({
+        where: {
+          id: { in: selectedCategoryIds },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      const validCategoryIds = new Set(
+        validCategories.map((category) => category.id),
+      );
+      const invalidCategoryIds = selectedCategoryIds.filter(
+        (categoryId) => !validCategoryIds.has(categoryId),
+      );
+
+      if (invalidCategoryIds.length > 0) {
+        throw new InvalidImportReviewCategoryError(invalidCategoryIds);
+      }
+    }
+
+    const { count } =
+      finalizedRows.length > 0
+        ? await tx.transaction.createMany({
+            data: finalizedRows.map((row) => ({
+              accountId: session.accountId,
+              categoryId: row.categoryId,
+              bookingDate: row.bookingDate,
+              amountNok: row.amountNok,
+              currency: "NOK",
+              normalizedMerchant: row.normalizedMerchant,
+              merchant: row.title,
+              paymentType: row.paymentType,
+              note: row.note,
+            })),
+          })
+        : { count: 0 };
+
+    await tx.importReviewSession.delete({
+      where: {
+        id: session.id,
+      },
+    });
+
+    return { count, invalidCount: session.invalidCount };
   });
 
   return {
     summary: {
       imported: count,
-      invalid: toNormalizedInvalidCount(params.invalidCount),
+      invalid: toNormalizedInvalidCount(invalidCount),
     },
   };
 }

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ImportReviewSessionNotFoundError,
   InvalidImportReviewCategoryError,
+  InvalidImportReviewDecisionsError,
   submitImportReview,
 } from "./review-submit";
 
@@ -10,6 +11,7 @@ function createDbMock(options?: {
   session?: {
     id: string;
     accountId: string;
+    invalidCount?: number;
     rows: Array<{
       id: string;
       rowNumber: number;
@@ -27,44 +29,74 @@ function createDbMock(options?: {
   } | null;
   validCategories?: Array<{ id: string }>;
 }) {
+  const importReviewSession = {
+    findUnique: vi.fn(async () => {
+      if (options?.session === undefined) {
+        return {
+          id: "session-1",
+          accountId: "account-1",
+          invalidCount: 1,
+          rows: [
+            {
+              id: "row-1",
+              rowNumber: 2,
+              bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+              amountNok: 100,
+              currency: "NOK",
+              normalizedMerchant: "groceries friday",
+              paymentType: PaymentType.CARD,
+              sender: "Alice",
+              recipient: "Shop A",
+              name: "Groceries",
+              title: "Friday",
+              categoryId: "cat-food",
+            },
+          ],
+        };
+      }
+
+      if (options.session === null) {
+        return null;
+      }
+
+      return { invalidCount: 0, ...options.session };
+    }),
+    delete: vi.fn(async () => ({ id: "session-1" })),
+  };
+  const category = {
+    findMany: vi.fn(
+      async () => options?.validCategories ?? [{ id: "cat-food" }],
+    ),
+  };
+  const transactionModel = {
+    createMany: vi.fn(async ({ data }: { data: unknown[] }) => ({
+      count: data.length,
+    })),
+  };
+
+  // A plain async function, not `vi.fn()`-wrapped: wrapping it broke
+  // TypeScript's inference of the generic `tx` parameter against the
+  // widened structural `ImportReviewSubmitDbClient` type - same finding as
+  // #46's `review-stage.test.ts`.
+  async function runTransaction<T>(
+    fn: (tx: {
+      importReviewSession: typeof importReviewSession;
+      category: typeof category;
+      transaction: typeof transactionModel;
+    }) => Promise<T>,
+  ): Promise<T> {
+    return fn({
+      importReviewSession,
+      category,
+      transaction: transactionModel,
+    });
+  }
+
   return {
-    importReviewSession: {
-      findUnique: vi.fn(async () =>
-        options?.session === undefined
-          ? {
-              id: "session-1",
-              accountId: "account-1",
-              rows: [
-                {
-                  id: "row-1",
-                  rowNumber: 2,
-                  bookingDate: new Date("2026-01-01T00:00:00.000Z"),
-                  amountNok: 100,
-                  currency: "NOK",
-                  normalizedMerchant: "groceries friday",
-                  paymentType: PaymentType.CARD,
-                  sender: "Alice",
-                  recipient: "Shop A",
-                  name: "Groceries",
-                  title: "Friday",
-                  categoryId: "cat-food",
-                },
-              ],
-            }
-          : options.session,
-      ),
-      delete: vi.fn(async () => ({ id: "session-1" })),
-    },
-    category: {
-      findMany: vi.fn(
-        async () => options?.validCategories ?? [{ id: "cat-food" }],
-      ),
-    },
-    transaction: {
-      createMany: vi.fn(async ({ data }) => ({
-        count: data.length,
-      })),
-    },
+    importReviewSession,
+    category,
+    transaction: transactionModel,
+    $transaction: runTransaction,
   };
 }
 
@@ -76,7 +108,6 @@ describe("submitImportReview", () => {
 
     const result = await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 1,
       rows: [
         {
           rowId: "row-1",
@@ -117,6 +148,7 @@ describe("submitImportReview", () => {
       session: {
         id: "session-1",
         accountId: "account-1",
+        invalidCount: 0,
         rows: [
           {
             id: "row-1",
@@ -153,7 +185,6 @@ describe("submitImportReview", () => {
 
     const result = await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
         { rowId: "row-2", categoryId: null, selectedMessage: "Friday" },
@@ -200,7 +231,6 @@ describe("submitImportReview", () => {
     await expect(
       submitImportReview(db, {
         sessionId: "missing-session",
-        invalidCount: 0,
         rows: [],
       }),
     ).rejects.toBeInstanceOf(ImportReviewSessionNotFoundError);
@@ -217,7 +247,6 @@ describe("submitImportReview", () => {
     await expect(
       submitImportReview(db, {
         sessionId: "session-1",
-        invalidCount: 0,
         rows: [
           {
             rowId: "row-1",
@@ -239,7 +268,6 @@ describe("submitImportReview", () => {
 
     await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         {
           rowId: "row-1",
@@ -271,6 +299,7 @@ describe("submitImportReview", () => {
       session: {
         id: "session-1",
         accountId: "account-1",
+        invalidCount: 0,
         rows: [
           {
             id: "row-1",
@@ -321,7 +350,6 @@ describe("submitImportReview", () => {
 
     const result = await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
         {
@@ -352,6 +380,7 @@ describe("submitImportReview", () => {
       session: {
         id: "session-1",
         accountId: "account-1",
+        invalidCount: 0,
         rows: [
           {
             id: "row-1",
@@ -388,7 +417,6 @@ describe("submitImportReview", () => {
 
     const result = await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [{ rowId: "row-1", categoryId: null, selectedMessage: "Friday" }],
     });
 
@@ -400,6 +428,7 @@ describe("submitImportReview", () => {
       session: {
         id: "session-1",
         accountId: "account-1",
+        invalidCount: 0,
         rows: [
           {
             id: "row-1",
@@ -436,7 +465,6 @@ describe("submitImportReview", () => {
 
     await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [{ rowId: "row-1", categoryId: null, selectedMessage: "Friday" }],
     });
 
@@ -452,7 +480,6 @@ describe("submitImportReview", () => {
 
     await submitImportReview(db, {
       sessionId: "session-1",
-      invalidCount: 0,
       rows: [
         {
           rowId: "row-1",
@@ -478,5 +505,113 @@ describe("submitImportReview", () => {
         },
       ],
     });
+  });
+
+  it("throws when the same rowId is submitted more than once", async () => {
+    const db = createDbMock({
+      session: {
+        id: "session-1",
+        accountId: "account-1",
+        invalidCount: 0,
+        rows: [
+          {
+            id: "row-1",
+            rowNumber: 2,
+            bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+            amountNok: 100,
+            currency: "NOK",
+            normalizedMerchant: "groceries friday",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shop A",
+            name: "Groceries",
+            title: "Friday",
+            categoryId: null,
+          },
+        ],
+      },
+      validCategories: [],
+    });
+
+    const error = await submitImportReview(db, {
+      sessionId: "session-1",
+      rows: [
+        { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
+        { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
+      ],
+    }).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(InvalidImportReviewDecisionsError);
+    expect(
+      (error as InvalidImportReviewDecisionsError).duplicateRowIds,
+    ).toEqual(["row-1"]);
+    expect((error as InvalidImportReviewDecisionsError).unknownRowIds).toEqual(
+      [],
+    );
+    expect(db.transaction.createMany).not.toHaveBeenCalled();
+    expect(db.importReviewSession.delete).not.toHaveBeenCalled();
+  });
+
+  it("throws when a submitted rowId does not belong to the session", async () => {
+    const db = createDbMock({
+      session: {
+        id: "session-1",
+        accountId: "account-1",
+        invalidCount: 0,
+        rows: [
+          {
+            id: "row-1",
+            rowNumber: 2,
+            bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+            amountNok: 100,
+            currency: "NOK",
+            normalizedMerchant: "groceries friday",
+            paymentType: PaymentType.CARD,
+            sender: "Alice",
+            recipient: "Shop A",
+            name: "Groceries",
+            title: "Friday",
+            categoryId: null,
+          },
+        ],
+      },
+      validCategories: [],
+    });
+
+    const error = await submitImportReview(db, {
+      sessionId: "session-1",
+      rows: [
+        { rowId: "row-1", categoryId: null, selectedMessage: "Friday" },
+        { rowId: "row-does-not-exist", categoryId: null, selectedMessage: "?" },
+      ],
+    }).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(InvalidImportReviewDecisionsError);
+    expect(
+      (error as InvalidImportReviewDecisionsError).duplicateRowIds,
+    ).toEqual([]);
+    expect((error as InvalidImportReviewDecisionsError).unknownRowIds).toEqual([
+      "row-does-not-exist",
+    ]);
+    expect(db.transaction.createMany).not.toHaveBeenCalled();
+    expect(db.importReviewSession.delete).not.toHaveBeenCalled();
+  });
+
+  it("reads summary.invalid from the session's persisted invalidCount", async () => {
+    const db = createDbMock({
+      session: {
+        id: "session-1",
+        accountId: "account-1",
+        invalidCount: 5,
+        rows: [],
+      },
+    });
+
+    const result = await submitImportReview(db, {
+      sessionId: "session-1",
+      rows: [],
+    });
+
+    expect(result.summary.invalid).toBe(5);
   });
 });
