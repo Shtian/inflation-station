@@ -5,6 +5,7 @@ import {
   type CategoryRuleCandidate,
 } from "../categorization/rule-engine";
 import {
+  type CsvParserResult,
   type CsvValidationError,
   type ParsedCsvRow,
   parseNorwegianBankCsv,
@@ -443,6 +444,13 @@ export async function stageParsedImportRows(
     accountId: string;
     csvContent: string;
     providerMapping?: ProviderCsvMapping | null;
+    /**
+     * Canonical output already produced by a compiled provider adapter (or
+     * the built-in parser). When supplied, staging uses it directly instead
+     * of re-parsing from `providerMapping`/`csvContent`. #57 will replace
+     * `csvContent`/`providerMapping` outright with this canonical input.
+     */
+    parsed?: CsvParserResult;
   },
   options?: {
     openAiCleanupEnabled?: boolean;
@@ -452,9 +460,11 @@ export async function stageParsedImportRows(
     buildOpenAiMessageCleanup?: BuildOpenAiMessageCleanup;
   },
 ): Promise<StageParsedImportResult> {
-  const parsed = params.providerMapping
-    ? parseProviderMappedCsv(params.csvContent, params.providerMapping)
-    : parseNorwegianBankCsv(params.csvContent);
+  const parsed =
+    params.parsed ??
+    (params.providerMapping
+      ? parseProviderMappedCsv(params.csvContent, params.providerMapping)
+      : parseNorwegianBankCsv(params.csvContent));
 
   if (parsed.rows.length === 0) {
     return {
