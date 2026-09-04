@@ -22,3 +22,26 @@ export const RESERVED_ROW_WITH_BLANK_LINE_CSV = [
   "reservert;100,00;Ukjent;Ukjent;NOK",
   "16.01.2026;250,00;Kiosk;Snacks;NOK",
 ].join("\n");
+
+/** Statement using the ISO booking-date format and period-decimal, comma-thousands amounts. */
+export const ISO_DATE_PERIOD_DECIMAL_CSV = [
+  "Date;Amount;Description",
+  "2026-02-28;1,234.56;Groceries",
+].join("\n");
+
+/**
+ * Statement whose payment-type column uses a raw provider label that only
+ * becomes a recognizable canonical payment label ("Kort") through a
+ * `mapValues` transform, and whose merchant column carries stray whitespace
+ * and mixed case that a `trim` + `uppercase` transform pipeline normalizes.
+ */
+export const PAYMENT_LABEL_AND_MESSY_TEXT_CSV = [
+  "Bokføringsdato;Beløp;Beskrivelse;Betalingstype",
+  '15.01.2026;250,00;"  rema 1000  ";Varekjøp',
+].join("\n");
+
+/** Statement whose amount column always reports a positive magnitude that must be forced negative. */
+export const FORCED_NEGATIVE_AMOUNT_CSV = [
+  "Bokføringsdato;Beløp;Beskrivelse",
+  "15.01.2026;99,90;Kiosk",
+].join("\n");
