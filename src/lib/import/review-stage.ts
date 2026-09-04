@@ -4,11 +4,10 @@ import {
   buildRuleBasedSuggestions,
   type CategoryRuleCandidate,
 } from "../categorization/rule-engine";
-import {
-  type CsvParserResult,
-  type CsvValidationError,
-  type ParsedCsvRow,
-  parseNorwegianBankCsv,
+import type {
+  CsvParserResult,
+  CsvValidationError,
+  ParsedCsvRow,
 } from "./csv-parser";
 import {
   normalizeImportMerchant,
@@ -18,10 +17,6 @@ import {
   buildOpenAiMessageCleanup,
   type MessageCleanupUnavailableReason,
 } from "./openai-message-cleanup";
-import {
-  type ProviderCsvMapping,
-  parseProviderMappedCsv,
-} from "./provider-csv-parser";
 import { buildTransactionFingerprint } from "./transaction-dedupe";
 
 export type ReviewStageSummary = {
@@ -442,15 +437,8 @@ export async function stageParsedImportRows(
   db: ImportReviewStageDbClient,
   params: {
     accountId: string;
-    csvContent: string;
-    providerMapping?: ProviderCsvMapping | null;
-    /**
-     * Canonical output already produced by a compiled provider adapter (or
-     * the built-in parser). When supplied, staging uses it directly instead
-     * of re-parsing from `providerMapping`/`csvContent`. #57 will replace
-     * `csvContent`/`providerMapping` outright with this canonical input.
-     */
-    parsed?: CsvParserResult;
+    /** Canonical output already produced by a selected provider adapter. */
+    parsed: CsvParserResult;
   },
   options?: {
     openAiCleanupEnabled?: boolean;
@@ -460,11 +448,7 @@ export async function stageParsedImportRows(
     buildOpenAiMessageCleanup?: BuildOpenAiMessageCleanup;
   },
 ): Promise<StageParsedImportResult> {
-  const parsed =
-    params.parsed ??
-    (params.providerMapping
-      ? parseProviderMappedCsv(params.csvContent, params.providerMapping)
-      : parseNorwegianBankCsv(params.csvContent));
+  const { parsed } = params;
 
   if (parsed.rows.length === 0) {
     return {

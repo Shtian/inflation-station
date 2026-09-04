@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { CsvParserResult } from "@/lib/import/csv-parser";
+import {
+  type CsvParserResult,
+  parseNorwegianBankCsv,
+} from "@/lib/import/csv-parser";
 import type {
   ProviderAdapter,
   ProviderAdapterDetectionCandidate,
@@ -255,11 +258,10 @@ describe("POST /api/imports/parse", () => {
     expect(bankB.parse).toHaveBeenCalledTimes(1);
     expect(stageParsedImportRowsMock).toHaveBeenCalledWith(
       prismaMock,
-      expect.objectContaining({
+      {
         accountId: "account-1",
-        csvContent: CSV_CONTENT,
         parsed: parseResult,
-      }),
+      },
       expect.anything(),
     );
   });
@@ -361,11 +363,10 @@ describe("POST /api/imports/parse", () => {
     expect(response.status).toBe(200);
     expect(stageParsedImportRowsMock).toHaveBeenCalledWith(
       prismaMock,
-      expect.objectContaining({
+      {
         accountId: "account-1",
-        csvContent: CSV_CONTENT,
-        parsed: undefined,
-      }),
+        parsed: parseNorwegianBankCsv(CSV_CONTENT),
+      },
       expect.anything(),
     );
   });

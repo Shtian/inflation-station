@@ -1,10 +1,39 @@
 import { PaymentType } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import type { CategoryRuleCandidate } from "../categorization/rule-engine";
+import type { CsvParserResult, ParsedCsvRow } from "./csv-parser";
 import { stageParsedImportRows } from "./review-stage";
 
-const HEADER =
-  "Bokføringsdato;Beløp;Avsender;Mottaker;Navn;Tittel;Valuta;Betalingstype";
+function buildParsedRow(overrides?: Partial<ParsedCsvRow>): ParsedCsvRow {
+  return {
+    bookingDate: "01.01.2026",
+    amountNok: 100,
+    currency: "NOK",
+    sender: "Alice",
+    recipient: "Shop A",
+    name: "Groceries",
+    title: "Friday",
+    paymentType: "Kort",
+    ...overrides,
+  };
+}
+
+function buildParsedResult(
+  rows: ParsedCsvRow[],
+  overrides?: Partial<CsvParserResult>,
+): CsvParserResult {
+  return {
+    rows,
+    errors: [],
+    summary: {
+      imported: rows.length,
+      duplicates: 0,
+      ignoredReserved: 0,
+      invalid: 0,
+    },
+    ...overrides,
+  };
+}
 
 function createDbMock(options?: {
   categoryRules?: CategoryRuleCandidate[];
@@ -70,7 +99,7 @@ function createDbMock(options?: {
 }
 
 describe("stageParsedImportRows", () => {
-  it("uses provider mapping to transform provider-specific headers into canonical staged rows", async () => {
+  it("stages canonical rows produced by a provider adapter without parser-specific branching", async () => {
     const db = createDbMock({
       stagedRows: [
         {
@@ -92,55 +121,9 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent:
-        "Dato;Belastning;Fra;Til;Beskrivelse;Melding;Valuta;Type\n2026-01-01;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort",
-      providerMapping: {
-        id: "provider-1",
-        providerName: "Bank B",
-        normalizationRules: { dateFormat: "YYYY-MM-DD" },
-        fieldMappings: [
-          {
-            sourceField: "Dato",
-            canonicalField: "bookingDate",
-            transformRules: null,
-          },
-          {
-            sourceField: "Belastning",
-            canonicalField: "amount",
-            transformRules: null,
-          },
-          {
-            sourceField: "Fra",
-            canonicalField: "sender",
-            transformRules: null,
-          },
-          {
-            sourceField: "Til",
-            canonicalField: "recipient",
-            transformRules: null,
-          },
-          {
-            sourceField: "Beskrivelse",
-            canonicalField: "name",
-            transformRules: null,
-          },
-          {
-            sourceField: "Melding",
-            canonicalField: "title",
-            transformRules: null,
-          },
-          {
-            sourceField: "Valuta",
-            canonicalField: "currency",
-            transformRules: null,
-          },
-          {
-            sourceField: "Type",
-            canonicalField: "paymentType",
-            transformRules: null,
-          },
-        ],
-      },
+      parsed: buildParsedResult([
+        buildParsedRow({ bookingDate: "2026-01-01" }),
+      ]),
     });
 
     expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
@@ -198,7 +181,7 @@ describe("stageParsedImportRows", () => {
       db,
       {
         accountId: "account-1",
-        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+        parsed: buildParsedResult([buildParsedRow()]),
       },
       {
         openAiApiKey: null,
@@ -269,7 +252,9 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent: `${HEADER}\n32.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      parsed: buildParsedResult([
+        buildParsedRow({ bookingDate: "32.01.2026" }),
+      ]),
     });
 
     expect(result.summary).toEqual({
@@ -319,7 +304,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent: `${HEADER}\n03.01.26;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      parsed: buildParsedResult([buildParsedRow({ bookingDate: "03.01.26" })]),
     });
 
     expect(result.summary).toEqual({
@@ -349,12 +334,22 @@ describe("stageParsedImportRows", () => {
     });
   });
 
-  it("returns parser diagnostics and skips staging when CSV has no data rows", async () => {
+  it("returns parser diagnostics and skips staging when the adapter produced no data rows", async () => {
     const db = createDbMock();
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent: "",
+      parsed: {
+        rows: [],
+        errors: [
+          {
+            rowNumber: 1,
+            code: "MISSING_REQUIRED_HEADERS",
+            message: "CSV is empty.",
+          },
+        ],
+        summary: { imported: 0, duplicates: 0, ignoredReserved: 0, invalid: 1 },
+      },
     });
 
     expect(result.summary).toEqual({
@@ -404,7 +399,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      parsed: buildParsedResult([buildParsedRow()]),
     });
 
     expect(db.categoryRule.findMany).toHaveBeenCalledWith({
@@ -465,7 +460,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      parsed: buildParsedResult([buildParsedRow()]),
     });
 
     expect(db.importReviewSession.create).toHaveBeenCalledOnce();
@@ -516,7 +511,9 @@ describe("stageParsedImportRows", () => {
       db,
       {
         accountId: "account-1",
-        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Joker #1234;Oslo;NOK;Kort`,
+        parsed: buildParsedResult([
+          buildParsedRow({ name: "Joker #1234", title: "Oslo" }),
+        ]),
       },
       {
         openAiApiKey: "test-key",
@@ -555,7 +552,9 @@ describe("stageParsedImportRows", () => {
       db,
       {
         accountId: "account-1",
-        csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Joker #1234;Oslo;NOK;Kort`,
+        parsed: buildParsedResult([
+          buildParsedRow({ name: "Joker #1234", title: "Oslo" }),
+        ]),
       },
       {
         openAiApiKey: "test-key",
@@ -602,7 +601,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      parsed: buildParsedResult([buildParsedRow()]),
     });
 
     expect(result.review.potentialDuplicates).toBe(1);
@@ -639,7 +638,13 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Bær;Øl;NOK;Overføring`,
+      parsed: buildParsedResult([
+        buildParsedRow({
+          name: "Bær",
+          title: "Øl",
+          paymentType: "Overføring",
+        }),
+      ]),
     });
 
     expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
@@ -700,7 +705,7 @@ describe("stageParsedImportRows", () => {
 
     const result = await stageParsedImportRows(db, {
       accountId: "account-1",
-      csvContent: `${HEADER}\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort\n01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort`,
+      parsed: buildParsedResult([buildParsedRow(), buildParsedRow()]),
     });
 
     expect(result.review.potentialDuplicates).toBe(2);
