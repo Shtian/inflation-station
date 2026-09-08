@@ -4,10 +4,11 @@ import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { isInputJsonValue } from "@/lib/import/json-value";
+import { compileProviderMapping } from "@/lib/import/provider-adapter/compile-mapping";
 import {
-  findMissingRequiredCanonicalFields,
-  hasMerchantSignalCanonicalField,
-} from "@/lib/import/provider-mapping-contract";
+  type ProviderMappingMutationError,
+  toProviderMappingMutationError,
+} from "@/lib/import/provider-mapping-mutation-errors";
 import { prisma } from "@/lib/prisma";
 import {
   executeServerMutation,
@@ -39,6 +40,7 @@ type CreateProviderMappingActionErrorCode =
   | "DUPLICATE_CANONICAL_FIELD_MAPPINGS"
   | "REQUIRED_CANONICAL_FIELDS_MISSING"
   | "MERCHANT_SIGNAL_FIELD_REQUIRED"
+  | "INVALID_PROVIDER_MAPPING_DEFINITION"
   | "PROVIDER_MAPPING_MUST_BE_UNIQUE"
   | "PROVIDER_MAPPING_CREATE_FAILED";
 
@@ -47,22 +49,24 @@ type CreateProviderMappingActionResult = MutationActionResult<
   CreateProviderMappingActionErrorCode
 >;
 
-function findDuplicateCanonicalFields(
-  fieldMappings: Array<{ canonicalField: string }>,
-) {
-  const counts = new Map<string, number>();
-
-  for (const fieldMapping of fieldMappings) {
-    counts.set(
-      fieldMapping.canonicalField,
-      (counts.get(fieldMapping.canonicalField) ?? 0) + 1,
-    );
+function toMutationErrorDetails(
+  error: ProviderMappingMutationError,
+): Record<string, unknown> | undefined {
+  switch (error.code) {
+    case "DUPLICATE_CANONICAL_FIELD_MAPPINGS":
+      return { duplicateCanonicalFields: error.duplicateCanonicalFields };
+    case "REQUIRED_CANONICAL_FIELDS_MISSING":
+      return { missingCanonicalFields: error.missingCanonicalFields };
+    case "MERCHANT_SIGNAL_FIELD_REQUIRED":
+      return undefined;
+    case "INVALID_PROVIDER_MAPPING_DEFINITION":
+      return {
+        code: error.configurationErrorCode,
+        ...(error.details ? { details: error.details } : {}),
+      };
+    default:
+      return undefined;
   }
-
-  return [...counts.entries()]
-    .filter(([, count]) => count > 1)
-    .map(([canonicalField]) => canonicalField)
-    .sort();
 }
 
 export async function createImportProviderMappingAction(
@@ -78,40 +82,24 @@ export async function createImportProviderMappingAction(
     );
   }
 
-  const duplicateCanonicalFields = findDuplicateCanonicalFields(
-    parsedInput.data.fieldMappings,
-  );
-  if (duplicateCanonicalFields.length > 0) {
-    return mutationError(
-      "DUPLICATE_CANONICAL_FIELD_MAPPINGS",
-      "Duplicate canonical field mappings.",
-      { duplicateCanonicalFields },
-    );
-  }
+  const compileResult = compileProviderMapping({
+    id: "",
+    providerName: parsedInput.data.providerName,
+    mappingVersion: parsedInput.data.mappingVersion ?? null,
+    normalizationRules: parsedInput.data.normalizationRules,
+    fieldMappings: parsedInput.data.fieldMappings.map((fieldMapping) => ({
+      sourceField: fieldMapping.sourceField,
+      canonicalField: fieldMapping.canonicalField,
+      transformRules: fieldMapping.transformRules ?? null,
+    })),
+  });
 
-  const missingCanonicalFields = findMissingRequiredCanonicalFields(
-    parsedInput.data.fieldMappings.map(
-      (fieldMapping) => fieldMapping.canonicalField,
-    ),
-  );
-  if (missingCanonicalFields.length > 0) {
+  if (!compileResult.ok) {
+    const mappingError = toProviderMappingMutationError(compileResult.error);
     return mutationError(
-      "REQUIRED_CANONICAL_FIELDS_MISSING",
-      "Missing required canonical fields.",
-      { missingCanonicalFields },
-    );
-  }
-
-  if (
-    !hasMerchantSignalCanonicalField(
-      parsedInput.data.fieldMappings.map(
-        (fieldMapping) => fieldMapping.canonicalField,
-      ),
-    )
-  ) {
-    return mutationError(
-      "MERCHANT_SIGNAL_FIELD_REQUIRED",
-      "At least one merchant signal field mapping is required (name or title).",
+      mappingError.code,
+      mappingError.message,
+      toMutationErrorDetails(mappingError),
     );
   }
 

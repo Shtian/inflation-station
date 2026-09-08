@@ -8,16 +8,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { ProviderFieldTransform } from "../../../lib/import/provider-adapter/mapping-definition";
 import type {
   EditableFieldMapping,
   MerchantSignalCanonicalField,
 } from "../provider-mappings-manager.utils";
 import {
   getMappingSourceValue,
+  getMappingTransforms,
   isRequiredCanonicalField,
   MERCHANT_SIGNAL_CANONICAL_FIELDS,
   OPTIONAL_CANONICAL_FIELDS,
 } from "../provider-mappings-manager.utils";
+import { ProviderMappingFieldTransformsEditor } from "./provider-mapping-field-transforms-editor";
 
 export function ProviderMappingFieldMappingsEditor(props: {
   mode: "new" | "edit";
@@ -27,8 +30,16 @@ export function ProviderMappingFieldMappingsEditor(props: {
     value: MerchantSignalCanonicalField,
   ): void;
   onRequiredMappingChange(canonicalField: string, sourceField: string): void;
+  onRequiredTransformsChange(
+    canonicalField: string,
+    transforms: ProviderFieldTransform[],
+  ): void;
   onOptionalCanonicalFieldChange(index: number, value: string): void;
   onOptionalSourceFieldChange(index: number, value: string): void;
+  onOptionalTransformsChange(
+    index: number,
+    transforms: ProviderFieldTransform[],
+  ): void;
   onOptionalRemove(index: number): void;
   onOptionalAdd(): void;
 }) {
@@ -94,6 +105,19 @@ export function ProviderMappingFieldMappingsEditor(props: {
               />
             ) : null}
           </div>
+          <div className="md:col-span-3">
+            <ProviderMappingFieldTransformsEditor
+              idPrefix={`${props.mode}-bookingdate`}
+              fieldLabel="bookingDate"
+              transforms={getMappingTransforms(
+                props.fieldMappings,
+                "bookingDate",
+              )}
+              onChange={(transforms) =>
+                props.onRequiredTransformsChange("bookingDate", transforms)
+              }
+            />
+          </div>
           <Input value="amount" disabled className="w-full" />
           <ArrowRight className="mx-auto h-4 w-4 text-muted-foreground" />
           <div className="relative">
@@ -112,6 +136,16 @@ export function ProviderMappingFieldMappingsEditor(props: {
                 aria-hidden="true"
               />
             ) : null}
+          </div>
+          <div className="md:col-span-3">
+            <ProviderMappingFieldTransformsEditor
+              idPrefix={`${props.mode}-amount`}
+              fieldLabel="amount"
+              transforms={getMappingTransforms(props.fieldMappings, "amount")}
+              onChange={(transforms) =>
+                props.onRequiredTransformsChange("amount", transforms)
+              }
+            />
           </div>
           <Select
             value={props.merchantSignalCanonicalField}
@@ -161,6 +195,22 @@ export function ProviderMappingFieldMappingsEditor(props: {
                 aria-hidden="true"
               />
             ) : null}
+          </div>
+          <div className="md:col-span-3">
+            <ProviderMappingFieldTransformsEditor
+              idPrefix={`${props.mode}-merchantsignal`}
+              fieldLabel="merchant signal"
+              transforms={getMappingTransforms(
+                props.fieldMappings,
+                props.merchantSignalCanonicalField,
+              )}
+              onChange={(transforms) =>
+                props.onRequiredTransformsChange(
+                  props.merchantSignalCanonicalField,
+                  transforms,
+                )
+              }
+            />
           </div>
         </div>
       </section>
@@ -244,6 +294,18 @@ export function ProviderMappingFieldMappingsEditor(props: {
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
                   </Button>
+                  <div className="md:col-span-4">
+                    <ProviderMappingFieldTransformsEditor
+                      idPrefix={`${props.mode}-optional-${index + 1}`}
+                      fieldLabel={
+                        fieldMapping.canonicalField || `row ${index + 1}`
+                      }
+                      transforms={fieldMapping.transforms}
+                      onChange={(transforms) =>
+                        props.onOptionalTransformsChange(index, transforms)
+                      }
+                    />
+                  </div>
                 </div>
               );
             })

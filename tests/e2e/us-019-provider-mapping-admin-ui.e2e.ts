@@ -9,7 +9,7 @@ type MockProviderMapping = {
     id: string;
     sourceField: string;
     canonicalField: string;
-    transformRules: null;
+    transformRules: unknown;
   }>;
 };
 
@@ -66,7 +66,7 @@ test("manages provider mappings from admin UI with validation feedback", async (
             id: "provider-2",
             providerName,
             normalizationRules: {},
-            mappingVersion: 2,
+            mappingVersion: 1,
             fieldMappings: [
               {
                 id: "field-new-1",
@@ -111,6 +111,7 @@ test("manages provider mappings from admin UI with validation feedback", async (
         fieldMappings?: Array<{
           sourceField: string;
           canonicalField: string;
+          transformRules?: unknown;
         }>;
       };
       lastPatchBody = payload;
@@ -125,7 +126,7 @@ test("manages provider mappings from admin UI with validation feedback", async (
             id: `field-edit-${index + 1}`,
             sourceField: fieldMapping.sourceField,
             canonicalField: fieldMapping.canonicalField,
-            transformRules: null,
+            transformRules: fieldMapping.transformRules ?? null,
           }),
         ),
       };
@@ -150,7 +151,7 @@ test("manages provider mappings from admin UI with validation feedback", async (
 
   await page.getByRole("button", { name: "Add provider mapping" }).click();
   await page.getByLabel("Provider name").fill(providerName);
-  await page.getByLabel("Mapping version (optional)").fill("2");
+  await page.getByLabel("Mapping version (optional)").fill("1");
   await page
     .getByRole("textbox", { name: "Required source field bookingDate" })
     .fill("Dato");
@@ -180,6 +181,23 @@ test("manages provider mappings from admin UI with validation feedback", async (
   await editReqHeaders.press("Enter");
   await editReqHeaders.fill("belop");
   await editReqHeaders.press("Enter");
+
+  // Lexical rule: select a supported decimal separator, derived from
+  // SUPPORTED_PROVIDER_DECIMAL_SEPARATORS rather than free text.
+  await page.getByRole("combobox", { name: "Edit decimal separator" }).click();
+  await page.getByRole("option", { name: ".", exact: true }).click();
+
+  // Supported transform: add a parameterless "trim" transform to the
+  // bookingDate field mapping (the type select defaults to "trim").
+  await page
+    .getByRole("button", { name: "Add transform for bookingDate" })
+    .click();
+  await expect(
+    page.getByRole("button", {
+      name: 'Remove transform "Trim" for bookingDate',
+    }),
+  ).toBeVisible();
+
   await page.getByRole("button", { name: "Save provider mapping" }).click();
 
   await expect(
@@ -190,16 +208,41 @@ test("manages provider mappings from admin UI with validation feedback", async (
   expect(lastPatchBody).toEqual(
     expect.objectContaining({
       providerName,
-      mappingVersion: 2,
+      mappingVersion: 1,
       normalizationRules: {
         requiredHeaders: ["dato", "belop"],
+        decimalSeparator: ".",
+        dateFormat: "DD.MM.YYYY",
       },
+      fieldMappings: expect.arrayContaining([
+        expect.objectContaining({
+          canonicalField: "bookingDate",
+          sourceField: "Dato",
+          transformRules: [{ type: "trim" }],
+        }),
+      ]),
     }),
   );
 
+  // Reopen the mapping to confirm both the lexical rule and the transform
+  // persisted through the reload rather than being dropped.
+  await bankBRow.getByRole("button").click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await expect(
+    page
+      .getByRole("combobox", { name: "Edit decimal separator" })
+      .locator("[data-slot=select-value]"),
+  ).toHaveText(".");
+  await expect(
+    page.getByRole("button", {
+      name: 'Remove transform "Trim" for bookingDate',
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+
   await page.getByRole("button", { name: "Add provider mapping" }).click();
   await page.getByLabel("Provider name").fill(providerName);
-  await page.getByLabel("Mapping version (optional)").fill("2");
+  await page.getByLabel("Mapping version (optional)").fill("1");
   await page
     .getByRole("textbox", { name: "Required source field bookingDate" })
     .fill("Dato");

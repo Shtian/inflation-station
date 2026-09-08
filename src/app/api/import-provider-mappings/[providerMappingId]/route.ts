@@ -1,12 +1,14 @@
 import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { prisma } from "@/lib/prisma";
-import { isInputJsonValue } from "../../../../lib/import/json-value";
+import { isInputJsonValue } from "@/lib/import/json-value";
+import { compileProviderMapping } from "@/lib/import/provider-adapter/compile-mapping";
+import type { ProviderMappingRecord } from "@/lib/import/provider-adapter/mapping-definition";
 import {
-  findMissingRequiredCanonicalFields,
-  hasMerchantSignalCanonicalField,
-} from "../../../../lib/import/provider-mapping-contract";
+  type ProviderMappingMutationError,
+  toProviderMappingMutationError,
+} from "@/lib/import/provider-mapping-mutation-errors";
+import { prisma } from "@/lib/prisma";
 
 const jsonValueSchema = z.custom<Prisma.InputJsonValue>(
   (value) => isInputJsonValue(value),
@@ -41,22 +43,30 @@ type RouteParams = {
   params: Promise<unknown>;
 };
 
-function findDuplicateCanonicalFields(
-  fieldMappings: { canonicalField: string }[],
-) {
-  const counts = new Map<string, number>();
-
-  for (const fieldMapping of fieldMappings) {
-    counts.set(
-      fieldMapping.canonicalField,
-      (counts.get(fieldMapping.canonicalField) ?? 0) + 1,
-    );
+function toProviderMappingRoutePayload(
+  error: ProviderMappingMutationError,
+): Record<string, unknown> {
+  switch (error.code) {
+    case "DUPLICATE_CANONICAL_FIELD_MAPPINGS":
+      return {
+        error: error.code,
+        duplicateCanonicalFields: error.duplicateCanonicalFields,
+      };
+    case "REQUIRED_CANONICAL_FIELDS_MISSING":
+      return {
+        error: error.code,
+        missingCanonicalFields: error.missingCanonicalFields,
+      };
+    case "MERCHANT_SIGNAL_FIELD_REQUIRED":
+      return { error: error.code, message: error.message };
+    case "INVALID_PROVIDER_MAPPING_DEFINITION":
+      return {
+        error: error.code,
+        code: error.configurationErrorCode,
+        message: error.message,
+        ...(error.details ? { details: error.details } : {}),
+      };
   }
-
-  return [...counts.entries()]
-    .filter(([, count]) => count > 1)
-    .map(([canonicalField]) => canonicalField)
-    .sort();
 }
 
 async function parseProviderMappingId(params: Promise<unknown>) {
@@ -92,52 +102,51 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     );
   }
 
-  if (parsed.data.fieldMappings) {
-    const duplicateCanonicalFields = findDuplicateCanonicalFields(
-      parsed.data.fieldMappings,
+  const currentMapping = await prisma.importProviderMapping.findUnique({
+    where: { id: providerMappingId },
+    select: {
+      id: true,
+      providerName: true,
+      mappingVersion: true,
+      normalizationRules: true,
+      fieldMappings: {
+        select: {
+          sourceField: true,
+          canonicalField: true,
+          transformRules: true,
+        },
+      },
+    },
+  });
+
+  if (!currentMapping) {
+    return NextResponse.json(
+      { error: "PROVIDER_MAPPING_NOT_FOUND" },
+      { status: 404 },
     );
+  }
 
-    if (duplicateCanonicalFields.length > 0) {
-      return NextResponse.json(
-        {
-          error: "DUPLICATE_CANONICAL_FIELD_MAPPINGS",
-          duplicateCanonicalFields,
-        },
-        { status: 400 },
-      );
-    }
+  const mergedRecord: ProviderMappingRecord = {
+    id: currentMapping.id,
+    providerName: parsed.data.providerName ?? currentMapping.providerName,
+    mappingVersion: parsed.data.mappingVersion ?? currentMapping.mappingVersion,
+    normalizationRules:
+      parsed.data.normalizationRules ?? currentMapping.normalizationRules,
+    fieldMappings: (
+      parsed.data.fieldMappings ?? currentMapping.fieldMappings
+    ).map((fieldMapping) => ({
+      sourceField: fieldMapping.sourceField,
+      canonicalField: fieldMapping.canonicalField,
+      transformRules: fieldMapping.transformRules ?? null,
+    })),
+  };
 
-    const missingCanonicalFields = findMissingRequiredCanonicalFields(
-      parsed.data.fieldMappings.map(
-        (fieldMapping) => fieldMapping.canonicalField,
-      ),
-    );
-    if (missingCanonicalFields.length > 0) {
-      return NextResponse.json(
-        {
-          error: "REQUIRED_CANONICAL_FIELDS_MISSING",
-          missingCanonicalFields,
-        },
-        { status: 400 },
-      );
-    }
-
-    if (
-      !hasMerchantSignalCanonicalField(
-        parsed.data.fieldMappings.map(
-          (fieldMapping) => fieldMapping.canonicalField,
-        ),
-      )
-    ) {
-      return NextResponse.json(
-        {
-          error: "MERCHANT_SIGNAL_FIELD_REQUIRED",
-          message:
-            "At least one merchant signal field (name or title) is required.",
-        },
-        { status: 400 },
-      );
-    }
+  const compileResult = compileProviderMapping(mergedRecord);
+  if (!compileResult.ok) {
+    const mappingError = toProviderMappingMutationError(compileResult.error);
+    return NextResponse.json(toProviderMappingRoutePayload(mappingError), {
+      status: 400,
+    });
   }
 
   try {

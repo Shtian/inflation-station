@@ -10,6 +10,18 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  SUPPORTED_PROVIDER_DATE_FORMATS,
+  SUPPORTED_PROVIDER_DECIMAL_SEPARATORS,
+  SUPPORTED_PROVIDER_DELIMITERS,
+} from "../../../lib/import/provider-adapter/mapping-definition";
 import type {
   EditableFieldMapping,
   MerchantSignalCanonicalField,
@@ -17,11 +29,18 @@ import type {
 } from "../provider-mappings-manager.utils";
 import {
   createEmptyFieldMapping,
+  INFER_DELIMITER_OPTION,
   removeMappingByIndex,
+  upsertMappingTransforms,
   validateRegexPattern,
 } from "../provider-mappings-manager.utils";
 import { ProviderMappingFieldMappingsEditor } from "./provider-mapping-field-mappings-editor";
 import { ProviderMappingStringBadgeInput } from "./provider-mapping-string-badge-input";
+
+const DELIMITER_LABELS: Record<string, string> = {
+  ";": "Semicolon ( ; )",
+  ",": "Comma ( , )",
+};
 
 export function AddProviderMappingDialog(props: {
   open: boolean;
@@ -82,6 +101,115 @@ export function AddProviderMappingDialog(props: {
               />
             </FieldContent>
           </Field>
+          <section className="space-y-3 rounded-md border border-border p-3">
+            <div className="space-y-1">
+              <h3 className="font-semibold text-foreground text-sm">
+                CSV format
+              </h3>
+              <p className="text-muted-foreground text-xs">
+                How the uploaded CSV is tokenized and how its values are
+                interpreted.
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <Field>
+                <FieldLabel htmlFor="new-delimiter">Delimiter</FieldLabel>
+                <FieldContent>
+                  <Select
+                    value={props.normalizationRules.delimiter}
+                    onValueChange={(value) =>
+                      props.onNormalizationRulesChange({
+                        ...props.normalizationRules,
+                        delimiter: value as NormalizationFormState["delimiter"],
+                      })
+                    }
+                  >
+                    <SelectTrigger
+                      id="new-delimiter"
+                      aria-label="Delimiter"
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={INFER_DELIMITER_OPTION}>
+                        Infer from file
+                      </SelectItem>
+                      {SUPPORTED_PROVIDER_DELIMITERS.map((delimiter) => (
+                        <SelectItem key={delimiter} value={delimiter}>
+                          {DELIMITER_LABELS[delimiter] ?? delimiter}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="new-decimal-separator">
+                  Decimal separator
+                </FieldLabel>
+                <FieldContent>
+                  <Select
+                    value={props.normalizationRules.decimalSeparator}
+                    onValueChange={(value) =>
+                      props.onNormalizationRulesChange({
+                        ...props.normalizationRules,
+                        decimalSeparator:
+                          value as NormalizationFormState["decimalSeparator"],
+                      })
+                    }
+                  >
+                    <SelectTrigger
+                      id="new-decimal-separator"
+                      aria-label="Decimal separator"
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUPPORTED_PROVIDER_DECIMAL_SEPARATORS.map(
+                        (separator) => (
+                          <SelectItem key={separator} value={separator}>
+                            {separator}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="new-date-format">Date format</FieldLabel>
+                <FieldContent>
+                  <Select
+                    value={props.normalizationRules.dateFormat}
+                    onValueChange={(value) =>
+                      props.onNormalizationRulesChange({
+                        ...props.normalizationRules,
+                        dateFormat:
+                          value as NormalizationFormState["dateFormat"],
+                      })
+                    }
+                  >
+                    <SelectTrigger
+                      id="new-date-format"
+                      aria-label="Date format"
+                      className="w-full"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUPPORTED_PROVIDER_DATE_FORMATS.map((dateFormat) => (
+                        <SelectItem key={dateFormat} value={dateFormat}>
+                          {dateFormat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
+            </div>
+          </section>
           <section className="space-y-3 rounded-md border border-border p-3">
             <div className="space-y-1">
               <h3 className="font-semibold text-foreground text-sm">
@@ -149,6 +277,15 @@ export function AddProviderMappingDialog(props: {
                 ),
               )
             }
+            onRequiredTransformsChange={(canonicalField, transforms) =>
+              props.onFieldMappingsChange(
+                upsertMappingTransforms(
+                  props.fieldMappings,
+                  canonicalField,
+                  transforms,
+                ),
+              )
+            }
             onOptionalCanonicalFieldChange={(index, value) =>
               props.onFieldMappingsChange(
                 props.fieldMappings.map((fieldMapping, fieldMappingIndex) =>
@@ -163,6 +300,15 @@ export function AddProviderMappingDialog(props: {
                 props.fieldMappings.map((fieldMapping, fieldMappingIndex) =>
                   fieldMappingIndex === index
                     ? { ...fieldMapping, sourceField: value }
+                    : fieldMapping,
+                ),
+              )
+            }
+            onOptionalTransformsChange={(index, transforms) =>
+              props.onFieldMappingsChange(
+                props.fieldMappings.map((fieldMapping, fieldMappingIndex) =>
+                  fieldMappingIndex === index
+                    ? { ...fieldMapping, transforms }
                     : fieldMapping,
                 ),
               )

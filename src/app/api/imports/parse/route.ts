@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { getMessageCleanupSettings } from "@/lib/import/message-cleanup-settings";
-import { detectProviderFromCsv } from "@/lib/import/provider-detection";
+import type { ProviderAdapter } from "@/lib/import/provider-adapter/adapter";
+import { createBuiltInNorwegianAdapter } from "@/lib/import/provider-adapter/built-in-norwegian";
+import { createCsvStatement } from "@/lib/import/provider-adapter/csv-statement";
+import { detectProviderFromAdapters } from "@/lib/import/provider-adapter/detection";
+import { loadProviderAdapters } from "@/lib/import/provider-adapter/repository";
 import { stageParsedImportRows } from "@/lib/import/review-stage";
 import { prisma } from "@/lib/prisma";
 
@@ -115,31 +119,50 @@ export async function POST(request: Request) {
     );
   }
 
-  const detectedProvider = await detectProviderFromCsv(prisma, csvContent);
+  const { adapters, configurationErrors } = await loadProviderAdapters(prisma);
+  const statement = createCsvStatement(csvContent);
+  const detectedProvider = detectProviderFromAdapters(adapters, statement);
   let detection = detectedProvider;
+  let selectedAdapter: ProviderAdapter | null = null;
 
   if (payload.providerId) {
-    const selectedProvider = await prisma.importProviderMapping.findUnique({
-      where: { id: payload.providerId },
-      select: { id: true, providerName: true },
-    });
+    const selectedProviderId = payload.providerId;
+    const adapter = adapters.find(
+      (candidate) => candidate.providerId === selectedProviderId,
+    );
 
-    if (!selectedProvider) {
+    if (!adapter) {
+      const configurationError = configurationErrors.find(
+        (error) => error.details?.providerMappingId === selectedProviderId,
+      );
+
+      if (configurationError) {
+        return NextResponse.json(
+          {
+            error: "PROVIDER_MAPPING_CONFIGURATION_ERROR",
+            message: configurationError.message,
+            code: configurationError.code,
+          },
+          { status: 400 },
+        );
+      }
+
       return badRequest(
         "PROVIDER_NOT_FOUND",
         "The selected provider could not be found.",
       );
     }
 
+    selectedAdapter = adapter;
     const selectedCandidate = detectedProvider.candidates.find(
-      (candidate) => candidate.providerId === selectedProvider.id,
+      (candidate) => candidate.providerId === adapter.providerId,
     );
 
     detection = {
       ...detectedProvider,
       state: "certain",
-      providerId: selectedProvider.id,
-      providerName: selectedProvider.providerName,
+      providerId: adapter.providerId,
+      providerName: adapter.providerName,
       score: selectedCandidate?.score ?? detectedProvider.score,
     };
   } else if (detection.state !== "certain" && detection.candidates.length > 0) {
@@ -154,32 +177,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const providerMapping = detection.providerId
-    ? await prisma.importProviderMapping.findUnique({
-        where: { id: detection.providerId },
-        select: {
-          id: true,
-          providerName: true,
-          normalizationRules: true,
-          fieldMappings: {
-            select: {
-              sourceField: true,
-              canonicalField: true,
-              transformRules: true,
-            },
-          },
-        },
-      })
-    : null;
+  if (!selectedAdapter && detection.providerId) {
+    selectedAdapter =
+      adapters.find(
+        (candidate) => candidate.providerId === detection.providerId,
+      ) ?? null;
+  }
 
   const messageCleanupSettings = await getMessageCleanupSettings(prisma);
+  const adapter = selectedAdapter ?? createBuiltInNorwegianAdapter();
+  const parsed = adapter.parse(statement);
 
   const staged = await stageParsedImportRows(
     prisma,
     {
       accountId,
-      csvContent,
-      providerMapping,
+      parsed,
     },
     {
       openAiCleanupModel: messageCleanupSettings.modelId,

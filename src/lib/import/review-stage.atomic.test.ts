@@ -6,10 +6,22 @@ import {
   type TestDatabase,
   teardownTestDatabase,
 } from "../../../tests/support/prisma-test-db";
+import type { CsvParserResult, ParsedCsvRow } from "./csv-parser";
 import { stageParsedImportRows } from "./review-stage";
 
-const HEADER =
-  "Bokføringsdato;Beløp;Avsender;Mottaker;Navn;Tittel;Valuta;Betalingstype";
+function buildParsedRow(overrides?: Partial<ParsedCsvRow>): ParsedCsvRow {
+  return {
+    bookingDate: "01.01.2026",
+    amountNok: 100,
+    currency: "NOK",
+    sender: "Alice",
+    recipient: "Shop A",
+    name: "Groceries",
+    title: "Friday",
+    paymentType: "Kort",
+    ...overrides,
+  };
+}
 
 describe("stageParsedImportRows - atomic persistence (real database)", () => {
   let db: TestDatabase;
@@ -27,17 +39,17 @@ describe("stageParsedImportRows - atomic persistence (real database)", () => {
       data: { name: "Atomic Staging Account" },
     });
 
-    const csvContent = [
-      HEADER,
-      "01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort",
-      "32.01.2026;50,00;Bob;Shop B;Snacks;Monday;NOK;Kort",
-    ].join("\n");
+    const parsed: CsvParserResult = {
+      rows: [buildParsedRow(), buildParsedRow({ bookingDate: "32.01.2026" })],
+      errors: [],
+      summary: { imported: 2, duplicates: 0, ignoredReserved: 0, invalid: 0 },
+    };
 
     const result = await stageParsedImportRows(
       db.client,
       {
         accountId: account.id,
-        csvContent,
+        parsed,
       },
       {
         openAiApiKey: null,
@@ -81,17 +93,23 @@ describe("stageParsedImportRows - atomic persistence (real database)", () => {
     });
 
     try {
-      const csvContent = [
-        HEADER,
-        "01.01.2026;100,00;Alice;Shop A;Groceries;Friday;NOK;Kort",
-      ].join("\n");
+      const parsed: CsvParserResult = {
+        rows: [buildParsedRow()],
+        errors: [],
+        summary: {
+          imported: 1,
+          duplicates: 0,
+          ignoredReserved: 0,
+          invalid: 0,
+        },
+      };
 
       await expect(
         stageParsedImportRows(
           db.client,
           {
             accountId: account.id,
-            csvContent,
+            parsed,
           },
           {
             openAiApiKey: null,
