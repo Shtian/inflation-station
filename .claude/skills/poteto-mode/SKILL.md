@@ -118,5 +118,4 @@ A large or cross-cutting effort (a migration across many call sites, an ambitiou
 - **Refactoring.** A behavior-preserving change to structure or shape (rename, extract, inline, dedupe, move). `playbooks/refactoring.md`.
 - **Prototype.** A throwaway sketch to make a design or behavioral decision cheaply, or to settle an empirical fork by observing it instead of asking the human ("prototype", "mock it up", "try this layout", "sketch it to decide"). `playbooks/prototype.md`.
 - **Shipping.** Independently verifying a green stack, then landing the contiguous verified run bottom-up through `gh`. `playbooks/shipping.md`.
-- **Multi-phase or multi-PR plan.** Work that spans phases or stacked PRs. `playbooks/multi-phase-plan.md`.
 - **Opening a PR.** Invoked at the end of every other playbook. `playbooks/opening-a-pr.md`.
