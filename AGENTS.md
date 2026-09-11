@@ -2,6 +2,10 @@
 
 Inflation Station is a Next.js + TypeScript personal-finance app with Prisma-backed imports, transaction workflows, and monthly AI-assisted review generation.
 
+## Working mode
+- For any nontrivial change, architecture decision, or bug fix, apply `/poteto-mode` before starting. It matches the task to a playbook and grounds decisions in named principles.
+- Casual questions, one-line edits, and read-only lookups skip it.
+
 ## Essentials for all tasks
 - Package manager: `pnpm` (not npm).
 - Work with progressive disclosure: start with `README.md`, `package.json`, and directly relevant files; expand only when blocked.
