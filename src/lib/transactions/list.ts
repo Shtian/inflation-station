@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { normalizeMerchantKey } from "./merchant";
 import {
   TRANSACTION_ROW_SELECT,
   type TransactionRow,
@@ -100,11 +101,12 @@ export async function getTransactionsPage(
     const containsQuery: StringContainsFilter = {
       contains: normalizedQuery,
     };
+    const merchantKey = normalizeMerchantKey(normalizedQuery);
 
     where.OR = [
-      {
-        normalizedMerchant: containsQuery,
-      },
+      ...(merchantKey.length > 0
+        ? [{ normalizedMerchant: { contains: merchantKey } }]
+        : []),
       {
         merchant: containsQuery,
       },

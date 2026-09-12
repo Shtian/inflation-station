@@ -154,6 +154,49 @@ describe("getTransactionsPage", () => {
     );
   });
 
+  it("folds the query into a merchant key for the normalizedMerchant leg only", async () => {
+    const db = createTransactionsDbMock(1);
+
+    await getTransactionsPage(db, {
+      ...createTransactionListFilters(),
+      query: "Coffee & Tea",
+    });
+
+    expect(db.transaction.count).toHaveBeenCalledWith({
+      where: {
+        accountId: undefined,
+        categoryId: undefined,
+        OR: [
+          { normalizedMerchant: { contains: "coffee tea" } },
+          { merchant: { contains: "Coffee & Tea" } },
+          { note: { contains: "Coffee & Tea" } },
+          { category: { is: { name: { contains: "Coffee & Tea" } } } },
+        ],
+      },
+    });
+  });
+
+  it("drops the normalizedMerchant leg when the query folds to nothing", async () => {
+    const db = createTransactionsDbMock(0);
+
+    await getTransactionsPage(db, {
+      ...createTransactionListFilters(),
+      query: "&",
+    });
+
+    expect(db.transaction.count).toHaveBeenCalledWith({
+      where: {
+        accountId: undefined,
+        categoryId: undefined,
+        OR: [
+          { merchant: { contains: "&" } },
+          { note: { contains: "&" } },
+          { category: { is: { name: { contains: "&" } } } },
+        ],
+      },
+    });
+  });
+
   it("returns empty rows and zero pages when no filters match", async () => {
     const db = createTransactionsDbMock(0);
     db.transaction.findMany.mockResolvedValueOnce([]);

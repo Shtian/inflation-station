@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { z } from "zod";
+import { normalizeImportMerchant } from "@/lib/import/normalization";
 import {
   createTestDatabase,
   type TestDatabase,
@@ -370,6 +371,60 @@ describe("transaction writes (real database)", () => {
     });
     expect(current.rows.map((row) => row.id)).toEqual([created.id]);
     expect(current.pagination.total).toBe(1);
+  });
+
+  it("finds the same merchant whether it was typed or imported", async () => {
+    const account = await seedAccount();
+    const typed = await createTransaction(
+      db.client,
+      createIntent({
+        accountId: account.id,
+        bookingDate: "2026-01-15",
+        amountNok: -120,
+        merchant: "Bær & Øl Åsen AS",
+        paymentType: "CARD",
+      }),
+    );
+    const imported = await db.client.transaction.create({
+      data: {
+        accountId: account.id,
+        bookingDate: new Date("2026-01-16T00:00:00.000Z"),
+        amountNok: -80,
+        currency: "NOK",
+        merchant: "Varekjøp",
+        normalizedMerchant: normalizeImportMerchant(
+          "BÆR & ØL ÅSEN AS",
+          "Varekjøp",
+        ),
+        paymentType: "CARD",
+      },
+    });
+    await createTransaction(
+      db.client,
+      createIntent({
+        accountId: account.id,
+        bookingDate: "2026-01-17",
+        amountNok: -30,
+        merchant: "Corner Shop",
+        paymentType: "CARD",
+      }),
+    );
+
+    const persisted = await db.client.transaction.findUniqueOrThrow({
+      where: { id: typed.id },
+    });
+    expect(persisted.normalizedMerchant).toBe("baer ol asen as");
+
+    const expectedIds = [typed.id, imported.id].sort();
+    for (const query of ["bær & øl", "baer ol", "Øl Åsen", "BÆR"]) {
+      const page = await getTransactionsPage(db.client, {
+        query,
+        page: 1,
+        pageSize: 25,
+      });
+      expect(page.rows.map((row) => row.id).sort(), query).toEqual(expectedIds);
+      expect(page.pagination.total, query).toBe(2);
+    }
   });
 
   it("leaves merchant, normalizedMerchant and note untouched when an update omits them", async () => {

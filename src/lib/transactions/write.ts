@@ -1,5 +1,6 @@
 import { PaymentType, type Prisma } from "@prisma/client";
 import { z } from "zod";
+import { toMerchantColumns } from "./merchant";
 import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
@@ -26,18 +27,6 @@ type TransactionWriteDb = {
     }): Promise<TransactionRowRecord>;
   };
 };
-
-type MerchantColumns = {
-  merchant: string;
-  normalizedMerchant: string;
-};
-
-function toManualMerchantColumns(trimmedDisplay: string): MerchantColumns {
-  return {
-    merchant: trimmedDisplay,
-    normalizedMerchant: trimmedDisplay.toLowerCase(),
-  };
-}
 
 function normalizeNote(raw: string): string | null {
   const trimmed = raw.trim();
@@ -82,11 +71,7 @@ const bookingDateSchema = z
   })
   .transform((value) => parseIsoDate(value) as Date);
 
-const merchantSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .transform(toManualMerchantColumns);
+const merchantSchema = z.string().trim().min(1).transform(toMerchantColumns);
 
 const noteTextSchema = z
   .string()
