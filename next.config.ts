@@ -13,7 +13,10 @@ process.env.NEXT_PUBLIC_BUILD_SHA = getGitSha();
 process.env.NEXT_PUBLIC_BUILD_TIME = new Date().toISOString();
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Production deploys ship a standalone server, but `next start` refuses to
+  // serve a standalone build, so CI can opt out to get a fast production
+  // server for the E2E suite.
+  output: process.env.NEXT_OUTPUT === "default" ? undefined : "standalone",
   reactCompiler: true,
   allowedDevOrigins: ["127.0.0.1"],
 };
