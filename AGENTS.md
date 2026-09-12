@@ -2,6 +2,10 @@
 
 Inflation Station is a Next.js + TypeScript personal-finance app with Prisma-backed imports, transaction workflows, and monthly AI-assisted review generation.
 
+## Working mode
+- For any nontrivial change, architecture decision, or bug fix, apply `/poteto-mode` before starting. It matches the task to a playbook and grounds decisions in named principles.
+- Casual questions, one-line edits, and read-only lookups skip it.
+
 ## Essentials for all tasks
 - Package manager: `pnpm` (not npm).
 - Work with progressive disclosure: start with `README.md`, `package.json`, and directly relevant files; expand only when blocked.
@@ -11,12 +15,12 @@ Inflation Station is a Next.js + TypeScript personal-finance app with Prisma-bac
 - When migrating inline success feedback to Sonner toasts, update Playwright assertions that currently use `getByText("...added/updated/removed/saved...")` so E2E coverage follows the feedback surface change.
 - After Prisma schema changes, run `pnpm exec prisma generate` before type/build checks.
 - For Server Action mutations, use `src/lib/server-actions/mutation-result.ts` to keep validation and typed error contracts consistent with existing API error-code semantics.
-- For deterministic category color changes, keep `getDeterministicColorFromText` return shape stable and update `src/lib/deterministic-color.test.ts` in the same change.
-- For `uncategorized` fallback color changes, keep `src/lib/category-color.ts` and `src/lib/category-color.test.ts` in sync, and return valid CSS color strings consumed by category badges/charts.
+- For deterministic category color changes, keep `getDeterministicColorFromText` return shape stable (`hue`, `saturation`, `lightness`, and contrast fields) even when changing color space, and update `src/lib/deterministic-color.test.ts` in the same change.
+- For `uncategorized` fallback color changes, keep `src/lib/category-color.ts` and `src/lib/category-color.test.ts` in sync, keep the explicit neutral fallback with separate `lightTextColor`/`darkTextColor` tokens, and return valid CSS color strings consumed by category badges/charts.
 
 ## Validation defaults
 - Run targeted validation matching the change scope, typically once per completed change set.
-- Common commands: `pnpm lint`, `pnpm build`, `pnpm test`.
+- Full sequence, in this order: `pnpm lint` → `pnpm exec tsc --noEmit` → `pnpm test` → `pnpm build`. Earlier steps fail faster, so do not reorder.
 - Useful targeted loops: `pnpm test:unit`, `pnpm test:e2e`, `pnpm typecheck`.
 - If any validation is skipped, state what was skipped and why.
 
@@ -55,3 +59,4 @@ Single-context layout - CONTEXT.md + docs/adr/ at repo root (created lazily as n
 - `src/lib/dashboard/AGENTS.md`
 - `src/components/AGENTS.md`
 - `src/components/ui/AGENTS.md`
+- `tests/AGENTS.md`
