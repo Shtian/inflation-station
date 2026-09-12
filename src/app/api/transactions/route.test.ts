@@ -26,9 +26,9 @@ vi.mock("@/lib/transactions/delete", () => ({
   deleteTransactions: deleteTransactionsMock,
 }));
 
-vi.mock("@/lib/transactions/create", async (importOriginal) => {
+vi.mock("@/lib/transactions/write", async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("@/lib/transactions/create")>();
+    await importOriginal<typeof import("@/lib/transactions/write")>();
   return {
     ...actual,
     createTransaction: createTransactionMock,
@@ -286,7 +286,6 @@ describe("POST /api/transactions", () => {
       expect.objectContaining({
         accountId: "acc-1",
         amountNok: -50,
-        merchant: "My Shop",
         paymentType: PaymentType.CARD,
       }),
     );

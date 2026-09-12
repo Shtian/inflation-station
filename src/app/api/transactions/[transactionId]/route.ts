@@ -4,7 +4,7 @@ import { deleteTransaction } from "@/lib/transactions/delete";
 import {
   parseTransactionUpdatePayload,
   updateTransaction,
-} from "@/lib/transactions/update";
+} from "@/lib/transactions/write";
 
 type RouteParams = {
   params: Promise<unknown>;
