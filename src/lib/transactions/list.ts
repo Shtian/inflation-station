@@ -1,30 +1,13 @@
 import type { Prisma } from "@prisma/client";
-
-type DecimalLike = { toString(): string } | number;
+import {
+  TRANSACTION_ROW_SELECT,
+  type TransactionRow,
+  type TransactionRowRecord,
+  toTransactionRow,
+} from "./row";
 
 type StringContainsFilter = {
   contains: string;
-};
-
-type TransactionListRecord = {
-  id: string;
-  accountId: string;
-  account: {
-    name: string;
-  };
-  categoryId: string | null;
-  category: {
-    name: string;
-  } | null;
-  bookingDate: Date;
-  amountNok: DecimalLike;
-  currency: string;
-  normalizedMerchant: string;
-  merchant: string | null;
-  paymentType: string;
-  note: string | null;
-  createdAt: Date;
-  updatedAt: Date;
 };
 
 type TransactionListDbClient = {
@@ -32,34 +15,11 @@ type TransactionListDbClient = {
     count(args: { where: Prisma.TransactionWhereInput }): Promise<number>;
     findMany(args: {
       where: Prisma.TransactionWhereInput;
-      select: {
-        id: true;
-        accountId: true;
-        account: {
-          select: {
-            name: true;
-          };
-        };
-        categoryId: true;
-        category: {
-          select: {
-            name: true;
-          };
-        };
-        bookingDate: true;
-        amountNok: true;
-        currency: true;
-        normalizedMerchant: true;
-        merchant: true;
-        paymentType: true;
-        note: true;
-        createdAt: true;
-        updatedAt: true;
-      };
+      select: typeof TRANSACTION_ROW_SELECT;
       orderBy: Prisma.TransactionOrderByWithRelationInput[];
       skip: number;
       take: number;
-    }): Promise<TransactionListRecord[]>;
+    }): Promise<TransactionRowRecord[]>;
   };
 };
 
@@ -77,25 +37,8 @@ export type TransactionsListFilters = {
   pageSize: number;
 };
 
-export type TransactionListRow = {
-  id: string;
-  accountId: string;
-  accountName: string;
-  categoryId: string | null;
-  categoryName: string | null;
-  bookingDate: string;
-  amountNok: number;
-  currency: string;
-  normalizedMerchant: string;
-  merchant: string | null;
-  paymentType: string;
-  note: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type TransactionsListResult = {
-  rows: TransactionListRow[];
+  rows: TransactionRow[];
   pagination: {
     total: number;
     page: number;
@@ -103,10 +46,6 @@ export type TransactionsListResult = {
     totalPages: number;
   };
 };
-
-function toNumber(value: DecimalLike): number {
-  return Number.parseFloat(value.toString());
-}
 
 function addUtcDays(date: Date, days: number): Date {
   const nextDate = new Date(date);
@@ -188,54 +127,14 @@ export async function getTransactionsPage(
   const total = await db.transaction.count({ where });
   const records = await db.transaction.findMany({
     where,
-    select: {
-      id: true,
-      accountId: true,
-      account: {
-        select: {
-          name: true,
-        },
-      },
-      categoryId: true,
-      category: {
-        select: {
-          name: true,
-        },
-      },
-      bookingDate: true,
-      amountNok: true,
-      currency: true,
-      normalizedMerchant: true,
-      merchant: true,
-      paymentType: true,
-      note: true,
-      createdAt: true,
-      updatedAt: true,
-    },
+    select: TRANSACTION_ROW_SELECT,
     orderBy,
     skip,
     take: filters.pageSize,
   });
 
-  const rows = records.map((record) => ({
-    id: record.id,
-    accountId: record.accountId,
-    accountName: record.account.name,
-    categoryId: record.categoryId,
-    categoryName: record.category?.name ?? null,
-    bookingDate: record.bookingDate.toISOString().slice(0, 10),
-    amountNok: toNumber(record.amountNok),
-    currency: record.currency,
-    normalizedMerchant: record.normalizedMerchant,
-    merchant: record.merchant,
-    paymentType: record.paymentType,
-    note: record.note,
-    createdAt: record.createdAt.toISOString(),
-    updatedAt: record.updatedAt.toISOString(),
-  }));
-
   return {
-    rows,
+    rows: records.map(toTransactionRow),
     pagination: {
       total,
       page: filters.page,

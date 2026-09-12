@@ -18,7 +18,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
 }));
 
-vi.mock("@/lib/transactions/update", () => ({
+vi.mock("@/lib/transactions/write", () => ({
   parseTransactionUpdatePayload: parseTransactionUpdatePayloadMock,
   updateTransaction: updateTransactionMock,
 }));

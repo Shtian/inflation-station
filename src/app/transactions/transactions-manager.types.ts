@@ -1,3 +1,6 @@
+import type { PaymentType } from "@prisma/client";
+import type { TransactionRow as DomainTransactionRow } from "@/lib/transactions/row";
+
 export type Account = {
   id: string;
   name: string;
@@ -9,20 +12,10 @@ export type Category = {
   accountId: string | null;
 };
 
-export type TransactionRow = {
-  id: string;
-  accountId: string;
-  accountName: string;
-  categoryId: string | null;
-  categoryName: string | null;
-  bookingDate: string;
-  amountNok: number;
-  currency: string;
-  normalizedMerchant: string;
-  merchant: string | null;
-  paymentType: string;
-  note: string | null;
-};
+export type TransactionRow = Omit<
+  DomainTransactionRow,
+  "createdAt" | "updatedAt"
+>;
 
 export type TransactionsResponse = {
   rows: TransactionRow[];
@@ -50,7 +43,7 @@ export const PAYMENT_TYPE_OPTIONS = [
   "EFT",
   "CASH",
   "OTHER",
-] as const;
+] as const satisfies readonly PaymentType[];
 export type TransactionSortField = (typeof TRANSACTIONS_SORT_FIELDS)[number];
 export type TransactionSortDirection = "asc" | "desc";
 export type TransactionSorting = {
