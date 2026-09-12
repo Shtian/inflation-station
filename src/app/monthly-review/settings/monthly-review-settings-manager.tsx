@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -200,18 +200,13 @@ export function MonthlyReviewSettingsManager() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          nativeButton={false}
-          render={
-            <Link href="/monthly-review">
-              <ArrowLeft aria-hidden />
-              Back to monthly review
-            </Link>
-          }
-        />
+        <Link
+          href="/monthly-review"
+          className={buttonVariants({ variant: "ghost", size: "sm" })}
+        >
+          <ArrowLeft aria-hidden />
+          Back to monthly review
+        </Link>
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Monthly Review Settings
         </h1>

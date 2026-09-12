@@ -754,19 +754,21 @@ export function TransactionsTableSection({
               }
             />
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {visibleColumns.map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(checked) =>
-                    column.toggleVisibility(Boolean(checked))
-                  }
-                >
-                  {COLUMN_LABELS[column.id] ?? column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {visibleColumns.map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(checked) =>
+                      column.toggleVisibility(Boolean(checked))
+                    }
+                  >
+                    {COLUMN_LABELS[column.id] ?? column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
 

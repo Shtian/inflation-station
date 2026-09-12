@@ -266,6 +266,12 @@ test("manages categories and category rules from /categories", async ({
 
   await page.getByRole("tab", { name: "Category management" }).click();
 
+  // Toasts stack in the bottom-right corner and sit over the row actions menu
+  // that opens next, so let the previous one retire before reaching under it.
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
+    timeout: 15_000,
+  });
+
   page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("row", { name: /Commute/i })

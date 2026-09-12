@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   Account,
@@ -43,7 +43,6 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export function useTransactionsManager() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const parsedUrlState = useMemo(
@@ -105,13 +104,17 @@ export function useTransactionsManager() {
       return;
     }
 
-    router.replace(
+    // `router.replace` silently no-ops here once /transactions has been loaded
+    // from its static prerender, leaving the URL frozen while the table moves
+    // on. Table state is pure client state anyway - every row comes from
+    // /api/transactions - so rewrite the query directly and skip the round
+    // trip. Next keeps useSearchParams in sync with history writes.
+    window.history.replaceState(
+      null,
+      "",
       nextQuery.length > 0 ? `${pathname}?${nextQuery}` : pathname,
-      {
-        scroll: false,
-      },
     );
-  }, [pathname, router, searchParams, tableState]);
+  }, [pathname, searchParams, tableState]);
 
   const loadAccounts = useCallback(async () => {
     const response = await fetch("/api/accounts");

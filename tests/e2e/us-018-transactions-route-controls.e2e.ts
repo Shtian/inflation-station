@@ -1,8 +1,25 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+
+/**
+ * The date filters are calendar popovers, not text inputs: open the popover,
+ * click a day, then dismiss it. Clicking an already-selected day clears the
+ * filter, which is how the tests below reset a date range.
+ */
+async function toggleDateFilter(page: Page, field: string, day: RegExp) {
+  await page.getByLabel(field).click();
+  const calendar = page.locator('[data-slot="popover-content"][data-open]');
+  await calendar.getByRole("button", { name: day }).click();
+  await page.keyboard.press("Escape");
+  await expect(calendar).toHaveCount(0);
+}
 
 test("manages transactions filters and pagination controls from /transactions", async ({
   page,
 }) => {
+  // The calendars open on the current month, so pin the clock inside the month
+  // the fixtures use instead of clicking back through the month nav.
+  await page.clock.setFixedTime(new Date("2026-02-15T12:00:00"));
+
   const transactionRequests: string[] = [];
 
   await page.route("**/api/accounts", async (route) => {
@@ -322,18 +339,17 @@ test("manages transactions filters and pagination controls from /transactions", 
     page.getByRole("columnheader", { name: "Merchant" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("columnheader", { name: "Payment type" }),
-  ).toBeVisible();
-  await expect(
     page.getByRole("columnheader", { name: "Category" }),
   ).toBeVisible();
   await expect(
     page.getByRole("columnheader", { name: "Amount" }),
   ).toBeVisible();
-  await expect(page.getByText("Page 1 of 2")).toBeVisible();
+  // Payment type and Account ship hidden; the Columns menu is the only way in.
+  await expect(
+    page.getByRole("columnheader", { name: "Payment type" }),
+  ).toHaveCount(0);
   await expect(page.getByText("35 total transactions.")).toBeVisible();
   await expect(page.getByText("Supermarket")).toBeVisible();
-  await expect(page.getByText("CARD")).toBeVisible();
   await expect(page.getByText("Groceries", { exact: true })).toBeVisible();
   await expect(
     page.getByLabel("View memo for transaction from 2026-02-05"),
@@ -341,19 +357,37 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.getByLabel("View memo for transaction from 2026-02-05").hover();
   await expect(page.getByRole("tooltip")).toHaveText("Weekly groceries");
 
-  await page.getByRole("button", { name: "Go to last page" }).click();
-  await expect(page.getByText("Page 2 of 2")).toBeVisible();
-  await expect(page).toHaveURL(/page=2/);
-  await page.getByRole("button", { name: "Go to first page" }).click();
-  await expect(page.getByText("Page 1 of 2")).toBeVisible();
+  const previousPage = page.getByRole("button", {
+    name: "Go to previous page",
+  });
+  const nextPage = page.getByRole("button", { name: "Go to next page" });
+
+  // Both controls stay mounted at the edges of the range, so the only signal
+  // that the table knows where it is comes from the disabled state.
+  await expect(previousPage).toBeDisabled();
+  await expect(nextPage).toBeEnabled();
+
+  await nextPage.click();
+  await expect(page).toHaveURL(/[?&]page=2(&|$)/);
+  await expect(page.getByText("Corner Shop")).toBeVisible();
+  await expect(nextPage).toBeDisabled();
+  await expect(previousPage).toBeEnabled();
+
+  await previousPage.click();
+  await expect(page).toHaveURL(/[?&]page=1(&|$)/);
   await expect(page.getByText("Supermarket")).toBeVisible();
-  await page.getByRole("button", { name: "Go to next page" }).click();
-  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  await expect(previousPage).toBeDisabled();
+
+  await nextPage.click();
+  await expect(page.getByText("Corner Shop")).toBeVisible();
+
+  // Re-sorting reshuffles which rows land on which page, so the table has to
+  // drop back to page 1 instead of stranding the reader mid-range.
   await page
     .getByRole("columnheader", { name: "Amount" })
     .getByRole("button", { name: "Amount" })
     .click();
-  await expect(page.getByText("Page 1 of 2")).toBeVisible();
+  await expect(page).toHaveURL(/[?&]page=1(&|$)/);
   await expect(page).toHaveURL(/sorting=amountNok%3Aasc/);
   await expect(page.getByText("Sorted Asc Grocery")).toBeVisible();
 
@@ -370,24 +404,33 @@ test("manages transactions filters and pagination controls from /transactions", 
     .click();
   await expect(page).not.toHaveURL(/sorting=/);
 
+  const paymentTypeHeader = page.getByRole("columnheader", {
+    name: "Payment type",
+  });
+
   await page.getByRole("button", { name: "Columns" }).click();
   await page.getByRole("menuitemcheckbox", { name: "Payment type" }).click();
-  await expect(
-    page.getByRole("columnheader", { name: "Payment type" }),
-  ).toHaveCount(0);
+  await expect(paymentTypeHeader).toBeVisible();
+  await expect(page.getByText("CARD")).toBeVisible();
+
+  // Reload with the column switched ON, away from its default. A restore that
+  // silently falls back to defaults now fails instead of passing by accident.
   await page.reload();
-  await expect(
-    page.getByRole("columnheader", { name: "Payment type" }),
-  ).toHaveCount(0);
+  await expect(paymentTypeHeader).toBeVisible();
+
   await page.getByRole("button", { name: "Columns" }).click();
   await page.getByRole("menuitemcheckbox", { name: "Payment type" }).click();
-  await expect(
-    page.getByRole("columnheader", { name: "Payment type" }),
-  ).toBeVisible();
+  await expect(paymentTypeHeader).toHaveCount(0);
+
+  // The menu deliberately stays open across toggles, so dismiss it before
+  // touching the filter bar underneath.
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menuitemcheckbox")).toHaveCount(0);
 
   await page.getByLabel("Account").click();
   await page.getByRole("option", { name: "Savings Account" }).click();
-  await expect(page.getByText("Page 1 of 1")).toBeVisible();
+  await expect(page).toHaveURL(/accountId=acc-2/);
+  await expect(page.getByText("1 total transactions.")).toBeVisible();
   await expect(page.getByText("Savings Transfer")).toBeVisible();
   await expect(page.getByText("Uncategorized")).toBeVisible();
   await expect(
@@ -401,9 +444,9 @@ test("manages transactions filters and pagination controls from /transactions", 
 
   await page.getByLabel("Search").fill("market");
   await expect(page).toHaveURL(/globalQuery=market/);
-  await page.getByLabel("Date from").fill("2026-02-01");
+  await toggleDateFilter(page, "Date from", /February 1st, 2026/);
   await expect(page).toHaveURL(/dateFrom=2026-02-01/);
-  await page.getByLabel("Date to").fill("2026-02-28");
+  await toggleDateFilter(page, "Date to", /February 28th, 2026/);
   await expect(page).toHaveURL(/dateTo=2026-02-28/);
   await page.getByLabel("Category").click();
   await page.getByRole("option", { name: "Groceries", exact: true }).click();
@@ -427,24 +470,30 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(page.getByText("Filtered Market")).toBeVisible();
 
   await page.getByLabel("Search").fill("");
-  await page.getByLabel("Date from").fill("");
-  await page.getByLabel("Date to").fill("");
-  await page.getByLabel("Category").click();
-  await page.getByRole("option", { name: "All categories" }).click();
+  await toggleDateFilter(page, "Date from", /February 1st, 2026/);
+  await expect(page).not.toHaveURL(/dateFrom=/);
+  await toggleDateFilter(page, "Date to", /February 28th, 2026/);
+  await expect(page).not.toHaveURL(/dateTo=/);
+  // The category filter is a searchable combobox with no "all" option -
+  // emptying the query is what clears it.
+  await page.getByLabel("Category").fill("");
+  await expect(page).not.toHaveURL(/categoryId=/);
   await expect(page.getByText("Supermarket")).toBeVisible();
 
-  await page.getByRole("button", { name: "Go to next page" }).click();
-  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  await nextPage.click();
+  await expect(page).toHaveURL(/[?&]page=2(&|$)/);
   await expect(page.getByText("Corner Shop")).toBeVisible();
   await expect(page.getByText("Food")).toBeVisible();
   await expect(
     page.getByLabel("View memo for transaction from 2026-01-15"),
   ).toHaveCount(0);
 
+  // Resizing the page invalidates the current offset, so this must also land
+  // back on page 1 rather than keeping page=2 against a 4-page range.
   await page.locator("#transactions-rows-per-page").click();
   await page.getByRole("option", { name: "10", exact: true }).click();
-  await expect(page.getByText("Page 1 of 4")).toBeVisible();
   await expect(page).toHaveURL(/pageSize=10/);
+  await expect(page).toHaveURL(/[?&]page=1(&|$)/);
   await expect(page.getByText("Metro Kiosk")).toBeVisible();
   await expect(page.getByText("Uncategorized")).toBeVisible();
   await expect(
@@ -816,12 +865,20 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
   await page.goto("/transactions");
 
   await page.getByRole("button", { name: "Go to next page" }).click();
-  await expect(page.getByText("Page 2 of 2")).toBeVisible();
+  await expect(page).toHaveURL(/[?&]page=2(&|$)/);
   await expect(page.getByText("Corner Shop")).toBeVisible();
 
-  await page
-    .getByRole("button", { name: "Actions for transaction from 2026-01-15" })
-    .click();
+  const cornerShopRow = page
+    .getByRole("row")
+    .filter({ hasText: "Corner Shop" });
+  const cornerShopActions = page.getByRole("button", {
+    name: "Actions for transaction from 2026-01-15",
+  });
+
+  // Row actions only materialize under group-hover, so the pointer has to be
+  // over the row before the trigger is clickable.
+  await cornerShopRow.hover();
+  await cornerShopActions.click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(
     page.getByRole("heading", { name: "Delete transaction" }),
@@ -834,16 +891,18 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
   await expect(page.getByText("Corner Shop")).toBeVisible();
   await expect.poll(() => deleteCallCount).toBe(0);
 
-  await page
-    .getByRole("button", { name: "Actions for transaction from 2026-01-15" })
-    .click();
+  await cornerShopRow.hover();
+  await cornerShopActions.click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await page
     .getByRole("alertdialog")
     .getByRole("button", { name: "Delete", exact: true })
     .click();
 
-  await expect(page.getByText("Page 1 of 1")).toBeVisible();
+  // Deleting the only row on page 2 shrinks the range to a single page, so the
+  // manager has to clamp the now-out-of-range page instead of showing an empty
+  // page 2.
+  await expect(page).toHaveURL(/[?&]page=1(&|$)/);
   await expect(page.getByText("Supermarket")).toBeVisible();
   await expect(page.getByText("Corner Shop")).not.toBeVisible();
   await expect.poll(() => deleteCallCount).toBe(1);

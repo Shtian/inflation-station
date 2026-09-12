@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
@@ -249,20 +249,13 @@ export function MonthlyReviewManager() {
             AI reviews.
           </p>
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          nativeButton={false}
-          render={
-            <Link
-              href="/monthly-review/settings"
-              aria-label="Open monthly review settings"
-            >
-              <Settings aria-hidden />
-            </Link>
-          }
-        />
+        <Link
+          href="/monthly-review/settings"
+          aria-label="Open monthly review settings"
+          className={buttonVariants({ variant: "outline", size: "icon" })}
+        >
+          <Settings aria-hidden />
+        </Link>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
