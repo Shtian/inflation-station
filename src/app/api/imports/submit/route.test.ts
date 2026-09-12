@@ -4,6 +4,10 @@ import {
   InvalidImportReviewCategoryError,
   InvalidImportReviewDecisionsError,
 } from "@/lib/import/review-submit";
+import {
+  MAX_TRANSACTION_NOTE_LENGTH,
+  MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
+} from "@/lib/transactions/note";
 import { POST } from "./route";
 
 const { prismaMock, submitImportReviewMock } = vi.hoisted(() => ({
@@ -13,11 +17,6 @@ const { prismaMock, submitImportReviewMock } = vi.hoisted(() => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
-}));
-
-vi.mock("@/lib/transactions/note", () => ({
-  MAX_TRANSACTION_NOTE_LENGTH: 500,
-  MAX_TRANSACTION_NOTE_LENGTH_MESSAGE: "Note must be 500 characters or fewer.",
 }));
 
 vi.mock("@/lib/import/review-submit", () => ({
@@ -55,7 +54,7 @@ describe("POST /api/imports/submit", () => {
     submitImportReviewMock.mockReset();
   });
 
-  it("returns 400 when a row note is longer than 500 characters", async () => {
+  it("returns 400 when a row note is one character over the note limit", async () => {
     const response = await POST(
       new Request("http://localhost", {
         method: "POST",
@@ -69,7 +68,7 @@ describe("POST /api/imports/submit", () => {
               rowId: "row-1",
               categoryId: null,
               selectedMessage: "message",
-              note: "x".repeat(501),
+              note: "x".repeat(MAX_TRANSACTION_NOTE_LENGTH + 1),
             },
           ],
         }),
@@ -80,12 +79,11 @@ describe("POST /api/imports/submit", () => {
     expect(submitImportReviewMock).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_IMPORT_REVIEW_SUBMIT_PAYLOAD",
-      message:
-        "Expected sessionId and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. Note must be 500 characters or fewer.",
+      message: `Expected sessionId and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. ${MAX_TRANSACTION_NOTE_LENGTH_MESSAGE}`,
     });
   });
 
-  it("accepts note values with exactly 500 characters", async () => {
+  it("accepts note values at exactly the note limit", async () => {
     submitImportReviewMock.mockResolvedValue({
       summary: {
         imported: 1,
@@ -106,7 +104,7 @@ describe("POST /api/imports/submit", () => {
               rowId: "row-1",
               categoryId: null,
               selectedMessage: "message",
-              note: "x".repeat(500),
+              note: "x".repeat(MAX_TRANSACTION_NOTE_LENGTH),
             },
           ],
         }),
@@ -121,7 +119,7 @@ describe("POST /api/imports/submit", () => {
           rowId: "row-1",
           categoryId: null,
           selectedMessage: "message",
-          note: "x".repeat(500),
+          note: "x".repeat(MAX_TRANSACTION_NOTE_LENGTH),
         },
       ],
     });

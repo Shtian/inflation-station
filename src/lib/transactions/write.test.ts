@@ -592,4 +592,33 @@ describe("transaction writes (real database)", () => {
     expect(Object.keys(listed.rows[0]).sort()).toEqual(expectedFields);
     expect(listed.rows).toEqual([updated]);
   });
+
+  it("matches note search by exact text and ASCII case only", async () => {
+    const account = await seedAccount();
+    await createTransaction(
+      db.client,
+      createIntent({
+        accountId: account.id,
+        bookingDate: "2026-01-15",
+        amountNok: -50,
+        merchant: "Corner Shop",
+        paymentType: "CARD",
+        note: "Kjøpt på Grünerløkka",
+      }),
+    );
+
+    for (const [query, total] of [
+      ["Grünerløkka", 1],
+      ["grünerløkka", 1],
+      ["GRÜNERLØKKA", 0],
+      ["Kjopt", 0],
+    ] as const) {
+      const page = await getTransactionsPage(db.client, {
+        query,
+        page: 1,
+        pageSize: 25,
+      });
+      expect(page.pagination.total, query).toBe(total);
+    }
+  });
 });
