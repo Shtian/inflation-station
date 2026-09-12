@@ -1,10 +1,10 @@
 import { PaymentType } from "@prisma/client";
 import { z } from "zod";
-import type { TransactionListRow } from "./list";
 import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
 } from "./note";
+import type { TransactionRow as TransactionListRow } from "./row";
 
 type DecimalLike = { toString(): string } | number;
 

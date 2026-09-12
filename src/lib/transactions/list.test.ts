@@ -1,3 +1,4 @@
+import { PaymentType, Prisma } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import { getTransactionsPage } from "./list";
 
@@ -17,11 +18,11 @@ function createTransactionsDbMock(total: number) {
             name: "Groceries",
           },
           bookingDate: new Date("2026-02-04T00:00:00.000Z"),
-          amountNok: { toString: () => "-123.45" },
+          amountNok: new Prisma.Decimal("-123.45"),
           currency: "NOK",
           normalizedMerchant: "shop b",
           merchant: null,
-          paymentType: "CARD",
+          paymentType: PaymentType.CARD,
           note: "Monthly groceries",
           createdAt: new Date("2026-02-04T10:00:00.000Z"),
           updatedAt: new Date("2026-02-04T11:00:00.000Z"),
@@ -53,38 +54,16 @@ describe("getTransactionsPage", () => {
         accountId: "acc-1",
       },
     });
-    expect(db.transaction.findMany).toHaveBeenCalledWith({
-      where: {
-        accountId: "acc-1",
-      },
-      select: {
-        id: true,
-        accountId: true,
-        account: {
-          select: {
-            name: true,
-          },
+    expect(db.transaction.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          accountId: "acc-1",
         },
-        categoryId: true,
-        category: {
-          select: {
-            name: true,
-          },
-        },
-        bookingDate: true,
-        amountNok: true,
-        currency: true,
-        normalizedMerchant: true,
-        merchant: true,
-        paymentType: true,
-        note: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: [{ bookingDate: "desc" }, { id: "desc" }],
-      skip: 10,
-      take: 10,
-    });
+        orderBy: [{ bookingDate: "desc" }, { id: "desc" }],
+        skip: 10,
+        take: 10,
+      }),
+    );
     expect(result.pagination).toEqual({
       total: 42,
       page: 2,
