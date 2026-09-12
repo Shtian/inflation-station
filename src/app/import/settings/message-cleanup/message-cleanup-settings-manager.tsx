@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { updateMessageCleanupSettingsAction } from "@/app/actions/update-message-cleanup-settings";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -206,18 +206,13 @@ export function MessageCleanupSettingsManager() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          nativeButton={false}
-          render={
-            <Link href="/import">
-              <ArrowLeft aria-hidden />
-              Back to import
-            </Link>
-          }
-        />
+        <Link
+          href="/import"
+          className={buttonVariants({ variant: "ghost", size: "sm" })}
+        >
+          <ArrowLeft aria-hidden />
+          Back to import
+        </Link>
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
           Message Cleanup Settings
         </h1>
