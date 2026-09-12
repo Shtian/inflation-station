@@ -5,6 +5,7 @@ import {
   parseTransactionUpdatePayload,
   updateTransaction,
 } from "@/lib/transactions/write";
+import { formatPayloadErrorMessage } from "../payload-error-message";
 
 type RouteParams = {
   params: Promise<unknown>;
@@ -25,7 +26,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   if (!transactionId) {
     return NextResponse.json(
-      { error: "INVALID_TRANSACTION_ID" },
+      { error: "INVALID_TRANSACTION_ID", message: "Invalid transaction id." },
       { status: 400 },
     );
   }
@@ -33,10 +34,16 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   const parsed = parseTransactionUpdatePayload(payload);
 
   if (!parsed.success) {
+    const flattened = parsed.error.flatten();
+
     return NextResponse.json(
       {
         error: "INVALID_TRANSACTION_UPDATE_PAYLOAD",
-        details: parsed.error.flatten(),
+        message: formatPayloadErrorMessage(
+          "Invalid transaction update payload.",
+          flattened,
+        ),
+        details: flattened,
       },
       { status: 400 },
     );
@@ -57,20 +64,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       error.code === "P2025"
     ) {
       return NextResponse.json(
-        { error: "TRANSACTION_NOT_FOUND" },
+        {
+          error: "TRANSACTION_NOT_FOUND",
+          message: "Transaction was not found.",
+        },
         { status: 404 },
-      );
-    }
-
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "P2002"
-    ) {
-      return NextResponse.json(
-        { error: "TRANSACTION_DUPLICATE_FIELDS" },
-        { status: 409 },
       );
     }
 
@@ -81,7 +79,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       error.code === "P2003"
     ) {
       return NextResponse.json(
-        { error: "CATEGORY_NOT_FOUND" },
+        {
+          error: "CATEGORY_NOT_FOUND",
+          message: "Selected category was not found.",
+        },
         { status: 404 },
       );
     }
@@ -95,7 +96,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
 
   if (!transactionId) {
     return NextResponse.json(
-      { error: "INVALID_TRANSACTION_ID" },
+      { error: "INVALID_TRANSACTION_ID", message: "Invalid transaction id." },
       { status: 400 },
     );
   }
@@ -111,7 +112,10 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
       error.code === "P2025"
     ) {
       return NextResponse.json(
-        { error: "TRANSACTION_NOT_FOUND" },
+        {
+          error: "TRANSACTION_NOT_FOUND",
+          message: "Transaction was not found.",
+        },
         { status: 404 },
       );
     }
