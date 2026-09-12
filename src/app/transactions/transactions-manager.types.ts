@@ -1,3 +1,6 @@
+import type { PaymentType } from "@prisma/client";
+import type { TransactionRow as DomainTransactionRow } from "@/lib/transactions/row";
+
 export type Account = {
   id: string;
   name: string;
@@ -9,20 +12,18 @@ export type Category = {
   accountId: string | null;
 };
 
-export type TransactionRow = {
-  id: string;
-  accountId: string;
-  accountName: string;
-  categoryId: string | null;
-  categoryName: string | null;
-  bookingDate: string;
-  amountNok: number;
-  currency: string;
-  normalizedMerchant: string;
-  merchant: string | null;
-  paymentType: string;
-  note: string | null;
-};
+/**
+ * The browser's view of a transaction row. `createdAt`/`updatedAt` are on the
+ * wire but nothing here renders them, so they are dropped explicitly. Deriving
+ * from the domain row means a field rename over in `src/lib/transactions` fails
+ * this build instead of the running table.
+ *
+ * Type-only import, so nothing from `src/lib` reaches the client bundle.
+ */
+export type TransactionRow = Omit<
+  DomainTransactionRow,
+  "createdAt" | "updatedAt"
+>;
 
 export type TransactionsResponse = {
   rows: TransactionRow[];
@@ -44,13 +45,14 @@ export const TRANSACTIONS_SORT_FIELDS = [
 export const ALL_ACCOUNTS_VALUE = "__all_accounts__";
 export const ALL_CATEGORIES_VALUE = "__all_categories__";
 export const UNCATEGORIZED_VALUE = "__uncategorized__";
+/** Checked against the schema enum so a new payment type cannot go unlisted. */
 export const PAYMENT_TYPE_OPTIONS = [
   "CARD",
   "TRANSFER",
   "EFT",
   "CASH",
   "OTHER",
-] as const;
+] as const satisfies readonly PaymentType[];
 export type TransactionSortField = (typeof TRANSACTIONS_SORT_FIELDS)[number];
 export type TransactionSortDirection = "asc" | "desc";
 export type TransactionSorting = {
