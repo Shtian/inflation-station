@@ -1,5 +1,5 @@
 import { type PaymentType, SuggestionSource } from "@prisma/client";
-import { foldLocaleCharacters } from "@/lib/import/normalization";
+import { normalizeMerchantKey } from "@/lib/transactions/merchant";
 
 export type RuleMatchTransaction = {
   id: string;
@@ -23,27 +23,20 @@ export type RuleBasedSuggestion = {
   reasoning: string;
 };
 
-function normalizeToken(value: string): string {
-  return foldLocaleCharacters(value)
-    .trim()
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]/g, " ")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
-
 function ruleMatchesTransaction(
   transaction: RuleMatchTransaction,
   rule: CategoryRuleCandidate,
 ): boolean {
-  const normalizedNeedle = normalizeToken(rule.merchantContains);
+  const normalizedNeedle = normalizeMerchantKey(rule.merchantContains);
 
   if (normalizedNeedle.length === 0) {
     return false;
   }
 
   if (
-    !normalizeToken(transaction.normalizedMerchant).includes(normalizedNeedle)
+    !normalizeMerchantKey(transaction.normalizedMerchant).includes(
+      normalizedNeedle,
+    )
   ) {
     return false;
   }
@@ -54,7 +47,7 @@ function ruleMatchesTransaction(
 }
 
 function getRuleSpecificity(rule: CategoryRuleCandidate): number {
-  return normalizeToken(rule.merchantContains).length;
+  return normalizeMerchantKey(rule.merchantContains).length;
 }
 
 function toSuggestion(
