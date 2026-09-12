@@ -12,14 +12,6 @@ export type Category = {
   accountId: string | null;
 };
 
-/**
- * The browser's view of a transaction row. `createdAt`/`updatedAt` are on the
- * wire but nothing here renders them, so they are dropped explicitly. Deriving
- * from the domain row means a field rename over in `src/lib/transactions` fails
- * this build instead of the running table.
- *
- * Type-only import, so nothing from `src/lib` reaches the client bundle.
- */
 export type TransactionRow = Omit<
   DomainTransactionRow,
   "createdAt" | "updatedAt"
@@ -45,7 +37,6 @@ export const TRANSACTIONS_SORT_FIELDS = [
 export const ALL_ACCOUNTS_VALUE = "__all_accounts__";
 export const ALL_CATEGORIES_VALUE = "__all_categories__";
 export const UNCATEGORIZED_VALUE = "__uncategorized__";
-/** Checked against the schema enum so a new payment type cannot go unlisted. */
 export const PAYMENT_TYPE_OPTIONS = [
   "CARD",
   "TRANSFER",

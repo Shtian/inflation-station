@@ -27,33 +27,23 @@ type TransactionWriteDb = {
   };
 };
 
-/**
- * The display merchant and the search value derived from it, always together.
- * Only `toMerchantColumns` builds this pair and both writers spread it whole,
- * so no code path can write one column without the other.
- */
 type MerchantColumns = {
   merchant: string;
   normalizedMerchant: string;
 };
 
-function toMerchantColumns(trimmedDisplay: string): MerchantColumns {
-  // Manual writes deliberately skip the import pipeline's Nordic folding and
-  // punctuation stripping (`src/lib/import/normalization.ts`); unifying the two
-  // is a product decision listed under issue #43 "Out of Scope".
+function toManualMerchantColumns(trimmedDisplay: string): MerchantColumns {
   return {
     merchant: trimmedDisplay,
     normalizedMerchant: trimmedDisplay.toLowerCase(),
   };
 }
 
-/** Trim; a note that is empty once trimmed is absent, not `""`. */
 function normalizeNote(raw: string): string | null {
   const trimmed = raw.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
 
-/** Collapses "caller omitted it" and "caller sent null" into one state. */
 function nullWhenAbsent<T>(value: T | null | undefined): T | null {
   return value ?? null;
 }
@@ -92,12 +82,12 @@ const bookingDateSchema = z
   })
   .transform((value) => parseIsoDate(value) as Date);
 
-const merchantSchema = z.string().trim().min(1).transform(toMerchantColumns);
+const merchantSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .transform(toManualMerchantColumns);
 
-/**
- * The note rule, written once. Trimming happens before the length check, so a
- * 500-character note with surrounding whitespace is accepted.
- */
 const noteTextSchema = z
   .string()
   .transform(normalizeNote)
@@ -148,34 +138,16 @@ const transactionUpdateSchema = z
     },
   );
 
-/**
- * A create request that has already been canonicalized: booking date is
- * midnight UTC, merchant carries both columns, note is trimmed text or `null`.
- * Produced only by `parseTransactionCreatePayload`.
- */
 export type TransactionCreateIntent = z.infer<typeof transactionCreateSchema>;
 
-/**
- * A partial update that has already been canonicalized. Each key is tri-state:
- * absent preserves, `null` clears (where nullable), a value writes. `merchant`
- * is present-or-absent as a pair, never half.
- */
 export type TransactionUpdateIntent = z.infer<typeof transactionUpdateSchema>;
 
-/**
- * Validates an untrusted create payload. Rejects unknown keys, so clients
- * cannot supply `currency` or `normalizedMerchant`.
- */
 export function parseTransactionCreatePayload(
   payload: unknown,
 ): z.ZodSafeParseResult<TransactionCreateIntent> {
   return transactionCreateSchema.safeParse(payload);
 }
 
-/**
- * Validates an untrusted partial-update payload. Rejects unknown keys and the
- * immutable identity/metadata fields, and requires at least one mutable field.
- */
 export function parseTransactionUpdatePayload(
   payload: unknown,
 ): z.ZodSafeParseResult<TransactionUpdateIntent> {
@@ -203,7 +175,6 @@ export async function createTransaction(
   return toTransactionRow(record);
 }
 
-/** Maps no Prisma errors; P2025/P2002/P2003 stay the calling route's job. */
 export async function updateTransaction(
   db: TransactionWriteDb,
   params: {
@@ -211,9 +182,7 @@ export async function updateTransaction(
     updates: TransactionUpdateIntent;
   },
 ): Promise<TransactionRow> {
-  // Prisma reads `undefined` in `data` as "leave this column alone", which is
-  // exactly the intent's absent state, so the whole update is one flat object
-  // and omitting `merchant` writes neither merchant column.
+  // Prisma reads `undefined` in `data` as "leave this column alone".
   const record = await db.transaction.update({
     where: { id: params.transactionId },
     data: {
