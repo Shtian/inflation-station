@@ -1,4 +1,4 @@
-import { foldLocaleCharacters } from "../normalization";
+import { foldLocaleCharacters } from "@/lib/transactions/merchant";
 
 export type CsvDelimiter = ";" | ",";
 

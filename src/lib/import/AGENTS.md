@@ -3,7 +3,7 @@
 Load this when working in `src/lib/import`.
 
 - Parser modules return typed valid rows, structured row-level validation errors, and stable summary shape: `imported`, `duplicates`, `ignoredReserved`, `invalid`.
-- Keep merchant/payment-type normalization centralized in `normalization.ts` (including Nordic character folding) and run it before fingerprint-based dedupe/warning checks.
+- Keep merchant/payment-type normalization centralized in `normalization.ts` and run it before fingerprint-based dedupe/warning checks. The fold and token algorithm itself is `normalizeMerchantKey` in `src/lib/transactions/merchant.ts`; `normalizeImportToken` delegates to it.
 - Build dedupe fingerprints from `accountId`, `bookingDate`, `amountNok`, `normalizedMerchant`, `paymentType` and keep aligned with the Prisma unique constraint.
 - Normalize provider payment labels (for example `Kort`) to Prisma `PaymentType` before dedupe and persistence.
 - Keep review edits ephemeral until explicit submit; apply approved categories and clear related suggestions atomically.

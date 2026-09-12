@@ -1,22 +1,8 @@
 import { PaymentType } from "@prisma/client";
-
-export function foldLocaleCharacters(value: string): string {
-  return value
-    .replaceAll("æ", "ae")
-    .replaceAll("Æ", "ae")
-    .replaceAll("ø", "o")
-    .replaceAll("Ø", "o")
-    .replaceAll("å", "a")
-    .replaceAll("Å", "a");
-}
+import { normalizeMerchantKey } from "@/lib/transactions/merchant";
 
 export function normalizeImportToken(value: string): string {
-  return foldLocaleCharacters(value)
-    .trim()
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]/g, " ")
-    .replaceAll(/\s+/g, " ")
-    .trim();
+  return normalizeMerchantKey(value);
 }
 
 export function normalizeImportPaymentType(value: string): PaymentType {
