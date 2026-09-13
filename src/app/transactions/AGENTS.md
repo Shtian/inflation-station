@@ -18,4 +18,6 @@ Load this when working in `src/app/transactions`.
 - Keep NOK-only currency in this edit flow.
 - Render a dedicated notes column with explicit empty-state text for null notes.
 - Keep transaction note validation + character-count helper text inline within the edit dialog field content; only route submit-level failures through the dialog alert.
+- Validate add and edit form fields through `transaction-form.ts`; `validateTransactionFields` owns the shared rules and `validateAddForm` adds the create-only account check.
+- Derive every note length, note error and note payload value from `readNoteField` in `src/lib/transactions/note.ts`, so the character counter cannot measure differently than validation.
 - In TanStack table columns, use `display` columns for note/action UI and read `row.original` so edit/delete handlers always receive the full `TransactionRow`.
