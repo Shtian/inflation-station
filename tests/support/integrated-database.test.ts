@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, symlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
@@ -39,6 +39,23 @@ describe("assertNotDevelopmentDatabase", () => {
 
     expect(message).toContain(resolveSqliteFilePath("file:./prisma/dev.db"));
     expect(message).toContain(INTEGRATED_DATABASE_URL);
+  });
+
+  test("refuses a differently named symlink to the development database", async () => {
+    const linkDir = await mkdtemp(path.join(tmpdir(), "integrated-symlink-"));
+    const link = path.join(linkDir, "scratch.db");
+    await symlink(resolveSqliteFilePath(INTEGRATED_DATABASE_URL), link);
+
+    expect(() => assertNotDevelopmentDatabase(`file:${link}`)).not.toThrow();
+
+    await rm(link);
+    await symlink(path.resolve(process.cwd(), "prisma", "dev.db"), link);
+
+    expect(() => assertNotDevelopmentDatabase(`file:${link}`)).toThrow(
+      "Refusing to truncate the development database.",
+    );
+
+    await rm(linkDir, { recursive: true, force: true });
   });
 
   test("allows the integrated database", () => {

@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import path from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import type { CategoryKind, PaymentType, Prisma } from "@prisma/client";
@@ -63,24 +64,48 @@ export type TransactionFixture = {
 
 const FIXTURE_CURRENCY = "NOK";
 const DEVELOPMENT_DATABASE_FILENAME = "dev.db";
+const DEVELOPMENT_DATABASE_PATH = path.resolve(
+  __dirname,
+  "../..",
+  "prisma",
+  DEVELOPMENT_DATABASE_FILENAME,
+);
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Resolves a Prisma `file:` URL to the absolute path it opens, the same way
- * Prisma does: relative to the current working directory.
+ * Prisma does: relative to the current working directory, then through any
+ * symlink, because a link named something else still writes to its target.
  */
 export function resolveSqliteFilePath(databaseUrl: string): string {
   const withoutScheme = databaseUrl.startsWith("file:")
     ? databaseUrl.slice("file:".length)
     : databaseUrl;
+  const resolved = path.resolve(process.cwd(), withoutScheme);
 
-  return path.resolve(process.cwd(), withoutScheme);
+  try {
+    return realpathSync(resolved);
+  } catch {
+    // Prisma would create it here, so there is no link to follow.
+    return resolved;
+  }
+}
+
+function realpathOrSelf(filePath: string): string {
+  try {
+    return realpathSync(filePath);
+  } catch {
+    return filePath;
+  }
 }
 
 export function assertNotDevelopmentDatabase(databaseUrl: string): void {
   const filePath = resolveSqliteFilePath(databaseUrl);
+  const isDevelopmentDatabase =
+    filePath === realpathOrSelf(DEVELOPMENT_DATABASE_PATH) ||
+    path.basename(filePath) === DEVELOPMENT_DATABASE_FILENAME;
 
-  if (path.basename(filePath) !== DEVELOPMENT_DATABASE_FILENAME) {
+  if (!isDevelopmentDatabase) {
     return;
   }
 
