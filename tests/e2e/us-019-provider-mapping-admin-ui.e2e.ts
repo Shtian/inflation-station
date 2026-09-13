@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 type MockProviderMapping = {
@@ -18,7 +19,7 @@ test("manages provider mappings from admin UI with validation feedback", async (
 }) => {
   let createServerActionRequestCount = 0;
   let lastPatchBody: unknown = null;
-  const providerName = `Bank B ${Date.now()}`;
+  const providerName = `Bank B ${randomUUID()}`;
   let mappings: MockProviderMapping[] = [
     {
       id: "provider-1",
