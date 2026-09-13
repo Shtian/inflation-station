@@ -159,6 +159,12 @@ test("manages provider mappings from admin UI with validation feedback", async (
     await cdp.send("Emulation.setCPUThrottlingRate", { rate: THROTTLE });
   }
   page.on("console", (m) => console.log("[browser]", m.text()));
+  await page.addInitScript(() => {
+    document.addEventListener("focusin", (e) => {
+      const t = e.target as HTMLElement;
+      console.log("FOCUSIN " + Math.round(performance.now()) + " " + t.tagName + "#" + (t.id || "-") + " al=" + (t.getAttribute("aria-label") ?? "-"));
+    }, true);
+  });
   await page.goto("/import-provider-mappings");
 
   await expect(
