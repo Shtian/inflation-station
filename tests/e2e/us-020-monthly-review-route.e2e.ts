@@ -320,7 +320,7 @@ test("opens monthly review settings from header configuration and monthly review
   await page.getByRole("link", { name: "Back to monthly review" }).click();
 
   await expect(
-    page.getByRole("heading", { name: "Monthly Review" }),
+    page.getByRole("heading", { name: "Financial Timeline" }),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Configuration" }).click();
