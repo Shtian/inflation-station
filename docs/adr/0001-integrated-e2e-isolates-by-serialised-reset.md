@@ -58,9 +58,11 @@ writing while a test holds the lock.
   integrated `webServer` entry therefore sets `NEXT_DIST_DIR` outside CI. In CI
   both servers run `next start` off the single `.next` build, so it must not be
   set there.
-- **The stubbed suite already writes to whichever database its server is
-  pointed at.** Three of its specs exercise Server Actions, which POST to the
-  page's own URL rather than to `/api/*`, so `page.route` cannot intercept
-  them. This predates the integrated suite and is why the isolation claim worth
-  making is that the *integrated* suite never touches `prisma/dev.db`, not that
-  a full run leaves it untouched.
+- **Every server this suite starts names its own database.** Three stubbed
+  specs exercise Server Actions, which POST to the page's own URL rather than
+  to `/api/*`, so `page.route` cannot intercept them and they reach whichever
+  database their server is pointed at. The stubbed server therefore gets
+  `prisma/stubbed.db` just as the integrated one gets `prisma/integrated.db`,
+  and a full run leaves `prisma/dev.db` untouched. The exception is a dev
+  server you started yourself, which the stubbed entry still reuses and which
+  keeps the `DATABASE_URL` you gave it.
