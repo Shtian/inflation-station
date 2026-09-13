@@ -1,9 +1,10 @@
 import { defineConfig } from "prisma/config";
+import { resolveDatabaseUrl } from "./src/lib/database-url";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
+    url: resolveDatabaseUrl(),
   },
   migrations: {
     seed: "node prisma/seed.mjs",
