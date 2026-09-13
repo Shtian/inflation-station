@@ -150,6 +150,10 @@ test("manages provider mappings from admin UI with validation feedback", async (
   ).toBeVisible();
 
   await page.getByRole("button", { name: "Add provider mapping" }).click();
+  // Base UI moves initial focus into the dialog asynchronously. Playwright's
+  // fill() focuses the target and then inserts text into whatever holds focus,
+  // so filling before that lands sends the text to the wrong input.
+  await expect(page.getByLabel("Provider name", { exact: true })).toBeFocused();
   await page.getByLabel("Provider name").fill(providerName);
   await page.getByLabel("Mapping version (optional)").fill("1");
   await page
@@ -174,6 +178,9 @@ test("manages provider mappings from admin UI with validation feedback", async (
   const bankBRow = page.getByRole("row", { name: new RegExp(providerName) });
   await bankBRow.getByRole("button").click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
+  await expect(
+    page.getByLabel("Edit provider name", { exact: true }),
+  ).toBeFocused();
   const editReqHeaders = page.getByRole("textbox", {
     name: "Edit required headers",
   });
@@ -241,6 +248,7 @@ test("manages provider mappings from admin UI with validation feedback", async (
   await page.getByRole("button", { name: "Cancel" }).click();
 
   await page.getByRole("button", { name: "Add provider mapping" }).click();
+  await expect(page.getByLabel("Provider name", { exact: true })).toBeFocused();
   await page.getByLabel("Provider name").fill(providerName);
   await page.getByLabel("Mapping version (optional)").fill("1");
   await page
