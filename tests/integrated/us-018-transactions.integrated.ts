@@ -4,10 +4,6 @@ import { INTEGRATED_DB_LOCK, layFixture } from "../support/integrated-database";
 const ACCOUNT = "Integrated Checking";
 const CATEGORY = "Integrated Groceries";
 
-// `Intl.NumberFormat("nb-NO")` renders a U+2212 MINUS SIGN, not an ASCII
-// hyphen, and separates groups and the currency with U+00A0. Both are written
-// as code points because neither is distinguishable from its ASCII lookalike
-// in a diff, and Biome rewrites a `\u` escape to the literal character.
 const MINUS_SIGN = String.fromCodePoint(0x2212);
 const NBSP = String.fromCodePoint(0x00a0);
 
@@ -25,11 +21,6 @@ function memoButton(page: Page, bookingDate: string): Locator {
   });
 }
 
-/**
- * /transactions is client-rendered and every row arrives from
- * GET /api/transactions, so that response is the settle point for any change
- * that refetches.
- */
 function transactionsResponse(page: Page, globalQuery?: string) {
   return page.waitForResponse((response) => {
     if (!response.url().includes("/api/transactions?")) {
@@ -55,15 +46,12 @@ async function reloadTransactions(page: Page): Promise<void> {
   await settled;
 }
 
-/** The search box debounces for 250 ms, so waiting on the request it finally
- *  issues is the only reliable way to know the filter has been applied. */
 async function searchFor(page: Page, query: string): Promise<void> {
   const settled = transactionsResponse(page, query);
   await page.getByLabel("Search", { exact: true }).fill(query);
   await settled;
 }
 
-/** The row's ellipsis button is `visibility: hidden` until the row is hovered. */
 async function openRowActions(
   page: Page,
   merchant: string,
@@ -82,8 +70,6 @@ test(
   "rewrites the merchant search key when a merchant is edited",
   { lock: INTEGRATED_DB_LOCK },
   async ({ page }) => {
-    // No other row carries "Kaffeslabberas" in its merchant, note or category
-    // name, so the negative search below cannot pass for an unrelated reason.
     await layFixture({
       accounts: [{ name: ACCOUNT }],
       categories: [{ name: CATEGORY }],
@@ -116,21 +102,16 @@ test(
     await dialog.getByLabel("Merchant").fill("Bæveren Ølhus Bryggeri");
     await dialog.getByRole("button", { name: "Save changes" }).click();
 
-    // A successful edit raises no toast, so the dialog closing and the row
-    // changing is the whole signal.
     await expect(dialog).toBeHidden();
     const edited = rowFor(page, "Bæveren Ølhus Bryggeri");
     await expect(edited).toContainText(`${MINUS_SIGN}249,90${NBSP}kr`);
 
-    // Folded to ASCII this can only match through `normalizedMerchant`: the
-    // `merchant` column still carries æ and ø.
     await searchFor(page, "baeveren olhus bryggeri");
     await expect(bodyRows(page)).toHaveCount(1);
     await expect(bodyRows(page).first()).toContainText(
       "Bæveren Ølhus Bryggeri",
     );
 
-    // The stale key would still answer to the old merchant.
     await searchFor(page, "Kaffeslabberas");
     await expect(
       page.getByText("No transactions found for the selected filters."),
@@ -152,8 +133,6 @@ test(
     await expect(page.getByText("No transactions found.")).toBeVisible();
 
     await page.getByRole("button", { name: "Add transaction" }).click();
-    // The toolbar trigger and this form's submit share the name
-    // "Add transaction", so every control below is scoped to the dialog.
     const dialog = page.getByRole("dialog", { name: "Add transaction" });
 
     await dialog.locator("#add-account-id").click();
@@ -212,7 +191,6 @@ test(
 
     await reloadTransactions(page);
     await expect(rowFor(page, "Kaffeslabberas Gamlebyen")).toBeVisible();
-    // The note cell renders nothing at all once the note is null.
     await expect(memoButton(page, "2026-03-04")).toHaveCount(0);
   },
 );
@@ -255,7 +233,6 @@ test(
       .getByRole("button", { name: "Delete", exact: true })
       .click();
 
-    // A single delete raises no toast either.
     await expect(confirmation).toBeHidden();
     await expect(bodyRows(page)).toHaveCount(1);
     await expect(bodyRows(page).first()).toContainText("Rimi Storgata");

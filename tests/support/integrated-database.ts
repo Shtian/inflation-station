@@ -12,11 +12,6 @@ import { PrismaClient } from "@prisma/client";
  */
 export const INTEGRATED_DATABASE_URL = "file:./prisma/integrated.db";
 
-/**
- * The `lock` every integrated test declares. Tests sharing a lock name never
- * run concurrently, which is what makes truncate-and-lay-a-fixture safe on one
- * shared database.
- */
 export const INTEGRATED_DB_LOCK = "integrated-db";
 
 /** An account the fixture creates. `name` is unique across the database. */
@@ -37,32 +32,28 @@ export type FixtureTransaction = {
   account: string;
   /**
    * `name` of a category declared in the same fixture. Omitted leaves the row
-   * uncategorised, which the table renders as `Uncategorized`.
+   * uncategorised.
    */
   category?: string;
   /** `YYYY-MM-DD`, read back as the UTC calendar day. */
   bookingDate: string;
   /** Negative for spending, positive for income. */
   amountNok: number;
-  /** The display value shown in the Merchant column. */
   merchant: string;
   /**
    * The stored merchant search key. Defaults to the key `merchant` normalises
    * to. Set it to something else to lay down a row whose key disagrees with its
-   * merchant. That is the state a row written before the search-key fix is in,
-   * and one no write path can produce any more.
+   * merchant.
    */
   searchKey?: string;
   /** Defaults to the schema's `OTHER`. */
   paymentType?: PaymentType;
-  /** Omitted leaves the row without a note, which renders no note indicator. */
+  /** Omitted leaves the row without a note. */
   note?: string;
 };
 
 /**
- * The complete contents of the integrated database for one test. Transactions
- * name their account and category rather than carrying ids, so a spec can state
- * its rows in one literal.
+ * The complete contents of the integrated database for one test.
  */
 export type TransactionFixture = {
   accounts: readonly FixtureAccount[];
@@ -76,9 +67,7 @@ const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Resolves a Prisma `file:` URL to the absolute path it opens, the same way
- * Prisma does: relative to the current working directory. Deriving it from this
- * module's own location instead would let the guard vet a different file from
- * the one a connection would open.
+ * Prisma does: relative to the current working directory.
  */
 export function resolveSqliteFilePath(databaseUrl: string): string {
   const withoutScheme = databaseUrl.startsWith("file:")
@@ -88,11 +77,6 @@ export function resolveSqliteFilePath(databaseUrl: string): string {
   return path.resolve(process.cwd(), withoutScheme);
 }
 
-/**
- * The last line of defence against a misconfigured run destroying local data.
- * Everything this module does starts by deleting every row, so it must never
- * find itself pointed at the development database.
- */
 export function assertNotDevelopmentDatabase(databaseUrl: string): void {
   const filePath = resolveSqliteFilePath(databaseUrl);
 
@@ -116,10 +100,6 @@ export function assertNotDevelopmentDatabase(databaseUrl: string): void {
 /**
  * Truncates every table and inserts exactly `fixture`, so the test that calls
  * it depends on no other test's data and on no part of the demo dataset.
- *
- * Writes go through Prisma directly rather than the API or the UI: setup must
- * not route through the code under test, and a fixture needs to be able to
- * build rows the write path can no longer produce.
  *
  * `databaseUrl` exists so this module's own tests can point it at a temporary
  * database. Specs leave it alone.
@@ -177,8 +157,7 @@ async function connect(databaseUrl: string): Promise<PrismaClient> {
 }
 
 async function truncateAll(client: PrismaClient): Promise<void> {
-  // Ordered so no delete orphans a row that still references it. With
-  // `PRAGMA foreign_keys = ON` a wrong order fails loudly rather than silently.
+  // Ordered so no delete orphans a row that still references it.
   await client.$transaction([
     client.categorizationSuggestion.deleteMany(),
     client.importReviewRow.deleteMany(),
@@ -245,11 +224,6 @@ function toUtcDay(bookingDate: string): Date {
   return new Date(`${bookingDate}T00:00:00.000Z`);
 }
 
-/**
- * Re-states `normalizeMerchantKey`'s rule rather than importing it. A fixture
- * that derived its key by calling the code under test could not fail when that
- * code is wrong.
- */
 function deriveSearchKey(merchant: string): string {
   return merchant
     .replaceAll(/[æÆ]/g, "ae")

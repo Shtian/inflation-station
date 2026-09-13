@@ -23,9 +23,6 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
       # `next start` refuses to serve a standalone build; see next.config.ts.
       NEXT_OUTPUT: default
-      # The stubbed suite's server. The integrated suite's webServer entry
-      # overrides DATABASE_URL with a database of its own and migrates it
-      # itself; see playwright.config.ts.
       DATABASE_URL: file:${{ github.workspace }}/prisma/ci.db
     steps:
       - name: Checkout
@@ -79,18 +76,11 @@ jobs:
       - name: Create the stubbed suite's database
         run: pnpm db:migrate:deploy
 
-      # Building up front lets Playwright's webServer boot an already-compiled
-      # server. `next dev` would recompile each route on first visit and spend
-      # more time compiling than testing. Both servers run `next start` off
-      # this one build.
       - name: Build
         run: pnpm build
 
-      # One invocation runs the stubbed and the integrated project. Playwright
-      # boots both servers, on ports 3000 and 3001, and the integrated tests
-      # serialise on their shared `lock` while the stubbed ones keep running in
-      # parallel. Do not add `--shard`: locks give no mutual exclusion across
-      # shard invocations.
+      # Do not add `--shard`: locks give no mutual exclusion across shard
+      # invocations.
       - name: Run the stubbed and integrated Playwright suites
         run: pnpm exec playwright test --reporter=github,html
 

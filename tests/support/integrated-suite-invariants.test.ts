@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const INTEGRATED_SPEC_DIR = path.resolve(__dirname, "../integrated");
+const FIXTURE_HELPER = path.resolve(__dirname, "integrated-database.ts");
 const LOCK_DECLARATION = "lock: INTEGRATED_DB_LOCK";
 
 async function readIntegratedSpecs(): Promise<
@@ -44,6 +45,16 @@ describe("integrated specs", () => {
     );
 
     expect(offenders).toEqual([]);
+  });
+
+  it("build fixtures without importing the code under test", async () => {
+    const helper = await readFile(FIXTURE_HELPER, "utf8");
+
+    const productionImports = [...helper.matchAll(/from "([^"]+)"/g)]
+      .map((match) => match[1])
+      .filter((source) => source.startsWith("@/") || source.includes("/src/"));
+
+    expect(productionImports).toEqual([]);
   });
 
   it("never intercept network traffic", async () => {
