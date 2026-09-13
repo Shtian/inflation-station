@@ -12,6 +12,7 @@ import { BulkDeleteTransactionsDialog } from "./components/bulk-delete-transacti
 import { DeleteTransactionDialog } from "./components/delete-transaction-dialog";
 import { EditTransactionDialog } from "./components/edit-transaction-dialog";
 import { TransactionsTableSection } from "./components/transactions-table-section";
+import { getMutationErrorMessage } from "./mutation-error-message";
 import {
   type AddFormState,
   type EditFormState,
@@ -21,24 +22,6 @@ import {
   UNCATEGORIZED_VALUE,
 } from "./transactions-manager.types";
 import { useTransactionsManager } from "./use-transactions-manager";
-
-function getMutationErrorMessage(body: unknown, fallback: string) {
-  if (typeof body === "object" && body && "message" in body) {
-    const message = (body as { message: unknown }).message;
-    if (typeof message === "string" && message.length > 0) {
-      return message;
-    }
-  }
-
-  if (typeof body === "object" && body && "error" in body) {
-    const error = (body as { error: unknown }).error;
-    if (typeof error === "string" && error.length > 0) {
-      return error;
-    }
-  }
-
-  return fallback;
-}
 
 function toPaymentTypeOption(value: string): PaymentTypeOption {
   if (PAYMENT_TYPE_OPTIONS.includes(value as PaymentTypeOption)) {

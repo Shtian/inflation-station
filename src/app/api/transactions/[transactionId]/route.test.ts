@@ -41,6 +41,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_TRANSACTION_ID",
+      message: "Invalid transaction id.",
     });
     expect(updateTransactionMock).not.toHaveBeenCalled();
   });
@@ -49,7 +50,10 @@ describe("PATCH /api/transactions/[transactionId]", () => {
     parseTransactionUpdatePayloadMock.mockReturnValue({
       success: false,
       error: {
-        flatten: () => ({ fieldErrors: { paymentType: ["Required"] } }),
+        flatten: () => ({
+          formErrors: [],
+          fieldErrors: { paymentType: ["Required"] },
+        }),
       },
     });
 
@@ -67,7 +71,8 @@ describe("PATCH /api/transactions/[transactionId]", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_TRANSACTION_UPDATE_PAYLOAD",
-      details: { fieldErrors: { paymentType: ["Required"] } },
+      message: "Invalid transaction update payload. paymentType: Required",
+      details: { formErrors: [], fieldErrors: { paymentType: ["Required"] } },
     });
     expect(updateTransactionMock).not.toHaveBeenCalled();
   });
@@ -137,10 +142,9 @@ describe("PATCH /api/transactions/[transactionId]", () => {
   });
 
   it.each([
-    ["P2025", 404, "TRANSACTION_NOT_FOUND"],
-    ["P2002", 409, "TRANSACTION_DUPLICATE_FIELDS"],
-    ["P2003", 404, "CATEGORY_NOT_FOUND"],
-  ])("maps a rejected update with code %s to %i %s", async (code, status, error) => {
+    ["P2025", 404, "TRANSACTION_NOT_FOUND", "Transaction was not found."],
+    ["P2003", 404, "CATEGORY_NOT_FOUND", "Selected category was not found."],
+  ])("maps a rejected update with code %s to %i %s", async (code, status, error, message) => {
     parseTransactionUpdatePayloadMock.mockReturnValue({
       success: true,
       data: { merchant: "Store" },
@@ -159,7 +163,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
     );
 
     expect(response.status).toBe(status);
-    await expect(response.json()).resolves.toEqual({ error });
+    await expect(response.json()).resolves.toEqual({ error, message });
   });
 
   it("rethrows unknown update errors", async () => {
@@ -182,6 +186,27 @@ describe("PATCH /api/transactions/[transactionId]", () => {
       ),
     ).rejects.toThrow("boom");
   });
+
+  it("no longer maps P2002; the dedupe unique index was dropped", async () => {
+    parseTransactionUpdatePayloadMock.mockReturnValue({
+      success: true,
+      data: { merchant: "Store" },
+    });
+    updateTransactionMock.mockRejectedValue({ code: "P2002" });
+
+    await expect(
+      PATCH(
+        new Request("http://localhost", {
+          method: "PATCH",
+          body: JSON.stringify({ merchant: "Store" }),
+          headers: { "Content-Type": "application/json" },
+        }),
+        {
+          params: Promise.resolve({ transactionId: "tx-1" }),
+        },
+      ),
+    ).rejects.toEqual({ code: "P2002" });
+  });
 });
 
 describe("DELETE /api/transactions/[transactionId]", () => {
@@ -199,6 +224,7 @@ describe("DELETE /api/transactions/[transactionId]", () => {
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
       error: "TRANSACTION_NOT_FOUND",
+      message: "Transaction was not found.",
     });
   });
 

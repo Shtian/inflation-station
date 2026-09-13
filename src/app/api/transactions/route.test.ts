@@ -319,7 +319,63 @@ describe("POST /api/transactions", () => {
     expect(response.status).toBe(400);
     const body = await response.json();
     expect(body.error).toBe("INVALID_PAYLOAD");
+    expect(body.message).toBe(
+      "Invalid transaction payload. Invalid input: expected object, received null",
+    );
     expect(createTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it("names the failing field in the validation message", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...validPayload, bookingDate: "2026/03/01" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_PAYLOAD",
+      message:
+        "Invalid transaction payload. bookingDate: Expected bookingDate in YYYY-MM-DD format.",
+      details: {
+        bookingDate: ["Expected bookingDate in YYYY-MM-DD format."],
+      },
+    });
+    expect(createTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the account or category does not exist", async () => {
+    createTransactionMock.mockRejectedValue({ code: "P2003" });
+
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...validPayload, categoryId: "missing-cat" }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: "CATEGORY_OR_ACCOUNT_NOT_FOUND",
+      message: "Selected account or category was not found.",
+    });
+  });
+
+  it("rethrows unexpected create errors", async () => {
+    createTransactionMock.mockRejectedValue(new Error("boom"));
+
+    await expect(
+      POST(
+        new Request("http://localhost/api/transactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(validPayload),
+        }),
+      ),
+    ).rejects.toThrow("boom");
   });
 
   it("accepts negative amountNok and returns 201", async () => {

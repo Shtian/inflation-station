@@ -6,6 +6,7 @@ import {
   createTransaction,
   parseTransactionCreatePayload,
 } from "@/lib/transactions/write";
+import { formatPayloadErrorMessage } from "./payload-error-message";
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 25;
@@ -209,16 +210,41 @@ export async function POST(request: Request) {
   const parsed = parseTransactionCreatePayload(body);
 
   if (!parsed.success) {
+    const flattened = parsed.error.flatten();
+
     return NextResponse.json(
       {
         error: "INVALID_PAYLOAD",
-        details: parsed.error.flatten().fieldErrors,
+        message: formatPayloadErrorMessage(
+          "Invalid transaction payload.",
+          flattened,
+        ),
+        details: flattened.fieldErrors,
       },
       { status: 400 },
     );
   }
 
-  const transaction = await createTransaction(prisma, parsed.data);
+  try {
+    const transaction = await createTransaction(prisma, parsed.data);
 
-  return NextResponse.json(transaction, { status: 201 });
+    return NextResponse.json(transaction, { status: 201 });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "P2003"
+    ) {
+      return NextResponse.json(
+        {
+          error: "CATEGORY_OR_ACCOUNT_NOT_FOUND",
+          message: "Selected account or category was not found.",
+        },
+        { status: 404 },
+      );
+    }
+
+    throw error;
+  }
 }
