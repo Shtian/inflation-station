@@ -690,6 +690,16 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   ).toBeVisible();
   await expect(page.getByLabel("Currency")).toHaveCount(0);
   await expect(page.getByLabel("Note")).toHaveValue("Legacy reminder");
+
+  // Validation and the server both measure the trimmed note, so padding a
+  // max-length note must not push the counter past the limit.
+  await page.getByLabel("Note").fill(`  ${"x".repeat(500)}  `);
+  await expect(page.getByText("500/500 characters")).toBeVisible();
+  await expect(page.getByLabel("Note")).toHaveAttribute(
+    "aria-invalid",
+    "false",
+  );
+
   await page.getByLabel("Note").fill("x".repeat(501));
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(page.getByLabel("Note")).toHaveAttribute("aria-invalid", "true");
@@ -906,4 +916,125 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
   await expect(page.getByText("Supermarket")).toBeVisible();
   await expect(page.getByText("Corner Shop")).not.toBeVisible();
   await expect.poll(() => deleteCallCount).toBe(1);
+});
+
+test("adds a transaction from the modal and counts note length the way validation does", async ({
+  page,
+}) => {
+  let lastPostPayload: null | {
+    accountId: string;
+    bookingDate: string;
+    amountNok: number;
+    merchant: string;
+    paymentType: string;
+    categoryId?: string;
+    note?: string;
+  } = null;
+  let addedRow: null | Record<string, unknown> = null;
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [{ id: "acc-1", name: "Main Account", institution: "DNB" }],
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        categories: [
+          { id: "cat-food", name: "Food", kind: "EXPENSE", accountId: null },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/transactions**", async (route, request) => {
+    if (request.method() === "POST") {
+      lastPostPayload =
+        (await request.postDataJSON()) as typeof lastPostPayload;
+      addedRow = {
+        id: "txn-new",
+        accountId: "acc-1",
+        categoryId: null,
+        categoryName: null,
+        bookingDate: lastPostPayload?.bookingDate,
+        amountNok: lastPostPayload?.amountNok,
+        currency: "NOK",
+        merchant: lastPostPayload?.merchant,
+        normalizedMerchant: lastPostPayload?.merchant,
+        paymentType: lastPostPayload?.paymentType,
+        note: lastPostPayload?.note ?? null,
+        createdAt: "2026-02-10T09:00:00.000Z",
+        updatedAt: "2026-02-10T09:00:00.000Z",
+      };
+
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ transaction: addedRow }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        rows: addedRow ? [addedRow] : [],
+        pagination: {
+          total: addedRow ? 1 : 0,
+          page: 1,
+          pageSize: 25,
+          totalPages: 1,
+        },
+      }),
+    });
+  });
+
+  await page.goto("/transactions");
+
+  await page.getByRole("button", { name: "Add transaction" }).click();
+  const dialog = page.getByRole("dialog", { name: "Add transaction" });
+  await expect(dialog).toBeVisible();
+
+  const note = dialog.getByLabel("Note");
+  const maxLengthNote = "x".repeat(500);
+
+  await note.fill(maxLengthNote);
+  await expect(dialog.getByText("500/500 characters")).toBeVisible();
+
+  // Validation and the server both measure the trimmed note, so padding a
+  // max-length note must not push the counter past the limit.
+  await note.fill(`  ${maxLengthNote}  `);
+  await expect(dialog.getByText("500/500 characters")).toBeVisible();
+  await expect(note).toHaveAttribute("aria-invalid", "false");
+
+  await note.fill(`  ${"x".repeat(501)}  `);
+  await expect(dialog.getByText("501/500 characters")).toHaveCount(0);
+  await expect(
+    dialog.getByText("Note must be 500 characters or fewer."),
+  ).toBeVisible();
+  await expect(note).toHaveAttribute("aria-invalid", "true");
+
+  await note.fill("Weekly shop");
+  await dialog.getByLabel("Account").click();
+  await page.getByRole("option", { name: "Main Account" }).click();
+  await dialog.getByLabel("Date").fill("2026-02-10");
+  await dialog.getByLabel("Merchant").fill("  Corner Shop  ");
+  await dialog.getByLabel("Amount (NOK)").fill("-12,50");
+  await dialog.getByRole("button", { name: "Add transaction" }).click();
+
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Transaction added" }),
+  ).toBeVisible();
+  await expect.poll(() => lastPostPayload?.accountId).toBe("acc-1");
+  await expect.poll(() => lastPostPayload?.merchant).toBe("Corner Shop");
+  await expect.poll(() => lastPostPayload?.amountNok).toBe(-12.5);
+  await expect.poll(() => lastPostPayload?.note).toBe("Weekly shop");
 });
