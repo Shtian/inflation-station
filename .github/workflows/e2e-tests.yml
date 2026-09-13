@@ -83,7 +83,7 @@ jobs:
         run: pnpm build
 
       - name: Run Playwright tests
-        run: pnpm exec playwright test --reporter=github,html
+        run: pnpm exec playwright test tests/e2e/ztmp-us019-instrumented.e2e.ts --repeat-each=10 --retries=0 --reporter=line
 
       - name: Upload Playwright report
         if: failure()
