@@ -1,4 +1,4 @@
-import { realpathSync } from "node:fs";
+import { lstatSync, readlinkSync } from "node:fs";
 import path from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import type { CategoryKind, PaymentType, Prisma } from "@prisma/client";
@@ -71,6 +71,7 @@ const DEVELOPMENT_DATABASE_PATH = path.resolve(
   DEVELOPMENT_DATABASE_FILENAME,
 );
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_SYMLINK_HOPS = 32;
 
 /**
  * Resolves a Prisma `file:` URL to the absolute path it opens, the same way
@@ -81,28 +82,39 @@ export function resolveSqliteFilePath(databaseUrl: string): string {
   const withoutScheme = databaseUrl.startsWith("file:")
     ? databaseUrl.slice("file:".length)
     : databaseUrl;
-  const resolved = path.resolve(process.cwd(), withoutScheme);
 
-  try {
-    return realpathSync(resolved);
-  } catch {
-    // Prisma would create it here, so there is no link to follow.
-    return resolved;
-  }
+  return followLinks(path.resolve(process.cwd(), withoutScheme));
 }
 
-function realpathOrSelf(filePath: string): string {
-  try {
-    return realpathSync(filePath);
-  } catch {
-    return filePath;
+/**
+ * `realpathSync` throws on a link whose target does not exist yet, and a
+ * dangling link is the dangerous case: opening it creates the target and
+ * truncation follows. Walking the chain by hand resolves those too.
+ */
+function followLinks(filePath: string): string {
+  let current = filePath;
+
+  for (let hop = 0; hop < MAX_SYMLINK_HOPS; hop += 1) {
+    let link: string;
+    try {
+      if (!lstatSync(current).isSymbolicLink()) {
+        return current;
+      }
+      link = readlinkSync(current);
+    } catch {
+      return current;
+    }
+
+    current = path.resolve(path.dirname(current), link);
   }
+
+  return current;
 }
 
 export function assertNotDevelopmentDatabase(databaseUrl: string): void {
   const filePath = resolveSqliteFilePath(databaseUrl);
   const isDevelopmentDatabase =
-    filePath === realpathOrSelf(DEVELOPMENT_DATABASE_PATH) ||
+    filePath === followLinks(DEVELOPMENT_DATABASE_PATH) ||
     path.basename(filePath) === DEVELOPMENT_DATABASE_FILENAME;
 
   if (!isDevelopmentDatabase) {
