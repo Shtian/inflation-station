@@ -23,7 +23,6 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
       # `next start` refuses to serve a standalone build; see next.config.ts.
       NEXT_OUTPUT: default
-      DATABASE_URL: file:${{ github.workspace }}/prisma/ci.db
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -57,8 +56,8 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium-shell
 
       # `--only-shell chromium` fetches the ~190 MB headless shell instead of
-      # every engine (~1 GB). Safe because playwright.config.ts pins a single
-      # chromium project and sets no `channel`. System libraries are omitted
+      # every engine (~1 GB). Safe because both projects in playwright.config.ts
+      # are chromium and set no `channel`. System libraries are omitted
       # (`--with-deps`) because the ubuntu-latest image already ships Chrome's;
       # add `install-deps` back here if a runner image ever drops them.
       - name: Install Chromium headless shell
@@ -73,16 +72,15 @@ jobs:
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
-      - name: Create test database
-        run: pnpm db:migrate:deploy
-
-      # Building up front lets Playwright's webServer boot an already-compiled
-      # server. `next dev` would recompile each route on first visit and spend
-      # more time compiling than testing.
+      # Each webServer entry in playwright.config.ts names and migrates a
+      # database of its own, and the build opens no connection, so there is
+      # nothing to prepare here.
       - name: Build
         run: pnpm build
 
-      - name: Run Playwright tests
+      # Do not add `--shard`: locks give no mutual exclusion across shard
+      # invocations.
+      - name: Run the stubbed and integrated Playwright suites
         run: pnpm exec playwright test --reporter=github,html
 
       - name: Upload Playwright report

@@ -17,6 +17,7 @@
 
 # next.js
 /.next/
+/.next-integrated/
 /out/
 
 # production
@@ -36,9 +37,9 @@ yarn-error.log*
 .env*
 !.env.example
 
-# local sqlite db
-/prisma/dev.db
-/prisma/dev.db-*
+# local sqlite db, plus the CI and integrated-suite databases and their WAL sidecars
+/prisma/*.db
+/prisma/*.db-*
 
 # vercel
 .vercel

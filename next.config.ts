@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
   // serve a standalone build, so CI can opt out to get a fast production
   // server for the E2E suite.
   output: process.env.NEXT_OUTPUT === "default" ? undefined : "standalone",
+  // `next dev` refuses to start a second time from the same directory, so the
+  // integrated E2E server needs a build directory of its own to coexist with
+  // the stubbed suite's server.
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   reactCompiler: true,
   allowedDevOrigins: ["127.0.0.1"],
 };
