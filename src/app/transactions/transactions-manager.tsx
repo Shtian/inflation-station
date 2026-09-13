@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
+  readNoteField,
 } from "@/lib/transactions/note";
 import { buildInitialAddForm, validateAddForm } from "./add-transaction-form";
 import { AddTransactionDialog } from "./components/add-transaction-dialog";
@@ -82,14 +83,8 @@ export function TransactionsManager() {
   const [addForm, setAddForm] = useState<AddFormState | null>(null);
   const [addError, setAddError] = useState<string | null>(null);
   const [addSaving, setAddSaving] = useState(false);
-  const noteError =
-    editForm && editForm.note.trim().length > MAX_TRANSACTION_NOTE_LENGTH
-      ? MAX_TRANSACTION_NOTE_LENGTH_MESSAGE
-      : null;
-  const addNoteError =
-    addForm && addForm.note.trim().length > MAX_TRANSACTION_NOTE_LENGTH
-      ? MAX_TRANSACTION_NOTE_LENGTH_MESSAGE
-      : null;
+  const addNote = readNoteField(addForm?.note ?? "");
+  const editNote = readNoteField(editForm?.note ?? "");
 
   const closeEditDialog = useCallback(() => {
     setEditingTransaction(null);
@@ -354,7 +349,7 @@ export function TransactionsManager() {
         categories={categories}
         addForm={addForm}
         addError={addError}
-        noteError={addNoteError}
+        note={addNote}
         addSaving={addSaving}
         onOpenChange={(nextOpen) => {
           if (!nextOpen && !addSaving) {
@@ -407,7 +402,7 @@ export function TransactionsManager() {
         categories={categories}
         editForm={editForm}
         editError={editError}
-        noteError={noteError}
+        note={editNote}
         editSaving={editSaving}
         onOpenChange={(nextOpen) => {
           if (!nextOpen && !editSaving) {
