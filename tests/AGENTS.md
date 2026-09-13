@@ -2,9 +2,28 @@
 
 Load this when working in `tests`.
 
-- Keep Playwright specs in `tests/e2e/*.e2e.ts`, named after the user story they cover (`us-0NN-<slug>.e2e.ts`).
+Two Playwright projects live here. The **stubbed suite** intercepts every API call and serves fixtures to the browser. The **integrated suite** runs against a real Next server backed by a real migrated database. `CONTEXT.md` defines both terms.
+
+- Keep stubbed specs in `tests/e2e/*.e2e.ts` and integrated specs in `tests/integrated/*.integrated.ts`, both named after the user story they cover (`us-0NN-<slug>`). `testMatch` keys off the extension, so a file in the right directory with the wrong extension runs in neither project.
 - Assert Sonner feedback with `page.locator("[data-sonner-toast]", { hasText: "..." })` instead of inline banner DOM or bare `getByText`.
 - When a route migrates inline success feedback to toasts, update its spec's assertions in the same change; inline error copy stays asserted as inline DOM.
-- Use `tests/support/prisma-test-db.ts` for per-test database isolation; specs run `fullyParallel`, so never share a database file between tests.
-- Suite runs chromium-only against `http://127.0.0.1:3000`, auto-starting `pnpm dev`. Set `PLAYWRIGHT_NO_WEBSERVER=1` to run against an already-running server.
 - Unit tests are colocated with their source in `src/**/*.test.ts` (Vitest), not here.
+
+## Database isolation differs by suite
+
+Per-test database isolation governs the Vitest domain tests. Use `tests/support/prisma-test-db.ts` there: each `createTestDatabase()` call gets its own temp file, so those tests never share a database.
+
+The integrated suite cannot do that. One server process reads `DATABASE_URL` once at boot, so every integrated test in a run shares that one database. It isolates by **serialised reset** instead, recorded in `docs/adr/0001-integrated-e2e-isolates-by-serialised-reset.md`:
+
+- Declare `{ lock: INTEGRATED_DB_LOCK }` on every integrated test. Tests sharing a lock name never run concurrently, across files, workers, and projects.
+- Call `layFixture()` from `tests/support/integrated-database.ts` first in every integrated test. It truncates every table and inserts the rows you state, so no test depends on another test's data or on the demo dataset.
+- Keep `fullyParallel: true` on both projects. In default or serial mode Playwright holds a lock for the whole file rather than for one test, which coarsens the isolation unit without saying so.
+- Do not add `--shard`. Locks are enforced within one `playwright test` run and give no mutual exclusion across shard invocations.
+- Write fixtures with `layFixture()`, never through the API or the UI. Setup that routes through the code under test cannot fail when that code is wrong.
+
+## Running the suites
+
+- `pnpm exec playwright test` runs both projects. `--project=stubbed` and `--project=integrated` run one.
+- The stubbed server binds `http://127.0.0.1:3000` and reuses an already-running dev server locally. Set `PLAYWRIGHT_NO_WEBSERVER=1` to start neither server yourself.
+- The integrated server binds `http://127.0.0.1:3001`, owns that port outright, and runs against `prisma/integrated.db`. Locally it builds into `.next-integrated`, because a second `next dev` out of one directory refuses to start.
+- Both suites run chromium-only.

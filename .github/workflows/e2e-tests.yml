@@ -23,6 +23,9 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
       # `next start` refuses to serve a standalone build; see next.config.ts.
       NEXT_OUTPUT: default
+      # The stubbed suite's server. The integrated suite's webServer entry
+      # overrides DATABASE_URL with a database of its own and migrates it
+      # itself; see playwright.config.ts.
       DATABASE_URL: file:${{ github.workspace }}/prisma/ci.db
     steps:
       - name: Checkout
@@ -57,8 +60,8 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium-shell
 
       # `--only-shell chromium` fetches the ~190 MB headless shell instead of
-      # every engine (~1 GB). Safe because playwright.config.ts pins a single
-      # chromium project and sets no `channel`. System libraries are omitted
+      # every engine (~1 GB). Safe because both projects in playwright.config.ts
+      # are chromium and set no `channel`. System libraries are omitted
       # (`--with-deps`) because the ubuntu-latest image already ships Chrome's;
       # add `install-deps` back here if a runner image ever drops them.
       - name: Install Chromium headless shell
@@ -73,16 +76,22 @@ jobs:
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
-      - name: Create test database
+      - name: Create the stubbed suite's database
         run: pnpm db:migrate:deploy
 
       # Building up front lets Playwright's webServer boot an already-compiled
       # server. `next dev` would recompile each route on first visit and spend
-      # more time compiling than testing.
+      # more time compiling than testing. Both servers run `next start` off
+      # this one build.
       - name: Build
         run: pnpm build
 
-      - name: Run Playwright tests
+      # One invocation runs the stubbed and the integrated project. Playwright
+      # boots both servers, on ports 3000 and 3001, and the integrated tests
+      # serialise on their shared `lock` while the stubbed ones keep running in
+      # parallel. Do not add `--shard`: locks give no mutual exclusion across
+      # shard invocations.
+      - name: Run the stubbed and integrated Playwright suites
         run: pnpm exec playwright test --reporter=github,html
 
       - name: Upload Playwright report
