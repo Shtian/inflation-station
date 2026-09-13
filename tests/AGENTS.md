@@ -28,3 +28,4 @@ The integrated suite cannot do that. One server process reads `DATABASE_URL` onc
 - That holds when Playwright starts the server. It still reuses an already-running dev server locally, and that server has whatever `DATABASE_URL` you started it with. Stop it first if you want the guarantee. Set `PLAYWRIGHT_NO_WEBSERVER=1` to start neither server yourself.
 - The integrated server binds `http://127.0.0.1:3001`, owns that port outright, and runs against `prisma/integrated.db`. Locally it builds into `.next-integrated`, because a second `next dev` out of one directory refuses to start.
 - Both suites run chromium-only.
+- `prisma/dev.db` is gitignored, so it exists on your machine and not in CI. A test that reads it, or builds a path to it, has to behave the same when the file is missing, or it passes locally and fails on the pull request.
