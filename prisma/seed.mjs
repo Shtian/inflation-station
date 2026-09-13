@@ -1,10 +1,11 @@
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import prismaClient from "@prisma/client";
+import { resolveDatabaseUrl } from "../src/lib/database-url.ts";
 import { SEEDED_PROVIDER_MAPPINGS } from "../src/lib/import/provider-adapter/seed-provider-mappings.ts";
 
 const { PrismaClient } = prismaClient;
 
-const adapter = new PrismaBetterSqlite3({ url: "file:./prisma/dev.db" });
+const adapter = new PrismaBetterSqlite3({ url: resolveDatabaseUrl() });
 const prisma = new PrismaClient({ adapter });
 
 // --- Helpers ---
