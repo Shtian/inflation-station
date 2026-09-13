@@ -2,18 +2,18 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import {
-  MAX_TRANSACTION_NOTE_LENGTH,
-  MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
-  readNoteField,
-} from "@/lib/transactions/note";
-import { buildInitialAddForm, validateAddForm } from "./add-transaction-form";
+import { readNoteField } from "@/lib/transactions/note";
 import { AddTransactionDialog } from "./components/add-transaction-dialog";
 import { BulkDeleteTransactionsDialog } from "./components/bulk-delete-transactions-dialog";
 import { DeleteTransactionDialog } from "./components/delete-transaction-dialog";
 import { EditTransactionDialog } from "./components/edit-transaction-dialog";
 import { TransactionsTableSection } from "./components/transactions-table-section";
 import { getMutationErrorMessage } from "./mutation-error-message";
+import {
+  buildInitialAddForm,
+  validateAddForm,
+  validateTransactionFields,
+} from "./transaction-form";
 import {
   type AddFormState,
   type EditFormState,
@@ -161,7 +161,7 @@ export function TransactionsManager() {
           addForm.categoryId === UNCATEGORIZED_VALUE
             ? undefined
             : addForm.categoryId,
-        note: validation.note.length > 0 ? validation.note : undefined,
+        note: validation.note,
       }),
     });
 
@@ -185,23 +185,9 @@ export function TransactionsManager() {
       return;
     }
 
-    const amountNok = Number.parseFloat(editForm.amountNok.replace(",", "."));
-    if (!Number.isFinite(amountNok)) {
-      setEditError("Amount must be a valid number.");
-      return;
-    }
-
-    const bookingDate = editForm.bookingDate.trim();
-    const merchant = editForm.merchant.trim();
-    const note = editForm.note.trim();
-
-    if (!bookingDate || !merchant) {
-      setEditError("Date and merchant are required.");
-      return;
-    }
-
-    if (note.length > MAX_TRANSACTION_NOTE_LENGTH) {
-      setEditError(MAX_TRANSACTION_NOTE_LENGTH_MESSAGE);
+    const validation = validateTransactionFields(editForm);
+    if (!validation.valid) {
+      setEditError(validation.error);
       return;
     }
 
@@ -218,11 +204,11 @@ export function TransactionsManager() {
           editForm.categoryId === UNCATEGORIZED_VALUE
             ? null
             : editForm.categoryId,
-        bookingDate,
-        amountNok,
-        merchant,
+        bookingDate: validation.bookingDate,
+        amountNok: validation.amountNok,
+        merchant: validation.merchant,
         paymentType: editForm.paymentType,
-        note: note.length > 0 ? note : null,
+        note: validation.note,
       }),
     });
 

@@ -22,7 +22,7 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   type NoteField,
 } from "@/lib/transactions/note";
-import { isFutureDate } from "../add-transaction-form";
+import { isFutureDate } from "../transaction-form";
 import {
   type Account,
   type AddFormState,
