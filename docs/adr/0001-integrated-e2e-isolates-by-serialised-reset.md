@@ -51,3 +51,16 @@ writing while a test holds the lock.
   holds open, so the integrated database is in WAL mode.
 - Because truncation is destructive by design, the helper that performs it
   refuses to run against `prisma/dev.db`.
+- **The integrated server needs its own build directory locally.** Measured on
+  Next 16.2.1: a second `next dev` in the same directory exits with "Another
+  next dev server is already running", and a `next dev` that reuses a
+  directory holding a production build serves 500s from every API route. The
+  integrated `webServer` entry therefore sets `NEXT_DIST_DIR` outside CI. In CI
+  both servers run `next start` off the single `.next` build, so it must not be
+  set there.
+- **The stubbed suite already writes to whichever database its server is
+  pointed at.** Three of its specs exercise Server Actions, which POST to the
+  page's own URL rather than to `/api/*`, so `page.route` cannot intercept
+  them. This predates the integrated suite and is why the isolation claim worth
+  making is that the *integrated* suite never touches `prisma/dev.db`, not that
+  a full run leaves it untouched.
