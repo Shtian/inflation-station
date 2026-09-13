@@ -23,7 +23,6 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
       # `next start` refuses to serve a standalone build; see next.config.ts.
       NEXT_OUTPUT: default
-      DATABASE_URL: file:${{ github.workspace }}/prisma/ci.db
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -73,9 +72,9 @@ jobs:
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
-      - name: Create the stubbed suite's database
-        run: pnpm db:migrate:deploy
-
+      # Each webServer entry in playwright.config.ts names and migrates a
+      # database of its own, and the build opens no connection, so there is
+      # nothing to prepare here.
       - name: Build
         run: pnpm build
 

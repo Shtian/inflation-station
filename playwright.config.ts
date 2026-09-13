@@ -5,6 +5,12 @@ const STUBBED_PORT = 3000;
 const INTEGRATED_PORT = 3001;
 const INTEGRATED_DIST_DIR = ".next-integrated";
 
+// Three stubbed specs drive Server Actions, which POST to the page's own URL
+// rather than to `/api/*`, so `page.route` cannot intercept them and they reach
+// whichever database their server is pointed at. Giving that server one of its
+// own keeps a suite run off `prisma/dev.db`.
+const STUBBED_DATABASE_URL = "file:./prisma/stubbed.db";
+
 const STUBBED_PROJECT = "stubbed";
 const INTEGRATED_PROJECT = "integrated";
 
@@ -51,9 +57,13 @@ const stubbedServer = {
   // immediately; `next dev` would recompile each route on first visit and
   // dominate the run.
   command: process.env.CI
-    ? `pnpm start --port ${STUBBED_PORT}`
-    : `pnpm dev --port ${STUBBED_PORT}`,
+    ? `pnpm db:migrate:deploy && pnpm start --port ${STUBBED_PORT}`
+    : `pnpm db:migrate:deploy && pnpm dev --port ${STUBBED_PORT}`,
   port: STUBBED_PORT,
+  env: { DATABASE_URL: STUBBED_DATABASE_URL },
+  // Reusing a dev server the developer already had running is the point of
+  // this entry. That server has its own DATABASE_URL, so the `env` above only
+  // applies when Playwright starts the server itself.
   reuseExistingServer: !process.env.CI,
 };
 
