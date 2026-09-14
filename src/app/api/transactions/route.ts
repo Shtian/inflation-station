@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseIsoDate } from "@/lib/iso-date";
 import { prisma } from "@/lib/prisma";
 import { deleteTransactions } from "@/lib/transactions/delete";
 import { getTransactionsPage } from "@/lib/transactions/list";
@@ -22,12 +23,7 @@ type SortField = (typeof SORT_FIELDS)[number];
 type SortDirection = "asc" | "desc";
 
 function parseDateParam(value: string | null): Date | null {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return null;
-  }
-
-  const date = new Date(`${value}T00:00:00.000Z`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  return value === null ? null : parseIsoDate(value);
 }
 
 function parseOptionalFilterParam(value: string | null): string | undefined {

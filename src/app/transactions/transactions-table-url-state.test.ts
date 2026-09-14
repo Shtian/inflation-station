@@ -47,6 +47,22 @@ describe("parseTransactionsTableUrlState", () => {
     });
   });
 
+  it("drops date filters naming a day that does not exist", () => {
+    const impossible = parseTransactionsTableUrlState(
+      new URLSearchParams("dateFrom=2026-02-31&dateTo=2026-04-31"),
+    );
+
+    expect(impossible.dateFrom).toBeUndefined();
+    expect(impossible.dateTo).toBeUndefined();
+
+    const real = parseTransactionsTableUrlState(
+      new URLSearchParams("dateFrom=2026-02-28&dateTo=2026-04-30"),
+    );
+
+    expect(real.dateFrom).toBe("2026-02-28");
+    expect(real.dateTo).toBe("2026-04-30");
+  });
+
   it("uses legacy query when globalQuery is missing", () => {
     const state = parseTransactionsTableUrlState(
       new URLSearchParams("query= bakery "),
