@@ -75,6 +75,11 @@ export async function executeServerMutation<TData, TCode extends string>(
       };
     }
 
+    console.error("Server action mutation failed", {
+      code: options.fallbackError.code,
+      error,
+    });
+
     return {
       ok: false,
       error: options.fallbackError,
