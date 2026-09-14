@@ -18,7 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MAX_TRANSACTION_NOTE_LENGTH } from "@/lib/transactions/note";
+import {
+  MAX_TRANSACTION_NOTE_LENGTH,
+  type NoteField,
+} from "@/lib/transactions/note";
 import {
   type Category,
   type EditFormState,
@@ -31,7 +34,7 @@ type EditTransactionDialogProps = {
   categories: Category[];
   editForm: EditFormState | null;
   editError: string | null;
-  noteError: string | null;
+  note: NoteField;
   editSaving: boolean;
   onOpenChange: (nextOpen: boolean) => void;
   onCategoryChange: (value: string) => void;
@@ -49,7 +52,7 @@ export function EditTransactionDialog({
   categories,
   editForm,
   editError,
-  noteError,
+  note,
   editSaving,
   onOpenChange,
   onCategoryChange,
@@ -168,14 +171,14 @@ export function EditTransactionDialog({
                   id="edit-note"
                   value={editForm.note}
                   onChange={(event) => onNoteChange(event.target.value)}
-                  aria-invalid={noteError !== null}
+                  aria-invalid={note.error !== null}
                   disabled={editSaving}
                 />
                 <p
-                  className={`text-xs ${noteError ? "text-destructive" : "text-muted-foreground"}`}
+                  className={`text-xs ${note.error ? "text-destructive" : "text-muted-foreground"}`}
                 >
-                  {noteError ??
-                    `${editForm.note.length}/${MAX_TRANSACTION_NOTE_LENGTH} characters`}
+                  {note.error ??
+                    `${note.length}/${MAX_TRANSACTION_NOTE_LENGTH} characters`}
                 </p>
               </FieldContent>
             </Field>

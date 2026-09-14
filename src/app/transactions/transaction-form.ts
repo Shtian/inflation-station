@@ -1,27 +1,30 @@
-import {
-  MAX_TRANSACTION_NOTE_LENGTH,
-  MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
-} from "@/lib/transactions/note";
+import { readNoteField } from "@/lib/transactions/note";
 import {
   type AddFormState,
+  type EditFormState,
   UNCATEGORIZED_VALUE,
 } from "./transactions-manager.types";
 
-type ValidAddForm = {
+type ValidTransactionFields = {
   valid: true;
-  accountId: string;
   bookingDate: string;
   amountNok: number;
   merchant: string;
-  note: string;
+  note: string | null;
 };
 
-type InvalidAddForm = {
+type InvalidForm = {
   valid: false;
   error: string;
 };
 
-export type AddFormValidationResult = ValidAddForm | InvalidAddForm;
+export type TransactionFieldsValidationResult =
+  | ValidTransactionFields
+  | InvalidForm;
+
+export type AddFormValidationResult =
+  | (ValidTransactionFields & { accountId: string })
+  | InvalidForm;
 
 type InitialFormFilters = {
   accountId: string;
@@ -47,15 +50,11 @@ export function isFutureDate(dateStr: string): boolean {
   return dateStr > today;
 }
 
-export function validateAddForm(form: AddFormState): AddFormValidationResult {
-  const accountId = form.accountId.trim();
-  if (!accountId) {
-    return { valid: false, error: "Account is required." };
-  }
-
+export function validateTransactionFields(
+  form: EditFormState,
+): TransactionFieldsValidationResult {
   const bookingDate = form.bookingDate.trim();
   const merchant = form.merchant.trim();
-
   if (!bookingDate || !merchant) {
     return { valid: false, error: "Date and merchant are required." };
   }
@@ -65,10 +64,24 @@ export function validateAddForm(form: AddFormState): AddFormValidationResult {
     return { valid: false, error: "Amount must be a valid number." };
   }
 
-  const note = form.note.trim();
-  if (note.length > MAX_TRANSACTION_NOTE_LENGTH) {
-    return { valid: false, error: MAX_TRANSACTION_NOTE_LENGTH_MESSAGE };
+  const note = readNoteField(form.note);
+  if (note.error) {
+    return { valid: false, error: note.error };
   }
 
-  return { valid: true, accountId, bookingDate, amountNok, merchant, note };
+  return { valid: true, bookingDate, amountNok, merchant, note: note.value };
+}
+
+export function validateAddForm(form: AddFormState): AddFormValidationResult {
+  const accountId = form.accountId.trim();
+  if (!accountId) {
+    return { valid: false, error: "Account is required." };
+  }
+
+  const fields = validateTransactionFields(form);
+  if (!fields.valid) {
+    return fields;
+  }
+
+  return { ...fields, accountId };
 }
