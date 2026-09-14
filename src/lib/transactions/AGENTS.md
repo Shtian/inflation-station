@@ -9,7 +9,7 @@ Load this when working in `src/lib/transactions`.
 - Writing the display merchant always writes the derived `normalizedMerchant` in the same statement. `merchant.ts` models them as one `MerchantColumns` field so half a rename is not expressible.
 - Every writer stores `normalizeMerchantKey(display)` in `normalizedMerchant`, and `list.ts` folds the search query through the same function before matching that column. Do not add a second normalizer; the fold is pinned by dedupe fingerprints on existing rows.
 - Rows written before the shared key are not bulk repaired; they converge when next edited, and the raw `merchant` search leg still finds them.
-- Currency is pinned by `TRANSACTION_CURRENCY` in `write.ts` and is never accepted from a caller.
+- Currency is never accepted from a caller; `write.ts` pins it to `TRANSACTION_CURRENCY` on create only, and an update leaves the stored currency alone.
 - Canonicalization lives in the Zod schemas, so parsed payloads are domain values: booking date is midnight UTC, note is trimmed text or `null`, merchant carries both columns.
 - Update intents are tri-state per field: omitted preserves, `null` clears, a value writes. Prisma reads `undefined` as "leave this column alone", so both writers stay flat object literals with no conditional spreads.
 - Persist notes as nullable plain text (`null` when absent); empty and whitespace-only notes normalize to `null` on both create and update.
