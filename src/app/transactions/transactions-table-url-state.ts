@@ -1,3 +1,4 @@
+import { parseIsoDate } from "@/lib/iso-date";
 import {
   PAGE_SIZE_OPTIONS,
   TRANSACTIONS_SORT_FIELDS,
@@ -18,8 +19,6 @@ const TABLE_QUERY_PARAMS = [
   "accountId",
   "categoryId",
 ] as const;
-
-const DATE_INPUT_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export type TransactionsTableUrlState = {
   page: number;
@@ -72,7 +71,7 @@ function parseSortingParam(
 }
 
 function parseDateInputValue(value: string | null): string | undefined {
-  return value && DATE_INPUT_REGEX.test(value) ? value : undefined;
+  return value && parseIsoDate(value) !== null ? value : undefined;
 }
 
 function parsePageSize(value: string | null): number {
