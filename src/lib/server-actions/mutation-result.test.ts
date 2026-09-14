@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
   executeServerMutation,
@@ -68,27 +68,69 @@ describe("mutation-result", () => {
     });
   });
 
-  it("maps known errors in executeServerMutation", async () => {
-    const result = await executeServerMutation({
-      execute: async () => {
-        throw new Error("boom");
-      },
-      mapError: (error) =>
-        error instanceof Error && error.message === "boom"
-          ? { code: "KNOWN_ERROR", message: "Known failure" }
-          : null,
-      fallbackError: {
-        code: "UNKNOWN_ERROR",
-        message: "Unknown failure",
-      },
-    });
+  it("maps known errors in executeServerMutation without logging them", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
-    expect(result).toEqual({
-      ok: false,
-      error: {
-        code: "KNOWN_ERROR",
-        message: "Known failure",
-      },
-    });
+    try {
+      const result = await executeServerMutation({
+        execute: async () => {
+          throw new Error("boom");
+        },
+        mapError: (error) =>
+          error instanceof Error && error.message === "boom"
+            ? { code: "KNOWN_ERROR", message: "Known failure" }
+            : null,
+        fallbackError: {
+          code: "UNKNOWN_ERROR",
+          message: "Unknown failure",
+        },
+      });
+
+      expect(result).toEqual({
+        ok: false,
+        error: {
+          code: "KNOWN_ERROR",
+          message: "Known failure",
+        },
+      });
+      expect(errorSpy.mock.calls).toEqual([]);
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it("logs unmapped errors with the fallback code in executeServerMutation", async () => {
+    const thrown = new Error("database disk image is malformed");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    try {
+      const result = await executeServerMutation({
+        execute: async () => {
+          throw thrown;
+        },
+        mapError: () => null,
+        fallbackError: {
+          code: "PROVIDER_MAPPING_CREATE_FAILED",
+          message: "Could not create provider mapping.",
+        },
+      });
+
+      expect(result).toEqual({
+        ok: false,
+        error: {
+          code: "PROVIDER_MAPPING_CREATE_FAILED",
+          message: "Could not create provider mapping.",
+        },
+      });
+      expect(errorSpy.mock.calls).toHaveLength(1);
+      expect(errorSpy.mock.calls[0][0]).toBe("Server action mutation failed");
+      expect(errorSpy.mock.calls[0][1]).toEqual({
+        code: "PROVIDER_MAPPING_CREATE_FAILED",
+        error: thrown,
+      });
+      expect(errorSpy.mock.calls[0][1].error).toBe(thrown);
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });
