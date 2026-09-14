@@ -11,6 +11,7 @@ Load this when working in `src/lib/transactions`.
 - Rows written before the shared key are not bulk repaired; they converge when next edited, and the raw `merchant` search leg still finds them.
 - Currency is pinned by `TRANSACTION_CURRENCY` in `write.ts` and is never accepted from a caller.
 - Canonicalization lives in the Zod schemas, so parsed payloads are domain values: booking date is midnight UTC, note is trimmed text or `null`, merchant carries both columns.
+- `YYYY-MM-DD` parsing lives in `src/lib/iso-date.ts` (`parseIsoDate`), the one parser shared by these schemas and the API date filters; it rejects a day that does not exist, so never add a second shape-only regex.
 - Update intents are tri-state per field: omitted preserves, `null` clears, a value writes. Prisma reads `undefined` as "leave this column alone", so both writers stay flat object literals with no conditional spreads.
 - Persist notes as nullable plain text (`null` when absent); empty and whitespace-only notes normalize to `null` on both create and update.
 - Keep note length limits centralized in `note.ts` and enforce the same rule in import submit and transaction update flows. The 500 cap applies after trimming.
