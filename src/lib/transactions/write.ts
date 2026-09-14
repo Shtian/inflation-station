@@ -171,7 +171,6 @@ export async function updateTransaction(
   const record = await db.transaction.update({
     where: { id: params.transactionId },
     data: {
-      currency: TRANSACTION_CURRENCY,
       categoryId: params.updates.categoryId,
       bookingDate: params.updates.bookingDate,
       amountNok: params.updates.amountNok,
