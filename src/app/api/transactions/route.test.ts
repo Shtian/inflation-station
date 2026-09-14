@@ -163,6 +163,30 @@ describe("GET /api/transactions", () => {
     });
     expect(getTransactionsPageMock).not.toHaveBeenCalled();
   });
+
+  it("returns 400 for date filters naming a day that does not exist", async () => {
+    const invalidDateFromResponse = await GET(
+      new Request("http://localhost/api/transactions?dateFrom=2026-02-31"),
+    );
+
+    expect(invalidDateFromResponse.status).toBe(400);
+    await expect(invalidDateFromResponse.json()).resolves.toEqual({
+      error: "INVALID_DATE_FROM",
+      message: "Expected dateFrom in YYYY-MM-DD format.",
+    });
+
+    const invalidDateToResponse = await GET(
+      new Request("http://localhost/api/transactions?dateTo=2026-02-31"),
+    );
+
+    expect(invalidDateToResponse.status).toBe(400);
+    await expect(invalidDateToResponse.json()).resolves.toEqual({
+      error: "INVALID_DATE_TO",
+      message: "Expected dateTo in YYYY-MM-DD format.",
+    });
+
+    expect(getTransactionsPageMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("DELETE /api/transactions", () => {
