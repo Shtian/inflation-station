@@ -459,6 +459,36 @@ describe("transaction writes (real database)", () => {
     expect(persisted.note).toBe("weekly run");
   });
 
+  it("leaves a stored non-NOK currency alone when an update changes another field", async () => {
+    const account = await seedAccount();
+    const created = await createTransaction(
+      db.client,
+      createIntent({
+        accountId: account.id,
+        bookingDate: "2026-01-15",
+        amountNok: -50,
+        merchant: "Corner Shop",
+        paymentType: "CARD",
+      }),
+    );
+
+    await db.client.transaction.update({
+      where: { id: created.id },
+      data: { currency: "EUR" },
+    });
+
+    await updateTransaction(db.client, {
+      transactionId: created.id,
+      updates: updateIntent({ amountNok: -75.5 }),
+    });
+
+    const persisted = await db.client.transaction.findUniqueOrThrow({
+      where: { id: created.id },
+    });
+    expect(persisted.currency).toBe("EUR");
+    expect(Number.parseFloat(persisted.amountNok.toString())).toBe(-75.5);
+  });
+
   it("preserves, clears and rewrites the note across successive updates", async () => {
     const account = await seedAccount();
     const created = await createTransaction(
