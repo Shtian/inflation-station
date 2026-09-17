@@ -586,21 +586,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        transaction: {
-          id: "txn-page-2",
-          accountId: "acc-1",
-          categoryId: payload.categoryId,
-          bookingDate: payload.bookingDate,
-          amountNok: payload.amountNok,
-          currency: "NOK",
-          normalizedMerchant: payload.merchant,
-          paymentType: payload.paymentType,
-          note: payload.note,
-          createdAt: "2026-01-15T08:00:00.000Z",
-          updatedAt: "2026-02-16T12:00:00.000Z",
-        },
-      }),
+      body: JSON.stringify({ id: "txn-page-2" }),
     });
   });
 
@@ -977,7 +963,7 @@ test("adds a transaction from the modal and counts note length the way validatio
       await route.fulfill({
         status: 201,
         contentType: "application/json",
-        body: JSON.stringify({ transaction: addedRow }),
+        body: JSON.stringify({ id: addedRow.id }),
       });
       return;
     }

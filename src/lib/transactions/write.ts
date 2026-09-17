@@ -6,26 +6,28 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
 } from "./note";
-import {
-  TRANSACTION_ROW_SELECT,
-  type TransactionRow,
-  type TransactionRowRecord,
-  toTransactionRow,
-} from "./row";
 
 const TRANSACTION_CURRENCY = "NOK";
+
+const TRANSACTION_WRITE_SELECT = {
+  id: true,
+} satisfies Prisma.TransactionSelect;
+
+export type TransactionWriteResult = Prisma.TransactionGetPayload<{
+  select: typeof TRANSACTION_WRITE_SELECT;
+}>;
 
 type TransactionWriteDb = {
   transaction: {
     create(args: {
       data: Prisma.TransactionUncheckedCreateInput;
-      select: typeof TRANSACTION_ROW_SELECT;
-    }): Promise<TransactionRowRecord>;
+      select: typeof TRANSACTION_WRITE_SELECT;
+    }): Promise<TransactionWriteResult>;
     update(args: {
       where: { id: string };
       data: Prisma.TransactionUncheckedUpdateInput;
-      select: typeof TRANSACTION_ROW_SELECT;
-    }): Promise<TransactionRowRecord>;
+      select: typeof TRANSACTION_WRITE_SELECT;
+    }): Promise<TransactionWriteResult>;
   };
 };
 
@@ -117,8 +119,8 @@ export function parseTransactionUpdatePayload(
 export async function createTransaction(
   db: TransactionWriteDb,
   intent: TransactionCreateIntent,
-): Promise<TransactionRow> {
-  const record = await db.transaction.create({
+): Promise<TransactionWriteResult> {
+  return db.transaction.create({
     data: {
       accountId: intent.accountId,
       bookingDate: intent.bookingDate,
@@ -129,10 +131,8 @@ export async function createTransaction(
       note: intent.note,
       ...intent.merchant,
     },
-    select: TRANSACTION_ROW_SELECT,
+    select: TRANSACTION_WRITE_SELECT,
   });
-
-  return toTransactionRow(record);
 }
 
 export async function updateTransaction(
@@ -141,9 +141,9 @@ export async function updateTransaction(
     transactionId: string;
     updates: TransactionUpdateIntent;
   },
-): Promise<TransactionRow> {
+): Promise<TransactionWriteResult> {
   // Prisma reads `undefined` in `data` as "leave this column alone".
-  const record = await db.transaction.update({
+  return db.transaction.update({
     where: { id: params.transactionId },
     data: {
       categoryId: params.updates.categoryId,
@@ -153,8 +153,6 @@ export async function updateTransaction(
       note: params.updates.note,
       ...params.updates.merchant,
     },
-    select: TRANSACTION_ROW_SELECT,
+    select: TRANSACTION_WRITE_SELECT,
   });
-
-  return toTransactionRow(record);
 }

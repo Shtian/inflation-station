@@ -201,13 +201,13 @@ describe("transaction writes (real database)", () => {
     return db.client.account.create({ data: { name } });
   }
 
-  it("persists a canonical row and returns it with display names", async () => {
+  it("persists a canonical row and returns only its id", async () => {
     const account = await seedAccount();
     const category = await db.client.category.create({
       data: { name: "Groceries" },
     });
 
-    const row = await createTransaction(
+    const created = await createTransaction(
       db.client,
       createIntent({
         accountId: account.id,
@@ -220,10 +220,14 @@ describe("transaction writes (real database)", () => {
       }),
     );
 
+    expect(Object.keys(created)).toEqual(["id"]);
+
     const persisted = await db.client.transaction.findUniqueOrThrow({
-      where: { id: row.id },
+      where: { id: created.id },
     });
 
+    expect(persisted.accountId).toBe(account.id);
+    expect(persisted.categoryId).toBe(category.id);
     expect(persisted.merchant).toBe("Corner Shop");
     expect(persisted.normalizedMerchant).toBe("corner shop");
     expect(persisted.currency).toBe("NOK");
@@ -232,27 +236,10 @@ describe("transaction writes (real database)", () => {
     );
     expect(persisted.note).toBe("weekly run");
     expect(Number.parseFloat(persisted.amountNok.toString())).toBe(-100.25);
-
-    expect(row).toEqual({
-      id: persisted.id,
-      accountId: account.id,
-      accountName: "Everyday",
-      categoryId: category.id,
-      categoryName: "Groceries",
-      bookingDate: "2026-01-15",
-      amountNok: -100.25,
-      currency: "NOK",
-      normalizedMerchant: "corner shop",
-      merchant: "Corner Shop",
-      paymentType: "CARD",
-      note: "weekly run",
-      createdAt: persisted.createdAt.toISOString(),
-      updatedAt: persisted.updatedAt.toISOString(),
-    });
-    expect(row.createdAt).toMatch(
+    expect(persisted.createdAt.toISOString()).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
     );
-    expect(row.updatedAt).toMatch(
+    expect(persisted.updatedAt.toISOString()).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
     );
   });
@@ -267,9 +254,9 @@ describe("transaction writes (real database)", () => {
       paymentType: "CARD",
     };
 
-    const rows = [];
+    const created = [];
     for (const note of [undefined, null, "", "   ", "  bought milk  "]) {
-      rows.push(
+      created.push(
         await createTransaction(
           db.client,
           createIntent(note === undefined ? base : { ...base, note }),
@@ -277,16 +264,8 @@ describe("transaction writes (real database)", () => {
       );
     }
 
-    expect(rows.map((row) => row.note)).toEqual([
-      null,
-      null,
-      null,
-      null,
-      "bought milk",
-    ]);
-
     const persisted = await Promise.all(
-      rows.map(async (row) =>
+      created.map(async (row) =>
         db.client.transaction.findUniqueOrThrow({ where: { id: row.id } }),
       ),
     );
@@ -308,9 +287,9 @@ describe("transaction writes (real database)", () => {
       paymentType: "CARD",
     };
 
-    const rows = [];
+    const created = [];
     for (const amountNok of [-1234.5, 0, 99.99]) {
-      rows.push(
+      created.push(
         await createTransaction(
           db.client,
           createIntent({ ...base, amountNok }),
@@ -318,10 +297,8 @@ describe("transaction writes (real database)", () => {
       );
     }
 
-    expect(rows.map((row) => row.amountNok)).toEqual([-1234.5, 0, 99.99]);
-
     const persisted = await Promise.all(
-      rows.map(async (row) =>
+      created.map(async (row) =>
         db.client.transaction.findUniqueOrThrow({ where: { id: row.id } }),
       ),
     );
@@ -343,7 +320,7 @@ describe("transaction writes (real database)", () => {
       }),
     );
 
-    const updated = await updateTransaction(db.client, {
+    await updateTransaction(db.client, {
       transactionId: created.id,
       updates: updateIntent({ merchant: "New Corner Shop" }),
     });
@@ -353,8 +330,6 @@ describe("transaction writes (real database)", () => {
     });
     expect(persisted.merchant).toBe("New Corner Shop");
     expect(persisted.normalizedMerchant).toBe("new corner shop");
-    expect(updated.merchant).toBe("New Corner Shop");
-    expect(updated.normalizedMerchant).toBe("new corner shop");
 
     const stale = await getTransactionsPage(db.client, {
       query: "old corner shop",
@@ -441,15 +416,10 @@ describe("transaction writes (real database)", () => {
       }),
     );
 
-    const updated = await updateTransaction(db.client, {
+    await updateTransaction(db.client, {
       transactionId: created.id,
       updates: updateIntent({ amountNok: -75.5 }),
     });
-
-    expect(updated.merchant).toBe("Corner Shop");
-    expect(updated.normalizedMerchant).toBe("corner shop");
-    expect(updated.note).toBe("weekly run");
-    expect(updated.amountNok).toBe(-75.5);
 
     const persisted = await db.client.transaction.findUniqueOrThrow({
       where: { id: created.id },
@@ -457,6 +427,7 @@ describe("transaction writes (real database)", () => {
     expect(persisted.merchant).toBe("Corner Shop");
     expect(persisted.normalizedMerchant).toBe("corner shop");
     expect(persisted.note).toBe("weekly run");
+    expect(Number.parseFloat(persisted.amountNok.toString())).toBe(-75.5);
   });
 
   it("leaves a stored non-NOK currency alone when an update changes another field", async () => {
@@ -512,15 +483,14 @@ describe("transaction writes (real database)", () => {
       { note: "  again  " },
       { note: "   " },
     ]) {
-      const row = await updateTransaction(db.client, {
+      await updateTransaction(db.client, {
         transactionId: created.id,
         updates: updateIntent(updates),
       });
       const persisted = await db.client.transaction.findUniqueOrThrow({
         where: { id: created.id },
       });
-      expect(persisted.note).toBe(row.note);
-      observed.push(row.note);
+      observed.push(persisted.note);
     }
 
     expect(observed).toEqual([
@@ -549,28 +519,36 @@ describe("transaction writes (real database)", () => {
       }),
     );
 
-    expect(created.categoryId).toBeNull();
-    expect(created.categoryName).toBeNull();
+    async function listedRow() {
+      const page = await getTransactionsPage(db.client, {
+        page: 1,
+        pageSize: 25,
+      });
+      return page.rows.find((row) => row.id === created.id);
+    }
 
-    const categorized = await updateTransaction(db.client, {
+    expect((await listedRow())?.categoryId).toBeNull();
+    expect((await listedRow())?.categoryName).toBeNull();
+
+    await updateTransaction(db.client, {
       transactionId: created.id,
       updates: updateIntent({ categoryId: category.id }),
     });
-    expect(categorized.categoryId).toBe(category.id);
-    expect(categorized.categoryName).toBe("Groceries");
+    expect((await listedRow())?.categoryId).toBe(category.id);
+    expect((await listedRow())?.categoryName).toBe("Groceries");
 
-    const untouched = await updateTransaction(db.client, {
+    await updateTransaction(db.client, {
       transactionId: created.id,
       updates: updateIntent({ amountNok: -60 }),
     });
-    expect(untouched.categoryId).toBe(category.id);
+    expect((await listedRow())?.categoryId).toBe(category.id);
 
-    const cleared = await updateTransaction(db.client, {
+    await updateTransaction(db.client, {
       transactionId: created.id,
       updates: updateIntent({ categoryId: null }),
     });
-    expect(cleared.categoryId).toBeNull();
-    expect(cleared.categoryName).toBeNull();
+    expect((await listedRow())?.categoryId).toBeNull();
+    expect((await listedRow())?.categoryName).toBeNull();
     expect(
       (
         await db.client.transaction.findUniqueOrThrow({
@@ -580,7 +558,7 @@ describe("transaction writes (real database)", () => {
     ).toBeNull();
   });
 
-  it("returns the same row shape from create, update and list", async () => {
+  it("write functions return only the persisted id, unlike the list row shape", async () => {
     const account = await seedAccount();
     const created = await createTransaction(
       db.client,
@@ -601,7 +579,9 @@ describe("transaction writes (real database)", () => {
       pageSize: 25,
     });
 
-    const expectedFields = [
+    expect(Object.keys(created)).toEqual(["id"]);
+    expect(Object.keys(updated)).toEqual(["id"]);
+    expect(Object.keys(listed.rows[0]).sort()).toEqual([
       "accountId",
       "accountName",
       "amountNok",
@@ -616,11 +596,9 @@ describe("transaction writes (real database)", () => {
       "note",
       "paymentType",
       "updatedAt",
-    ];
-    expect(Object.keys(created).sort()).toEqual(expectedFields);
-    expect(Object.keys(updated).sort()).toEqual(expectedFields);
-    expect(Object.keys(listed.rows[0]).sort()).toEqual(expectedFields);
-    expect(listed.rows).toEqual([updated]);
+    ]);
+    expect(listed.rows[0].id).toBe(created.id);
+    expect(listed.rows[0].note).toBe("edited");
   });
 
   it("matches note search by exact text and ASCII case only", async () => {

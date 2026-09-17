@@ -224,7 +224,7 @@ export async function POST(request: Request) {
   try {
     const transaction = await createTransaction(prisma, parsed.data);
 
-    return NextResponse.json(transaction, { status: 201 });
+    return NextResponse.json({ id: transaction.id }, { status: 201 });
   } catch (error) {
     if (
       typeof error === "object" &&

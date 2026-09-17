@@ -77,7 +77,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
     expect(updateTransactionMock).not.toHaveBeenCalled();
   });
 
-  it("persists valid updates and returns the updated transaction", async () => {
+  it("persists valid updates and returns the updated transaction id", async () => {
     parseTransactionUpdatePayloadMock.mockReturnValue({
       success: true,
       data: {
@@ -86,19 +86,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
         merchant: "Store",
       },
     });
-    updateTransactionMock.mockResolvedValue({
-      id: "tx-1",
-      accountId: "acc-1",
-      categoryId: null,
-      bookingDate: "2026-02-01",
-      amountNok: -100,
-      currency: "NOK",
-      normalizedMerchant: "store",
-      merchant: "Store",
-      paymentType: PaymentType.CARD,
-      createdAt: "2026-02-01T00:00:00.000Z",
-      updatedAt: "2026-02-02T00:00:00.000Z",
-    });
+    updateTransactionMock.mockResolvedValue({ id: "tx-1" });
 
     const response = await PATCH(
       new Request("http://localhost", {
@@ -124,21 +112,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
         merchant: "Store",
       },
     });
-    await expect(response.json()).resolves.toEqual({
-      transaction: {
-        id: "tx-1",
-        accountId: "acc-1",
-        categoryId: null,
-        bookingDate: "2026-02-01",
-        amountNok: -100,
-        currency: "NOK",
-        normalizedMerchant: "store",
-        merchant: "Store",
-        paymentType: PaymentType.CARD,
-        createdAt: "2026-02-01T00:00:00.000Z",
-        updatedAt: "2026-02-02T00:00:00.000Z",
-      },
-    });
+    await expect(response.json()).resolves.toEqual({ id: "tx-1" });
   });
 
   it.each([
