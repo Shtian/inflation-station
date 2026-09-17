@@ -8,4 +8,5 @@ Load this when working in `src/app/api/transactions`.
 - Map Prisma `P2003` to a 404: `CATEGORY_OR_ACCOUNT_NOT_FOUND` on create (SQLite does not name the failing constraint) and `CATEGORY_NOT_FOUND` on update.
 - In this folder, every mutation error response carries a human-readable `message` next to the stable `error` code; build validation messages with `formatPayloadErrorMessage`. The `/transactions` dialogs render `message` only, never the code.
 - Include `categoryName` and `note` in list-row payloads used by `/transactions` table/edit flows.
+- `POST` (201) and `PATCH` (200) success responses share the same minimal envelope, `{ id }`; neither builds or returns the joined `account`/`category` row, since the `/transactions` table refetches instead of consuming the mutation response. Keep both routes returning the same shape if either changes.
 - Keep transactions list query contract stable: `sorting` uses `<field>:<direction>`, empty text/id filters normalize to `undefined`, and `dateFrom`/`dateTo` must name a real calendar day or the request is a 400.

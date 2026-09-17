@@ -273,28 +273,14 @@ describe("POST /api/transactions", () => {
     paymentType: PaymentType.CARD,
   };
 
-  const createdTransaction = {
-    id: "tx-new",
-    accountId: "acc-1",
-    categoryId: null,
-    categoryName: null,
-    bookingDate: "2026-03-01",
-    amountNok: -50,
-    currency: "NOK",
-    normalizedMerchant: "my shop",
-    merchant: "My Shop",
-    paymentType: PaymentType.CARD,
-    note: null,
-    createdAt: "2026-03-01T10:00:00.000Z",
-    updatedAt: "2026-03-01T10:00:00.000Z",
-  };
+  const createdTransaction = { id: "tx-new" };
 
   beforeEach(() => {
     createTransactionMock.mockReset();
     createTransactionMock.mockResolvedValue(createdTransaction);
   });
 
-  it("returns 201 with created transaction on valid payload", async () => {
+  it("returns 201 with the created transaction id on valid payload", async () => {
     const response = await POST(
       new Request("http://localhost/api/transactions", {
         method: "POST",

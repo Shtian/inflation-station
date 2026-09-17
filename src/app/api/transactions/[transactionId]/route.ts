@@ -55,7 +55,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       updates: parsed.data,
     });
 
-    return NextResponse.json({ transaction });
+    return NextResponse.json({ id: transaction.id });
   } catch (error) {
     if (
       typeof error === "object" &&
