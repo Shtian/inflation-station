@@ -1,4 +1,5 @@
 import { formatNok } from "@/lib/format-nok";
+import { parseIsoDate } from "@/lib/iso-date";
 import type { DashboardRangePreset } from "./overview-dashboard.types";
 
 export { formatNok };
@@ -55,16 +56,7 @@ export function toDateInputValue(date: Date) {
 }
 
 export function fromDateInputValue(value: string) {
-  if (!value) {
-    return undefined;
-  }
-
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
-    return undefined;
-  }
-
-  return parsed;
+  return parseIsoDate(value) ?? undefined;
 }
 
 export function getPresetRange(
