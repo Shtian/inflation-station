@@ -24,7 +24,7 @@ export function ImportUploader() {
     importError,
     importLoading,
     isProviderDialogOpen,
-    messageDecisions,
+    resolvedMessages,
     noteValidationErrors,
     onFileSelected,
     openProviderDialog,
@@ -34,12 +34,12 @@ export function ImportUploader() {
     providerDetection,
     resetImport,
     reviewCategoryOptions,
+    selectMessageSource,
     selectedAccountId,
     selectedFile,
     setCategoryDecisions,
     setDialogSelectedProviderId,
     setIsProviderDialogOpen,
-    setMessageDecisions,
     setNoteDecision,
     setSelectedAccountId,
     selectedRowIds,
@@ -70,7 +70,7 @@ export function ImportUploader() {
           categoryError={categoryError}
           importError={importError}
           importLoading={importLoading}
-          messageDecisions={messageDecisions}
+          resolvedMessages={resolvedMessages}
           noteValidationErrors={noteValidationErrors}
           openProviderDialog={openProviderDialog}
           parseResult={parseResult}
@@ -80,7 +80,7 @@ export function ImportUploader() {
           selectedAccountId={selectedAccountId}
           selectedRowIds={selectedRowIds}
           setCategoryDecisions={setCategoryDecisions}
-          setMessageDecisions={setMessageDecisions}
+          selectMessageSource={selectMessageSource}
           setNoteDecision={setNoteDecision}
           submitError={submitError}
           submitLoading={submitLoading}

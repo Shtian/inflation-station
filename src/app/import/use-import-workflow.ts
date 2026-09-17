@@ -2,15 +2,23 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import type { CleanupPlan } from "@/lib/import/message-cleanup/plan";
+import type { CleanupChunkResponse } from "@/lib/import/message-cleanup/wire";
 import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
 } from "@/lib/transactions/note";
-import type { MessageSource, ReviewRow } from "./import-review-table";
+import type { ReviewRow } from "./import-review-table";
 import {
-  MESSAGE_SOURCE_CLEANED,
-  MESSAGE_SOURCE_ORIGINAL,
-} from "./import-review-table";
+  applyChunkResult,
+  type SuggestionsByRowId,
+} from "./message-cleanup/apply-chunk-result";
+import {
+  type MessageSource,
+  type ResolvedRowMessage,
+  resolveRowMessage,
+} from "./message-cleanup/resolve-row-message";
+import { useMessageCleanupStream } from "./message-cleanup/use-message-cleanup-stream";
 
 export type Account = {
   id: string;
@@ -59,15 +67,10 @@ export type ParseResponse = {
   detection: ProviderDetection;
   summary: ImportSummary;
   errors: ImportError[];
+  cleanup?: CleanupPlan;
   review?: {
     sessionId: string | null;
     potentialDuplicates: number;
-    messageCleanupUnavailableReason:
-      | "disabled"
-      | "key_missing"
-      | "timeout"
-      | "provider_error"
-      | null;
     rows: ReviewRow[];
   };
 };
@@ -99,6 +102,18 @@ function getRequestErrorMessage(body: unknown) {
   return "Request failed. Please try again.";
 }
 
+function deriveOriginalMessage(row: { name?: string; title?: string }): string {
+  if (typeof row.title === "string" && row.title.trim().length > 0) {
+    return row.title;
+  }
+
+  if (typeof row.name === "string" && row.name.trim().length > 0) {
+    return row.name;
+  }
+
+  return "No original message";
+}
+
 export function useImportWorkflow() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -124,9 +139,10 @@ export function useImportWorkflow() {
   const [categoryDecisions, setCategoryDecisions] = useState<
     Record<string, string>
   >({});
-  const [messageDecisions, setMessageDecisions] = useState<
+  const [messageOverrides, setMessageOverrides] = useState<
     Record<string, MessageSource>
   >({});
+  const [suggestions, setSuggestions] = useState<SuggestionsByRowId>({});
   const [noteDecisions, setNoteDecisions] = useState<Record<string, string>>(
     {},
   );
@@ -240,10 +256,40 @@ export function useImportWorkflow() {
     return allProviders;
   }, [providerDetection, allProviders]);
 
+  const resolvedMessages = useMemo(() => {
+    const rows = parseResult?.review?.rows ?? [];
+
+    return rows.reduce<Record<string, ResolvedRowMessage>>((acc, row) => {
+      acc[row.id] = resolveRowMessage({
+        originalMessage: deriveOriginalMessage(row),
+        suggestion: suggestions[row.id] ?? { status: "pending" },
+        override: messageOverrides[row.id],
+      });
+      return acc;
+    }, {});
+  }, [parseResult, suggestions, messageOverrides]);
+
+  const onChunkResult = useCallback(
+    (rowIds: string[], result: CleanupChunkResponse) => {
+      setSuggestions((current) => applyChunkResult(current, rowIds, result));
+    },
+    [],
+  );
+
+  useMessageCleanupStream(parseResult?.cleanup ?? null, onChunkResult);
+
+  const selectMessageSource = useCallback(
+    (rowId: string, source: MessageSource) => {
+      setMessageOverrides((current) => ({ ...current, [rowId]: source }));
+    },
+    [],
+  );
+
   const resetReviewState = useCallback(() => {
     setParseResult(null);
     setCategoryDecisions({});
-    setMessageDecisions({});
+    setMessageOverrides({});
+    setSuggestions({});
     setNoteDecisions({});
     setNoteValidationErrors({});
     setSelectedRowIds(new Set());
@@ -321,7 +367,8 @@ export function useImportWorkflow() {
     setSubmitError(null);
     setParseResult(null);
     setCategoryDecisions({});
-    setMessageDecisions({});
+    setMessageOverrides({});
+    setSuggestions({});
     setNoteDecisions({});
     setNoteValidationErrors({});
 
@@ -388,17 +435,6 @@ export function useImportWorkflow() {
       }, {}),
     );
 
-    setMessageDecisions(
-      reviewRows.reduce<Record<string, MessageSource>>((acc, row) => {
-        acc[row.id] =
-          typeof row.cleanedMessage === "string" &&
-          row.cleanedMessage.length > 0
-            ? MESSAGE_SOURCE_CLEANED
-            : MESSAGE_SOURCE_ORIGINAL;
-        return acc;
-      }, {}),
-    );
-
     setNoteDecisions({});
     setNoteValidationErrors({});
     setSelectedRowIds(new Set(reviewRows.map((row) => row.id)));
@@ -411,7 +447,8 @@ export function useImportWorkflow() {
     setProviderDetection(null);
     setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
     setCategoryDecisions({});
-    setMessageDecisions({});
+    setMessageOverrides({});
+    setSuggestions({});
     setNoteDecisions({});
     setNoteValidationErrors({});
     setSelectedRowIds(new Set());
@@ -463,11 +500,7 @@ export function useImportWorkflow() {
       .filter((row) => selectedRowIds.has(row.id))
       .map((row) => ({
         selectedMessage:
-          messageDecisions[row.id] === MESSAGE_SOURCE_CLEANED &&
-          typeof row.cleanedMessage === "string" &&
-          row.cleanedMessage.trim().length > 0
-            ? row.cleanedMessage
-            : row.title,
+          resolvedMessages[row.id]?.display ?? deriveOriginalMessage(row),
         rowId: row.id,
         categoryId: (categoryDecisions[row.id] ?? row.categoryId) || null,
         note: noteDecisions[row.id] ?? null,
@@ -523,7 +556,8 @@ export function useImportWorkflow() {
     );
     setParseResult(null);
     setCategoryDecisions({});
-    setMessageDecisions({});
+    setMessageOverrides({});
+    setSuggestions({});
     setNoteDecisions({});
     setNoteValidationErrors({});
     setSelectedFile(null);
@@ -535,7 +569,7 @@ export function useImportWorkflow() {
     setSubmitLoading(false);
   }, [
     parseResult,
-    messageDecisions,
+    resolvedMessages,
     categoryDecisions,
     noteDecisions,
     selectedRowIds,
@@ -554,7 +588,7 @@ export function useImportWorkflow() {
     importError,
     importLoading,
     isProviderDialogOpen,
-    messageDecisions,
+    messageOverrides,
     noteValidationErrors,
     noteDecisions,
     onFileSelected,
@@ -565,14 +599,15 @@ export function useImportWorkflow() {
     parseResult,
     providerDetection,
     resetImport,
+    resolvedMessages,
     reviewCategoryOptions,
+    selectMessageSource,
     selectedAccountId,
     selectedFile,
     selectedRowIds,
     setCategoryDecisions,
     setDialogSelectedProviderId,
     setIsProviderDialogOpen,
-    setMessageDecisions,
     setNoteDecision,
     setNoteDecisions,
     setSelectedAccountId,

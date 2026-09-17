@@ -6,47 +6,36 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-
-type MessageSource = "original" | "cleaned";
-
-const MESSAGE_SOURCE_CLEANED: MessageSource = "cleaned";
+import {
+  MESSAGE_SOURCE_CLEANED,
+  type ResolvedRowMessage,
+} from "../message-cleanup/resolve-row-message";
 
 type ImportReviewMessageCellProps = {
   rowId: string;
   rowNumber: number;
-  name?: string;
-  title?: string;
-  cleanedMessage?: string | null;
-  selectedMessageSource: MessageSource;
+  resolvedMessage: ResolvedRowMessage;
   onToggleMessageSource: (rowId: string) => void;
 };
 
 export function ImportReviewMessageCell({
   rowId,
   rowNumber,
-  name,
-  title,
-  cleanedMessage,
-  selectedMessageSource,
+  resolvedMessage,
   onToggleMessageSource,
 }: ImportReviewMessageCellProps) {
-  const originalMessage =
-    typeof title === "string" && title.trim().length > 0
-      ? title
-      : typeof name === "string" && name.trim().length > 0
-        ? name
-        : "No original message";
-  const hasCleanedMessage =
-    typeof cleanedMessage === "string" && cleanedMessage.trim().length > 0;
+  const {
+    source,
+    display,
+    originalMessage,
+    hasCleanedAlternative,
+    cleanedText,
+  } = resolvedMessage;
 
   return (
     <div className="flex items-center gap-2">
-      <span className="max-w-[20ch] truncate text-sm">
-        {selectedMessageSource === MESSAGE_SOURCE_CLEANED
-          ? cleanedMessage
-          : originalMessage}
-      </span>
-      {hasCleanedMessage ? (
+      <span className="max-w-[20ch] truncate text-sm">{display}</span>
+      {hasCleanedAlternative ? (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger
@@ -57,7 +46,7 @@ export function ImportReviewMessageCell({
                   onClick={() => onToggleMessageSource(rowId)}
                   className={cn(
                     "shrink-0 rounded p-0.5 transition-colors hover:bg-accent",
-                    selectedMessageSource === MESSAGE_SOURCE_CLEANED
+                    source === MESSAGE_SOURCE_CLEANED
                       ? "text-violet-500"
                       : "text-muted-foreground",
                   )}
@@ -74,8 +63,7 @@ export function ImportReviewMessageCell({
                 <span className="font-medium">Original:</span> {originalMessage}
               </p>
               <p>
-                <span className="font-medium">AI-cleaned:</span>{" "}
-                {cleanedMessage}
+                <span className="font-medium">AI-cleaned:</span> {cleanedText}
               </p>
             </TooltipContent>
           </Tooltip>

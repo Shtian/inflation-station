@@ -10,35 +10,29 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Progress } from "@/components/ui/progress";
 import { formatNok } from "@/lib/format-nok";
+import type { CleanupDisabledReason } from "@/lib/import/message-cleanup/reasons";
 import {
   ImportReviewTable,
-  type MessageSource,
   type ReviewRow,
   ReviewTableSkeleton,
 } from "../import-review-table";
+import type {
+  MessageSource,
+  ResolvedRowMessage,
+} from "../message-cleanup/resolve-row-message";
 import type {
   Category,
   ParseResponse,
   ProviderDetection,
 } from "../use-import-workflow";
 
-function getCleanupUnavailableMessage(
-  reason: "disabled" | "key_missing" | "timeout" | "provider_error" | null,
-) {
+function getCleanupUnavailableMessage(reason: CleanupDisabledReason | null) {
   if (reason === "disabled") {
     return "Message cleanup is disabled by configuration.";
   }
 
   if (reason === "key_missing") {
     return "Message cleanup unavailable: OPENAI_API_KEY is missing.";
-  }
-
-  if (reason === "timeout") {
-    return "Message cleanup timed out. Original messages are kept for this import.";
-  }
-
-  if (reason === "provider_error") {
-    return "Message cleanup provider failed. Original messages are kept for this import.";
   }
 
   return null;
@@ -57,7 +51,7 @@ type ImportReviewPhaseProps = {
   categoryError: string | null;
   importError: string | null;
   importLoading: boolean;
-  messageDecisions: Record<string, MessageSource>;
+  resolvedMessages: Record<string, ResolvedRowMessage>;
   noteValidationErrors: Record<string, string>;
   openProviderDialog: () => void;
   parseResult: ParseResponse | null;
@@ -68,7 +62,7 @@ type ImportReviewPhaseProps = {
   selectedRowIds: Set<string>;
   setCategoryDecisions: Dispatch<SetStateAction<Record<string, string>>>;
   setNoteDecision: (rowId: string, note: string) => void;
-  setMessageDecisions: Dispatch<SetStateAction<Record<string, MessageSource>>>;
+  selectMessageSource: (rowId: string, source: MessageSource) => void;
   submitError: string | null;
   submitLoading: boolean;
   submitReviewRows: () => void;
@@ -91,7 +85,7 @@ export function ImportReviewPhase({
   categoryError,
   importError,
   importLoading,
-  messageDecisions,
+  resolvedMessages,
   noteValidationErrors,
   openProviderDialog,
   parseResult,
@@ -102,7 +96,7 @@ export function ImportReviewPhase({
   selectedRowIds,
   setCategoryDecisions,
   setNoteDecision,
-  setMessageDecisions,
+  selectMessageSource,
   submitError,
   submitLoading,
   submitReviewRows,
@@ -135,13 +129,13 @@ export function ImportReviewPhase({
   const reviewRows = getReviewRows(parseResult);
   const cleanedSuggestionCount = reviewRows.reduce(
     (count, row) =>
-      typeof row.cleanedMessage === "string" && row.cleanedMessage.length > 0
-        ? count + 1
-        : count,
+      resolvedMessages[row.id]?.hasCleanedAlternative ? count + 1 : count,
     0,
   );
   const cleanupUnavailableMessage = getCleanupUnavailableMessage(
-    parseResult?.review?.messageCleanupUnavailableReason ?? null,
+    parseResult?.cleanup?.status === "unavailable"
+      ? parseResult.cleanup.reason
+      : null,
   );
 
   if (importLoading) {
@@ -386,11 +380,11 @@ export function ImportReviewPhase({
             categoryDecisions={categoryDecisions}
             noteDecisions={noteDecisions}
             noteValidationErrors={noteValidationErrors}
-            messageDecisions={messageDecisions}
+            resolvedMessages={resolvedMessages}
             selectedRowIds={selectedRowIds}
             setCategoryDecisions={setCategoryDecisions}
             setNoteDecision={setNoteDecision}
-            setMessageDecisions={setMessageDecisions}
+            selectMessageSource={selectMessageSource}
             toggleAllRows={toggleAllRows}
             toggleRowSelection={toggleRowSelection}
           />

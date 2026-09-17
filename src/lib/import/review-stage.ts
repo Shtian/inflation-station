@@ -1,4 +1,3 @@
-import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import type { PaymentType } from "@prisma/client";
 import {
   buildRuleBasedSuggestions,
@@ -13,10 +12,6 @@ import {
   normalizeImportMerchant,
   normalizeImportPaymentType,
 } from "./normalization";
-import {
-  buildOpenAiMessageCleanup,
-  type MessageCleanupUnavailableReason,
-} from "./openai-message-cleanup";
 import { buildTransactionFingerprint } from "./transaction-dedupe";
 
 export type ReviewStageSummary = {
@@ -38,7 +33,6 @@ export type ReviewStageRow = {
   recipient: string;
   name: string;
   title: string;
-  cleanedMessage: string | null;
   categoryId: string | null;
   potentialDuplicate: boolean;
 };
@@ -49,7 +43,6 @@ export type StageParsedImportResult = {
   review: {
     sessionId: string | null;
     potentialDuplicates: number;
-    messageCleanupUnavailableReason: MessageCleanupUnavailableReason | null;
     rows: ReviewStageRow[];
   };
 };
@@ -344,8 +337,6 @@ type ExistingTransactionFingerprintSource = {
   paymentType: PaymentType;
 };
 
-type BuildOpenAiMessageCleanup = typeof buildOpenAiMessageCleanup;
-
 async function buildPrefilledCategoryMap(
   db: ImportReviewStageDbClient,
   accountId: string,
@@ -440,13 +431,6 @@ export async function stageParsedImportRows(
     /** Canonical output already produced by a selected provider adapter. */
     parsed: CsvParserResult;
   },
-  options?: {
-    openAiCleanupEnabled?: boolean;
-    openAiApiKey?: string | null;
-    openAiCleanupModel?: OpenAIChatModelId;
-    openAiCleanupSystemPrompt?: string;
-    buildOpenAiMessageCleanup?: BuildOpenAiMessageCleanup;
-  },
 ): Promise<StageParsedImportResult> {
   const { parsed } = params;
 
@@ -457,7 +441,6 @@ export async function stageParsedImportRows(
       review: {
         sessionId: null,
         potentialDuplicates: 0,
-        messageCleanupUnavailableReason: null,
         rows: [],
       },
     };
@@ -472,7 +455,6 @@ export async function stageParsedImportRows(
       review: {
         sessionId: null,
         potentialDuplicates: 0,
-        messageCleanupUnavailableReason: null,
         rows: [],
       },
     };
@@ -492,39 +474,6 @@ export async function stageParsedImportRows(
     validRows,
     existingTransactions,
   );
-
-  const resolvedOpenAiApiKey =
-    options && "openAiApiKey" in options
-      ? options.openAiApiKey
-      : process.env.OPENAI_API_KEY;
-  const openAiCleanupBuilder =
-    options?.buildOpenAiMessageCleanup ?? buildOpenAiMessageCleanup;
-
-  let cleanupUnavailableReason: MessageCleanupUnavailableReason | null = null;
-  let cleanedMessageByRowNumber = new Map<number, string>();
-  try {
-    const cleanupResult = await openAiCleanupBuilder({
-      enabled: options?.openAiCleanupEnabled ?? true,
-      apiKey: resolvedOpenAiApiKey,
-      model: options?.openAiCleanupModel,
-      systemPrompt: options?.openAiCleanupSystemPrompt,
-      rows: validRows.map((row) => ({
-        rowNumber: row.rowNumber,
-        message: `${row.name} ${row.title}`.trim(),
-      })),
-    });
-    cleanupUnavailableReason = cleanupResult.unavailableReason;
-    cleanedMessageByRowNumber = cleanupResult.suggestions.reduce(
-      (map, suggestion) => {
-        map.set(suggestion.rowNumber, suggestion.cleanedMessage);
-        return map;
-      },
-      new Map<number, string>(),
-    );
-  } catch {
-    cleanupUnavailableReason = "provider_error";
-    cleanedMessageByRowNumber = new Map<number, string>();
-  }
 
   let prefilledCategoryByRowNumber = new Map<number, string>();
   try {
@@ -596,7 +545,6 @@ export async function stageParsedImportRows(
     review: {
       sessionId: session.id,
       potentialDuplicates: potentialDuplicateRowNumbers.size,
-      messageCleanupUnavailableReason: cleanupUnavailableReason,
       rows: stagedRows.map((row) => ({
         id: row.id,
         rowNumber: row.rowNumber,
@@ -609,7 +557,6 @@ export async function stageParsedImportRows(
         recipient: row.recipient,
         name: row.name,
         title: row.title,
-        cleanedMessage: cleanedMessageByRowNumber.get(row.rowNumber) ?? null,
         categoryId: row.categoryId,
         potentialDuplicate: potentialDuplicateRowNumbers.has(row.rowNumber),
       })),

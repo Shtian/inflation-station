@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getMessageCleanupSettings } from "@/lib/import/message-cleanup-settings";
+import {
+  planCleanupChunks,
+  toCleanupCandidates,
+} from "@/lib/import/message-cleanup/plan";
+import type { CleanupDisabledReason } from "@/lib/import/message-cleanup/reasons";
 import type { ProviderAdapter } from "@/lib/import/provider-adapter/adapter";
 import { createBuiltInNorwegianAdapter } from "@/lib/import/provider-adapter/built-in-norwegian";
 import { createCsvStatement } from "@/lib/import/provider-adapter/csv-statement";
@@ -16,6 +20,18 @@ type ParseImportPayload = {
 
 function badRequest(error: string, message: string) {
   return NextResponse.json({ error, message }, { status: 400 });
+}
+
+function resolveCleanupDisabledReason(): CleanupDisabledReason | null {
+  const enabled =
+    process.env.OPENAI_MESSAGE_CLEANUP_ENABLED?.trim().toLowerCase() !==
+    "false";
+
+  if (!enabled) {
+    return "disabled";
+  }
+
+  return process.env.OPENAI_API_KEY?.trim() ? null : "key_missing";
 }
 
 async function parseImportPayload(
@@ -184,30 +200,25 @@ export async function POST(request: Request) {
       ) ?? null;
   }
 
-  const messageCleanupSettings = await getMessageCleanupSettings(prisma);
   const adapter = selectedAdapter ?? createBuiltInNorwegianAdapter();
   const parsed = adapter.parse(statement);
 
-  const staged = await stageParsedImportRows(
-    prisma,
-    {
-      accountId,
-      parsed,
-    },
-    {
-      openAiCleanupModel: messageCleanupSettings.modelId,
-      openAiCleanupSystemPrompt: messageCleanupSettings.prompt,
-      openAiCleanupEnabled:
-        process.env.OPENAI_MESSAGE_CLEANUP_ENABLED?.trim().toLowerCase() !==
-        "false",
-      openAiApiKey: process.env.OPENAI_API_KEY,
-    },
-  );
+  const staged = await stageParsedImportRows(prisma, {
+    accountId,
+    parsed,
+  });
+
+  const cleanup = planCleanupChunks({
+    sessionId: staged.review.sessionId ?? "",
+    disabledReason: resolveCleanupDisabledReason(),
+    candidates: toCleanupCandidates(staged.review.rows),
+  });
 
   return NextResponse.json({
     detection,
     summary: staged.summary,
     errors: staged.errors,
     review: staged.review,
+    cleanup,
   });
 }
