@@ -11,6 +11,7 @@ const ENABLED = process.env.CLEANUP_BENCH === "1";
 const MODEL = process.env.BENCH_MODEL ?? "gpt-5.4-nano";
 const ROW_COUNT = Number.parseInt(process.env.BENCH_ROWS ?? "300", 10);
 const CHUNK_SIZE = Number.parseInt(process.env.BENCH_CHUNK ?? "25", 10);
+const CONCURRENCY = Number.parseInt(process.env.BENCH_CONCURRENCY ?? "4", 10);
 // Distinct messages to spread across BENCH_ROWS. Set below BENCH_ROWS to model
 // a repeat rate; only then does the dedupe variant have anything to remove.
 const DISTINCT_COUNT = Number.parseInt(
@@ -109,8 +110,15 @@ function chunk<T>(items: T[], size: number): T[][] {
   );
 }
 
-const MINIMAL_REASONING = {
-  openai: { reasoningEffort: "minimal", textVerbosity: "low" },
+const EFFORT = process.env.BENCH_EFFORT ?? "none";
+// "off" omits textVerbosity entirely, so a run can attribute a completeness
+// drop to reasoning effort rather than to verbosity.
+const VERBOSITY = process.env.BENCH_VERBOSITY ?? "low";
+const REASONING = {
+  openai: {
+    reasoningEffort: EFFORT,
+    ...(VERBOSITY === "off" ? {} : { textVerbosity: VERBOSITY }),
+  },
 };
 
 type VariantResult = {
@@ -125,8 +133,18 @@ async function runChunked(
   providerOptions?: Record<string, Record<string, string>>,
 ): Promise<VariantResult> {
   const batches = chunk(rows, CHUNK_SIZE);
-  const results = await Promise.all(
-    batches.map((batch) => callOnce(apiKey, batch, providerOptions)),
+  const results: CallResult[] = [];
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, batches.length) }, async () => {
+      for (let index = next++; index < batches.length; index = next++) {
+        results[index] = await callOnce(
+          apiKey,
+          batches[index],
+          providerOptions,
+        );
+      }
+    }),
   );
   return {
     suggestions: results.reduce((sum, result) => sum + result.suggestions, 0),
@@ -156,15 +174,15 @@ const VARIANTS: Record<
     };
   },
 
-  "B-single-minimal-reasoning": async (apiKey, rows) => ({
-    ...(await callOnce(apiKey, rows, MINIMAL_REASONING)),
+  "B-single-reduced-reasoning": async (apiKey, rows) => ({
+    ...(await callOnce(apiKey, rows, REASONING)),
     requests: 1,
   }),
 
   "C-parallel-chunks": (apiKey, rows) => runChunked(apiKey, rows),
 
-  "D-parallel-chunks-minimal-reasoning": (apiKey, rows) =>
-    runChunked(apiKey, rows, MINIMAL_REASONING),
+  "D-parallel-chunks-reduced-reasoning": (apiKey, rows) =>
+    runChunked(apiKey, rows, REASONING),
 
   "E-dedupe-then-parallel-chunks": (apiKey, rows) => {
     const firstRowByMessage = new Map<string, number>();
@@ -177,7 +195,7 @@ const VARIANTS: Record<
       rowNumber,
       message,
     }));
-    return runChunked(apiKey, unique, MINIMAL_REASONING);
+    return runChunked(apiKey, unique, REASONING);
   },
 };
 
@@ -193,10 +211,14 @@ describe.skipIf(!ENABLED)("message cleanup latency", () => {
       const rows = buildRows(ROW_COUNT);
       const distinct = new Set(rows.map((row) => row.message)).size;
       console.log(
-        `\nmodel=${MODEL} rows=${ROW_COUNT} distinct=${distinct} chunk=${CHUNK_SIZE}\n`,
+        `\nmodel=${MODEL} rows=${ROW_COUNT} distinct=${distinct} chunk=${CHUNK_SIZE} conc=${CONCURRENCY} effort=${EFFORT} verbosity=${VERBOSITY}\n`,
       );
 
+      const only = process.env.BENCH_ONLY?.split(",").map((v) => v.trim());
       for (const [name, run] of Object.entries(VARIANTS)) {
+        if (only && !only.some((prefix) => name.startsWith(prefix))) {
+          continue;
+        }
         const startedAt = performance.now();
         try {
           const result = await run(apiKey, rows);
