@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateText } from "ai";
+import { generateObject, generateText } from "ai";
 import { describe, it } from "vitest";
+import { z } from "zod";
 import { buildOpenAiMessageCleanup } from "./openai-message-cleanup";
 
 // Latency benchmark, not an assertion. Skipped unless CLEANUP_BENCH=1 so it
@@ -76,6 +77,59 @@ function buildUserPrompt(rows: BenchRow[]): string {
 
 type CallResult = { suggestions: number; outputTokens: number };
 
+const SUGGESTIONS_SCHEMA = z.object({
+  suggestions: z.array(
+    z.object({
+      rowNumber: z.number().int(),
+      cleanedMessage: z.string(),
+    }),
+  ),
+});
+
+// The schema enforces the shape, so the structured prompt drops both the
+// "return strict JSON" instruction and the outputFormat example that the
+// generateText path needs. Measuring that smaller prompt is part of the point.
+const SCHEMA_SYSTEM_PROMPT = "You clean transaction messages.";
+
+function buildSchemaUserPrompt(rows: BenchRow[]): string {
+  return JSON.stringify(
+    {
+      instructions: [
+        "Clean and normalize noisy transaction message text.",
+        "Do not invent details not present in the original message.",
+        "Keep suggestions concise and user-readable.",
+        "Return only rows you can improve.",
+      ],
+      rows,
+    },
+    null,
+    2,
+  );
+}
+
+async function callOnceStructured(
+  apiKey: string,
+  rows: BenchRow[],
+  providerOptions?: Record<string, Record<string, string>>,
+): Promise<CallResult> {
+  const openai = createOpenAI({ apiKey });
+  const result = await generateObject({
+    model: openai.chat(MODEL),
+    schema: SUGGESTIONS_SCHEMA,
+    maxRetries: 0,
+    system: SCHEMA_SYSTEM_PROMPT,
+    prompt: buildSchemaUserPrompt(rows),
+    providerOptions: {
+      openai: { strictJsonSchema: true, ...(providerOptions?.openai ?? {}) },
+    },
+  });
+
+  return {
+    suggestions: result.object.suggestions.length,
+    outputTokens: result.usage.outputTokens ?? 0,
+  };
+}
+
 async function callOnce(
   apiKey: string,
   rows: BenchRow[],
@@ -131,6 +185,7 @@ async function runChunked(
   apiKey: string,
   rows: BenchRow[],
   providerOptions?: Record<string, Record<string, string>>,
+  call: typeof callOnce = callOnce,
 ): Promise<VariantResult> {
   const batches = chunk(rows, CHUNK_SIZE);
   const results: CallResult[] = [];
@@ -138,11 +193,7 @@ async function runChunked(
   await Promise.all(
     Array.from({ length: Math.min(CONCURRENCY, batches.length) }, async () => {
       for (let index = next++; index < batches.length; index = next++) {
-        results[index] = await callOnce(
-          apiKey,
-          batches[index],
-          providerOptions,
-        );
+        results[index] = await call(apiKey, batches[index], providerOptions);
       }
     }),
   );
@@ -197,6 +248,17 @@ const VARIANTS: Record<
     }));
     return runChunked(apiKey, unique, REASONING);
   },
+
+  "F-structured-single": async (apiKey, rows) => ({
+    ...(await callOnceStructured(apiKey, rows)),
+    requests: 1,
+  }),
+
+  "G-structured-chunks": (apiKey, rows) =>
+    runChunked(apiKey, rows, undefined, callOnceStructured),
+
+  "H-structured-chunks-reduced-reasoning": (apiKey, rows) =>
+    runChunked(apiKey, rows, REASONING, callOnceStructured),
 };
 
 describe.skipIf(!ENABLED)("message cleanup latency", () => {
