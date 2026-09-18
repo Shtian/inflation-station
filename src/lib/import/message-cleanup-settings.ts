@@ -1,9 +1,9 @@
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { getModelById } from "../monthly-review/chat-model-registry";
 import {
-  type ReasoningEffort,
   DEFAULT_REASONING_EFFORT,
   getReasoningEffortById,
+  type ReasoningEffort,
 } from "../monthly-review/reasoning-effort-registry";
 
 const MESSAGE_CLEANUP_SETTINGS_ID = "message-cleanup-settings";

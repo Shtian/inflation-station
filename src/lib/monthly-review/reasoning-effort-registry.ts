@@ -12,8 +12,7 @@ export const REASONING_EFFORTS: readonly ReasoningEffortEntry[] = [
   {
     id: "none",
     label: "None",
-    description:
-      "Fastest, but can silently drop suggestions on some models.",
+    description: "Fastest, but can silently drop suggestions on some models.",
   },
   {
     id: "low",
