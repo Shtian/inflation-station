@@ -10,7 +10,7 @@ export function applyChunkResult(
 ): SuggestionsByRowId {
   const next = { ...current };
 
-  if (result.status === "unavailable") {
+  if (result.status === "failed") {
     for (const rowId of rowIds) {
       next[rowId] = { status: "unavailable", reason: result.reason };
     }

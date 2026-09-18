@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { isAbortError } from "../../openai/provider-errors";
+import type { ChunkFailureReason } from "./reasons";
 
 export const cleanupChunkProviderSchema = z.object({
   suggestions: z.array(
@@ -24,22 +26,49 @@ const cleanupChunkOkResponseSchema = z.object({
   ),
 });
 
-const cleanupChunkUnavailableResponseSchema = z.object({
+const cleanupChunkFailedResponseSchema = z.object({
   index: z.number().int(),
-  status: z.literal("unavailable"),
+  status: z.literal("failed"),
   reason: z.enum(["timeout", "provider_error"]),
 });
 
 export const cleanupChunkResponseSchema = z.union([
   cleanupChunkOkResponseSchema,
-  cleanupChunkUnavailableResponseSchema,
+  cleanupChunkFailedResponseSchema,
 ]);
 
 export type CleanupChunkResponse = z.infer<typeof cleanupChunkResponseSchema>;
 
-export function parseCleanupChunkResponse(
-  payload: unknown,
-): CleanupChunkResponse | null {
-  const parsed = cleanupChunkResponseSchema.safeParse(payload);
-  return parsed.success ? parsed.data : null;
+function failed(
+  index: number,
+  reason: ChunkFailureReason,
+): CleanupChunkResponse {
+  return { index, status: "failed", reason };
+}
+
+/**
+ * Turns one cleanup chunk fetch attempt into a `CleanupChunkResponse`,
+ * folding every way it can go wrong into the two `ChunkFailureReason`
+ * values: a non-200 response, an unparseable body, and a rejected fetch
+ * all become `provider_error`; a client-side abort becomes `timeout`.
+ */
+export async function parseCleanupChunkResponse(
+  index: number,
+  fetchAttempt: Promise<Response>,
+): Promise<CleanupChunkResponse> {
+  let response: Response;
+  try {
+    response = await fetchAttempt;
+  } catch (error) {
+    return failed(index, isAbortError(error) ? "timeout" : "provider_error");
+  }
+
+  if (!response.ok) {
+    return failed(index, "provider_error");
+  }
+
+  const body = await response.json().catch(() => null);
+  const parsed = cleanupChunkResponseSchema.safeParse(body);
+
+  return parsed.success ? parsed.data : failed(index, "provider_error");
 }

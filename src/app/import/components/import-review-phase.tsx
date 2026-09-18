@@ -3,6 +3,7 @@ import {
   DownloadCloud,
   Loader2,
   Pencil,
+  RefreshCw,
   RotateCcw,
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
@@ -56,6 +57,7 @@ type ImportReviewPhaseProps = {
   parseResult: ParseResponse | null;
   providerDetection: ProviderDetection | null;
   resetImport: () => void;
+  retryFailed: () => void;
   reviewCategoryOptions: Category[];
   selectedAccountId: string;
   selectedRowIds: Set<string>;
@@ -90,6 +92,7 @@ export function ImportReviewPhase({
   parseResult,
   providerDetection,
   resetImport,
+  retryFailed,
   reviewCategoryOptions,
   selectedAccountId,
   selectedRowIds,
@@ -329,9 +332,26 @@ export function ImportReviewPhase({
               Rows without a suggestion keep the original message.
             </p>
           )}
-          <p className="text-muted-foreground text-xs">
-            AI cleanup: {cleanupStatus.cleaned} of {cleanupStatus.total} rows.{" "}
-            {cleanupStatus.pending} still running.
+          <p className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
+            <span>
+              AI cleanup: {cleanupStatus.cleaned} of {cleanupStatus.total} rows.{" "}
+              {cleanupStatus.pending} still running.
+              {cleanupStatus.failed > 0
+                ? ` ${cleanupStatus.failed} could not be cleaned.`
+                : ""}
+            </span>
+            {cleanupStatus.failed > 0 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-5 gap-1 px-1 text-xs"
+                onClick={retryFailed}
+              >
+                <RefreshCw className="h-3 w-3" aria-hidden="true" />
+                Retry
+              </Button>
+            ) : null}
           </p>
           <ImportReviewTable
             rows={reviewRows}

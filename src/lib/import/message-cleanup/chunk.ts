@@ -1,7 +1,10 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { generateObject } from "ai";
-import { buildProviderErrorDetail } from "../../openai/provider-errors";
+import {
+  buildProviderErrorDetail,
+  isAbortError,
+} from "../../openai/provider-errors";
 import {
   DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
   DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
@@ -26,7 +29,7 @@ export type ChunkSuggestion = {
 
 export type ChunkResult =
   | { status: "ok"; suggestions: ChunkSuggestion[] }
-  | { status: "unavailable"; reason: ChunkFailureReason };
+  | { status: "failed"; reason: ChunkFailureReason };
 
 export function reconcileSuggestions(
   payload: CleanupChunkProviderPayload,
@@ -102,7 +105,10 @@ export async function runCleanupChunk(params: {
       detail: buildProviderErrorDetail(error),
     });
 
-    return { status: "unavailable", reason: "provider_error" };
+    return {
+      status: "failed",
+      reason: isAbortError(error) ? "timeout" : "provider_error",
+    };
   } finally {
     clearTimeout(timeoutId);
   }

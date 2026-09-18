@@ -24,6 +24,7 @@ describe("resolveRowMessage", () => {
       hasCleanedAlternative: false,
       cleanedText: null,
       isPending: true,
+      isUnavailable: false,
     });
   });
 
@@ -41,6 +42,7 @@ describe("resolveRowMessage", () => {
       hasCleanedAlternative: true,
       cleanedText: "Joker Oslo",
       isPending: false,
+      isUnavailable: false,
     });
   });
 
@@ -89,10 +91,11 @@ describe("resolveRowMessage", () => {
       hasCleanedAlternative: false,
       cleanedText: null,
       isPending: false,
+      isUnavailable: false,
     });
   });
 
-  it("falls back to the original message when unavailable", () => {
+  it("falls back to the original message when unavailable, with no toggle and no sparkle", () => {
     const resolved = resolveRowMessage({
       originalMessage: "RUTER BILLETT",
       suggestion: { status: "unavailable", reason: "provider_error" },
@@ -106,6 +109,7 @@ describe("resolveRowMessage", () => {
       hasCleanedAlternative: false,
       cleanedText: null,
       isPending: false,
+      isUnavailable: true,
     });
   });
 });

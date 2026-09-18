@@ -119,7 +119,7 @@ describe("runCleanupChunk", () => {
     expect(result).toEqual({ status: "ok", suggestions: [] });
   });
 
-  it("maps a provider throw to provider_error", async () => {
+  it("maps a non-abort provider throw to provider_error", async () => {
     const result = await runCleanupChunk({
       apiKey: "test-key",
       rows: [{ rowNumber: 2, message: "joker #1234 oslo" }],
@@ -128,10 +128,10 @@ describe("runCleanupChunk", () => {
       }),
     });
 
-    expect(result).toEqual({ status: "unavailable", reason: "provider_error" });
+    expect(result).toEqual({ status: "failed", reason: "provider_error" });
   });
 
-  it("maps an aborted request to provider_error in this deliverable", async () => {
+  it("maps an aborted request to timeout", async () => {
     const result = await runCleanupChunk({
       apiKey: "test-key",
       timeoutMs: 1,
@@ -148,6 +148,6 @@ describe("runCleanupChunk", () => {
       ),
     });
 
-    expect(result).toEqual({ status: "unavailable", reason: "provider_error" });
+    expect(result).toEqual({ status: "failed", reason: "timeout" });
   });
 });

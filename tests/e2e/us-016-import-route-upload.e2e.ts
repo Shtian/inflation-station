@@ -742,3 +742,222 @@ test("applies a fast later-dispatched cleanup chunk without waiting on a slower 
   await expect(pendingRow27).not.toBeVisible();
   await expect(pendingRow2).not.toBeVisible();
 });
+
+test("isolates one chunk's failure from the others and clears it on retry", async ({
+  page,
+}) => {
+  const attemptCounts = new Map<number, number>();
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [
+          {
+            id: "acc-1",
+            name: "Main Account",
+            institution: "DNB",
+            isActive: true,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ categories: [] }),
+    });
+  });
+
+  await page.route("**/api/imports/parse", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        detection: {
+          state: "certain",
+          providerId: "provider-1",
+          providerName: "DNB",
+          score: 1,
+          matchedHeaders: ["bokforingsdato", "belop"],
+          candidates: [],
+        },
+        summary: { imported: 3, duplicates: 0, ignoredReserved: 0, invalid: 0 },
+        errors: [],
+        review: {
+          sessionId: "session-1",
+          potentialDuplicates: 0,
+          rows: [
+            {
+              id: "row-1",
+              rowNumber: 2,
+              bookingDate: "2026-01-01",
+              amountNok: -100,
+              currency: "NOK",
+              normalizedMerchant: "joker",
+              paymentType: "CARD",
+              name: "joker",
+              title: "JOKER OSLO",
+              categoryId: null,
+              potentialDuplicate: false,
+            },
+            {
+              id: "row-2",
+              rowNumber: 3,
+              bookingDate: "2026-01-02",
+              amountNok: -50,
+              currency: "NOK",
+              normalizedMerchant: "ruter",
+              paymentType: "CARD",
+              name: "ruter",
+              title: "RUTER BILLETT",
+              categoryId: null,
+              potentialDuplicate: false,
+            },
+            {
+              id: "row-3",
+              rowNumber: 4,
+              bookingDate: "2026-01-03",
+              amountNok: -75,
+              currency: "NOK",
+              normalizedMerchant: "kiwi",
+              paymentType: "CARD",
+              name: "kiwi",
+              title: "KIWI TRONDHEIM",
+              categoryId: null,
+              potentialDuplicate: false,
+            },
+          ],
+        },
+        cleanup: {
+          status: "planned",
+          sessionId: "session-1",
+          chunks: [
+            { index: 0, rowIds: ["row-1"] },
+            { index: 1, rowIds: ["row-2"] },
+            { index: 2, rowIds: ["row-3"] },
+          ],
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/imports/cleanup", async (route, request) => {
+    const { chunkIndex } = request.postDataJSON() as { chunkIndex: number };
+    const attempt = (attemptCounts.get(chunkIndex) ?? 0) + 1;
+    attemptCounts.set(chunkIndex, attempt);
+
+    if (chunkIndex === 0) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          index: 0,
+          status: "ok",
+          suggestions: [{ rowId: "row-1", cleanedMessage: "Joker Oslo" }],
+        }),
+      });
+      return;
+    }
+
+    if (chunkIndex === 1) {
+      if (attempt === 1) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            index: 1,
+            status: "failed",
+            reason: "timeout",
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          index: 1,
+          status: "ok",
+          suggestions: [{ rowId: "row-2", cleanedMessage: "Ruter Billett" }],
+        }),
+      });
+      return;
+    }
+
+    // chunkIndex === 2
+    if (attempt === 1) {
+      await route.abort();
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        index: 2,
+        status: "ok",
+        suggestions: [{ rowId: "row-3", cleanedMessage: "Kiwi Trondheim" }],
+      }),
+    });
+  });
+
+  await page.goto("/import");
+  await page.getByRole("button", { name: "Main Account DNB" }).click();
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "transactions.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
+  });
+  await page.getByRole("button", { name: /Parse/ }).click();
+  await expect(page.getByText("Import Preview")).toBeVisible();
+
+  // Chunk 0 succeeds: row 1 gets its cleaned text and a toggle.
+  await expect(page.getByText("Joker Oslo", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Toggle message source for row 2" }),
+  ).toBeVisible();
+
+  // Chunk 1 reports a 200 {status:"failed", reason:"timeout"}: row 2 keeps
+  // its original message, with no toggle and no sparkle.
+  await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Toggle message source for row 3" }),
+  ).not.toBeVisible();
+  await expect(page.getByLabel("Cleaning message for row 3")).not.toBeVisible();
+
+  // Chunk 2's request is aborted at the network level: row 3 keeps its
+  // original message too, with no toggle and no sparkle.
+  await expect(page.getByText("KIWI TRONDHEIM", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Toggle message source for row 4" }),
+  ).not.toBeVisible();
+  await expect(page.getByLabel("Cleaning message for row 4")).not.toBeVisible();
+
+  // The status line reports both failures, and Retry is offered.
+  await expect(page.getByText("2 could not be cleaned.")).toBeVisible();
+  const retryButton = page.getByRole("button", { name: "Retry" });
+  await expect(retryButton).toBeVisible();
+
+  // Retrying re-posts exactly the two failed chunk indices, and clears them.
+  await retryButton.click();
+
+  await expect(page.getByText("Ruter Billett", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Toggle message source for row 3" }),
+  ).toBeVisible();
+  await expect(page.getByText("Kiwi Trondheim", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Toggle message source for row 4" }),
+  ).toBeVisible();
+  await expect(page.getByText("could not be cleaned.")).toHaveCount(0);
+  await expect(retryButton).not.toBeVisible();
+
+  // Chunk 0 (already succeeded) was never re-posted by the retry.
+  expect(attemptCounts.get(0)).toBe(1);
+  expect(attemptCounts.get(1)).toBe(2);
+  expect(attemptCounts.get(2)).toBe(2);
+});

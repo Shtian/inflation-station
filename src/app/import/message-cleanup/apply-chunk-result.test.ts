@@ -19,7 +19,7 @@ describe("applyChunkResult", () => {
     const next = applyChunkResult(
       { "row-1": { status: "pending" } },
       ["row-1", "row-2"],
-      { index: 0, status: "unavailable", reason: "provider_error" },
+      { index: 0, status: "failed", reason: "provider_error" },
     );
 
     expect(next).toEqual({
@@ -38,6 +38,22 @@ describe("applyChunkResult", () => {
     expect(next).toEqual({
       "row-9": { status: "cleaned", text: "Untouched" },
       "row-1": { status: "none" },
+    });
+  });
+
+  it("leaves other chunks' rows cleaned when one chunk fails, per per-chunk isolation", () => {
+    const next = applyChunkResult(
+      {
+        "row-1": { status: "cleaned", text: "Joker Oslo" },
+        "row-2": { status: "pending" },
+      },
+      ["row-2"],
+      { index: 1, status: "failed", reason: "timeout" },
+    );
+
+    expect(next).toEqual({
+      "row-1": { status: "cleaned", text: "Joker Oslo" },
+      "row-2": { status: "unavailable", reason: "timeout" },
     });
   });
 });
