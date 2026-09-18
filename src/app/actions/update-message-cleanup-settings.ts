@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
+  DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT,
   type MessageCleanupSettingsViewResult,
   updateMessageCleanupSettings,
 } from "@/lib/import/message-cleanup-settings";
@@ -12,6 +13,11 @@ import {
   CHAT_MODELS,
   getModelById,
 } from "@/lib/monthly-review/chat-model-registry";
+import {
+  getReasoningEffortById,
+  REASONING_EFFORTS,
+  type ReasoningEffort,
+} from "@/lib/monthly-review/reasoning-effort-registry";
 import { prisma } from "@/lib/prisma";
 import {
   executeServerMutation,
@@ -22,6 +28,7 @@ import {
 const updateMessageCleanupSettingsInputSchema = z.object({
   promptText: z.string(),
   modelId: z.string().nullable().optional(),
+  reasoningEffort: z.string().nullable().optional(),
 });
 
 type MessageCleanupSettingsResponse = {
@@ -37,11 +44,20 @@ type MessageCleanupSettingsResponse = {
     description: string;
     tier: "cheap" | "balanced" | "premium";
   }>;
+  reasoningEffort: string | null;
+  resolvedReasoningEffort: ReasoningEffort;
+  usesDefaultReasoningEffort: boolean;
+  availableReasoningEfforts: Array<{
+    id: ReasoningEffort;
+    label: string;
+    description: string;
+  }>;
 };
 
 type UpdateMessageCleanupSettingsErrorCode =
   | "INVALID_MESSAGE_CLEANUP_SETTINGS_PAYLOAD"
   | "INVALID_MESSAGE_CLEANUP_MODEL_ID"
+  | "INVALID_MESSAGE_CLEANUP_REASONING_EFFORT"
   | "MESSAGE_CLEANUP_SETTINGS_UPDATE_FAILED";
 
 function toResponse(
@@ -55,6 +71,10 @@ function toResponse(
     resolvedModelId: result.resolvedModelId,
     usesDefaultModel: result.isDefaultModel,
     availableModels: [...CHAT_MODELS],
+    reasoningEffort: result.storedReasoningEffort,
+    resolvedReasoningEffort: result.resolvedReasoningEffort,
+    usesDefaultReasoningEffort: result.isDefaultReasoningEffort,
+    availableReasoningEfforts: [...REASONING_EFFORTS],
   };
 }
 
@@ -94,11 +114,31 @@ export async function updateMessageCleanupSettingsAction(
     };
   }
 
+  const resolvedReasoningEffort = getReasoningEffortById(
+    parsedInput.data.reasoningEffort ??
+      DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT,
+  );
+
+  if (
+    parsedInput.data.reasoningEffort !== null &&
+    parsedInput.data.reasoningEffort !== undefined &&
+    resolvedReasoningEffort.id !== parsedInput.data.reasoningEffort
+  ) {
+    return {
+      ok: false,
+      error: {
+        code: "INVALID_MESSAGE_CLEANUP_REASONING_EFFORT",
+        message: "Expected reasoningEffort to be one of the available options.",
+      },
+    };
+  }
+
   return executeServerMutation({
     execute: async () => {
       const result = await updateMessageCleanupSettings(prisma, {
         promptText: parsedInput.data.promptText,
         modelId: resolvedModel.id,
+        reasoningEffort: resolvedReasoningEffort.id,
       });
 
       revalidatePath("/import/settings/message-cleanup");

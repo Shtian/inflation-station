@@ -9,24 +9,41 @@ import {
 function createMessageCleanupSettingsDbMock(promptText: string | null = null) {
   let storedPromptText = promptText;
   let storedModelId: string | null = null;
+  let storedReasoningEffort: string | null = null;
 
   return {
     messageCleanupSettings: {
       findUnique: vi.fn(async () =>
-        storedPromptText === null && storedModelId === null
+        storedPromptText === null &&
+        storedModelId === null &&
+        storedReasoningEffort === null
           ? null
-          : { promptText: storedPromptText, modelId: storedModelId },
+          : {
+              promptText: storedPromptText,
+              modelId: storedModelId,
+              reasoningEffort: storedReasoningEffort,
+            },
       ),
       upsert: vi.fn(async ({ create, update }) => {
-        if (storedPromptText === null && storedModelId === null) {
+        if (
+          storedPromptText === null &&
+          storedModelId === null &&
+          storedReasoningEffort === null
+        ) {
           storedPromptText = create.promptText;
           storedModelId = create.modelId;
+          storedReasoningEffort = create.reasoningEffort;
         } else {
           storedPromptText = update.promptText;
           storedModelId = update.modelId;
+          storedReasoningEffort = update.reasoningEffort;
         }
 
-        return { promptText: storedPromptText, modelId: storedModelId };
+        return {
+          promptText: storedPromptText,
+          modelId: storedModelId,
+          reasoningEffort: storedReasoningEffort,
+        };
       }),
     },
   };
@@ -43,6 +60,8 @@ describe("message cleanup settings", () => {
       isDefaultPrompt: true,
       modelId: "gpt-5.4-nano",
       isDefaultModel: true,
+      reasoningEffort: "low",
+      isDefaultReasoningEffort: true,
     });
   });
 
@@ -58,6 +77,8 @@ describe("message cleanup settings", () => {
       isDefaultPrompt: false,
       modelId: "gpt-5.4-nano",
       isDefaultModel: true,
+      reasoningEffort: "low",
+      isDefaultReasoningEffort: true,
     });
   });
 
@@ -73,6 +94,9 @@ describe("message cleanup settings", () => {
       storedModelId: null,
       resolvedModelId: "gpt-5.4-nano",
       isDefaultModel: true,
+      storedReasoningEffort: null,
+      resolvedReasoningEffort: "low",
+      isDefaultReasoningEffort: true,
     });
   });
 
@@ -82,6 +106,7 @@ describe("message cleanup settings", () => {
     const result = await updateMessageCleanupSettings(db, {
       promptText: "Keep merchant names and locations only.",
       modelId: "gpt-5.2",
+      reasoningEffort: null,
     });
 
     expect(result).toEqual({
@@ -91,6 +116,9 @@ describe("message cleanup settings", () => {
       storedModelId: "gpt-5.2",
       resolvedModelId: "gpt-5.2",
       isDefaultModel: false,
+      storedReasoningEffort: null,
+      resolvedReasoningEffort: "low",
+      isDefaultReasoningEffort: true,
     });
     expect(db.messageCleanupSettings.upsert).toHaveBeenCalledWith({
       where: { id: "message-cleanup-settings" },
@@ -98,12 +126,14 @@ describe("message cleanup settings", () => {
         id: "message-cleanup-settings",
         promptText: "Keep merchant names and locations only.",
         modelId: "gpt-5.2",
+        reasoningEffort: null,
       },
       update: {
         promptText: "Keep merchant names and locations only.",
         modelId: "gpt-5.2",
+        reasoningEffort: null,
       },
-      select: { promptText: true, modelId: true },
+      select: { promptText: true, modelId: true, reasoningEffort: true },
     });
   });
 
@@ -113,6 +143,7 @@ describe("message cleanup settings", () => {
     const result = await updateMessageCleanupSettings(db, {
       promptText: "   ",
       modelId: "gpt-5.4-nano",
+      reasoningEffort: null,
     });
 
     expect(result).toEqual({
@@ -122,6 +153,46 @@ describe("message cleanup settings", () => {
       storedModelId: "gpt-5.4-nano",
       resolvedModelId: "gpt-5.4-nano",
       isDefaultModel: true,
+      storedReasoningEffort: null,
+      resolvedReasoningEffort: "low",
+      isDefaultReasoningEffort: true,
+    });
+  });
+
+  it("stores explicit non-default reasoning effort", async () => {
+    const db = createMessageCleanupSettingsDbMock();
+
+    const result = await updateMessageCleanupSettings(db, {
+      promptText: "Keep merchant names and locations only.",
+      modelId: "gpt-5.4-nano",
+      reasoningEffort: "high",
+    });
+
+    expect(result).toEqual({
+      storedPromptText: "Keep merchant names and locations only.",
+      resolvedPrompt: "Keep merchant names and locations only.",
+      isDefaultPrompt: false,
+      storedModelId: "gpt-5.4-nano",
+      resolvedModelId: "gpt-5.4-nano",
+      isDefaultModel: true,
+      storedReasoningEffort: "high",
+      resolvedReasoningEffort: "high",
+      isDefaultReasoningEffort: false,
+    });
+    expect(db.messageCleanupSettings.upsert).toHaveBeenCalledWith({
+      where: { id: "message-cleanup-settings" },
+      create: {
+        id: "message-cleanup-settings",
+        promptText: "Keep merchant names and locations only.",
+        modelId: "gpt-5.4-nano",
+        reasoningEffort: "high",
+      },
+      update: {
+        promptText: "Keep merchant names and locations only.",
+        modelId: "gpt-5.4-nano",
+        reasoningEffort: "high",
+      },
+      select: { promptText: true, modelId: true, reasoningEffort: true },
     });
   });
 });

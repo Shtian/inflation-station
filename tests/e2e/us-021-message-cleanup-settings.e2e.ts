@@ -20,6 +20,36 @@ test("submits message cleanup settings through a server action", async ({
     },
   ];
 
+  const availableReasoningEfforts = [
+    {
+      id: "none",
+      label: "None",
+      description: "Fastest, but can silently drop suggestions on some models.",
+    },
+    {
+      id: "low",
+      label: "Low",
+      description:
+        "Default. Keeps every suggestion, roughly 30% faster than no override.",
+    },
+    {
+      id: "medium",
+      label: "Medium",
+      description: "Balances thoroughness and speed for everyday cleanup runs.",
+    },
+    {
+      id: "high",
+      label: "High",
+      description:
+        "Reasons more carefully before answering, at a noticeably slower pace.",
+    },
+    {
+      id: "xhigh",
+      label: "Extra high",
+      description: "Slowest, most thorough reasoning.",
+    },
+  ];
+
   await page.route("**/api/imports/message-cleanup-settings", async (route) => {
     await route.fulfill({
       status: 200,
@@ -32,6 +62,10 @@ test("submits message cleanup settings through a server action", async ({
         resolvedModelId: "gpt-5.2",
         usesDefaultModel: false,
         availableModels,
+        reasoningEffort: "low",
+        resolvedReasoningEffort: "low",
+        usesDefaultReasoningEffort: true,
+        availableReasoningEfforts,
       }),
     });
   });
@@ -57,6 +91,14 @@ test("submits message cleanup settings through a server action", async ({
   const systemPromptTextbox = page.getByLabel("Message cleanup system prompt");
   await expect(systemPromptTextbox).toHaveValue("Trim transaction noise.");
 
+  const reasoningEffortCombobox = page.getByRole("combobox", {
+    name: "Message cleanup reasoning effort",
+  });
+  await expect(reasoningEffortCombobox).toBeVisible();
+  await expect(
+    reasoningEffortCombobox.locator("[data-slot=select-value]"),
+  ).toHaveText("Low");
+
   await systemPromptTextbox.fill("Keep merchant + location only.");
   await page.getByRole("button", { name: "Save prompt" }).click();
 
@@ -65,6 +107,19 @@ test("submits message cleanup settings through a server action", async ({
     page.locator("[data-sonner-toast]", { hasText: "System prompt saved." }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Save prompt" })).toBeEnabled();
+
+  await reasoningEffortCombobox.click();
+  await page.getByRole("option", { name: "High", exact: true }).click();
+
+  await expect.poll(() => serverActionRequestCount).toBe(2);
+  await expect(
+    page.locator("[data-sonner-toast]", {
+      hasText: "Cleanup reasoning effort saved.",
+    }),
+  ).toBeVisible();
+  await expect(
+    reasoningEffortCombobox.locator("[data-slot=select-value]"),
+  ).toHaveText("High");
 });
 
 test("shows stable save failure feedback when message cleanup action fails", async ({
@@ -89,6 +144,40 @@ test("shows stable save failure feedback when message cleanup action fails", asy
             label: "GPT-5.2",
             description: "Balanced quality and cost.",
             tier: "balanced",
+          },
+        ],
+        reasoningEffort: "low",
+        resolvedReasoningEffort: "low",
+        usesDefaultReasoningEffort: true,
+        availableReasoningEfforts: [
+          {
+            id: "none",
+            label: "None",
+            description:
+              "Fastest, but can silently drop suggestions on some models.",
+          },
+          {
+            id: "low",
+            label: "Low",
+            description:
+              "Default. Keeps every suggestion, roughly 30% faster than no override.",
+          },
+          {
+            id: "medium",
+            label: "Medium",
+            description:
+              "Balances thoroughness and speed for everyday cleanup runs.",
+          },
+          {
+            id: "high",
+            label: "High",
+            description:
+              "Reasons more carefully before answering, at a noticeably slower pace.",
+          },
+          {
+            id: "xhigh",
+            label: "Extra high",
+            description: "Slowest, most thorough reasoning.",
           },
         ],
       }),

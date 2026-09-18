@@ -23,11 +23,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL } from "@/lib/import/message-cleanup-settings";
+import {
+  DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
+  DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT,
+} from "@/lib/import/message-cleanup-settings";
 import {
   type ChatModelEntry,
   getModelById,
 } from "@/lib/monthly-review/chat-model-registry";
+import {
+  getReasoningEffortById,
+  type ReasoningEffort,
+  type ReasoningEffortEntry,
+} from "@/lib/monthly-review/reasoning-effort-registry";
 
 type MessageCleanupSettingsResponse = {
   promptText: string;
@@ -37,6 +45,10 @@ type MessageCleanupSettingsResponse = {
   resolvedModelId: OpenAIChatModelId;
   usesDefaultModel: boolean;
   availableModels: ChatModelEntry[];
+  reasoningEffort: string | null;
+  resolvedReasoningEffort: ReasoningEffort;
+  usesDefaultReasoningEffort: boolean;
+  availableReasoningEfforts: ReasoningEffortEntry[];
 };
 
 function isMessageCleanupSettingsResponse(
@@ -82,6 +94,26 @@ function isMessageCleanupSettingsResponse(
         (model.tier === "cheap" ||
           model.tier === "balanced" ||
           model.tier === "premium"),
+    ) &&
+    "reasoningEffort" in value &&
+    (value.reasoningEffort === null ||
+      typeof value.reasoningEffort === "string") &&
+    "resolvedReasoningEffort" in value &&
+    typeof value.resolvedReasoningEffort === "string" &&
+    "usesDefaultReasoningEffort" in value &&
+    typeof value.usesDefaultReasoningEffort === "boolean" &&
+    "availableReasoningEfforts" in value &&
+    Array.isArray(value.availableReasoningEfforts) &&
+    value.availableReasoningEfforts.every(
+      (effort) =>
+        effort &&
+        typeof effort === "object" &&
+        "id" in effort &&
+        typeof effort.id === "string" &&
+        "label" in effort &&
+        typeof effort.label === "string" &&
+        "description" in effort &&
+        typeof effort.description === "string",
     )
   );
 }
@@ -98,6 +130,15 @@ export function MessageCleanupSettingsManager() {
   );
   const [usesDefaultModel, setUsesDefaultModel] = useState(false);
   const [availableModels, setAvailableModels] = useState<ChatModelEntry[]>([]);
+  const [selectedReasoningEffort, setSelectedReasoningEffort] =
+    useState<ReasoningEffort>(DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT);
+  const [resolvedReasoningEffortState, setResolvedReasoningEffortState] =
+    useState<ReasoningEffort>(DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT);
+  const [usesDefaultReasoningEffort, setUsesDefaultReasoningEffort] =
+    useState(false);
+  const [availableReasoningEfforts, setAvailableReasoningEfforts] = useState<
+    ReasoningEffortEntry[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +158,10 @@ export function MessageCleanupSettingsManager() {
       setResolvedModelId(DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL);
       setUsesDefaultModel(true);
       setAvailableModels([]);
+      setSelectedReasoningEffort(DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT);
+      setResolvedReasoningEffortState(DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT);
+      setUsesDefaultReasoningEffort(true);
+      setAvailableReasoningEfforts([]);
       setError("Could not load message cleanup settings.");
       setLoading(false);
       return;
@@ -129,6 +174,14 @@ export function MessageCleanupSettingsManager() {
     setResolvedModelId(body.resolvedModelId);
     setUsesDefaultModel(body.usesDefaultModel);
     setAvailableModels(body.availableModels);
+    setSelectedReasoningEffort(
+      getReasoningEffortById(
+        body.reasoningEffort ?? body.resolvedReasoningEffort,
+      ).id,
+    );
+    setResolvedReasoningEffortState(body.resolvedReasoningEffort);
+    setUsesDefaultReasoningEffort(body.usesDefaultReasoningEffort);
+    setAvailableReasoningEfforts(body.availableReasoningEfforts);
     setLoading(false);
   }, []);
 
@@ -139,6 +192,7 @@ export function MessageCleanupSettingsManager() {
   async function saveSettings(params: {
     promptText: string;
     modelId: OpenAIChatModelId;
+    reasoningEffort: ReasoningEffort;
     successMessage: string;
   }): Promise<boolean> {
     if (saving) {
@@ -153,6 +207,7 @@ export function MessageCleanupSettingsManager() {
       result = await updateMessageCleanupSettingsAction({
         promptText: params.promptText,
         modelId: params.modelId,
+        reasoningEffort: params.reasoningEffort,
       });
     } catch {
       setSaving(false);
@@ -175,6 +230,14 @@ export function MessageCleanupSettingsManager() {
     setResolvedModelId(body.resolvedModelId);
     setUsesDefaultModel(body.usesDefaultModel);
     setAvailableModels(body.availableModels);
+    setSelectedReasoningEffort(
+      getReasoningEffortById(
+        body.reasoningEffort ?? body.resolvedReasoningEffort,
+      ).id,
+    );
+    setResolvedReasoningEffortState(body.resolvedReasoningEffort);
+    setUsesDefaultReasoningEffort(body.usesDefaultReasoningEffort);
+    setAvailableReasoningEfforts(body.availableReasoningEfforts);
     setSaving(false);
     toast.success(params.successMessage);
     return true;
@@ -184,6 +247,7 @@ export function MessageCleanupSettingsManager() {
     await saveSettings({
       promptText,
       modelId: selectedModelId,
+      reasoningEffort: selectedReasoningEffort,
       successMessage: "System prompt saved.",
     });
   }
@@ -195,11 +259,28 @@ export function MessageCleanupSettingsManager() {
     const didSave = await saveSettings({
       promptText,
       modelId: value,
+      reasoningEffort: selectedReasoningEffort,
       successMessage: "Cleanup model saved.",
     });
 
     if (!didSave) {
       setSelectedModelId(previousModelId);
+    }
+  }
+
+  async function handleReasoningEffortChange(value: ReasoningEffort) {
+    const previousReasoningEffort = selectedReasoningEffort;
+    setSelectedReasoningEffort(value);
+
+    const didSave = await saveSettings({
+      promptText,
+      modelId: selectedModelId,
+      reasoningEffort: value,
+      successMessage: "Cleanup reasoning effort saved.",
+    });
+
+    if (!didSave) {
+      setSelectedReasoningEffort(previousReasoningEffort);
     }
   }
 
@@ -279,6 +360,52 @@ export function MessageCleanupSettingsManager() {
                 {usesDefaultModel
                   ? `Using fallback model ${resolvedModelId}.`
                   : `Using saved model ${resolvedModelId}.`}
+              </p>
+
+              <Field>
+                <FieldLabel htmlFor="message-cleanup-reasoning-effort">
+                  Message cleanup reasoning effort
+                </FieldLabel>
+                <FieldContent>
+                  <Select
+                    items={availableReasoningEfforts.map((effort) => ({
+                      value: effort.id,
+                      label: effort.label,
+                    }))}
+                    value={selectedReasoningEffort}
+                    onValueChange={(value) => {
+                      if (value === null) return;
+                      const nextReasoningEffort = getReasoningEffortById(value);
+                      if (
+                        !availableReasoningEfforts.some(
+                          (effort) => effort.id === nextReasoningEffort.id,
+                        )
+                      ) {
+                        return;
+                      }
+
+                      void handleReasoningEffortChange(nextReasoningEffort.id);
+                    }}
+                    disabled={saving}
+                  >
+                    <SelectTrigger id="message-cleanup-reasoning-effort">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableReasoningEfforts.map((effort) => (
+                        <SelectItem key={effort.id} value={effort.id}>
+                          {effort.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FieldContent>
+              </Field>
+
+              <p className="text-muted-foreground text-xs">
+                {usesDefaultReasoningEffort
+                  ? `Using fallback effort ${resolvedReasoningEffortState}.`
+                  : `Using saved effort ${resolvedReasoningEffortState}.`}
               </p>
 
               <Field>

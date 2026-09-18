@@ -184,9 +184,10 @@ model MonthlyReviewSystemPrompt {
 }
 
 model MessageCleanupSettings {
-  id         String   @id
-  promptText String?
-  modelId    String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              String   @id
+  promptText      String?
+  modelId         String?
+  reasoningEffort String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

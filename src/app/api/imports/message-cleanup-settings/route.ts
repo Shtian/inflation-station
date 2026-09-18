@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getMessageCleanupSettingsView } from "@/lib/import/message-cleanup-settings";
 import { CHAT_MODELS } from "@/lib/monthly-review/chat-model-registry";
+import { REASONING_EFFORTS } from "@/lib/monthly-review/reasoning-effort-registry";
 import { prisma } from "@/lib/prisma";
 
 type MessageCleanupSettingsResponse = {
@@ -16,6 +17,14 @@ type MessageCleanupSettingsResponse = {
     description: string;
     tier: "cheap" | "balanced" | "premium";
   }>;
+  reasoningEffort: string | null;
+  resolvedReasoningEffort: string;
+  usesDefaultReasoningEffort: boolean;
+  availableReasoningEfforts: Array<{
+    id: string;
+    label: string;
+    description: string;
+  }>;
 };
 
 function toResponse(
@@ -29,6 +38,10 @@ function toResponse(
     resolvedModelId: result.resolvedModelId,
     usesDefaultModel: result.isDefaultModel,
     availableModels: [...CHAT_MODELS],
+    reasoningEffort: result.storedReasoningEffort,
+    resolvedReasoningEffort: result.resolvedReasoningEffort,
+    usesDefaultReasoningEffort: result.isDefaultReasoningEffort,
+    availableReasoningEfforts: [...REASONING_EFFORTS],
   };
 }
 

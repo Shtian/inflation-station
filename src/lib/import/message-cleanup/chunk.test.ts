@@ -131,6 +131,47 @@ describe("runCleanupChunk", () => {
     expect(result).toEqual({ status: "failed", reason: "provider_error" });
   });
 
+  it("sends the given reasoningEffort in the request body", async () => {
+    let capturedBody: { reasoning_effort?: string } | undefined;
+    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return chatCompletionResponse(
+        JSON.stringify({
+          suggestions: [{ rowNumber: 2, cleanedMessage: "Joker Oslo" }],
+        }),
+      );
+    });
+
+    await runCleanupChunk({
+      apiKey: "test-key",
+      reasoningEffort: "high",
+      rows: [{ rowNumber: 2, message: "joker #1234 oslo" }],
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(capturedBody?.reasoning_effort).toBe("high");
+  });
+
+  it("defaults reasoningEffort to low when omitted", async () => {
+    let capturedBody: { reasoning_effort?: string } | undefined;
+    const fetchImpl = vi.fn(async (_url: string, init: RequestInit) => {
+      capturedBody = JSON.parse(init.body as string);
+      return chatCompletionResponse(
+        JSON.stringify({
+          suggestions: [{ rowNumber: 2, cleanedMessage: "Joker Oslo" }],
+        }),
+      );
+    });
+
+    await runCleanupChunk({
+      apiKey: "test-key",
+      rows: [{ rowNumber: 2, message: "joker #1234 oslo" }],
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+
+    expect(capturedBody?.reasoning_effort).toBe("low");
+  });
+
   it("maps an aborted request to timeout", async () => {
     const result = await runCleanupChunk({
       apiKey: "test-key",
