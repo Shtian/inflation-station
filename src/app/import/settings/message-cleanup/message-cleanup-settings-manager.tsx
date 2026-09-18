@@ -38,14 +38,13 @@ import {
   type ReasoningEffort,
   type ReasoningEffortEntry,
   reasoningEffortEntrySchema,
+  reasoningEffortSchema,
 } from "@/lib/monthly-review/reasoning-effort-registry";
 
 const messageCleanupSettingsResponseSchema =
   promptSettingsResponseSchema.extend({
     reasoningEffort: z.string().nullable(),
-    resolvedReasoningEffort: z.custom<ReasoningEffort>(
-      (value) => typeof value === "string",
-    ),
+    resolvedReasoningEffort: reasoningEffortSchema,
     usesDefaultReasoningEffort: z.boolean(),
     availableReasoningEfforts: z.array(reasoningEffortEntrySchema),
   });
