@@ -961,3 +961,297 @@ test("isolates one chunk's failure from the others and clears it on retry", asyn
   expect(attemptCounts.get(1)).toBe(2);
   expect(attemptCounts.get(2)).toBe(2);
 });
+
+test("aborts the in-flight cleanup chunk on submit and persists what the table showed at click time", async ({
+  page,
+}) => {
+  let cleanupRequestCount = 0;
+  let submitRequestBody: unknown = null;
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [
+          {
+            id: "acc-1",
+            name: "Main Account",
+            institution: "DNB",
+            isActive: true,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ categories: [] }),
+    });
+  });
+
+  await page.route("**/api/imports/parse", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        detection: {
+          state: "certain",
+          providerId: "provider-1",
+          providerName: "DNB",
+          score: 1,
+          matchedHeaders: ["bokforingsdato", "belop"],
+          candidates: [],
+        },
+        summary: { imported: 1, duplicates: 0, ignoredReserved: 0, invalid: 0 },
+        errors: [],
+        review: {
+          sessionId: "session-1",
+          potentialDuplicates: 0,
+          rows: [
+            {
+              id: "row-1",
+              rowNumber: 2,
+              bookingDate: "2026-01-01",
+              amountNok: -100,
+              currency: "NOK",
+              normalizedMerchant: "joker",
+              paymentType: "CARD",
+              name: "joker",
+              title: "JOKER OSLO",
+              categoryId: null,
+              potentialDuplicate: false,
+            },
+          ],
+        },
+        cleanup: {
+          status: "planned",
+          sessionId: "session-1",
+          chunks: [{ index: 0, rowIds: ["row-1"] }],
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/imports/cleanup", async (route) => {
+    cleanupRequestCount += 1;
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    try {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          index: 0,
+          status: "ok",
+          suggestions: [{ rowId: "row-1", cleanedMessage: "Joker Oslo" }],
+        }),
+      });
+    } catch {
+      // The client already aborted the request; nothing left to fulfill.
+    }
+  });
+
+  await page.route("**/api/imports/submit", async (route, request) => {
+    submitRequestBody = request.postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        summary: {
+          imported: 1,
+          potentialDuplicates: 0,
+          invalid: 0,
+          skipped: 0,
+        },
+      }),
+    });
+  });
+
+  await page.goto("/import");
+  await page.getByRole("button", { name: "Main Account DNB" }).click();
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "transactions.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
+  });
+  await page.getByRole("button", { name: /Parse/ }).click();
+  await expect(page.getByText("Import Preview")).toBeVisible();
+
+  // The chunk is still pending: the row shows its original message, no toggle yet.
+  await expect(page.getByText("JOKER OSLO", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Toggle message source for row 2" }),
+  ).not.toBeVisible();
+
+  const abortedCleanupRequest = page.waitForEvent("requestfailed", (request) =>
+    request.url().includes("/api/imports/cleanup"),
+  );
+
+  const confirmButton = page.getByRole("button", { name: "Import 1 / 1" });
+  await expect(confirmButton).toBeEnabled();
+  await confirmButton.click();
+
+  const failedRequest = await abortedCleanupRequest;
+  expect(failedRequest.failure()?.errorText ?? "").toMatch(/abort/i);
+
+  await expect(
+    page.locator("[data-sonner-toast]", {
+      hasText: "Import complete. Imported 1, invalid 0.",
+    }),
+  ).toBeVisible();
+  expect(submitRequestBody).toEqual({
+    sessionId: "session-1",
+    rows: [
+      {
+        rowId: "row-1",
+        categoryId: null,
+        selectedMessage: "JOKER OSLO",
+        note: null,
+      },
+    ],
+  });
+  expect(cleanupRequestCount).toBe(1);
+});
+
+test("re-parsing mid-stream cancels the first run and drops a late response for the superseded session", async ({
+  page,
+}) => {
+  let parseAttempt = 0;
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [
+          {
+            id: "acc-1",
+            name: "Main Account",
+            institution: "DNB",
+            isActive: true,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ categories: [] }),
+    });
+  });
+
+  await page.route("**/api/imports/parse", async (route) => {
+    parseAttempt += 1;
+    const sessionId = `session-${parseAttempt}`;
+    const title = parseAttempt === 1 ? "JOKER OSLO" : "RUTER OSLO";
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        detection: {
+          state: "certain",
+          providerId: "provider-1",
+          providerName: "DNB",
+          score: 1,
+          matchedHeaders: ["bokforingsdato", "belop"],
+          candidates: [],
+        },
+        summary: { imported: 1, duplicates: 0, ignoredReserved: 0, invalid: 0 },
+        errors: [],
+        review: {
+          sessionId,
+          potentialDuplicates: 0,
+          rows: [
+            {
+              id: "row-1",
+              rowNumber: 2,
+              bookingDate: "2026-01-01",
+              amountNok: -100,
+              currency: "NOK",
+              normalizedMerchant: "row-1",
+              paymentType: "CARD",
+              name: "row-1",
+              title,
+              categoryId: null,
+              potentialDuplicate: false,
+            },
+          ],
+        },
+        cleanup: {
+          status: "planned",
+          sessionId,
+          chunks: [{ index: 0, rowIds: ["row-1"] }],
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/imports/cleanup", async (route, request) => {
+    const { sessionId } = request.postDataJSON() as { sessionId: string };
+
+    if (sessionId === "session-1") {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      try {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            index: 0,
+            status: "ok",
+            suggestions: [
+              { rowId: "row-1", cleanedMessage: "Stale Joker Oslo" },
+            ],
+          }),
+        });
+      } catch {
+        // The client already aborted the first run's request by re-parsing.
+      }
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        index: 0,
+        status: "ok",
+        suggestions: [{ rowId: "row-1", cleanedMessage: "Fresh Ruter Oslo" }],
+      }),
+    });
+  });
+
+  await page.goto("/import");
+  await page.getByRole("button", { name: "Main Account DNB" }).click();
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "transactions.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
+  });
+  await page.getByRole("button", { name: /Parse/ }).click();
+  await expect(page.getByText("Import Preview")).toBeVisible();
+  await expect(page.getByText("JOKER OSLO", { exact: true })).toBeVisible();
+
+  // Re-parse before session 1's chunk resolves. "Start over" keeps the
+  // already-selected file, so Parse fires session 2 immediately.
+  await page.getByRole("button", { name: "Start over" }).click();
+  await page.getByRole("button", { name: /Parse/ }).click();
+  await expect(page.getByText("Import Preview")).toBeVisible();
+  await expect(
+    page.getByText("Fresh Ruter Oslo", { exact: true }),
+  ).toBeVisible();
+
+  // Session 1's chunk resolves well after this point. Its late response
+  // must never reach the row now showing session 2's data.
+  await page.waitForTimeout(2000);
+  await expect(
+    page.getByText("Fresh Ruter Oslo", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Stale Joker Oslo")).toHaveCount(0);
+});
