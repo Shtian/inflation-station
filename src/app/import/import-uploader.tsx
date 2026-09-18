@@ -1,6 +1,9 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+// PROTOTYPE hook, throwaway: see import-review-message-cell.prototype.tsx.
+import { MessageCellTransitionPrototype } from "./components/import-review-message-cell.prototype";
 import { ImportReviewPhase } from "./components/import-review-phase";
 import { ImportStepper } from "./components/import-stepper";
 import { ImportUploadPhase } from "./components/import-upload-phase";
@@ -9,6 +12,7 @@ import { useImportWorkflow } from "./use-import-workflow";
 
 export function ImportUploader() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const searchParams = useSearchParams();
   const {
     accountError,
     activeAccounts,
@@ -52,6 +56,15 @@ export function ImportUploader() {
 
   const currentStep =
     importLoading || parseResult ? 3 : selectedAccountId ? 2 : 1;
+
+  // PROTOTYPE gate, throwaway: delete with import-review-message-cell.prototype.tsx.
+  if (process.env.NODE_ENV !== "production" && searchParams.get("variant")) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
+        <MessageCellTransitionPrototype />
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
