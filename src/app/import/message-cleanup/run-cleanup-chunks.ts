@@ -8,13 +8,15 @@ type PlannedCleanupPlan = Extract<CleanupPlan, { status: "planned" }>;
 export async function runCleanupChunks(params: {
   plan: PlannedCleanupPlan;
   concurrency?: number;
+  signal?: AbortSignal;
   fetchChunk: (chunk: {
     sessionId: string;
     chunkIndex: number;
+    signal?: AbortSignal;
   }) => Promise<CleanupChunkResponse>;
   onChunkResult: (rowIds: string[], result: CleanupChunkResponse) => void;
 }): Promise<void> {
-  const { plan, fetchChunk, onChunkResult } = params;
+  const { plan, fetchChunk, onChunkResult, signal } = params;
   const concurrency = Math.max(
     1,
     params.concurrency ?? CLEANUP_CHUNK_CONCURRENCY,
@@ -27,13 +29,23 @@ export async function runCleanupChunks(params: {
   // single-thread counter, so order stays ascending as workers pull more work.
   async function worker() {
     while (nextChunkPosition < plan.chunks.length) {
+      if (signal?.aborted) {
+        return;
+      }
+
       const chunk = plan.chunks[nextChunkPosition];
       nextChunkPosition += 1;
 
       const result = await fetchChunk({
         sessionId: plan.sessionId,
         chunkIndex: chunk.index,
+        signal,
       });
+
+      if (signal?.aborted) {
+        return;
+      }
+
       onChunkResult(chunk.rowIds, result);
     }
   }
