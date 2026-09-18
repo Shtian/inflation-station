@@ -5,10 +5,8 @@ import {
   Pencil,
   RotateCcw,
 } from "lucide-react";
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Progress } from "@/components/ui/progress";
 import { formatNok } from "@/lib/format-nok";
 import type { CleanupDisabledReason } from "@/lib/import/message-cleanup/reasons";
 import {
@@ -16,6 +14,7 @@ import {
   type ReviewRow,
   ReviewTableSkeleton,
 } from "../import-review-table";
+import { deriveCleanupStreamStatus } from "../message-cleanup/cleanup-stream-status";
 import type {
   MessageSource,
   ResolvedRowMessage,
@@ -103,35 +102,8 @@ export function ImportReviewPhase({
   toggleAllRows,
   toggleRowSelection,
 }: ImportReviewPhaseProps) {
-  const [loadingProgress, setLoadingProgress] = useState(8);
-
-  useEffect(() => {
-    if (!importLoading) {
-      setLoadingProgress(8);
-      return;
-    }
-
-    const intervalId = setInterval(() => {
-      setLoadingProgress((current) => {
-        if (current >= 92) {
-          return current;
-        }
-
-        return Math.min(92, current + (current < 50 ? 8 : 4));
-      });
-    }, 1000);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [importLoading]);
-
   const reviewRows = getReviewRows(parseResult);
-  const cleanedSuggestionCount = reviewRows.reduce(
-    (count, row) =>
-      resolvedMessages[row.id]?.hasCleanedAlternative ? count + 1 : count,
-    0,
-  );
+  const cleanupStatus = deriveCleanupStreamStatus(resolvedMessages);
   const cleanupUnavailableMessage = getCleanupUnavailableMessage(
     parseResult?.cleanup?.status === "unavailable"
       ? parseResult.cleanup.reason
@@ -165,19 +137,6 @@ export function ImportReviewPhase({
         </div>
 
         <div className="space-y-2">
-          <p className="text-muted-foreground text-xs">
-            Waiting for AI feedback. This can take up to 90 seconds.
-          </p>
-          <Field className="w-full">
-            <FieldLabel htmlFor="import-ai-feedback-progress">
-              <span>AI feedback progress</span>
-              <span className="ml-auto">{loadingProgress}%</span>
-            </FieldLabel>
-            <Progress
-              value={loadingProgress}
-              id="import-ai-feedback-progress"
-            />
-          </Field>
           <p className="text-muted-foreground text-xs">
             Preparing parsed rows for review.
           </p>
@@ -371,8 +330,8 @@ export function ImportReviewPhase({
             </p>
           )}
           <p className="text-muted-foreground text-xs">
-            AI cleanup suggestions: {cleanedSuggestionCount} of{" "}
-            {reviewRows.length}.
+            AI cleanup: {cleanupStatus.cleaned} of {cleanupStatus.total} rows.{" "}
+            {cleanupStatus.pending} still running.
           </p>
           <ImportReviewTable
             rows={reviewRows}
