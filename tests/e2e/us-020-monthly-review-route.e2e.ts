@@ -226,8 +226,8 @@ test("opens monthly review settings from header configuration and monthly review
   const promptUpdateRequests: Array<{ promptText?: string }> = [];
   const availableModels = [
     {
-      id: "gpt-5.2",
-      label: "GPT-5.2",
+      id: "gpt-5.4-mini",
+      label: "GPT-5.4 Mini",
       description: "Best default quality/cost tradeoff for monthly analysis.",
       tier: "balanced",
     },
@@ -236,8 +236,8 @@ test("opens monthly review settings from header configuration and monthly review
     promptText: "Start with top deltas and concentration signals.",
     resolvedPrompt: "Start with top deltas and concentration signals.",
     usesDefaultPrompt: false,
-    modelId: "gpt-5.2",
-    resolvedModelId: "gpt-5.2",
+    modelId: "gpt-5.4-mini",
+    resolvedModelId: "gpt-5.4-mini",
     usesDefaultModel: false,
     availableModels,
   };
@@ -266,8 +266,8 @@ test("opens monthly review settings from header configuration and monthly review
             ? "You are a financial review assistant."
             : nextPromptText,
         usesDefaultPrompt: nextPromptText.trim().length === 0,
-        modelId: "gpt-5.2",
-        resolvedModelId: "gpt-5.2",
+        modelId: "gpt-5.4-mini",
+        resolvedModelId: "gpt-5.4-mini",
         usesDefaultModel: false,
         availableModels,
       };
@@ -311,7 +311,7 @@ test("opens monthly review settings from header configuration and monthly review
   await expect.poll(() => promptUpdateRequests.length).toBe(1);
   expect(promptUpdateRequests[0]).toEqual({
     promptText: "Focus on anomalies and recurring spend.",
-    modelId: "gpt-5.2",
+    modelId: "gpt-5.4-mini",
   });
   await expect(
     page.locator("[data-sonner-toast]", { hasText: "System prompt saved." }),
@@ -339,7 +339,7 @@ test("opens monthly review settings from header configuration and monthly review
   await expect.poll(() => promptUpdateRequests.length).toBe(2);
   expect(promptUpdateRequests[1]).toEqual({
     promptText: "   ",
-    modelId: "gpt-5.2",
+    modelId: "gpt-5.4-mini",
   });
   await expect(
     page.getByText("Using fallback default prompt for generation."),
