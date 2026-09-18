@@ -1,10 +1,18 @@
+import { z } from "zod";
+
 export type ReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh";
 
-export type ReasoningEffortEntry = {
-  id: ReasoningEffort;
-  label: string;
-  description: string;
-};
+export const reasoningEffortSchema = z.custom<ReasoningEffort>(
+  (value) => typeof value === "string",
+);
+
+export const reasoningEffortEntrySchema = z.object({
+  id: reasoningEffortSchema,
+  label: z.string(),
+  description: z.string(),
+});
+
+export type ReasoningEffortEntry = z.infer<typeof reasoningEffortEntrySchema>;
 
 export const DEFAULT_REASONING_EFFORT: ReasoningEffort = "low";
 

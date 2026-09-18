@@ -1,19 +1,22 @@
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
+import { z } from "zod";
 
-type ChatModelTier = "cheap" | "balanced" | "premium";
+export const openAIChatModelIdSchema = z.custom<OpenAIChatModelId>(
+  (value) => typeof value === "string",
+);
 
-type ChatModelMetadata = {
-  label: string;
-  description: string;
-  tier: ChatModelTier;
-};
+export const chatModelEntrySchema = z.object({
+  id: openAIChatModelIdSchema,
+  label: z.string(),
+  description: z.string(),
+  tier: z.enum(["cheap", "balanced", "premium"]),
+});
 
-export type ChatModelEntry = {
-  id: OpenAIChatModelId;
-  label: string;
-  description: string;
-  tier: ChatModelTier;
-};
+export type ChatModelEntry = z.infer<typeof chatModelEntrySchema>;
+
+type ChatModelTier = ChatModelEntry["tier"];
+
+type ChatModelMetadata = Omit<ChatModelEntry, "id">;
 
 const DEFAULT_CHAT_MODEL_ID = "gpt-5.4" as const satisfies OpenAIChatModelId;
 

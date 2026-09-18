@@ -27,61 +27,7 @@ import {
   DEFAULT_CHAT_MODEL,
   getModelById,
 } from "@/lib/monthly-review/chat-model-registry";
-
-type SystemPromptResponse = {
-  promptText: string;
-  resolvedPrompt: string;
-  usesDefaultPrompt: boolean;
-  modelId: string | null;
-  resolvedModelId: OpenAIChatModelId;
-  usesDefaultModel: boolean;
-  availableModels: ChatModelEntry[];
-};
-
-function isSystemPromptResponse(value: unknown): value is SystemPromptResponse {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  if (!("promptText" in value) || typeof value.promptText !== "string") {
-    return false;
-  }
-
-  if (
-    !("resolvedPrompt" in value) ||
-    typeof value.resolvedPrompt !== "string"
-  ) {
-    return false;
-  }
-
-  return (
-    "usesDefaultPrompt" in value &&
-    typeof value.usesDefaultPrompt === "boolean" &&
-    "modelId" in value &&
-    (value.modelId === null || typeof value.modelId === "string") &&
-    "resolvedModelId" in value &&
-    typeof value.resolvedModelId === "string" &&
-    "usesDefaultModel" in value &&
-    typeof value.usesDefaultModel === "boolean" &&
-    "availableModels" in value &&
-    Array.isArray(value.availableModels) &&
-    value.availableModels.every(
-      (model) =>
-        model &&
-        typeof model === "object" &&
-        "id" in model &&
-        typeof model.id === "string" &&
-        "label" in model &&
-        typeof model.label === "string" &&
-        "description" in model &&
-        typeof model.description === "string" &&
-        "tier" in model &&
-        (model.tier === "cheap" ||
-          model.tier === "balanced" ||
-          model.tier === "premium"),
-    )
-  );
-}
+import { promptSettingsResponseSchema } from "@/lib/monthly-review/prompt-settings-response-schema";
 
 export function MonthlyReviewSettingsManager() {
   const [promptText, setPromptText] = useState("");
@@ -102,9 +48,10 @@ export function MonthlyReviewSettingsManager() {
     setError(null);
 
     const response = await fetch("/api/monthly-review/system-prompt");
-    const body: unknown = await response.json().catch(() => null);
+    const rawBody: unknown = await response.json().catch(() => null);
+    const parsed = promptSettingsResponseSchema.safeParse(rawBody);
 
-    if (!response.ok || !isSystemPromptResponse(body)) {
+    if (!response.ok || !parsed.success) {
       setPromptText("");
       setResolvedPrompt("");
       setUsesDefaultPrompt(true);
@@ -117,6 +64,7 @@ export function MonthlyReviewSettingsManager() {
       return;
     }
 
+    const body = parsed.data;
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);
     setUsesDefaultPrompt(body.usesDefaultPrompt);
@@ -154,14 +102,16 @@ export function MonthlyReviewSettingsManager() {
       }),
     });
 
-    const body: unknown = await response.json().catch(() => null);
+    const rawBody: unknown = await response.json().catch(() => null);
+    const parsed = promptSettingsResponseSchema.safeParse(rawBody);
 
-    if (!response.ok || !isSystemPromptResponse(body)) {
+    if (!response.ok || !parsed.success) {
       setSaving(false);
       setError("Could not save monthly review settings. Please try again.");
       return false;
     }
 
+    const body = parsed.data;
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);
     setUsesDefaultPrompt(body.usesDefaultPrompt);
