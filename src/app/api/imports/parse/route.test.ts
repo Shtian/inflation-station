@@ -410,4 +410,20 @@ describe("POST /api/imports/parse", () => {
       rowIds: [],
     });
   });
+
+  it("returns cleanup unavailable with disabled when OPENAI_MESSAGE_CLEANUP_ENABLED is false", async () => {
+    vi.stubEnv("OPENAI_MESSAGE_CLEANUP_ENABLED", "false");
+
+    const response = await POST(
+      jsonRequest({ accountId: "account-1", csvContent: CSV_CONTENT }),
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.cleanup).toEqual({
+      status: "unavailable",
+      reason: "disabled",
+      rowIds: [],
+    });
+  });
 });
