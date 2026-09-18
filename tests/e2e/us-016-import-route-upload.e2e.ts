@@ -5,6 +5,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
 }) => {
   let submitRequestBody: unknown = null;
   let submitRequestCount = 0;
+  let cleanupRequestCount = 0;
 
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
@@ -62,7 +63,6 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
         review: {
           sessionId: "session-1",
           potentialDuplicates: 1,
-          messageCleanupUnavailableReason: null,
           rows: [
             {
               id: "row-1",
@@ -74,7 +74,6 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
               paymentType: "CARD",
               name: "joker",
               title: "JOKER TRONDHEIM",
-              cleanedMessage: "Joker Trondheim",
               categoryId: null,
               potentialDuplicate: true,
             },
@@ -88,12 +87,30 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
               paymentType: "CARD",
               name: "ruter",
               title: "RUTER BILLETT",
-              cleanedMessage: null,
               categoryId: "cat-transport",
               potentialDuplicate: false,
             },
           ],
         },
+        cleanup: {
+          status: "planned",
+          sessionId: "session-1",
+          chunks: [{ index: 0, rowIds: ["row-1", "row-2"] }],
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/imports/cleanup", async (route) => {
+    cleanupRequestCount += 1;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        index: 0,
+        status: "ok",
+        suggestions: [{ rowId: "row-1", cleanedMessage: "Joker Trondheim" }],
       }),
     });
   });
@@ -168,21 +185,41 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
       "1 potential duplicate detected. Default message selection uses AI-cleaned text when available.",
     ),
   ).toBeVisible();
-  // Row 1 (rowNumber 2): defaults to AI-cleaned message
+  // Before the cleanup chunk resolves: original messages, no toggle yet.
   await expect(
-    page.getByText("Joker Trondheim", { exact: true }),
+    page.getByText("JOKER TRONDHEIM", { exact: true }),
   ).toBeVisible();
-  // Row 2 (rowNumber 3): shows original message (no AI-cleaned alternative)
   await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();
-  // Toggle button available for row 1 which has an AI-cleaned message
   const toggleRow1 = page.getByRole("button", {
     name: "Toggle message source for row 2",
   });
+  await expect(toggleRow1).not.toBeVisible();
+  // Both rows show a loading skeleton while their chunk is in flight.
+  const pendingSkeletonRow1 = page.getByLabel(
+    "Checking for a cleaner message for row 2",
+  );
+  const pendingSkeletonRow2 = page.getByLabel(
+    "Checking for a cleaner message for row 3",
+  );
+  await expect(pendingSkeletonRow1).toBeVisible();
+  await expect(pendingSkeletonRow2).toBeVisible();
+
+  // Row 1 (rowNumber 2): once the cleanup chunk resolves, it defaults to
+  // the AI-cleaned message and gains a toggle.
+  await expect(
+    page.getByText("Joker Trondheim", { exact: true }),
+  ).toBeVisible();
   await expect(toggleRow1).toBeVisible();
-  // Row 2 has no AI-cleaned message, so no toggle button
+  await expect(pendingSkeletonRow1).not.toBeVisible();
+  await expect(pendingSkeletonRow2).not.toBeVisible();
+  // Row 2 (rowNumber 3): the chunk carried no suggestion for it, so it
+  // keeps showing the original message with no toggle.
+  await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Toggle message source for row 3" }),
   ).not.toBeVisible();
+  // Exactly one cleanup chunk request fires for the whole session.
+  expect(cleanupRequestCount).toBe(1);
   // Potential duplicate indicator shown for row 1
   await expect(page.getByLabel("Potential duplicate")).toBeVisible();
   // Switch row 1 to use original message
@@ -359,7 +396,6 @@ test("requires provider override when detection is uncertain and continues after
         review: {
           sessionId: "session-override",
           potentialDuplicates: 0,
-          messageCleanupUnavailableReason: "disabled",
           rows: [
             {
               id: "row-1",
@@ -371,11 +407,15 @@ test("requires provider override when detection is uncertain and continues after
               paymentType: "CARD",
               name: "butikk",
               title: "BUTIKK",
-              cleanedMessage: null,
               categoryId: null,
               potentialDuplicate: false,
             },
           ],
+        },
+        cleanup: {
+          status: "unavailable",
+          reason: "disabled",
+          rowIds: ["row-1"],
         },
       }),
     });
@@ -456,7 +496,6 @@ test("keeps review state visible when a blocking submit failure occurs", async (
         review: {
           sessionId: "session-failing",
           potentialDuplicates: 0,
-          messageCleanupUnavailableReason: null,
           rows: [
             {
               id: "row-1",
@@ -468,7 +507,6 @@ test("keeps review state visible when a blocking submit failure occurs", async (
               paymentType: "CARD",
               name: "joker",
               title: "JOKER TRONDHEIM",
-              cleanedMessage: null,
               categoryId: null,
               potentialDuplicate: false,
             },
@@ -482,11 +520,15 @@ test("keeps review state visible when a blocking submit failure occurs", async (
               paymentType: "CARD",
               name: "ruter",
               title: "RUTER BILLETT",
-              cleanedMessage: null,
               categoryId: null,
               potentialDuplicate: false,
             },
           ],
+        },
+        cleanup: {
+          status: "unavailable",
+          reason: "key_missing",
+          rowIds: ["row-1", "row-2"],
         },
       }),
     });

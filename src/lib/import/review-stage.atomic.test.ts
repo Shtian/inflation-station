@@ -45,16 +45,10 @@ describe("stageParsedImportRows - atomic persistence (real database)", () => {
       summary: { imported: 2, duplicates: 0, ignoredReserved: 0, invalid: 0 },
     };
 
-    const result = await stageParsedImportRows(
-      db.client,
-      {
-        accountId: account.id,
-        parsed,
-      },
-      {
-        openAiApiKey: null,
-      },
-    );
+    const result = await stageParsedImportRows(db.client, {
+      accountId: account.id,
+      parsed,
+    });
 
     expect(result.review.sessionId).not.toBeNull();
     const sessionId = result.review.sessionId as string;
@@ -105,16 +99,10 @@ describe("stageParsedImportRows - atomic persistence (real database)", () => {
       };
 
       await expect(
-        stageParsedImportRows(
-          db.client,
-          {
-            accountId: account.id,
-            parsed,
-          },
-          {
-            openAiApiKey: null,
-          },
-        ),
+        stageParsedImportRows(db.client, {
+          accountId: account.id,
+          parsed,
+        }),
       ).rejects.toBeDefined();
 
       const sessions = await db.client.importReviewSession.findMany();

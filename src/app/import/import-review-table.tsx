@@ -23,15 +23,14 @@ import { ImportReviewCategoryCell } from "./components/import-review-category-ce
 import { ImportReviewMessageCell } from "./components/import-review-message-cell";
 import { ImportReviewNoteCell } from "./components/import-review-note-cell";
 import { ImportReviewWarningsCell } from "./components/import-review-warnings-cell";
+import {
+  MESSAGE_SOURCE_CLEANED,
+  MESSAGE_SOURCE_ORIGINAL,
+  type MessageSource,
+  type ResolvedRowMessage,
+} from "./message-cleanup/resolve-row-message";
 
 export const UNCATEGORIZED_SELECT_VALUE = "__uncategorized__";
-
-export const MESSAGE_SOURCE_ORIGINAL = "original" as const;
-export const MESSAGE_SOURCE_CLEANED = "cleaned" as const;
-
-export type MessageSource =
-  | typeof MESSAGE_SOURCE_ORIGINAL
-  | typeof MESSAGE_SOURCE_CLEANED;
 
 export type ReviewRow = {
   id: string;
@@ -43,7 +42,6 @@ export type ReviewRow = {
   paymentType: string;
   name?: string;
   title?: string;
-  cleanedMessage?: string | null;
   categoryId: string | null;
   potentialDuplicate: boolean;
 };
@@ -100,11 +98,11 @@ type ImportReviewTableProps = {
   categoryDecisions: Record<string, string>;
   noteDecisions: Record<string, string>;
   noteValidationErrors: Record<string, string>;
-  messageDecisions: Record<string, MessageSource>;
+  resolvedMessages: Record<string, ResolvedRowMessage>;
   selectedRowIds: Set<string>;
   setCategoryDecisions: Dispatch<SetStateAction<Record<string, string>>>;
   setNoteDecision: (rowId: string, note: string) => void;
-  setMessageDecisions: Dispatch<SetStateAction<Record<string, MessageSource>>>;
+  selectMessageSource: (rowId: string, source: MessageSource) => void;
   toggleRowSelection: (rowId: string) => void;
   toggleAllRows: (rowIds: string[]) => void;
 };
@@ -115,11 +113,11 @@ export function ImportReviewTable({
   categoryDecisions,
   noteDecisions,
   noteValidationErrors,
-  messageDecisions,
+  resolvedMessages,
   selectedRowIds,
   setCategoryDecisions,
   setNoteDecision,
-  setMessageDecisions,
+  selectMessageSource,
   toggleRowSelection,
   toggleAllRows,
 }: ImportReviewTableProps) {
@@ -169,14 +167,16 @@ export function ImportReviewTable({
         </TableHeader>
         <TableBody>
           {rows.map((row) => {
-            const hasCleanedMessage =
-              typeof row.cleanedMessage === "string" &&
-              row.cleanedMessage.trim().length > 0;
-            const selectedMessageSource =
-              messageDecisions[row.id] ??
-              (hasCleanedMessage
-                ? MESSAGE_SOURCE_CLEANED
-                : MESSAGE_SOURCE_ORIGINAL);
+            const resolvedMessage: ResolvedRowMessage = resolvedMessages[
+              row.id
+            ] ?? {
+              source: MESSAGE_SOURCE_ORIGINAL,
+              display: row.title ?? row.name ?? "",
+              originalMessage: row.title ?? row.name ?? "",
+              hasCleanedAlternative: false,
+              cleanedText: null,
+              isPending: false,
+            };
             const selectedCategoryId =
               categoryDecisions[row.id] ?? row.categoryId ?? "";
             return (
@@ -198,18 +198,14 @@ export function ImportReviewTable({
                   <ImportReviewMessageCell
                     rowId={row.id}
                     rowNumber={row.rowNumber}
-                    title={row.title}
-                    name={row.name}
-                    cleanedMessage={row.cleanedMessage}
-                    selectedMessageSource={selectedMessageSource}
+                    resolvedMessage={resolvedMessage}
                     onToggleMessageSource={(rowId) =>
-                      setMessageDecisions((current) => ({
-                        ...current,
-                        [rowId]:
-                          selectedMessageSource === MESSAGE_SOURCE_CLEANED
-                            ? MESSAGE_SOURCE_ORIGINAL
-                            : MESSAGE_SOURCE_CLEANED,
-                      }))
+                      selectMessageSource(
+                        rowId,
+                        resolvedMessage.source === MESSAGE_SOURCE_ORIGINAL
+                          ? MESSAGE_SOURCE_CLEANED
+                          : MESSAGE_SOURCE_ORIGINAL,
+                      )
                     }
                   />
                 </TableCell>

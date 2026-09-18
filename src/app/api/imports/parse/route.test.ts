@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type CsvParserResult,
   parseNorwegianBankCsv,
@@ -10,19 +10,14 @@ import type {
 import type { ProviderMappingConfigurationError } from "@/lib/import/provider-adapter/mapping-definition";
 import { POST } from "./route";
 
-const {
-  prismaMock,
-  loadProviderAdaptersMock,
-  stageParsedImportRowsMock,
-  getMessageCleanupSettingsMock,
-} = vi.hoisted(() => ({
-  prismaMock: {
-    account: { findUnique: vi.fn() },
-  },
-  loadProviderAdaptersMock: vi.fn(),
-  stageParsedImportRowsMock: vi.fn(),
-  getMessageCleanupSettingsMock: vi.fn(),
-}));
+const { prismaMock, loadProviderAdaptersMock, stageParsedImportRowsMock } =
+  vi.hoisted(() => ({
+    prismaMock: {
+      account: { findUnique: vi.fn() },
+    },
+    loadProviderAdaptersMock: vi.fn(),
+    stageParsedImportRowsMock: vi.fn(),
+  }));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
@@ -34,10 +29,6 @@ vi.mock("@/lib/import/provider-adapter/repository", () => ({
 
 vi.mock("@/lib/import/review-stage", () => ({
   stageParsedImportRows: stageParsedImportRowsMock,
-}));
-
-vi.mock("@/lib/import/message-cleanup-settings", () => ({
-  getMessageCleanupSettings: getMessageCleanupSettingsMock,
 }));
 
 const EMPTY_PARSE_RESULT: CsvParserResult = {
@@ -52,7 +43,6 @@ const STAGED_RESULT = {
   review: {
     sessionId: "session-1",
     potentialDuplicates: 0,
-    messageCleanupUnavailableReason: null,
     rows: [],
   },
 };
@@ -107,13 +97,12 @@ describe("POST /api/imports/parse", () => {
     stageParsedImportRowsMock.mockReset();
     stageParsedImportRowsMock.mockResolvedValue(STAGED_RESULT);
 
-    getMessageCleanupSettingsMock.mockReset();
-    getMessageCleanupSettingsMock.mockResolvedValue({
-      modelId: undefined,
-      prompt: undefined,
-      isDefaultModel: true,
-      isDefaultPrompt: true,
-    });
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    vi.stubEnv("OPENAI_MESSAGE_CLEANUP_ENABLED", "true");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("returns 400 when the payload is missing required fields", async () => {
@@ -253,17 +242,18 @@ describe("POST /api/imports/parse", () => {
     expect(body.summary).toEqual(STAGED_RESULT.summary);
     expect(body.errors).toEqual(STAGED_RESULT.errors);
     expect(body.review).toEqual(STAGED_RESULT.review);
+    expect(body.cleanup).toEqual({
+      status: "planned",
+      sessionId: STAGED_RESULT.review.sessionId,
+      chunks: [],
+    });
 
     expect(bankA.parse).not.toHaveBeenCalled();
     expect(bankB.parse).toHaveBeenCalledTimes(1);
-    expect(stageParsedImportRowsMock).toHaveBeenCalledWith(
-      prismaMock,
-      {
-        accountId: "account-1",
-        parsed: parseResult,
-      },
-      expect.anything(),
-    );
+    expect(stageParsedImportRowsMock).toHaveBeenCalledWith(prismaMock, {
+      accountId: "account-1",
+      parsed: parseResult,
+    });
   });
 
   it("returns 400 PROVIDER_NOT_FOUND when the selected provider id is unknown", async () => {
@@ -361,13 +351,63 @@ describe("POST /api/imports/parse", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(stageParsedImportRowsMock).toHaveBeenCalledWith(
-      prismaMock,
-      {
-        accountId: "account-1",
-        parsed: parseNorwegianBankCsv(CSV_CONTENT),
+    expect(stageParsedImportRowsMock).toHaveBeenCalledWith(prismaMock, {
+      accountId: "account-1",
+      parsed: parseNorwegianBankCsv(CSV_CONTENT),
+    });
+  });
+
+  it("issues no OpenAI request and returns a planned cleanup chunk per row", async () => {
+    stageParsedImportRowsMock.mockResolvedValue({
+      ...STAGED_RESULT,
+      review: {
+        ...STAGED_RESULT.review,
+        rows: [
+          {
+            id: "row-1",
+            rowNumber: 2,
+            bookingDate: "2026-01-01",
+            amountNok: -100,
+            currency: "NOK",
+            normalizedMerchant: "joker",
+            paymentType: "CARD",
+            sender: "",
+            recipient: "",
+            name: "Joker",
+            title: "Oslo",
+            categoryId: null,
+            potentialDuplicate: false,
+          },
+        ],
       },
-      expect.anything(),
+    });
+
+    const response = await POST(
+      jsonRequest({ accountId: "account-1", csvContent: CSV_CONTENT }),
     );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.cleanup).toEqual({
+      status: "planned",
+      sessionId: "session-1",
+      chunks: [{ index: 0, rowIds: ["row-1"] }],
+    });
+  });
+
+  it("returns cleanup unavailable with key_missing when OPENAI_API_KEY is unset", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "");
+
+    const response = await POST(
+      jsonRequest({ accountId: "account-1", csvContent: CSV_CONTENT }),
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.cleanup).toEqual({
+      status: "unavailable",
+      reason: "key_missing",
+      rowIds: [],
+    });
   });
 });
