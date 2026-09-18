@@ -8,27 +8,20 @@ import {
 } from "@/lib/import/message-cleanup/wire";
 import { runCleanupChunks } from "./run-cleanup-chunks";
 
-async function fetchCleanupChunk(chunk: {
+export function fetchCleanupChunk(chunk: {
   sessionId: string;
   chunkIndex: number;
 }): Promise<CleanupChunkResponse> {
-  const response = await fetch("/api/imports/cleanup", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      sessionId: chunk.sessionId,
-      chunkIndex: chunk.chunkIndex,
+  return parseCleanupChunkResponse(
+    chunk.chunkIndex,
+    fetch("/api/imports/cleanup", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        sessionId: chunk.sessionId,
+        chunkIndex: chunk.chunkIndex,
+      }),
     }),
-  });
-  const body = await response.json().catch(() => null);
-  const parsed = parseCleanupChunkResponse(body);
-
-  return (
-    parsed ?? {
-      index: chunk.chunkIndex,
-      status: "unavailable",
-      reason: "provider_error",
-    }
   );
 }
 

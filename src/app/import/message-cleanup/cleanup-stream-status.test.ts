@@ -8,6 +8,7 @@ describe("deriveCleanupStreamStatus", () => {
       total: 0,
       cleaned: 0,
       pending: 0,
+      failed: 0,
     });
   });
 
@@ -35,6 +36,7 @@ describe("deriveCleanupStreamStatus", () => {
       total: 4,
       cleaned: 1,
       pending: 1,
+      failed: 1,
     });
   });
 });

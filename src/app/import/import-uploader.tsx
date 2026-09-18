@@ -33,6 +33,7 @@ export function ImportUploader() {
     parseResult,
     providerDetection,
     resetImport,
+    retryFailed,
     reviewCategoryOptions,
     selectMessageSource,
     selectedAccountId,
@@ -76,6 +77,7 @@ export function ImportUploader() {
           parseResult={parseResult}
           providerDetection={providerDetection}
           resetImport={resetImport}
+          retryFailed={retryFailed}
           reviewCategoryOptions={reviewCategoryOptions}
           selectedAccountId={selectedAccountId}
           selectedRowIds={selectedRowIds}

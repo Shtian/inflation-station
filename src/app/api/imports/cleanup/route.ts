@@ -83,10 +83,10 @@ export async function POST(request: Request) {
     rows: chunkRows,
   });
 
-  if (result.status === "unavailable") {
+  if (result.status === "failed") {
     return NextResponse.json({
       index: chunkIndex,
-      status: "unavailable",
+      status: "failed",
       reason: result.reason,
     });
   }

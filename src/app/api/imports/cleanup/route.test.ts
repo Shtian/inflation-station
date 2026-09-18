@@ -102,9 +102,9 @@ describe("POST /api/imports/cleanup", () => {
     });
   });
 
-  it("passes through an unavailable chunk result without a rowId mapping", async () => {
+  it("passes through a failed chunk result without a rowId mapping, as a 200 body", async () => {
     runCleanupChunkMock.mockResolvedValue({
-      status: "unavailable",
+      status: "failed",
       reason: "provider_error",
     });
 
@@ -115,7 +115,7 @@ describe("POST /api/imports/cleanup", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
       index: 0,
-      status: "unavailable",
+      status: "failed",
       reason: "provider_error",
     });
   });

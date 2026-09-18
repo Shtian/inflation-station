@@ -19,7 +19,11 @@ import {
   type ResolvedRowMessage,
   resolveRowMessage,
 } from "./message-cleanup/resolve-row-message";
-import { useMessageCleanupStream } from "./message-cleanup/use-message-cleanup-stream";
+import { runCleanupChunks } from "./message-cleanup/run-cleanup-chunks";
+import {
+  fetchCleanupChunk,
+  useMessageCleanupStream,
+} from "./message-cleanup/use-message-cleanup-stream";
 
 export type Account = {
   id: string;
@@ -144,6 +148,9 @@ export function useImportWorkflow() {
     Record<string, MessageSource>
   >({});
   const [suggestions, setSuggestions] = useState<SuggestionsByRowId>({});
+  const [failedChunkIndexes, setFailedChunkIndexes] = useState<Set<number>>(
+    new Set(),
+  );
   const [noteDecisions, setNoteDecisions] = useState<Record<string, string>>(
     {},
   );
@@ -277,11 +284,44 @@ export function useImportWorkflow() {
   const onChunkResult = useCallback(
     (rowIds: string[], result: CleanupChunkResponse) => {
       setSuggestions((current) => applyChunkResult(current, rowIds, result));
+      setFailedChunkIndexes((current) => {
+        const next = new Set(current);
+        if (result.status === "failed") {
+          next.add(result.index);
+        } else {
+          next.delete(result.index);
+        }
+        return next;
+      });
     },
     [],
   );
 
   useMessageCleanupStream(parseResult?.cleanup ?? null, onChunkResult);
+
+  const retryFailed = useCallback(() => {
+    const plan = parseResult?.cleanup;
+    if (!plan || plan.status !== "planned" || failedChunkIndexes.size === 0) {
+      return;
+    }
+
+    const retryChunks = plan.chunks.filter((chunk) =>
+      failedChunkIndexes.has(chunk.index),
+    );
+    if (retryChunks.length === 0) {
+      return;
+    }
+
+    void runCleanupChunks({
+      plan: {
+        status: "planned",
+        sessionId: plan.sessionId,
+        chunks: retryChunks,
+      },
+      fetchChunk: fetchCleanupChunk,
+      onChunkResult,
+    });
+  }, [parseResult, failedChunkIndexes, onChunkResult]);
 
   const selectMessageSource = useCallback(
     (rowId: string, source: MessageSource) => {
@@ -295,6 +335,7 @@ export function useImportWorkflow() {
     setCategoryDecisions({});
     setMessageOverrides({});
     setSuggestions({});
+    setFailedChunkIndexes(new Set());
     setNoteDecisions({});
     setNoteValidationErrors({});
     setSelectedRowIds(new Set());
@@ -374,6 +415,7 @@ export function useImportWorkflow() {
     setCategoryDecisions({});
     setMessageOverrides({});
     setSuggestions({});
+    setFailedChunkIndexes(new Set());
     setNoteDecisions({});
     setNoteValidationErrors({});
 
@@ -454,6 +496,7 @@ export function useImportWorkflow() {
     setCategoryDecisions({});
     setMessageOverrides({});
     setSuggestions({});
+    setFailedChunkIndexes(new Set());
     setNoteDecisions({});
     setNoteValidationErrors({});
     setSelectedRowIds(new Set());
@@ -563,6 +606,7 @@ export function useImportWorkflow() {
     setCategoryDecisions({});
     setMessageOverrides({});
     setSuggestions({});
+    setFailedChunkIndexes(new Set());
     setNoteDecisions({});
     setNoteValidationErrors({});
     setSelectedFile(null);
@@ -605,6 +649,7 @@ export function useImportWorkflow() {
     providerDetection,
     resetImport,
     resolvedMessages,
+    retryFailed,
     reviewCategoryOptions,
     selectMessageSource,
     selectedAccountId,
