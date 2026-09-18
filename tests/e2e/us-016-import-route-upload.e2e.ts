@@ -194,6 +194,15 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     name: "Toggle message source for row 2",
   });
   await expect(toggleRow1).not.toBeVisible();
+  // Both rows show a loading skeleton while their chunk is in flight.
+  const pendingSkeletonRow1 = page.getByLabel(
+    "Checking for a cleaner message for row 2",
+  );
+  const pendingSkeletonRow2 = page.getByLabel(
+    "Checking for a cleaner message for row 3",
+  );
+  await expect(pendingSkeletonRow1).toBeVisible();
+  await expect(pendingSkeletonRow2).toBeVisible();
 
   // Row 1 (rowNumber 2): once the cleanup chunk resolves, it defaults to
   // the AI-cleaned message and gains a toggle.
@@ -201,6 +210,8 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     page.getByText("Joker Trondheim", { exact: true }),
   ).toBeVisible();
   await expect(toggleRow1).toBeVisible();
+  await expect(pendingSkeletonRow1).not.toBeVisible();
+  await expect(pendingSkeletonRow2).not.toBeVisible();
   // Row 2 (rowNumber 3): the chunk carried no suggestion for it, so it
   // keeps showing the original message with no toggle.
   await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();

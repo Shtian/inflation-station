@@ -15,6 +15,7 @@ import {
 } from "./message-cleanup/apply-chunk-result";
 import {
   type MessageSource,
+  type MessageSuggestion,
   type ResolvedRowMessage,
   resolveRowMessage,
 } from "./message-cleanup/resolve-row-message";
@@ -258,11 +259,15 @@ export function useImportWorkflow() {
 
   const resolvedMessages = useMemo(() => {
     const rows = parseResult?.review?.rows ?? [];
+    const cleanupPlanned = parseResult?.cleanup?.status === "planned";
+    const defaultSuggestion: MessageSuggestion = cleanupPlanned
+      ? { status: "pending" }
+      : { status: "none" };
 
     return rows.reduce<Record<string, ResolvedRowMessage>>((acc, row) => {
       acc[row.id] = resolveRowMessage({
         originalMessage: deriveOriginalMessage(row),
-        suggestion: suggestions[row.id] ?? { status: "pending" },
+        suggestion: suggestions[row.id] ?? defaultSuggestion,
         override: messageOverrides[row.id],
       });
       return acc;

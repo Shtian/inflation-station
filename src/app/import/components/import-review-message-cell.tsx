@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -30,12 +31,18 @@ export function ImportReviewMessageCell({
     originalMessage,
     hasCleanedAlternative,
     cleanedText,
+    isPending,
   } = resolvedMessage;
 
   return (
     <div className="flex items-center gap-2">
       <span className="max-w-[20ch] truncate text-sm">{display}</span>
-      {hasCleanedAlternative ? (
+      {isPending ? (
+        <Skeleton
+          className="h-4 w-4 shrink-0 rounded-full"
+          aria-label={`Checking for a cleaner message for row ${rowNumber}`}
+        />
+      ) : hasCleanedAlternative ? (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger

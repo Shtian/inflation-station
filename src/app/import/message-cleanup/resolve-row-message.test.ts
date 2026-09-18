@@ -23,6 +23,7 @@ describe("resolveRowMessage", () => {
       originalMessage: "JOKER OSLO",
       hasCleanedAlternative: false,
       cleanedText: null,
+      isPending: true,
     });
   });
 
@@ -39,6 +40,7 @@ describe("resolveRowMessage", () => {
       originalMessage: "JOKER OSLO",
       hasCleanedAlternative: true,
       cleanedText: "Joker Oslo",
+      isPending: false,
     });
   });
 
@@ -86,6 +88,7 @@ describe("resolveRowMessage", () => {
       originalMessage: "RUTER BILLETT",
       hasCleanedAlternative: false,
       cleanedText: null,
+      isPending: false,
     });
   });
 
@@ -102,6 +105,7 @@ describe("resolveRowMessage", () => {
       originalMessage: "RUTER BILLETT",
       hasCleanedAlternative: false,
       cleanedText: null,
+      isPending: false,
     });
   });
 });

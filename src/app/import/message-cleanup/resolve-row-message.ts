@@ -19,6 +19,7 @@ export type ResolvedRowMessage = {
   originalMessage: string;
   hasCleanedAlternative: boolean;
   cleanedText: string | null;
+  isPending: boolean;
 };
 
 export function resolveRowMessage(params: {
@@ -45,5 +46,6 @@ export function resolveRowMessage(params: {
     originalMessage: params.originalMessage,
     hasCleanedAlternative,
     cleanedText,
+    isPending: params.suggestion.status === "pending",
   };
 }

@@ -175,6 +175,7 @@ export function ImportReviewTable({
               originalMessage: row.title ?? row.name ?? "",
               hasCleanedAlternative: false,
               cleanedText: null,
+              isPending: false,
             };
             const selectedCategoryId =
               categoryDecisions[row.id] ?? row.categoryId ?? "";
