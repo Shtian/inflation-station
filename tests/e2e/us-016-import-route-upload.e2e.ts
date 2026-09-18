@@ -194,13 +194,9 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     name: "Toggle message source for row 2",
   });
   await expect(toggleRow1).not.toBeVisible();
-  // Both rows show a loading skeleton while their chunk is in flight.
-  const pendingSkeletonRow1 = page.getByLabel(
-    "Checking for a cleaner message for row 2",
-  );
-  const pendingSkeletonRow2 = page.getByLabel(
-    "Checking for a cleaner message for row 3",
-  );
+  // Both rows show a pulsing icon while their chunk is in flight.
+  const pendingSkeletonRow1 = page.getByLabel("Cleaning message for row 2");
+  const pendingSkeletonRow2 = page.getByLabel("Cleaning message for row 3");
   await expect(pendingSkeletonRow1).toBeVisible();
   await expect(pendingSkeletonRow2).toBeVisible();
 
@@ -583,4 +579,166 @@ test("keeps review state visible when a blocking submit failure occurs", async (
   await expect(
     page.getByRole("checkbox", { name: "Select row 3" }),
   ).not.toBeChecked();
+});
+
+test("applies a fast later-dispatched cleanup chunk without waiting on a slower earlier chunk", async ({
+  page,
+}) => {
+  const reviewRows = Array.from({ length: 30 }, (_, i) => {
+    const n = i + 1;
+    return {
+      id: `row-${n}`,
+      rowNumber: i + 2,
+      bookingDate: "2026-01-01",
+      amountNok: -100 - i,
+      currency: "NOK",
+      normalizedMerchant: `merchant-${n}`,
+      paymentType: "CARD",
+      name: `merchant-${n}`,
+      title: `MERCHANT ${n} STORE`,
+      categoryId: null,
+      potentialDuplicate: false,
+    };
+  });
+  const chunk0RowIds = reviewRows.slice(0, 25).map((row) => row.id);
+  const chunk1RowIds = reviewRows.slice(25).map((row) => row.id);
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [
+          {
+            id: "acc-1",
+            name: "Main Account",
+            institution: "DNB",
+            isActive: true,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ categories: [] }),
+    });
+  });
+
+  await page.route("**/api/imports/parse", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        detection: {
+          state: "certain",
+          providerId: "provider-1",
+          providerName: "DNB",
+          score: 1,
+          matchedHeaders: ["bokforingsdato", "belop"],
+          candidates: [],
+        },
+        summary: {
+          imported: 30,
+          duplicates: 0,
+          ignoredReserved: 0,
+          invalid: 0,
+        },
+        errors: [],
+        review: {
+          sessionId: "session-1",
+          potentialDuplicates: 0,
+          rows: reviewRows,
+        },
+        cleanup: {
+          status: "planned",
+          sessionId: "session-1",
+          chunks: [
+            { index: 0, rowIds: chunk0RowIds },
+            { index: 1, rowIds: chunk1RowIds },
+          ],
+        },
+      }),
+    });
+  });
+
+  await page.route("**/api/imports/cleanup", async (route, request) => {
+    const body = request.postDataJSON() as { chunkIndex: number };
+
+    if (body.chunkIndex === 1) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          index: 1,
+          status: "ok",
+          suggestions: [
+            { rowId: "row-26", cleanedMessage: "Merchant 26 Store" },
+          ],
+        }),
+      });
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        index: 0,
+        status: "ok",
+        suggestions: [{ rowId: "row-1", cleanedMessage: "Merchant 1 Store" }],
+      }),
+    });
+  });
+
+  await page.goto("/import");
+  await page.getByRole("button", { name: "Main Account DNB" }).click();
+  await page.getByLabel("CSV file").setInputFiles({
+    name: "transactions.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;123,45", "utf8"),
+  });
+  await page.getByRole("button", { name: /Parse/ }).click();
+  await expect(page.getByText("Import Preview")).toBeVisible();
+
+  const pendingRow27 = page.getByLabel("Cleaning message for row 27", {
+    exact: true,
+  });
+  const pendingRow2 = page.getByLabel("Cleaning message for row 2", {
+    exact: true,
+  });
+
+  // Row 27 belongs to chunk 1 (last dispatched, resolves fastest).
+  await expect(pendingRow27).toBeVisible();
+
+  // Chunk 1 resolves and applies before chunk 0, even though chunk 0
+  // dispatched first: row 27 gets its suggestion while row 2 still waits.
+  await expect(
+    page.getByText("Merchant 26 Store", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "Toggle message source for row 27",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(pendingRow2).toBeVisible();
+
+  // Chunk 0 eventually resolves too, and no pending rows remain.
+  await expect(
+    page.getByText("Merchant 1 Store", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: "Toggle message source for row 2",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(pendingRow27).not.toBeVisible();
+  await expect(pendingRow2).not.toBeVisible();
 });

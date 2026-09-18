@@ -6,6 +6,31 @@ import {
   type CleanupChunkResponse,
   parseCleanupChunkResponse,
 } from "@/lib/import/message-cleanup/wire";
+import { runCleanupChunks } from "./run-cleanup-chunks";
+
+async function fetchCleanupChunk(chunk: {
+  sessionId: string;
+  chunkIndex: number;
+}): Promise<CleanupChunkResponse> {
+  const response = await fetch("/api/imports/cleanup", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      sessionId: chunk.sessionId,
+      chunkIndex: chunk.chunkIndex,
+    }),
+  });
+  const body = await response.json().catch(() => null);
+  const parsed = parseCleanupChunkResponse(body);
+
+  return (
+    parsed ?? {
+      index: chunk.chunkIndex,
+      status: "unavailable",
+      reason: "provider_error",
+    }
+  );
+}
 
 export function useMessageCleanupStream(
   plan: CleanupPlan | null,
@@ -16,34 +41,10 @@ export function useMessageCleanupStream(
       return;
     }
 
-    async function run() {
-      if (!plan || plan.status !== "planned") {
-        return;
-      }
-
-      for (const chunk of plan.chunks) {
-        const response = await fetch("/api/imports/cleanup", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            sessionId: plan.sessionId,
-            chunkIndex: chunk.index,
-          }),
-        });
-        const body = await response.json().catch(() => null);
-        const parsed = parseCleanupChunkResponse(body);
-
-        onChunkResult(
-          chunk.rowIds,
-          parsed ?? {
-            index: chunk.index,
-            status: "unavailable",
-            reason: "provider_error",
-          },
-        );
-      }
-    }
-
-    void run();
+    void runCleanupChunks({
+      plan,
+      fetchChunk: fetchCleanupChunk,
+      onChunkResult,
+    });
   }, [plan, onChunkResult]);
 }

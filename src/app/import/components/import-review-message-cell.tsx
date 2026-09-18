@@ -1,5 +1,4 @@
 import { Sparkles } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
@@ -38,9 +37,9 @@ export function ImportReviewMessageCell({
     <div className="flex items-center gap-2">
       <span className="max-w-[20ch] truncate text-sm">{display}</span>
       {isPending ? (
-        <Skeleton
-          className="h-4 w-4 shrink-0 rounded-full"
-          aria-label={`Checking for a cleaner message for row ${rowNumber}`}
+        <Sparkles
+          className="h-3.5 w-3.5 shrink-0 animate-pulse text-muted-foreground"
+          aria-label={`Cleaning message for row ${rowNumber}`}
         />
       ) : hasCleanedAlternative ? (
         <TooltipProvider>
