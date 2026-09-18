@@ -128,4 +128,37 @@ describe("runCleanupChunks", () => {
       result: okResult(0, "row-0"),
     });
   });
+
+  it("stops dispatching and drops the in-flight result once aborted", async () => {
+    const plan = buildPlan();
+    const deferreds = plan.chunks.map(() =>
+      createDeferred<CleanupChunkResponse>(),
+    );
+    const invokedIndexes: number[] = [];
+    const calls: Array<{ rowIds: string[]; result: CleanupChunkResponse }> = [];
+    const controller = new AbortController();
+
+    const run = runCleanupChunks({
+      plan,
+      concurrency: 1,
+      signal: controller.signal,
+      fetchChunk: async ({ chunkIndex }) => {
+        invokedIndexes.push(chunkIndex);
+        return deferreds[chunkIndex].promise;
+      },
+      onChunkResult: (rowIds, result) => {
+        calls.push({ rowIds, result });
+      },
+    });
+
+    expect(invokedIndexes).toEqual([0]);
+
+    controller.abort();
+    deferreds[0].resolve(okResult(0, "row-0"));
+    await flushMicrotasks();
+    await run;
+
+    expect(invokedIndexes).toEqual([0]);
+    expect(calls).toEqual([]);
+  });
 });

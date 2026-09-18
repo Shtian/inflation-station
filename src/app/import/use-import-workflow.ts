@@ -14,6 +14,10 @@ import {
   type SuggestionsByRowId,
 } from "./message-cleanup/apply-chunk-result";
 import {
+  type CleanupRunController,
+  createCleanupRunController,
+} from "./message-cleanup/cleanup-run-controller";
+import {
   type MessageSource,
   type MessageSuggestion,
   type ResolvedRowMessage,
@@ -159,6 +163,10 @@ export function useImportWorkflow() {
   >({});
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cleanupRunControllerRef = useRef<CleanupRunController | null>(null);
+  if (!cleanupRunControllerRef.current) {
+    cleanupRunControllerRef.current = createCleanupRunController();
+  }
 
   const loadAccounts = useCallback(async () => {
     setAccountError(null);
@@ -297,7 +305,11 @@ export function useImportWorkflow() {
     [],
   );
 
-  useMessageCleanupStream(parseResult?.cleanup ?? null, onChunkResult);
+  useMessageCleanupStream(
+    parseResult?.cleanup ?? null,
+    onChunkResult,
+    cleanupRunControllerRef.current,
+  );
 
   const retryFailed = useCallback(() => {
     const plan = parseResult?.cleanup;
@@ -312,6 +324,7 @@ export function useImportWorkflow() {
       return;
     }
 
+    const signal = cleanupRunControllerRef.current?.start();
     void runCleanupChunks({
       plan: {
         status: "planned",
@@ -320,8 +333,13 @@ export function useImportWorkflow() {
       },
       fetchChunk: fetchCleanupChunk,
       onChunkResult,
+      signal,
     });
   }, [parseResult, failedChunkIndexes, onChunkResult]);
+
+  const cancelCleanup = useCallback(() => {
+    cleanupRunControllerRef.current?.cancel();
+  }, []);
 
   const selectMessageSource = useCallback(
     (rowId: string, source: MessageSource) => {
@@ -331,6 +349,7 @@ export function useImportWorkflow() {
   );
 
   const resetReviewState = useCallback(() => {
+    cancelCleanup();
     setParseResult(null);
     setCategoryDecisions({});
     setMessageOverrides({});
@@ -342,7 +361,7 @@ export function useImportWorkflow() {
     setProviderDetection(null);
     setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
     setImportError(null);
-  }, []);
+  }, [cancelCleanup]);
 
   const onFileSelected = useCallback(
     (file: File | null) => {
@@ -490,6 +509,7 @@ export function useImportWorkflow() {
   }, [selectedAccountId, selectedFile, selectedProviderId]);
 
   const resetImport = useCallback(() => {
+    cancelCleanup();
     setParseResult(null);
     setProviderDetection(null);
     setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
@@ -502,7 +522,7 @@ export function useImportWorkflow() {
     setSelectedRowIds(new Set());
     setImportError(null);
     setSubmitError(null);
-  }, []);
+  }, [cancelCleanup]);
 
   const setNoteDecision = useCallback((rowId: string, note: string) => {
     setNoteDecisions((current) => ({
@@ -574,6 +594,8 @@ export function useImportWorkflow() {
     setSubmitError(null);
     setNoteValidationErrors({});
 
+    cancelCleanup();
+
     const response = await fetch("/api/imports/submit", {
       method: "POST",
       headers: {
@@ -622,6 +644,7 @@ export function useImportWorkflow() {
     categoryDecisions,
     noteDecisions,
     selectedRowIds,
+    cancelCleanup,
   ]);
 
   return {
