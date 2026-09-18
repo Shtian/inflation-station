@@ -21,6 +21,32 @@ route → Prisma → SQLite chain connects, not to re-test edge cases the domain
 seam already owns.
 _Avoid_: real e2e, true e2e, full e2e, live suite
 
+### Categorization
+
+**Rule match**:
+A transaction category chosen by matching `CategoryRule.merchantContains` against
+the transaction's normalized merchant text. Deterministic substring matching,
+evaluated first, before any AI suggestion is requested. Carries no confidence.
+_Avoid_: rule suggestion, static match
+
+**AI suggestion**:
+A transaction category chosen by the categorization provider's `Choice`
+primitive, requested only for transactions no rule match fired for. Carries a
+confidence.
+_Avoid_: model pick, AI pick
+
+**Confidence**:
+The 0.0–1.0 calibrated probability an AI suggestion carries. Shown only on the
+import review page, only beside AI suggestions, and never when the suggestion
+itself is "Uncategorized."
+_Avoid_: certainty, score
+
+**Classifier hint**:
+Optional short text on a `Category`, sent to the categorization provider
+alongside the category name to disambiguate non-obvious categories. One hint
+per category, reused for every transaction in it.
+_Avoid_: description, AI hint
+
 ### Test data
 
 **Fixture**:
