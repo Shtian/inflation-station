@@ -1,35 +1,55 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "./route";
 
-const { chatModelsMock, getMessageCleanupSettingsViewMock, prismaMock } =
-  vi.hoisted(() => ({
-    chatModelsMock: [
-      {
-        id: "gpt-4o-mini",
-        label: "GPT-4o Mini",
-        description: "Balanced speed and quality for routine monthly reviews.",
-        tier: "cheap",
-      },
-      {
-        id: "gpt-5-mini",
-        label: "GPT-5 Mini",
-        description: "Good quality with controlled cost for regular use.",
-        tier: "balanced",
-      },
-      {
-        id: "gpt-5.2",
-        label: "GPT-5.2",
-        description: "Best default quality/cost tradeoff for monthly analysis.",
-        tier: "balanced",
-      },
-    ],
-    getModelByIdMock: vi.fn(),
-    getMessageCleanupSettingsViewMock: vi.fn(),
-    prismaMock: { _tag: "prisma-mock" },
-  }));
+const {
+  chatModelsMock,
+  reasoningEffortsMock,
+  getMessageCleanupSettingsViewMock,
+  prismaMock,
+} = vi.hoisted(() => ({
+  chatModelsMock: [
+    {
+      id: "gpt-4o-mini",
+      label: "GPT-4o Mini",
+      description: "Balanced speed and quality for routine monthly reviews.",
+      tier: "cheap",
+    },
+    {
+      id: "gpt-5-mini",
+      label: "GPT-5 Mini",
+      description: "Good quality with controlled cost for regular use.",
+      tier: "balanced",
+    },
+    {
+      id: "gpt-5.2",
+      label: "GPT-5.2",
+      description: "Best default quality/cost tradeoff for monthly analysis.",
+      tier: "balanced",
+    },
+  ],
+  reasoningEffortsMock: [
+    {
+      id: "low",
+      label: "Low",
+      description: "Default. Keeps every suggestion.",
+    },
+    {
+      id: "medium",
+      label: "Medium",
+      description: "Balances thoroughness and speed.",
+    },
+  ],
+  getModelByIdMock: vi.fn(),
+  getMessageCleanupSettingsViewMock: vi.fn(),
+  prismaMock: { _tag: "prisma-mock" },
+}));
 
 vi.mock("@/lib/monthly-review/chat-model-registry", () => ({
   CHAT_MODELS: chatModelsMock,
+}));
+
+vi.mock("@/lib/monthly-review/reasoning-effort-registry", () => ({
+  REASONING_EFFORTS: reasoningEffortsMock,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -51,6 +71,9 @@ describe("/api/imports/message-cleanup-settings", () => {
       storedModelId: "gpt-5-mini",
       resolvedModelId: "gpt-5-mini",
       isDefaultModel: true,
+      storedReasoningEffort: "medium",
+      resolvedReasoningEffort: "medium",
+      isDefaultReasoningEffort: false,
     });
   });
 
@@ -67,6 +90,10 @@ describe("/api/imports/message-cleanup-settings", () => {
       resolvedModelId: "gpt-5-mini",
       usesDefaultModel: true,
       availableModels: chatModelsMock,
+      reasoningEffort: "medium",
+      resolvedReasoningEffort: "medium",
+      usesDefaultReasoningEffort: false,
+      availableReasoningEfforts: reasoningEffortsMock,
     });
   });
 
