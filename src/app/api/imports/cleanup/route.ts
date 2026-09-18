@@ -80,6 +80,7 @@ export async function POST(request: Request) {
     apiKey: process.env.OPENAI_API_KEY ?? "",
     model: settings.modelId,
     systemPrompt: settings.prompt,
+    reasoningEffort: settings.reasoningEffort,
     rows: chunkRows,
   });
 

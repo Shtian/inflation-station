@@ -1,12 +1,14 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { generateObject } from "ai";
+import type { ReasoningEffort } from "../../monthly-review/reasoning-effort-registry";
 import {
   buildProviderErrorDetail,
   isAbortError,
 } from "../../openai/provider-errors";
 import {
   DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
+  DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT,
   DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
 } from "../message-cleanup-settings";
 import type { ChunkFailureReason } from "./reasons";
@@ -62,6 +64,7 @@ export async function runCleanupChunk(params: {
   fetchImpl?: typeof fetch;
   model?: OpenAIChatModelId;
   systemPrompt?: string;
+  reasoningEffort?: ReasoningEffort;
 }): Promise<ChunkResult> {
   const timeoutMs = Math.max(1, params.timeoutMs ?? DEFAULT_CHUNK_TIMEOUT_MS);
   const controller = new AbortController();
@@ -91,6 +94,8 @@ export async function runCleanupChunk(params: {
       providerOptions: {
         openai: {
           strictJsonSchema: true,
+          reasoningEffort:
+            params.reasoningEffort ?? DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT,
         },
       },
     });
