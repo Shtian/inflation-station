@@ -20,11 +20,11 @@ type MessageCleanupSettingsResponse = {
   reasoningEffort: string | null;
   resolvedReasoningEffort: string;
   usesDefaultReasoningEffort: boolean;
-  availableReasoningEfforts: readonly {
+  availableReasoningEfforts: Array<{
     id: string;
     label: string;
     description: string;
-  }[];
+  }>;
 };
 
 function toResponse(

@@ -47,11 +47,11 @@ type MessageCleanupSettingsResponse = {
   reasoningEffort: string | null;
   resolvedReasoningEffort: ReasoningEffort;
   usesDefaultReasoningEffort: boolean;
-  availableReasoningEfforts: readonly {
+  availableReasoningEfforts: Array<{
     id: ReasoningEffort;
     label: string;
     description: string;
-  }[];
+  }>;
 };
 
 type UpdateMessageCleanupSettingsErrorCode =
