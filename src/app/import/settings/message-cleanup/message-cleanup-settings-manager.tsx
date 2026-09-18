@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { updateMessageCleanupSettingsAction } from "@/app/actions/update-message-cleanup-settings";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -31,92 +32,23 @@ import {
   type ChatModelEntry,
   getModelById,
 } from "@/lib/monthly-review/chat-model-registry";
+import { promptSettingsResponseSchema } from "@/lib/monthly-review/prompt-settings-response-schema";
 import {
   getReasoningEffortById,
   type ReasoningEffort,
   type ReasoningEffortEntry,
+  reasoningEffortEntrySchema,
 } from "@/lib/monthly-review/reasoning-effort-registry";
 
-type MessageCleanupSettingsResponse = {
-  promptText: string;
-  resolvedPrompt: string;
-  usesDefaultPrompt: boolean;
-  modelId: string | null;
-  resolvedModelId: OpenAIChatModelId;
-  usesDefaultModel: boolean;
-  availableModels: ChatModelEntry[];
-  reasoningEffort: string | null;
-  resolvedReasoningEffort: ReasoningEffort;
-  usesDefaultReasoningEffort: boolean;
-  availableReasoningEfforts: ReasoningEffortEntry[];
-};
-
-function isMessageCleanupSettingsResponse(
-  value: unknown,
-): value is MessageCleanupSettingsResponse {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  if (!("promptText" in value) || typeof value.promptText !== "string") {
-    return false;
-  }
-
-  if (
-    !("resolvedPrompt" in value) ||
-    typeof value.resolvedPrompt !== "string"
-  ) {
-    return false;
-  }
-
-  return (
-    "usesDefaultPrompt" in value &&
-    typeof value.usesDefaultPrompt === "boolean" &&
-    "modelId" in value &&
-    (value.modelId === null || typeof value.modelId === "string") &&
-    "resolvedModelId" in value &&
-    typeof value.resolvedModelId === "string" &&
-    "usesDefaultModel" in value &&
-    typeof value.usesDefaultModel === "boolean" &&
-    "availableModels" in value &&
-    Array.isArray(value.availableModels) &&
-    value.availableModels.every(
-      (model) =>
-        model &&
-        typeof model === "object" &&
-        "id" in model &&
-        typeof model.id === "string" &&
-        "label" in model &&
-        typeof model.label === "string" &&
-        "description" in model &&
-        typeof model.description === "string" &&
-        "tier" in model &&
-        (model.tier === "cheap" ||
-          model.tier === "balanced" ||
-          model.tier === "premium"),
-    ) &&
-    "reasoningEffort" in value &&
-    (value.reasoningEffort === null ||
-      typeof value.reasoningEffort === "string") &&
-    "resolvedReasoningEffort" in value &&
-    typeof value.resolvedReasoningEffort === "string" &&
-    "usesDefaultReasoningEffort" in value &&
-    typeof value.usesDefaultReasoningEffort === "boolean" &&
-    "availableReasoningEfforts" in value &&
-    Array.isArray(value.availableReasoningEfforts) &&
-    value.availableReasoningEfforts.every(
-      (effort) =>
-        effort &&
-        typeof effort === "object" &&
-        "id" in effort &&
-        typeof effort.id === "string" &&
-        "label" in effort &&
-        typeof effort.label === "string" &&
-        "description" in effort &&
-        typeof effort.description === "string",
-    )
-  );
-}
+const messageCleanupSettingsResponseSchema =
+  promptSettingsResponseSchema.extend({
+    reasoningEffort: z.string().nullable(),
+    resolvedReasoningEffort: z.custom<ReasoningEffort>(
+      (value) => typeof value === "string",
+    ),
+    usesDefaultReasoningEffort: z.boolean(),
+    availableReasoningEfforts: z.array(reasoningEffortEntrySchema),
+  });
 
 export function MessageCleanupSettingsManager() {
   const [promptText, setPromptText] = useState("");
@@ -148,9 +80,10 @@ export function MessageCleanupSettingsManager() {
     setError(null);
 
     const response = await fetch("/api/imports/message-cleanup-settings");
-    const body: unknown = await response.json().catch(() => null);
+    const rawBody: unknown = await response.json().catch(() => null);
+    const parsed = messageCleanupSettingsResponseSchema.safeParse(rawBody);
 
-    if (!response.ok || !isMessageCleanupSettingsResponse(body)) {
+    if (!response.ok || !parsed.success) {
       setPromptText("");
       setResolvedPrompt("");
       setUsesDefaultPrompt(true);
@@ -167,6 +100,7 @@ export function MessageCleanupSettingsManager() {
       return;
     }
 
+    const body = parsed.data;
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);
     setUsesDefaultPrompt(body.usesDefaultPrompt);

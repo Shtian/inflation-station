@@ -3,6 +3,7 @@
 import { Calendar, Settings, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,9 +31,9 @@ import {
   formatSignedNok,
 } from "./monthly-review-manager.utils";
 
-type TimelineResponse = {
-  rows: MonthlyReviewTimelineRow[];
-};
+const timelineResponseSchema = z.object({
+  rows: z.array(z.unknown()),
+});
 
 type GenerateMode = "generate" | "regenerate";
 
@@ -88,14 +89,6 @@ function formatDeltaPercent(row: MonthlyReviewTimelineRow): string | null {
   return `${percent > 0 ? "+" : ""}${percent.toFixed(1)}%`;
 }
 
-function isTimelineResponse(value: unknown): value is TimelineResponse {
-  if (!value || typeof value !== "object" || !("rows" in value)) {
-    return false;
-  }
-
-  return Array.isArray((value as { rows: unknown }).rows);
-}
-
 export function MonthlyReviewManager() {
   const [rows, setRows] = useState<MonthlyReviewTimelineRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,16 +107,18 @@ export function MonthlyReviewManager() {
     setError(null);
 
     const response = await fetch("/api/monthly-review/timeline");
-    const body: unknown = await response.json().catch(() => null);
+    const rawBody: unknown = await response.json().catch(() => null);
+    const parsed = timelineResponseSchema.safeParse(rawBody);
 
-    if (!response.ok || !isTimelineResponse(body)) {
+    if (!response.ok || !parsed.success) {
       setRows([]);
       setError("Could not load monthly review timeline.");
       setLoading(false);
       return;
     }
 
-    const sorted = [...body.rows].sort((a, b) =>
+    const rows = parsed.data.rows as MonthlyReviewTimelineRow[];
+    const sorted = [...rows].sort((a, b) =>
       b.monthStart.localeCompare(a.monthStart),
     );
     setRows(sorted);

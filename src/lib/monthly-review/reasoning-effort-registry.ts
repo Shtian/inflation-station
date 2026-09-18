@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export type ReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh";
 
 export type ReasoningEffortEntry = {
@@ -5,6 +7,12 @@ export type ReasoningEffortEntry = {
   label: string;
   description: string;
 };
+
+export const reasoningEffortEntrySchema = z.object({
+  id: z.custom<ReasoningEffort>((value) => typeof value === "string"),
+  label: z.string(),
+  description: z.string(),
+});
 
 export const DEFAULT_REASONING_EFFORT: ReasoningEffort = "low";
 
