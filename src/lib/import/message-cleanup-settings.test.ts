@@ -58,7 +58,7 @@ describe("message cleanup settings", () => {
     expect(result).toEqual({
       prompt: DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
       isDefaultPrompt: true,
-      modelId: "gpt-5.4-nano",
+      modelId: "gpt-5.6-luna",
       isDefaultModel: true,
       reasoningEffort: "low",
       isDefaultReasoningEffort: true,
@@ -75,7 +75,7 @@ describe("message cleanup settings", () => {
     expect(result).toEqual({
       prompt: "Keep merchant names concise.",
       isDefaultPrompt: false,
-      modelId: "gpt-5.4-nano",
+      modelId: "gpt-5.6-luna",
       isDefaultModel: true,
       reasoningEffort: "low",
       isDefaultReasoningEffort: true,
@@ -92,7 +92,7 @@ describe("message cleanup settings", () => {
       resolvedPrompt: DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
       isDefaultPrompt: true,
       storedModelId: null,
-      resolvedModelId: "gpt-5.4-nano",
+      resolvedModelId: "gpt-5.6-luna",
       isDefaultModel: true,
       storedReasoningEffort: null,
       resolvedReasoningEffort: "low",
@@ -105,7 +105,7 @@ describe("message cleanup settings", () => {
 
     const result = await updateMessageCleanupSettings(db, {
       promptText: "Keep merchant names and locations only.",
-      modelId: "gpt-5.2",
+      modelId: "gpt-5.4-mini",
       reasoningEffort: null,
     });
 
@@ -113,8 +113,8 @@ describe("message cleanup settings", () => {
       storedPromptText: "Keep merchant names and locations only.",
       resolvedPrompt: "Keep merchant names and locations only.",
       isDefaultPrompt: false,
-      storedModelId: "gpt-5.2",
-      resolvedModelId: "gpt-5.2",
+      storedModelId: "gpt-5.4-mini",
+      resolvedModelId: "gpt-5.4-mini",
       isDefaultModel: false,
       storedReasoningEffort: null,
       resolvedReasoningEffort: "low",
@@ -125,12 +125,12 @@ describe("message cleanup settings", () => {
       create: {
         id: "message-cleanup-settings",
         promptText: "Keep merchant names and locations only.",
-        modelId: "gpt-5.2",
+        modelId: "gpt-5.4-mini",
         reasoningEffort: null,
       },
       update: {
         promptText: "Keep merchant names and locations only.",
-        modelId: "gpt-5.2",
+        modelId: "gpt-5.4-mini",
         reasoningEffort: null,
       },
       select: { promptText: true, modelId: true, reasoningEffort: true },
@@ -142,7 +142,7 @@ describe("message cleanup settings", () => {
 
     const result = await updateMessageCleanupSettings(db, {
       promptText: "   ",
-      modelId: "gpt-5.4-nano",
+      modelId: "gpt-5.6-luna",
       reasoningEffort: null,
     });
 
@@ -150,8 +150,8 @@ describe("message cleanup settings", () => {
       storedPromptText: null,
       resolvedPrompt: DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
       isDefaultPrompt: true,
-      storedModelId: "gpt-5.4-nano",
-      resolvedModelId: "gpt-5.4-nano",
+      storedModelId: "gpt-5.6-luna",
+      resolvedModelId: "gpt-5.6-luna",
       isDefaultModel: true,
       storedReasoningEffort: null,
       resolvedReasoningEffort: "low",
@@ -164,7 +164,7 @@ describe("message cleanup settings", () => {
 
     const result = await updateMessageCleanupSettings(db, {
       promptText: "Keep merchant names and locations only.",
-      modelId: "gpt-5.4-nano",
+      modelId: "gpt-5.6-luna",
       reasoningEffort: "high",
     });
 
@@ -172,8 +172,8 @@ describe("message cleanup settings", () => {
       storedPromptText: "Keep merchant names and locations only.",
       resolvedPrompt: "Keep merchant names and locations only.",
       isDefaultPrompt: false,
-      storedModelId: "gpt-5.4-nano",
-      resolvedModelId: "gpt-5.4-nano",
+      storedModelId: "gpt-5.6-luna",
+      resolvedModelId: "gpt-5.6-luna",
       isDefaultModel: true,
       storedReasoningEffort: "high",
       resolvedReasoningEffort: "high",
@@ -184,12 +184,12 @@ describe("message cleanup settings", () => {
       create: {
         id: "message-cleanup-settings",
         promptText: "Keep merchant names and locations only.",
-        modelId: "gpt-5.4-nano",
+        modelId: "gpt-5.6-luna",
         reasoningEffort: "high",
       },
       update: {
         promptText: "Keep merchant names and locations only.",
-        modelId: "gpt-5.4-nano",
+        modelId: "gpt-5.6-luna",
         reasoningEffort: "high",
       },
       select: { promptText: true, modelId: true, reasoningEffort: true },

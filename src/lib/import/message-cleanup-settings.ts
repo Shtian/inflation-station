@@ -9,7 +9,7 @@ import {
 const MESSAGE_CLEANUP_SETTINGS_ID = "message-cleanup-settings";
 
 export const DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL: OpenAIChatModelId =
-  "gpt-5.4-nano";
+  "gpt-5.6-luna";
 
 export const DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT: ReasoningEffort =
   DEFAULT_REASONING_EFFORT;

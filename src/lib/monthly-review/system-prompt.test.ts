@@ -135,15 +135,15 @@ describe("monthly review system prompt", () => {
 
     const result = await updateMonthlyReviewSystemPromptSettings(db, {
       promptText: " ",
-      modelId: "gpt-5-mini",
+      modelId: "gpt-5.4-mini",
     });
 
     expect(result).toEqual({
       storedPromptText: null,
       resolvedPrompt: DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT,
       isDefault: true,
-      storedModelId: "gpt-5-mini",
-      resolvedModelId: "gpt-5-mini",
+      storedModelId: "gpt-5.4-mini",
+      resolvedModelId: "gpt-5.4-mini",
       isDefaultModel: false,
     });
   });

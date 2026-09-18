@@ -31,4 +31,38 @@ describe("chat-model-registry", () => {
     const ids = CHAT_MODELS.map((model) => model.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("lists exactly the 5.4 and 5.6 model families", () => {
+    const ids = CHAT_MODELS.map((model) => model.id).sort();
+
+    expect(ids).toEqual(
+      [
+        "gpt-5.4-nano",
+        "gpt-5.4-mini",
+        "gpt-5.4",
+        "gpt-5.4-pro",
+        "gpt-5.6-luna",
+        "gpt-5.6-terra",
+        "gpt-5.6-sol",
+      ].sort(),
+    );
+  });
+
+  it("groups models by tier", () => {
+    expect(
+      getModelsByTier("cheap")
+        .map((model) => model.id)
+        .sort(),
+    ).toEqual(["gpt-5.4-nano", "gpt-5.6-luna"].sort());
+    expect(
+      getModelsByTier("balanced")
+        .map((model) => model.id)
+        .sort(),
+    ).toEqual(["gpt-5.4-mini", "gpt-5.4", "gpt-5.6-terra"].sort());
+    expect(
+      getModelsByTier("premium")
+        .map((model) => model.id)
+        .sort(),
+    ).toEqual(["gpt-5.4-pro", "gpt-5.6-sol"].sort());
+  });
 });

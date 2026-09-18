@@ -18,31 +18,6 @@ export type ChatModelEntry = {
 const DEFAULT_CHAT_MODEL_ID = "gpt-5.4" as const satisfies OpenAIChatModelId;
 
 const CHAT_MODEL_METADATA_BY_ID = {
-  "gpt-4.1-mini": {
-    label: "GPT-4.1 Mini",
-    description: "Fast and low-cost for lightweight month summaries.",
-    tier: "cheap",
-  },
-  "gpt-4o-mini": {
-    label: "GPT-4o Mini",
-    description: "Balanced speed and quality for routine monthly reviews.",
-    tier: "cheap",
-  },
-  "gpt-5-mini": {
-    label: "GPT-5 Mini",
-    description: "Good quality with controlled cost for regular use.",
-    tier: "balanced",
-  },
-  "gpt-5.2": {
-    label: "GPT-5.2",
-    description: "Solid quality/cost tradeoff for monthly analysis.",
-    tier: "balanced",
-  },
-  "gpt-5.2-pro": {
-    label: "GPT-5.2 Pro",
-    description: "High quality for deeper, more nuanced spending insights.",
-    tier: "premium",
-  },
   "gpt-5.4-nano": {
     label: "GPT-5.4 Nano",
     description:
@@ -55,7 +30,7 @@ const CHAT_MODEL_METADATA_BY_ID = {
       "Fast and affordable, ideal for routine message cleanup and lightweight tasks.",
     tier: "balanced",
   },
-  [DEFAULT_CHAT_MODEL_ID]: {
+  "gpt-5.4": {
     label: "GPT-5.4",
     description: "Best default quality/cost tradeoff for monthly analysis.",
     tier: "balanced",
@@ -64,6 +39,22 @@ const CHAT_MODEL_METADATA_BY_ID = {
     label: "GPT-5.4 Pro",
     description:
       "Highest quality for in-depth spending insights and complex analysis.",
+    tier: "premium",
+  },
+  "gpt-5.6-luna": {
+    label: "GPT-5.6 Luna",
+    description:
+      "Lowest cost and fastest, for message cleanup and routine summaries.",
+    tier: "cheap",
+  },
+  "gpt-5.6-terra": {
+    label: "GPT-5.6 Terra",
+    description: "Balanced quality and cost for regular monthly analysis.",
+    tier: "balanced",
+  },
+  "gpt-5.6-sol": {
+    label: "GPT-5.6 Sol",
+    description: "Highest quality for in-depth spending insights.",
     tier: "premium",
   },
 } as const satisfies Partial<Record<OpenAIChatModelId, ChatModelMetadata>>;
