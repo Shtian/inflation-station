@@ -1,8 +1,27 @@
 import { PaymentType } from "@prisma/client";
+import type { Fetch } from "@typesafe-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
 import type { CategoryRuleCandidate } from "../categorization/rule-engine";
 import type { CsvParserResult, ParsedCsvRow } from "./csv-parser";
 import { stageParsedImportRows } from "./review-stage";
+
+function systemOneResponse(choice: string, confidence: number) {
+  return new Response(
+    JSON.stringify({
+      model: "jev-latest",
+      answers: {
+        pick: {
+          type: "choice",
+          choice,
+          confidence,
+          probabilities: { [choice]: confidence },
+        },
+      },
+      usage: { input_tokens: 10, output_tokens: 2 },
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
+}
 
 function buildParsedRow(overrides?: Partial<ParsedCsvRow>): ParsedCsvRow {
   return {
@@ -38,6 +57,11 @@ function buildParsedResult(
 function createDbMock(options?: {
   categoryRules?: CategoryRuleCandidate[];
   throwOnCategoryRuleLookup?: boolean;
+  categories?: Array<{
+    id: string;
+    name: string;
+    classifierHint: string | null;
+  }>;
   stagedRows?: Array<{
     id: string;
     rowNumber: number;
@@ -79,6 +103,9 @@ function createDbMock(options?: {
   }
 
   const db = {
+    category: {
+      findMany: vi.fn(async () => options?.categories ?? []),
+    },
     categoryRule: {
       findMany: vi.fn(async () => {
         if (options?.throwOnCategoryRuleLookup) {
@@ -141,6 +168,8 @@ describe("stageParsedImportRows", () => {
           name: "Groceries",
           title: "Friday",
           categoryId: null,
+          suggestionSource: null,
+          suggestionConfidence: null,
         },
       ],
     });
@@ -206,6 +235,8 @@ describe("stageParsedImportRows", () => {
           name: "Groceries",
           title: "Friday",
           categoryId: null,
+          suggestionSource: null,
+          suggestionConfidence: null,
         },
       ],
     });
@@ -320,6 +351,8 @@ describe("stageParsedImportRows", () => {
           name: "Groceries",
           title: "Friday",
           categoryId: null,
+          suggestionSource: null,
+          suggestionConfidence: null,
         },
       ],
     });
@@ -420,6 +453,8 @@ describe("stageParsedImportRows", () => {
           name: "Groceries",
           title: "Friday",
           categoryId: "cat-groceries",
+          suggestionSource: "RULE",
+          suggestionConfidence: 0.95,
         },
       ],
     });
@@ -469,6 +504,8 @@ describe("stageParsedImportRows", () => {
           name: "Groceries",
           title: "Friday",
           categoryId: null,
+          suggestionSource: null,
+          suggestionConfidence: null,
         },
       ],
     });
@@ -568,6 +605,8 @@ describe("stageParsedImportRows", () => {
           name: "Bær",
           title: "Øl",
           categoryId: null,
+          suggestionSource: null,
+          suggestionConfidence: null,
         },
       ],
     });
@@ -627,5 +666,266 @@ describe("stageParsedImportRows", () => {
         potentialDuplicate: true,
       }),
     ]);
+  });
+
+  it("does not call Jev for a row the rule engine already matched", async () => {
+    const jevFetchImpl = vi.fn(async (_input: unknown, _init: RequestInit) =>
+      systemOneResponse("uncategorized", 0.5),
+    );
+    const db = createDbMock({
+      categoryRules: [
+        {
+          id: "rule-1",
+          categoryId: "cat-groceries",
+          merchantContains: "groceries",
+          paymentType: PaymentType.CARD,
+          priority: 10,
+        },
+      ],
+      categories: [
+        {
+          id: "cat-entertainment",
+          name: "Entertainment",
+          classifierHint: null,
+        },
+      ],
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: "cat-groceries",
+        },
+        {
+          id: "row-2",
+          rowNumber: 3,
+          bookingDate: new Date("2026-01-02T00:00:00.000Z"),
+          amountNok: 50,
+          currency: "NOK",
+          normalizedMerchant: "cinema movie night",
+          paymentType: PaymentType.CARD,
+          sender: "Bob",
+          recipient: "Cinema",
+          name: "Cinema",
+          title: "Movie Night",
+          categoryId: null,
+        },
+      ],
+    });
+
+    await stageParsedImportRows(db, {
+      accountId: "account-1",
+      parsed: buildParsedResult([
+        buildParsedRow(),
+        buildParsedRow({
+          amountNok: 50,
+          sender: "Bob",
+          recipient: "Cinema",
+          name: "Cinema",
+          title: "Movie Night",
+          bookingDate: "02.01.2026",
+        }),
+      ]),
+      jevApiKey: "test-key",
+      jevFetchImpl: jevFetchImpl as unknown as Fetch,
+    });
+
+    expect(jevFetchImpl).toHaveBeenCalledTimes(1);
+    const [, requestInit] = jevFetchImpl.mock.calls[0];
+    const requestBody = JSON.parse((requestInit as RequestInit).body as string);
+    expect(requestBody.state.title).toBe("Movie Night");
+  });
+
+  it("persists a JEV suggestion when Jev picks a real category for an unmatched row", async () => {
+    const jevFetchImpl = vi.fn(async () =>
+      systemOneResponse("cat-entertainment", 0.83),
+    );
+    const db = createDbMock({
+      categories: [
+        {
+          id: "cat-entertainment",
+          name: "Entertainment",
+          classifierHint: null,
+        },
+      ],
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: "cat-entertainment",
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      parsed: buildParsedResult([buildParsedRow()]),
+      jevApiKey: "test-key",
+      jevFetchImpl: jevFetchImpl as unknown as Fetch,
+    });
+
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: "cat-entertainment",
+          suggestionSource: "JEV",
+          suggestionConfidence: 0.83,
+        },
+      ],
+    });
+    expect(result.review.rows[0]?.categoryId).toBe("cat-entertainment");
+  });
+
+  it("leaves a row uncategorized when Jev picks Uncategorized", async () => {
+    const jevFetchImpl = vi.fn(async () =>
+      systemOneResponse("uncategorized", 0.3),
+    );
+    const db = createDbMock({
+      categories: [
+        {
+          id: "cat-entertainment",
+          name: "Entertainment",
+          classifierHint: null,
+        },
+      ],
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      parsed: buildParsedResult([buildParsedRow()]),
+      jevApiKey: "test-key",
+      jevFetchImpl: jevFetchImpl as unknown as Fetch,
+    });
+
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+          suggestionSource: null,
+          suggestionConfidence: null,
+        },
+      ],
+    });
+    expect(result.review.rows[0]?.categoryId).toBeNull();
+  });
+
+  it("leaves a row uncategorized and does not throw when the Jev call is unavailable", async () => {
+    const jevFetchImpl = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ error: "bad request" }), {
+          status: 400,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const db = createDbMock({
+      categories: [
+        {
+          id: "cat-entertainment",
+          name: "Entertainment",
+          classifierHint: null,
+        },
+      ],
+      stagedRows: [
+        {
+          id: "row-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+        },
+      ],
+    });
+
+    const result = await stageParsedImportRows(db, {
+      accountId: "account-1",
+      parsed: buildParsedResult([buildParsedRow()]),
+      jevApiKey: "test-key",
+      jevFetchImpl: jevFetchImpl as unknown as Fetch,
+    });
+
+    expect(db.importReviewSession.create).toHaveBeenCalledOnce();
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          sessionId: "session-1",
+          rowNumber: 2,
+          bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+          amountNok: 100,
+          currency: "NOK",
+          normalizedMerchant: "groceries friday",
+          paymentType: PaymentType.CARD,
+          sender: "Alice",
+          recipient: "Shop A",
+          name: "Groceries",
+          title: "Friday",
+          categoryId: null,
+          suggestionSource: null,
+          suggestionConfidence: null,
+        },
+      ],
+    });
+    expect(result.review.rows[0]?.categoryId).toBeNull();
   });
 });
