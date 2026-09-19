@@ -9,6 +9,7 @@ import {
   buildRuleBasedSuggestions,
   type CategoryRuleCandidate,
 } from "../categorization/rule-engine";
+import { classifyJevConfidence } from "../jev/confidence-tier";
 import type {
   CsvParserResult,
   CsvValidationError,
@@ -40,6 +41,8 @@ export type ReviewStageRow = {
   name: string;
   title: string;
   categoryId: string | null;
+  suggestionSource: SuggestionSource | null;
+  suggestionConfidence: number | null;
   potentialDuplicate: boolean;
 };
 
@@ -170,6 +173,8 @@ type ImportReviewStageRowClient = {
       name: true;
       title: true;
       categoryId: true;
+      suggestionSource: true;
+      suggestionConfidence: true;
     };
     orderBy: [{ bookingDate: "desc" }, { rowNumber: "asc" }];
   }): Promise<
@@ -186,6 +191,8 @@ type ImportReviewStageRowClient = {
       name: string;
       title: string;
       categoryId: string | null;
+      suggestionSource: SuggestionSource | null;
+      suggestionConfidence: number | null;
     }>
   >;
 };
@@ -441,6 +448,9 @@ async function addJevSuggestions(
   });
 
   for (const suggestion of jevSuggestions) {
+    if (classifyJevConfidence(suggestion.confidence) === null) {
+      continue; // below the confidence floor: treat as no suggestion
+    }
     suggestionByRowNumber.set(suggestion.rowNumber, {
       categoryId: suggestion.categoryId,
       source: SuggestionSource.JEV,
@@ -617,6 +627,8 @@ export async function stageParsedImportRows(
         name: true,
         title: true,
         categoryId: true,
+        suggestionSource: true,
+        suggestionConfidence: true,
       },
       orderBy: [{ bookingDate: "desc" }, { rowNumber: "asc" }],
     });
@@ -647,6 +659,8 @@ export async function stageParsedImportRows(
         name: row.name,
         title: row.title,
         categoryId: row.categoryId,
+        suggestionSource: row.suggestionSource,
+        suggestionConfidence: row.suggestionConfidence,
         potentialDuplicate: potentialDuplicateRowNumbers.has(row.rowNumber),
       })),
     },
