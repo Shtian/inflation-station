@@ -96,6 +96,7 @@ describe("PATCH /api/categories/[categoryId]", () => {
       name: "Commute",
       kind: "EXPENSE",
       accountId: null,
+      classifierHint: "Recurring transport top-ups",
     });
 
     const response = await PATCH(
@@ -104,7 +105,10 @@ describe("PATCH /api/categories/[categoryId]", () => {
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ name: "  Commute  " }),
+        body: JSON.stringify({
+          name: "  Commute  ",
+          classifierHint: "Recurring transport top-ups",
+        }),
       }),
       {
         params: Promise.resolve({ categoryId: "cat-1" }),
@@ -114,7 +118,7 @@ describe("PATCH /api/categories/[categoryId]", () => {
     expect(response.status).toBe(200);
     expect(updateMock).toHaveBeenCalledWith({
       where: { id: "cat-1" },
-      data: { name: "Commute" },
+      data: { name: "Commute", classifierHint: "Recurring transport top-ups" },
     });
     await expect(response.json()).resolves.toEqual({
       category: {
@@ -122,7 +126,66 @@ describe("PATCH /api/categories/[categoryId]", () => {
         name: "Commute",
         kind: "EXPENSE",
         accountId: null,
+        classifierHint: "Recurring transport top-ups",
       },
+    });
+  });
+
+  it("preserves stored classifier hint when omitted from the payload", async () => {
+    updateMock.mockResolvedValueOnce({
+      id: "cat-1",
+      name: "Commute",
+      kind: "EXPENSE",
+      accountId: null,
+      classifierHint: "Existing hint",
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost/api/categories/cat-1", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ name: "Commute" }),
+      }),
+      {
+        params: Promise.resolve({ categoryId: "cat-1" }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: "cat-1" },
+      data: { name: "Commute", classifierHint: undefined },
+    });
+  });
+
+  it("normalizes a whitespace-only classifier hint to null", async () => {
+    updateMock.mockResolvedValueOnce({
+      id: "cat-1",
+      name: "Commute",
+      kind: "EXPENSE",
+      accountId: null,
+      classifierHint: null,
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost/api/categories/cat-1", {
+        method: "PATCH",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ name: "Commute", classifierHint: "   " }),
+      }),
+      {
+        params: Promise.resolve({ categoryId: "cat-1" }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith({
+      where: { id: "cat-1" },
+      data: { name: "Commute", classifierHint: null },
     });
   });
 });
