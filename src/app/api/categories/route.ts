@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 const createCategorySchema = z.object({
   name: z.string().trim().min(1),
   kind: z.nativeEnum(CategoryKind).default(CategoryKind.EXPENSE),
+  classifierHint: z.string().trim().optional().nullable(),
 });
 
 export async function GET() {
@@ -14,6 +15,7 @@ export async function GET() {
       id: true,
       name: true,
       kind: true,
+      classifierHint: true,
     },
     orderBy: [{ name: "asc" }, { id: "asc" }],
   });
@@ -32,11 +34,16 @@ export async function POST(request: Request) {
     );
   }
 
+  const classifierHint = parsed.data.classifierHint?.length
+    ? parsed.data.classifierHint
+    : null;
+
   try {
     const category = await prisma.category.create({
       data: {
         name: parsed.data.name,
         kind: parsed.data.kind,
+        classifierHint,
       },
     });
 

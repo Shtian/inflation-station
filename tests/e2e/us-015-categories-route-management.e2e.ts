@@ -5,6 +5,7 @@ type Category = {
   name: string;
   kind: "EXPENSE" | "INCOME" | "TRANSFER";
   accountId: string | null;
+  classifierHint: string | null;
 };
 
 type CategoryRule = {
@@ -33,7 +34,13 @@ test("manages categories and category rules from /categories", async ({
   ];
 
   let categories: Category[] = [
-    { id: "cat-food", name: "Food", kind: "EXPENSE", accountId: null },
+    {
+      id: "cat-food",
+      name: "Food",
+      kind: "EXPENSE",
+      accountId: null,
+      classifierHint: null,
+    },
   ];
   let rules: CategoryRule[] = [];
 
@@ -59,6 +66,7 @@ test("manages categories and category rules from /categories", async ({
       name: string;
       kind: Category["kind"];
       accountId: string | null;
+      classifierHint: string | null;
     };
 
     const nextCategory: Category = {
@@ -66,6 +74,7 @@ test("manages categories and category rules from /categories", async ({
       name: payload.name,
       kind: payload.kind,
       accountId: payload.accountId,
+      classifierHint: payload.classifierHint,
     };
     categories = [...categories, nextCategory];
 
@@ -80,12 +89,16 @@ test("manages categories and category rules from /categories", async ({
     const categoryId = request.url().split("/").at(-1) ?? "";
 
     if (request.method() === "PATCH") {
-      const payload = request.postDataJSON() as { name: string };
+      const payload = request.postDataJSON() as {
+        name: string;
+        classifierHint: string | null;
+      };
       categories = categories.map((category) =>
         category.id === categoryId
           ? {
               ...category,
               name: payload.name,
+              classifierHint: payload.classifierHint,
             }
           : category,
       );
@@ -220,7 +233,7 @@ test("manages categories and category rules from /categories", async ({
     .getByRole("row", { name: /Transport/i })
     .getByRole("button", { name: "Actions for category Transport" })
     .click();
-  await page.getByRole("menuitem", { name: "Rename" }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
   await page.getByRole("dialog").getByLabel("Category name").fill("Commute");
   await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
 
@@ -230,6 +243,41 @@ test("manages categories and category rules from /categories", async ({
   await expect(
     page.getByRole("cell", { name: "Commute", exact: true }),
   ).toBeVisible();
+
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
+    timeout: 15_000,
+  });
+
+  await page
+    .getByRole("row", { name: /Commute/i })
+    .getByRole("button", { name: "Actions for category Commute" })
+    .click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page
+    .getByRole("dialog")
+    .getByLabel("Classifier hint (optional)")
+    .fill("Recurring transport top-ups");
+  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+  ).toBeVisible();
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
+    timeout: 15_000,
+  });
+
+  await page
+    .getByRole("row", { name: /Commute/i })
+    .getByRole("button", { name: "Actions for category Commute" })
+    .click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await expect(
+    page.getByRole("dialog").getByLabel("Classifier hint (optional)"),
+  ).toHaveValue("Recurring transport top-ups");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancel" })
+    .click();
 
   await page.getByRole("tab", { name: "Category rules" }).click();
 

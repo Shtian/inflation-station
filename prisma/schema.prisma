@@ -47,6 +47,7 @@ model Category {
   id                      String                   @id @default(cuid())
   name                    String                   @unique
   kind                    CategoryKind             @default(EXPENSE)
+  classifierHint          String?
   transactions            Transaction[]
   categoryRules           CategoryRule[]
   categorizationSuggestions CategorizationSuggestion[]

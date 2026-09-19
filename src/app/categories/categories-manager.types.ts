@@ -11,6 +11,7 @@ export type Category = {
   id: string;
   name: string;
   kind: CategoryKind;
+  classifierHint: string | null;
 };
 
 export type CategoryRule = {

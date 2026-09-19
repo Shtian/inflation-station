@@ -10,6 +10,7 @@ type RouteParams = {
 
 const updateCategorySchema = z.object({
   name: z.string().trim().min(1),
+  classifierHint: z.string().trim().optional().nullable(),
 });
 
 export async function PATCH(request: Request, { params }: RouteParams) {
@@ -24,11 +25,19 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     );
   }
 
+  const classifierHint =
+    parsed.data.classifierHint === undefined
+      ? undefined
+      : parsed.data.classifierHint?.length
+        ? parsed.data.classifierHint
+        : null;
+
   try {
     const category = await prisma.category.update({
       where: { id: categoryId },
       data: {
         name: parsed.data.name,
+        classifierHint,
       },
     });
 
