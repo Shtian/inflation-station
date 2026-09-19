@@ -35,6 +35,11 @@ const TRANSFORM_TYPE_LABELS: Record<ProviderFieldTransformType, string> = {
   applySign: "Apply sign",
 };
 
+const SIGN_LABELS: Record<"negative" | "positive", string> = {
+  negative: "Negative",
+  positive: "Positive",
+};
+
 const DEFAULT_DRAFT_TYPE: ProviderFieldTransformType = "trim";
 const DEFAULT_DRAFT_SIGN: "negative" | "positive" = "negative";
 
@@ -147,6 +152,10 @@ export function ProviderMappingFieldTransformsEditor(props: {
           </FieldLabel>
           <FieldContent>
             <Select
+              items={PROVIDER_FIELD_TRANSFORM_TYPES.map((type) => ({
+                value: type,
+                label: TRANSFORM_TYPE_LABELS[type],
+              }))}
               value={draftType}
               onValueChange={(value) => {
                 setDraftType(value as ProviderFieldTransformType);
@@ -181,6 +190,10 @@ export function ProviderMappingFieldTransformsEditor(props: {
             </FieldLabel>
             <FieldContent>
               <Select
+                items={Object.entries(SIGN_LABELS).map(([value, label]) => ({
+                  value,
+                  label,
+                }))}
                 value={draftSign}
                 onValueChange={(value) =>
                   setDraftSign(value as "negative" | "positive")
@@ -194,8 +207,11 @@ export function ProviderMappingFieldTransformsEditor(props: {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="negative">Negative</SelectItem>
-                  <SelectItem value="positive">Positive</SelectItem>
+                  {Object.entries(SIGN_LABELS).map(([sign, label]) => (
+                    <SelectItem key={sign} value={sign}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </FieldContent>

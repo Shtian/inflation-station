@@ -38,6 +38,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Category } from "../categories-manager.types";
 
+const CATEGORY_KIND_LABELS: Record<CategoryKind, string> = {
+  EXPENSE: "Expense",
+  INCOME: "Income",
+  TRANSFER: "Transfer",
+};
+
 type CategoryManagementSectionProps = {
   categories: Category[];
   loading: boolean;
@@ -108,6 +114,9 @@ export function CategoryManagementSection({
           <FieldLabel htmlFor="new-category-kind">Kind</FieldLabel>
           <FieldContent>
             <Select
+              items={Object.entries(CATEGORY_KIND_LABELS).map(
+                ([value, label]) => ({ value, label }),
+              )}
               value={newCategoryKind}
               onValueChange={(value) =>
                 onNewCategoryKindChange(value as CategoryKind)
@@ -117,9 +126,11 @@ export function CategoryManagementSection({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="EXPENSE">Expense</SelectItem>
-                <SelectItem value="INCOME">Income</SelectItem>
-                <SelectItem value="TRANSFER">Transfer</SelectItem>
+                {Object.entries(CATEGORY_KIND_LABELS).map(([kind, label]) => (
+                  <SelectItem key={kind} value={kind}>
+                    {label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </FieldContent>
