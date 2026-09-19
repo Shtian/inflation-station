@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import type { Category } from "../categories-manager.types";
 
 type CategoryManagementSectionProps = {
@@ -43,15 +44,19 @@ type CategoryManagementSectionProps = {
   busyKey: string | null;
   newCategoryName: string;
   newCategoryKind: CategoryKind;
+  newCategoryClassifierHint: string;
   onNewCategoryNameChange: (value: string) => void;
   onNewCategoryKindChange: (value: CategoryKind) => void;
+  onNewCategoryClassifierHintChange: (value: string) => void;
   editingCategoryId: string | null;
   editCategoryName: string;
+  editCategoryClassifierHint: string;
   onCreateCategory: () => void;
   onDeleteCategory: (categoryId: string) => void;
   onStartRenameCategory: (category: Category) => void;
   onCancelRenameCategory: () => void;
   onEditCategoryNameChange: (value: string) => void;
+  onEditCategoryClassifierHintChange: (value: string) => void;
   onRenameCategory: (categoryId: string) => void;
 };
 
@@ -61,15 +66,19 @@ export function CategoryManagementSection({
   busyKey,
   newCategoryName,
   newCategoryKind,
+  newCategoryClassifierHint,
   onNewCategoryNameChange,
   onNewCategoryKindChange,
+  onNewCategoryClassifierHintChange,
   editingCategoryId,
   editCategoryName,
+  editCategoryClassifierHint,
   onCreateCategory,
   onDeleteCategory,
   onStartRenameCategory,
   onCancelRenameCategory,
   onEditCategoryNameChange,
+  onEditCategoryClassifierHintChange,
   onRenameCategory,
 }: CategoryManagementSectionProps) {
   return (
@@ -113,6 +122,22 @@ export function CategoryManagementSection({
                 <SelectItem value="TRANSFER">Transfer</SelectItem>
               </SelectContent>
             </Select>
+          </FieldContent>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="new-category-classifier-hint">
+            Classifier hint (optional)
+          </FieldLabel>
+          <FieldContent>
+            <Textarea
+              id="new-category-classifier-hint"
+              value={newCategoryClassifierHint}
+              onChange={(event) =>
+                onNewCategoryClassifierHintChange(event.target.value)
+              }
+              placeholder="Short note to help the AI pick this category for non-obvious transactions."
+              rows={2}
+            />
           </FieldContent>
         </Field>
         <Button
@@ -192,7 +217,7 @@ export function CategoryManagementSection({
                               onClick={() => onStartRenameCategory(category)}
                             >
                               <Pencil className="h-4 w-4" aria-hidden="true" />
-                              Rename
+                              Edit
                             </DropdownMenuItem>
                           </DropdownMenuGroup>
                           <DropdownMenuSeparator />
@@ -225,10 +250,10 @@ export function CategoryManagementSection({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename category</DialogTitle>
+            <DialogTitle>Edit category</DialogTitle>
             <DialogDescription>
-              Update the category name. Existing transaction and rule links stay
-              connected to the same category ID.
+              Update the category name and classifier hint. Existing transaction
+              and rule links stay connected to the same category ID.
             </DialogDescription>
           </DialogHeader>
 
@@ -242,6 +267,27 @@ export function CategoryManagementSection({
                   onEditCategoryNameChange(event.target.value)
                 }
                 placeholder="Groceries"
+                disabled={
+                  editingCategoryId !== null &&
+                  busyKey === `rename-category-${editingCategoryId}`
+                }
+              />
+            </FieldContent>
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="edit-category-classifier-hint">
+              Classifier hint (optional)
+            </FieldLabel>
+            <FieldContent>
+              <Textarea
+                id="edit-category-classifier-hint"
+                value={editCategoryClassifierHint}
+                onChange={(event) =>
+                  onEditCategoryClassifierHintChange(event.target.value)
+                }
+                placeholder="Short note to help the AI pick this category for non-obvious transactions."
+                rows={2}
                 disabled={
                   editingCategoryId !== null &&
                   busyKey === `rename-category-${editingCategoryId}`

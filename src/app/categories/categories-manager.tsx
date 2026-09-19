@@ -24,10 +24,14 @@ export function CategoriesManager() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryKind, setNewCategoryKind] =
     useState<CategoryKind>("EXPENSE");
+  const [newCategoryClassifierHint, setNewCategoryClassifierHint] =
+    useState("");
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
     null,
   );
   const [editCategoryName, setEditCategoryName] = useState("");
+  const [editCategoryClassifierHint, setEditCategoryClassifierHint] =
+    useState("");
 
   const [ruleCategoryId, setRuleCategoryId] = useState("");
   const [ruleMerchantContains, setRuleMerchantContains] = useState("");
@@ -124,6 +128,7 @@ export function CategoriesManager() {
       body: JSON.stringify({
         name: newCategoryName.trim(),
         kind: newCategoryKind,
+        classifierHint: newCategoryClassifierHint.trim() || null,
       }),
     });
 
@@ -137,6 +142,7 @@ export function CategoriesManager() {
 
     setNewCategoryName("");
     setNewCategoryKind("EXPENSE");
+    setNewCategoryClassifierHint("");
     setBusyKey(null);
     toast.success("Category added.");
     await loadData();
@@ -169,12 +175,14 @@ export function CategoriesManager() {
   function startRenameCategory(category: Category) {
     setEditingCategoryId(category.id);
     setEditCategoryName(category.name);
+    setEditCategoryClassifierHint(category.classifierHint ?? "");
     setError(null);
   }
 
   function cancelRenameCategory() {
     setEditingCategoryId(null);
     setEditCategoryName("");
+    setEditCategoryClassifierHint("");
   }
 
   async function renameCategory(categoryId: string) {
@@ -193,6 +201,7 @@ export function CategoriesManager() {
       },
       body: JSON.stringify({
         name: editCategoryName.trim(),
+        classifierHint: editCategoryClassifierHint.trim() || null,
       }),
     });
     const body = await response.json().catch(() => null);
@@ -324,15 +333,19 @@ export function CategoriesManager() {
             busyKey={busyKey}
             newCategoryName={newCategoryName}
             newCategoryKind={newCategoryKind}
+            newCategoryClassifierHint={newCategoryClassifierHint}
             onNewCategoryNameChange={setNewCategoryName}
             onNewCategoryKindChange={setNewCategoryKind}
+            onNewCategoryClassifierHintChange={setNewCategoryClassifierHint}
             editingCategoryId={editingCategoryId}
             editCategoryName={editCategoryName}
+            editCategoryClassifierHint={editCategoryClassifierHint}
             onCreateCategory={createCategory}
             onDeleteCategory={deleteCategory}
             onStartRenameCategory={startRenameCategory}
             onCancelRenameCategory={cancelRenameCategory}
             onEditCategoryNameChange={setEditCategoryName}
+            onEditCategoryClassifierHintChange={setEditCategoryClassifierHint}
             onRenameCategory={renameCategory}
           />
         </TabsContent>
