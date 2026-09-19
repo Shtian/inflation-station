@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyJevConfidence } from "./confidence-tier";
+import { classifyJevConfidence, resolveJevCertainty } from "./confidence-tier";
 
 describe("classifyJevConfidence", () => {
   it("treats confidence below the 0.10 floor as no signal", () => {
@@ -28,5 +28,19 @@ describe("classifyJevConfidence", () => {
 
   it("classifies 1.0 as high", () => {
     expect(classifyJevConfidence(1.0)).toBe("high");
+  });
+});
+
+describe("resolveJevCertainty", () => {
+  it("returns null for a null confidence", () => {
+    expect(resolveJevCertainty(null)).toBeNull();
+  });
+
+  it("returns null for a below-floor confidence", () => {
+    expect(resolveJevCertainty(0.05)).toBeNull();
+  });
+
+  it("bundles the tier with the raw confidence for a valid pick", () => {
+    expect(resolveJevCertainty(0.9)).toEqual({ tier: "high", confidence: 0.9 });
   });
 });
