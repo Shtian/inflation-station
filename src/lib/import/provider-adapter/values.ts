@@ -6,6 +6,7 @@ import type {
 
 const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 const NORWEGIAN_DATE_PATTERN = /^(\d{2})\.(\d{2})\.(\d{4})$/;
+const SLASH_DATE_PATTERN = /^(\d{4})\/(\d{2})\/(\d{2})$/;
 
 function buildUtcDate(year: number, month: number, day: number): Date | null {
   const date = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
@@ -25,6 +26,12 @@ function toIsoDateString(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+function assertNeverDateFormat(format: never): never {
+  throw new Error(
+    `Unsupported provider date format: ${JSON.stringify(format)}`,
+  );
+}
+
 /**
  * Parses `value` against the adapter's declared date format only. A value that
  * matches a different (but otherwise valid) format, or that is a calendar-invalid
@@ -37,21 +44,40 @@ export function parseProviderBookingDate(
 ): string | null {
   const trimmed = value.trim();
 
-  if (format === "YYYY-MM-DD") {
-    const match = ISO_DATE_PATTERN.exec(trimmed);
-    if (!match) {
-      return null;
+  let match: RegExpExecArray | null;
+  let year: string;
+  let month: string;
+  let day: string;
+
+  switch (format) {
+    case "YYYY-MM-DD": {
+      match = ISO_DATE_PATTERN.exec(trimmed);
+      if (!match) {
+        return null;
+      }
+      [, year, month, day] = match;
+      break;
     }
-    const [, year, month, day] = match;
-    const date = buildUtcDate(Number(year), Number(month), Number(day));
-    return date ? toIsoDateString(date) : null;
+    case "YYYY/MM/DD": {
+      match = SLASH_DATE_PATTERN.exec(trimmed);
+      if (!match) {
+        return null;
+      }
+      [, year, month, day] = match;
+      break;
+    }
+    case "DD.MM.YYYY": {
+      match = NORWEGIAN_DATE_PATTERN.exec(trimmed);
+      if (!match) {
+        return null;
+      }
+      [, day, month, year] = match;
+      break;
+    }
+    default:
+      return assertNeverDateFormat(format);
   }
 
-  const match = NORWEGIAN_DATE_PATTERN.exec(trimmed);
-  if (!match) {
-    return null;
-  }
-  const [, day, month, year] = match;
   const date = buildUtcDate(Number(year), Number(month), Number(day));
   return date ? toIsoDateString(date) : null;
 }

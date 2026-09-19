@@ -18,15 +18,23 @@ describe("parseProviderBookingDate", () => {
     );
   });
 
+  it("parses a value matching the declared slash format", () => {
+    expect(parseProviderBookingDate("2026/08/24", "YYYY/MM/DD")).toBe(
+      "2026-08-24",
+    );
+  });
+
   it("trims surrounding whitespace before matching the declared format", () => {
     expect(parseProviderBookingDate("  15.01.2026  ", "DD.MM.YYYY")).toBe(
       "2026-01-15",
     );
   });
 
-  it("rejects a value in the other supported format instead of reinterpreting day/month (format mismatch is an error, not a fallback)", () => {
+  it("rejects a value in another supported format instead of reinterpreting day/month (format mismatch is an error, not a fallback)", () => {
     expect(parseProviderBookingDate("15.01.2026", "YYYY-MM-DD")).toBeNull();
     expect(parseProviderBookingDate("2026-01-15", "DD.MM.YYYY")).toBeNull();
+    expect(parseProviderBookingDate("2026/01/15", "YYYY-MM-DD")).toBeNull();
+    expect(parseProviderBookingDate("2026-01-15", "YYYY/MM/DD")).toBeNull();
   });
 
   it("rejects a calendar-invalid Norwegian date", () => {
@@ -39,11 +47,19 @@ describe("parseProviderBookingDate", () => {
     expect(parseProviderBookingDate("2023-02-29", "YYYY-MM-DD")).toBeNull();
   });
 
-  it("accepts a leap-day date in either format", () => {
+  it("rejects a calendar-invalid slash date", () => {
+    expect(parseProviderBookingDate("2026/02/30", "YYYY/MM/DD")).toBeNull();
+    expect(parseProviderBookingDate("2023/02/29", "YYYY/MM/DD")).toBeNull();
+  });
+
+  it("accepts a leap-day date in any supported format", () => {
     expect(parseProviderBookingDate("29.02.2024", "DD.MM.YYYY")).toBe(
       "2024-02-29",
     );
     expect(parseProviderBookingDate("2024-02-29", "YYYY-MM-DD")).toBe(
+      "2024-02-29",
+    );
+    expect(parseProviderBookingDate("2024/02/29", "YYYY/MM/DD")).toBe(
       "2024-02-29",
     );
   });
@@ -51,6 +67,7 @@ describe("parseProviderBookingDate", () => {
   it("rejects garbage input", () => {
     expect(parseProviderBookingDate("not a date", "DD.MM.YYYY")).toBeNull();
     expect(parseProviderBookingDate("", "YYYY-MM-DD")).toBeNull();
+    expect(parseProviderBookingDate("", "YYYY/MM/DD")).toBeNull();
   });
 });
 
