@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatNok } from "@/lib/format-nok";
-import { classifyJevConfidence } from "@/lib/jev/confidence-tier";
+import { resolveJevCertainty } from "@/lib/jev/confidence-tier";
 import { ImportReviewCategoryCell } from "./components/import-review-category-cell";
 import { ImportReviewMessageCell } from "./components/import-review-message-cell";
 import { ImportReviewNoteCell } from "./components/import-review-note-cell";
@@ -184,11 +184,9 @@ export function ImportReviewTable({
               categoryDecisions[row.id] ?? row.categoryId ?? "";
             const suggestionStillSelected =
               selectedCategoryId === (row.categoryId ?? "");
-            const certaintyTier =
-              row.suggestionSource === "JEV" &&
-              suggestionStillSelected &&
-              row.suggestionConfidence != null
-                ? classifyJevConfidence(row.suggestionConfidence)
+            const certainty =
+              row.suggestionSource === "JEV" && suggestionStillSelected
+                ? resolveJevCertainty(row.suggestionConfidence)
                 : null;
             return (
               <TableRow
@@ -228,7 +226,7 @@ export function ImportReviewTable({
                     rowNumber={row.rowNumber}
                     selectedCategoryId={selectedCategoryId}
                     categories={categories}
-                    certaintyTier={certaintyTier}
+                    certainty={certainty}
                     onCategoryChange={(rowId, categoryId) =>
                       setCategoryDecisions((current) => ({
                         ...current,

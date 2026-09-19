@@ -165,19 +165,31 @@ test("colors the certainty bar by Jev confidence tier and hides it for suppresse
     name: /AI suggestion confidence for row 2: high/i,
   });
   await expect(highBar).toBeVisible();
-  await expect(highBar).toHaveClass(/bg-success/);
+  await expect(highBar.locator("span")).toHaveClass(/bg-success/);
+  await expect(highBar.locator("span")).toHaveAttribute(
+    "style",
+    /height:\s*90%/,
+  );
 
   const mediumBar = page.getByRole("img", {
     name: /AI suggestion confidence for row 3: medium/i,
   });
   await expect(mediumBar).toBeVisible();
-  await expect(mediumBar).toHaveClass(/bg-warning/);
+  await expect(mediumBar.locator("span")).toHaveClass(/bg-warning/);
+  await expect(mediumBar.locator("span")).toHaveAttribute(
+    "style",
+    /height:\s*50%/,
+  );
 
   const lowBar = page.getByRole("img", {
     name: /AI suggestion confidence for row 4: low/i,
   });
   await expect(lowBar).toBeVisible();
-  await expect(lowBar).toHaveClass(/bg-destructive/);
+  await expect(lowBar.locator("span")).toHaveClass(/bg-destructive/);
+  await expect(lowBar.locator("span")).toHaveAttribute(
+    "style",
+    /height:\s*15%/,
+  );
 
   await expect(
     page.getByRole("img", { name: /confidence for row 5/i }),

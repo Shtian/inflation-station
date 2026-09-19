@@ -1,5 +1,5 @@
 import { CategoryCombobox } from "@/components/category-combobox";
-import type { JevConfidenceTier } from "@/lib/jev/confidence-tier";
+import type { JevCertaintySignal } from "@/lib/jev/confidence-tier";
 import { cn } from "@/lib/utils";
 import { ImportReviewCertaintyBar } from "./import-review-certainty-bar";
 
@@ -13,7 +13,7 @@ type ImportReviewCategoryCellProps = {
   rowNumber: number;
   selectedCategoryId: string;
   categories: Category[];
-  certaintyTier?: JevConfidenceTier | null;
+  certainty: JevCertaintySignal | null;
   onCategoryChange: (rowId: string, categoryId: string) => void;
 };
 
@@ -22,16 +22,13 @@ export function ImportReviewCategoryCell({
   rowNumber,
   selectedCategoryId,
   categories,
-  certaintyTier,
+  certainty,
   onCategoryChange,
 }: ImportReviewCategoryCellProps) {
   const isUncategorized = selectedCategoryId.length === 0;
 
   return (
     <div className="flex items-center gap-1.5">
-      {certaintyTier != null && (
-        <ImportReviewCertaintyBar tier={certaintyTier} rowNumber={rowNumber} />
-      )}
       <CategoryCombobox
         value={selectedCategoryId}
         categories={categories}
@@ -42,6 +39,13 @@ export function ImportReviewCategoryCell({
         className={cn("w-[220px]", isUncategorized && "text-warning")}
         showClear
       />
+      {certainty != null && (
+        <ImportReviewCertaintyBar
+          tier={certainty.tier}
+          confidence={certainty.confidence}
+          rowNumber={rowNumber}
+        />
+      )}
     </div>
   );
 }
