@@ -113,6 +113,16 @@ export function EditProviderMappingDialog(props: {
                 <FieldLabel htmlFor="edit-delimiter">Delimiter</FieldLabel>
                 <FieldContent>
                   <Select
+                    items={[
+                      {
+                        value: INFER_DELIMITER_OPTION,
+                        label: "Infer from file",
+                      },
+                      ...SUPPORTED_PROVIDER_DELIMITERS.map((delimiter) => ({
+                        value: delimiter,
+                        label: DELIMITER_LABELS[delimiter] ?? delimiter,
+                      })),
+                    ]}
                     value={props.normalizationRules.delimiter}
                     onValueChange={(value) =>
                       props.onNormalizationRulesChange({

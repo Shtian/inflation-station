@@ -108,6 +108,11 @@ export function CategoryManagementSection({
           <FieldLabel htmlFor="new-category-kind">Kind</FieldLabel>
           <FieldContent>
             <Select
+              items={[
+                { value: "EXPENSE", label: "Expense" },
+                { value: "INCOME", label: "Income" },
+                { value: "TRANSFER", label: "Transfer" },
+              ]}
               value={newCategoryKind}
               onValueChange={(value) =>
                 onNewCategoryKindChange(value as CategoryKind)

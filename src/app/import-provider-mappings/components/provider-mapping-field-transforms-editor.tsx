@@ -147,6 +147,10 @@ export function ProviderMappingFieldTransformsEditor(props: {
           </FieldLabel>
           <FieldContent>
             <Select
+              items={PROVIDER_FIELD_TRANSFORM_TYPES.map((type) => ({
+                value: type,
+                label: TRANSFORM_TYPE_LABELS[type],
+              }))}
               value={draftType}
               onValueChange={(value) => {
                 setDraftType(value as ProviderFieldTransformType);
@@ -181,6 +185,10 @@ export function ProviderMappingFieldTransformsEditor(props: {
             </FieldLabel>
             <FieldContent>
               <Select
+                items={[
+                  { value: "negative", label: "Negative" },
+                  { value: "positive", label: "Positive" },
+                ]}
                 value={draftSign}
                 onValueChange={(value) =>
                   setDraftSign(value as "negative" | "positive")
