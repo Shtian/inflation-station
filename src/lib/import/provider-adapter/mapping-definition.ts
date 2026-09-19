@@ -5,7 +5,7 @@ export const PROVIDER_MAPPING_VERSION = 1 as const;
 
 export type ProviderCanonicalField = (typeof PROVIDER_CANONICAL_FIELDS)[number];
 
-export type ProviderDateFormat = "YYYY-MM-DD" | "DD.MM.YYYY";
+export type ProviderDateFormat = "YYYY-MM-DD" | "DD.MM.YYYY" | "YYYY/MM/DD";
 
 export type ProviderDecimalSeparator = "," | ".";
 
@@ -22,6 +22,7 @@ export const SUPPORTED_PROVIDER_DECIMAL_SEPARATORS = [
 export const SUPPORTED_PROVIDER_DATE_FORMATS = [
   "YYYY-MM-DD",
   "DD.MM.YYYY",
+  "YYYY/MM/DD",
 ] as const satisfies ReadonlyArray<ProviderDateFormat>;
 
 export const PROVIDER_FIELD_TRANSFORM_TYPES = [
