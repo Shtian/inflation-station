@@ -1,4 +1,10 @@
-import type { PaymentType } from "@prisma/client";
+import { type PaymentType, SuggestionSource } from "@prisma/client";
+import type { Fetch } from "@typesafe-ai/sdk";
+import {
+  categorizeRowsWithJev,
+  type JevCategorizeRow,
+  type JevCategoryOption,
+} from "../categorization/jev-categorize";
 import {
   buildRuleBasedSuggestions,
   type CategoryRuleCandidate,
@@ -62,6 +68,13 @@ type StagedImportRow = {
 };
 
 type ImportReviewStageDbClient = {
+  category: {
+    findMany(args: {
+      select: { id: true; name: true; classifierHint: true };
+    }): Promise<
+      Array<{ id: string; name: string; classifierHint: string | null }>
+    >;
+  };
   categoryRule: {
     findMany(args: {
       where: {
@@ -136,6 +149,8 @@ type ImportReviewStageRowClient = {
       name: string;
       title: string;
       categoryId: string | null;
+      suggestionSource: SuggestionSource | null;
+      suggestionConfidence: number | null;
     }>;
   }): Promise<{ count: number }>;
   findMany(args: {
@@ -337,11 +352,17 @@ type ExistingTransactionFingerprintSource = {
   paymentType: PaymentType;
 };
 
-async function buildPrefilledCategoryMap(
+export type ImportRowSuggestion = {
+  categoryId: string;
+  source: SuggestionSource;
+  confidence: number;
+};
+
+async function buildRuleSuggestionMap(
   db: ImportReviewStageDbClient,
   accountId: string,
   validRows: ValidatedStageRow[],
-): Promise<Map<number, string>> {
+): Promise<Map<number, ImportRowSuggestion>> {
   const categoryRules = await db.categoryRule.findMany({
     where: {
       OR: [{ accountId }, { accountId: null }],
@@ -369,10 +390,63 @@ async function buildPrefilledCategoryMap(
       10,
     );
     if (!Number.isNaN(rowNumber)) {
-      map.set(rowNumber, suggestion.suggestedCategoryId);
+      map.set(rowNumber, {
+        categoryId: suggestion.suggestedCategoryId,
+        source: SuggestionSource.RULE,
+        confidence: suggestion.confidence,
+      });
     }
     return map;
-  }, new Map<number, string>());
+  }, new Map<number, ImportRowSuggestion>());
+}
+
+function toJevCategorizeRow(row: ValidatedStageRow): JevCategorizeRow {
+  return {
+    rowNumber: row.rowNumber,
+    bookingDate: row.bookingDate,
+    amountNok: row.amountNok,
+    currency: row.currency,
+    paymentType: row.paymentType,
+    sender: row.sender,
+    recipient: row.recipient,
+    name: row.name,
+    title: row.title,
+  };
+}
+
+async function addJevSuggestions(
+  db: ImportReviewStageDbClient,
+  validRows: ValidatedStageRow[],
+  suggestionByRowNumber: Map<number, ImportRowSuggestion>,
+  jevApiKey: string | undefined,
+  jevFetchImpl: Fetch | undefined,
+): Promise<void> {
+  const unmatchedRows = validRows.filter(
+    (row) => !suggestionByRowNumber.has(row.rowNumber),
+  );
+
+  if (unmatchedRows.length === 0) {
+    return;
+  }
+
+  const categories: JevCategoryOption[] = await db.category.findMany({
+    select: { id: true, name: true, classifierHint: true },
+  });
+
+  const jevSuggestions = await categorizeRowsWithJev({
+    rows: unmatchedRows.map(toJevCategorizeRow),
+    categories,
+    apiKey: jevApiKey,
+    fetchImpl: jevFetchImpl,
+  });
+
+  for (const suggestion of jevSuggestions) {
+    suggestionByRowNumber.set(suggestion.rowNumber, {
+      categoryId: suggestion.categoryId,
+      source: SuggestionSource.JEV,
+      confidence: suggestion.confidence,
+    });
+  }
 }
 
 function buildPotentialDuplicateRowNumbers(
@@ -430,6 +504,8 @@ export async function stageParsedImportRows(
     accountId: string;
     /** Canonical output already produced by a selected provider adapter. */
     parsed: CsvParserResult;
+    jevApiKey?: string;
+    jevFetchImpl?: Fetch;
   },
 ): Promise<StageParsedImportResult> {
   const { parsed } = params;
@@ -475,15 +551,27 @@ export async function stageParsedImportRows(
     existingTransactions,
   );
 
-  let prefilledCategoryByRowNumber = new Map<number, string>();
+  let suggestionByRowNumber = new Map<number, ImportRowSuggestion>();
   try {
-    prefilledCategoryByRowNumber = await buildPrefilledCategoryMap(
+    suggestionByRowNumber = await buildRuleSuggestionMap(
       db,
       params.accountId,
       validRows,
     );
   } catch {
-    prefilledCategoryByRowNumber = new Map<number, string>();
+    suggestionByRowNumber = new Map<number, ImportRowSuggestion>();
+  }
+
+  try {
+    await addJevSuggestions(
+      db,
+      validRows,
+      suggestionByRowNumber,
+      params.jevApiKey,
+      params.jevFetchImpl,
+    );
+  } catch {
+    // JEV categorization is best-effort; suggestionByRowNumber stays rule-only.
   }
 
   const finalInvalidCount = parsed.summary.invalid + invalidRows.length;
@@ -501,12 +589,13 @@ export async function stageParsedImportRows(
 
     await tx.importReviewRow.createMany({
       data: toStagedRows(validRows).map((row) => {
-        const prefilledCategoryId =
-          prefilledCategoryByRowNumber.get(row.rowNumber) ?? null;
+        const suggestion = suggestionByRowNumber.get(row.rowNumber) ?? null;
         return {
           sessionId: session.id,
           ...row,
-          categoryId: prefilledCategoryId,
+          categoryId: suggestion?.categoryId ?? null,
+          suggestionSource: suggestion?.source ?? null,
+          suggestionConfidence: suggestion?.confidence ?? null,
         };
       }),
     });

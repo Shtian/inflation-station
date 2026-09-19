@@ -152,6 +152,7 @@ export class CategoryNotFoundError extends Error {
 const sourcePriority: Record<SuggestionSource, number> = {
   [SuggestionSource.RULE]: 2,
   [SuggestionSource.OPENAI]: 1,
+  [SuggestionSource.JEV]: 1,
 };
 
 function compareSuggestions(

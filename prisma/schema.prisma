@@ -23,6 +23,7 @@ enum PaymentType {
 enum SuggestionSource {
   RULE
   OPENAI
+  JEV
 }
 
 enum MonthlyReviewStatus {
@@ -135,6 +136,8 @@ model ImportReviewRow {
   name               String
   title              String
   categoryId         String?
+  suggestionSource   SuggestionSource?
+  suggestionConfidence Float?
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
 
