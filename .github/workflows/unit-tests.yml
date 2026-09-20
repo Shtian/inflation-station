@@ -11,6 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      # tests/support/statement-pdf.ts renders a statement through chromium, so
+      # one Vitest file needs a browser even though this is not the E2E job.
+      # Same path and cache key as e2e-tests.yml on purpose: the two jobs then
+      # share one cache entry instead of each paying the download.
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -31,6 +37,26 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm prisma generate
+
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: |
+          echo "version=$(pnpm exec playwright --version | sed 's/^Version //')" >> "$GITHUB_OUTPUT"
+
+      # Deliberately no restore-keys: a browser build is tied to one Playwright
+      # version, so a near-miss must reinstall rather than reuse the wrong one.
+      - name: Restore Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}-chromium-shell
+
+      # `--only-shell chromium` matches e2e-tests.yml, and `chromium.launch()`
+      # resolves to that shell, so the ~190 MB download covers this job too.
+      - name: Install Chromium headless shell
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --only-shell chromium
 
       - name: Run unit tests
         run: pnpm test:unit
