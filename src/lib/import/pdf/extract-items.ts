@@ -1,16 +1,10 @@
 import { getDocumentProxy } from "unpdf";
-import type { StatementItem } from "./statement-items";
-
-const Y_TOLERANCE = 2;
-const GLUE_GAP = 0.6;
-
-type PositionedItem = StatementItem & { width: number };
-
-type PositionedLine = {
-  page: number;
-  y: number;
-  items: PositionedItem[];
-};
+import {
+  glueLineItems,
+  groupPositionedLines,
+  type PositionedItem,
+  type StatementItem,
+} from "./statement-items";
 
 async function readPositionedItems(
   bytes: Uint8Array,
@@ -35,50 +29,6 @@ async function readPositionedItems(
   }
 
   return items;
-}
-
-function groupPositionedLines(items: PositionedItem[]): PositionedLine[] {
-  const lines: PositionedLine[] = [];
-
-  for (const item of [...items].sort(
-    (a, b) => a.page - b.page || b.y - a.y || a.x - b.x,
-  )) {
-    const last = lines.at(-1);
-    if (
-      last &&
-      last.page === item.page &&
-      Math.abs(last.y - item.y) <= Y_TOLERANCE
-    ) {
-      last.items.push(item);
-      continue;
-    }
-    lines.push({ page: item.page, y: item.y, items: [item] });
-  }
-
-  for (const line of lines) {
-    line.items.sort((a, b) => a.x - b.x);
-  }
-  return lines;
-}
-
-// pdfjs emits ligatures as separate items, so "Spesifikasjon" arrives as
-// "Spesi" + "fi" + "kasjon". Re-glue anything with no measurable gap.
-function glueLineItems(items: PositionedItem[]): PositionedItem[] {
-  const glued: PositionedItem[] = [];
-
-  for (const item of items) {
-    const last = glued.at(-1);
-    if (last && item.x - (last.x + last.width) < GLUE_GAP) {
-      last.text += item.text;
-      last.width = item.x + item.width - last.x;
-      continue;
-    }
-    glued.push({ ...item });
-  }
-
-  return glued
-    .map((item) => ({ ...item, text: item.text.trim() }))
-    .filter((item) => item.text !== "");
 }
 
 export async function extractStatementItems(

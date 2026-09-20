@@ -13,6 +13,14 @@ export type StatementLine = {
   items: StatementItem[];
 };
 
+export type PositionedItem = StatementItem & { width: number };
+
+export type PositionedLine = {
+  page: number;
+  y: number;
+  items: PositionedItem[];
+};
+
 export type StatementRow = {
   bookingDate: string;
   title: string;
@@ -30,6 +38,9 @@ export type PdfStatementExtraction = {
   reconciliation: StatementReconciliation | null;
 };
 
+const Y_TOLERANCE = 2;
+const GLUE_GAP = 0.6;
+
 export const STATEMENT_DATE_PATTERN = /^\d{2}\.\d{2}\.\d{2}$/;
 export const STATEMENT_AMOUNT_PATTERN = /^-?\d{1,3}(\.\d{3})*,\d{2}$/;
 export const STATEMENT_CURRENCY_PATTERN = /^[A-Z]{3}$/;
@@ -38,6 +49,52 @@ export function roundNok(value: number): number {
   // Float error lands a balanced statement on -0, which reads as a signed
   // drift downstream; adding zero collapses it and changes nothing else.
   return Math.round(value * 100) / 100 + 0;
+}
+
+export function groupPositionedLines(
+  items: PositionedItem[],
+): PositionedLine[] {
+  const lines: PositionedLine[] = [];
+
+  for (const item of [...items].sort(
+    (a, b) => a.page - b.page || b.y - a.y || a.x - b.x,
+  )) {
+    const last = lines.at(-1);
+    if (
+      last &&
+      last.page === item.page &&
+      Math.abs(last.y - item.y) <= Y_TOLERANCE
+    ) {
+      last.items.push(item);
+      continue;
+    }
+    lines.push({ page: item.page, y: item.y, items: [item] });
+  }
+
+  for (const line of lines) {
+    line.items.sort((a, b) => a.x - b.x);
+  }
+  return lines;
+}
+
+// pdfjs emits ligatures as separate items, so "Spesifikasjon" arrives as
+// "Spesi" + "fi" + "kasjon". Re-glue anything with no measurable gap.
+export function glueLineItems(items: PositionedItem[]): PositionedItem[] {
+  const glued: PositionedItem[] = [];
+
+  for (const item of items) {
+    const last = glued.at(-1);
+    if (last && item.x - (last.x + last.width) < GLUE_GAP) {
+      last.text += item.text;
+      last.width = item.x + item.width - last.x;
+      continue;
+    }
+    glued.push({ ...item });
+  }
+
+  return glued
+    .map((item) => ({ ...item, text: item.text.trim() }))
+    .filter((item) => item.text !== "");
 }
 
 export function groupStatementLines(items: StatementItem[]): StatementLine[] {

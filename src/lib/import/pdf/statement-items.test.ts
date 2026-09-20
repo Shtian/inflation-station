@@ -1,13 +1,106 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  glueLineItems,
+  groupPositionedLines,
   groupStatementLines,
   labelledAmount,
+  type PositionedItem,
   parseNorwegianAmount,
   type StatementItem,
   statementDriftNok,
   toBookingDate,
 } from "./statement-items";
+
+describe("groupPositionedLines", () => {
+  it("joins items whose y differs by less than the tolerance into one line ordered by x", () => {
+    const items: PositionedItem[] = [
+      { page: 1, y: 700, x: 300, width: 40, text: "right" },
+      { page: 1, y: 698.4, x: 48, width: 30, text: "left" },
+    ];
+
+    const lines = groupPositionedLines(items);
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0].y).toBe(700);
+    expect(lines[0].items.map((item) => item.text)).toEqual(["left", "right"]);
+  });
+
+  it("starts a new line when the y difference exceeds the tolerance", () => {
+    const items: PositionedItem[] = [
+      { page: 1, y: 700, x: 48, width: 30, text: "upper" },
+      { page: 1, y: 697.5, x: 48, width: 30, text: "lower" },
+    ];
+
+    expect(
+      groupPositionedLines(items).map((line) => line.items[0].text),
+    ).toEqual(["upper", "lower"]);
+  });
+
+  it("never joins items on different pages, whatever their y", () => {
+    const items: PositionedItem[] = [
+      { page: 1, y: 700, x: 48, width: 30, text: "page one" },
+      { page: 2, y: 700, x: 48, width: 30, text: "page two" },
+    ];
+
+    expect(
+      groupPositionedLines(items).map((line) => line.items[0].text),
+    ).toEqual(["page one", "page two"]);
+  });
+});
+
+describe("glueLineItems", () => {
+  it("rejoins a word pdfjs split at its ligature", () => {
+    // x and width as pdfjs reported them for one "Spesifikasjon" in a rendered
+    // statement. The first two runs abut to the last bit, so rounding these to
+    // tidier figures would erase the gap the function keys on.
+    const ligature: PositionedItem[] = [
+      {
+        page: 1,
+        y: 700,
+        x: 175.65234018115217,
+        width: 24.011717659511724,
+        text: "Spesi",
+      },
+      {
+        page: 1,
+        y: 700,
+        x: 199.6640578406639,
+        width: 5.4975583309350595,
+        text: "fi",
+      },
+      {
+        page: 1,
+        y: 700,
+        x: 205.16161617159898,
+        width: 28.51171738201172,
+        text: "kasjon",
+      },
+    ];
+
+    expect(glueLineItems(ligature)).toEqual([
+      {
+        page: 1,
+        y: 700,
+        x: 175.65234018115217,
+        width: 58.02099337245852,
+        text: "Spesifikasjon",
+      },
+    ]);
+  });
+
+  it("leaves items separated by a column gap apart", () => {
+    const columns: PositionedItem[] = [
+      { page: 1, y: 700, x: 48, width: 30.5, text: "16.12.25" },
+      { page: 1, y: 700, x: 160, width: 44.25, text: "Rema 1000" },
+    ];
+
+    expect(glueLineItems(columns).map((item) => item.text)).toEqual([
+      "16.12.25",
+      "Rema 1000",
+    ]);
+  });
+});
 
 describe("groupStatementLines", () => {
   it("orders lines by page ascending then y descending", () => {

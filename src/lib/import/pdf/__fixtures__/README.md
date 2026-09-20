@@ -49,9 +49,15 @@ across. Text and x positions never move.
 Regenerating changes the bytes even when the items are identical, because
 chromium stamps a creation date. Rerun the command only when the JSON changes.
 
-Chromium prints cleaner than the issuer does, so this fixture does not cover all
-of `extract-items.ts`. It gives every item on a line one identical y and emits
-each item as a single run. Setting `Y_TOLERANCE` to 0 or `GLUE_GAP` to 0 still
-passes, whereas rounding y down instead of to nearest fails. Those two constants
-absorb quirks only a real statement has, and the JSON fixtures are the record of
-them.
+Chromium prints cleaner than the issuer does, so this round trip cannot reach
+the y tolerance or the ligature glue. It gives every item on a line one
+identical y and emits each item as a single run. What it does cover is `unpdf`
+itself, the page walk, and the y rounding, where rounding down instead of to
+nearest fails.
+
+The tolerance and the glue live in `statement-items.ts` as
+`groupPositionedLines` and `glueLineItems`, and `statement-items.test.ts` calls
+both directly. The glue test's coordinates are a pdfjs ligature split measured
+off a rendered statement. The tolerance test states the function's contract at
+its boundary; no statement in this repo shows two items on one visual line with
+different y, so the tolerance is defensive rather than measured.
