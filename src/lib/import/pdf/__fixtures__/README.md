@@ -25,3 +25,33 @@ Amounts, row counts and drift do not.
 Regenerating needs the original statements, which are not in this repo for the
 obvious reason. Run `probe.mjs` from the exploration scratch directory over a
 real PDF, then the anonymizer and the balance fixer.
+
+## `trumf-2026-09.pdf` closes the loop back to a real file
+
+The JSON fixtures start after `extract-items.ts`, so on their own they prove
+nothing about `unpdf`. `trumf-2026-09.pdf` is `trumf-2026-09.json` rendered back
+into a PDF, and `extract-items.test.ts` reads it to check that the extraction
+returns those same 303 items. Regenerate it with:
+
+```
+node tests/support/statement-pdf.ts \
+  src/lib/import/pdf/__fixtures__/trumf-2026-09.json \
+  src/lib/import/pdf/__fixtures__/trumf-2026-09.pdf
+```
+
+`tests/support/statement-pdf.ts` prints the items through Playwright's chromium
+at their statement coordinates, flipping y because PDF user space counts up from
+the bottom of the page and CSS counts down from the top. Chromium's Helvetica is
+not the issuer's font, so an item wide enough to reach its right-hand neighbour
+is scaled down until it clears the 0.6pt gap that `extract-items.ts` glues
+across. Text and x positions never move.
+
+Regenerating changes the bytes even when the items are identical, because
+chromium stamps a creation date. Rerun the command only when the JSON changes.
+
+Chromium prints cleaner than the issuer does, so this fixture does not cover all
+of `extract-items.ts`. It gives every item on a line one identical y and emits
+each item as a single run. Setting `Y_TOLERANCE` to 0 or `GLUE_GAP` to 0 still
+passes, whereas rounding y down instead of to nearest fails. Those two constants
+absorb quirks only a real statement has, and the JSON fixtures are the record of
+them.
