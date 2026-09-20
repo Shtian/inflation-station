@@ -153,7 +153,7 @@ test("colors the certainty bar by Jev confidence tier and hides it for suppresse
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("Statement file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
@@ -219,7 +219,7 @@ test("hides the certainty bar the instant the row's category is changed away fro
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("Statement file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),

@@ -207,7 +207,7 @@ describe("POST /api/imports/parse", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "CSV_FILE_REQUIRED",
-      message: "A CSV file is required for transaction import.",
+      message: "A statement file is required for transaction import.",
     });
   });
 

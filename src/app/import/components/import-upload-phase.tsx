@@ -111,7 +111,7 @@ export function ImportUploadPhase({
         <FadeIn className="mb-6 space-y-1 text-center">
           <p className="text-foreground text-sm">Which account is this for?</p>
           <p className="text-muted-foreground text-xs">
-            Select the account the CSV transactions belong to.
+            Select the account these transactions belong to.
           </p>
         </FadeIn>
 
@@ -224,12 +224,12 @@ export function ImportUploadPhase({
 
         <FadeIn delay={120} className="-mt-2 space-y-3">
           <input
-            name="csv-file"
+            name="statement-file"
             ref={fileInputRef}
             type="file"
-            accept=".csv,text/csv"
-            aria-label="CSV file"
-            id="csv-file"
+            accept=".csv,text/csv,.pdf,application/pdf"
+            aria-label="Statement file"
+            id="statement-file"
             className="sr-only"
             onChange={(event) => {
               onFileSelected(event.target.files?.[0] ?? null);
@@ -278,9 +278,6 @@ export function ImportUploadPhase({
                 setIsDraggingOver(false);
                 const file = event.dataTransfer.files?.[0];
                 if (!file) return;
-                if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
-                  return;
-                }
                 onFileSelected(file);
               }}
               onClick={() => fileInputRef.current?.click()}
@@ -288,10 +285,10 @@ export function ImportUploadPhase({
               <UploadCloud className="h-5 w-5 text-muted-foreground" />
               <div className="space-y-0.5">
                 <p className="text-foreground text-sm">
-                  Drop your CSV file here
+                  Drop your statement here
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  or click to browse · .csv up to 10 MB
+                  or click to browse · .csv or .pdf up to 10 MB
                 </p>
               </div>
             </button>

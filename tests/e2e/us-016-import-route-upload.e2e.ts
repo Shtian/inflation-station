@@ -162,7 +162,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Main Account DNB" }).click();
 
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("Statement file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;123,45", "utf8"),
@@ -268,7 +268,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     }),
   ).toBeVisible();
   await expect(page.getByText("Import Preview")).toHaveCount(0);
-  await expect(page.getByLabel("CSV file")).toHaveValue("");
+  await expect(page.getByLabel("Statement file")).toHaveValue("");
   expect(submitRequestCount).toBe(1);
   expect(submitRequestBody).toEqual({
     sessionId: "session-1",
@@ -419,7 +419,7 @@ test("requires provider override when detection is uncertain and continues after
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("Statement file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Dato;Beløp\n01.01.2026;200,00", "utf8"),
@@ -545,7 +545,7 @@ test("keeps review state visible when a blocking submit failure occurs", async (
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("Statement file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;123,45", "utf8"),
@@ -698,7 +698,7 @@ test("applies a fast later-dispatched cleanup chunk without waiting on a slower 
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("Statement file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;123,45", "utf8"),
@@ -907,7 +907,7 @@ test("isolates one chunk's failure from the others and clears it on retry", asyn
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("Statement file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
@@ -1072,7 +1072,7 @@ test("aborts the in-flight cleanup chunk on submit and persists what the table s
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("Statement file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
@@ -1229,7 +1229,7 @@ test("re-parsing mid-stream cancels the first run and drops a late response for 
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("CSV file").setInputFiles({
+  await page.getByLabel("Statement file").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),

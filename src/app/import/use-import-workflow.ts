@@ -423,7 +423,7 @@ export function useImportWorkflow() {
     }
 
     if (!selectedFile) {
-      setImportError("Choose a CSV file to parse.");
+      setImportError("Choose a statement file to parse.");
       return;
     }
 

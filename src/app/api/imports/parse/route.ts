@@ -261,7 +261,7 @@ export async function POST(request: Request) {
   if (!csvContent) {
     return badRequest(
       "CSV_FILE_REQUIRED",
-      "A CSV file is required for transaction import.",
+      "A statement file is required for transaction import.",
     );
   }
 
