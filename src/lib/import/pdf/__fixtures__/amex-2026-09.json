@@ -1,0 +1,728 @@
+[
+  {
+    "page": 1,
+    "y": 802,
+    "x": 72,
+    "text": "SAS Amex Premium"
+  },
+  {
+    "page": 2,
+    "y": 724,
+    "x": 20,
+    "text": "Innbetalinger"
+  },
+  {
+    "page": 2,
+    "y": 724,
+    "x": 287,
+    "text": "Nye transaksjoner"
+  },
+  {
+    "page": 2,
+    "y": 709,
+    "x": 14,
+    "text": "Transaksjons"
+  },
+  {
+    "page": 2,
+    "y": 709,
+    "x": 281,
+    "text": "Nye transaksjoner for Test Testesen"
+  },
+  {
+    "page": 2,
+    "y": 700,
+    "x": 14,
+    "text": "-dato"
+  },
+  {
+    "page": 2,
+    "y": 700,
+    "x": 52,
+    "text": "Detaljer denne periode"
+  },
+  {
+    "page": 2,
+    "y": 700,
+    "x": 233,
+    "text": "Beløp NOK"
+  },
+  {
+    "page": 2,
+    "y": 693,
+    "x": 281,
+    "text": "Transaksjons"
+  },
+  {
+    "page": 2,
+    "y": 689,
+    "x": 14,
+    "text": "15.08.26"
+  },
+  {
+    "page": 2,
+    "y": 689,
+    "x": 52,
+    "text": "NORDVIK 101 Testveien TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 689,
+    "x": 226,
+    "text": "-10.000,00"
+  },
+  {
+    "page": 2,
+    "y": 684,
+    "x": 281,
+    "text": "-dato"
+  },
+  {
+    "page": 2,
+    "y": 684,
+    "x": 319,
+    "text": "Detaljer denne periode"
+  },
+  {
+    "page": 2,
+    "y": 684,
+    "x": 499,
+    "text": "Beløp NOK"
+  },
+  {
+    "page": 2,
+    "y": 680,
+    "x": 226,
+    "text": "Godskrevet"
+  },
+  {
+    "page": 2,
+    "y": 673,
+    "x": 281,
+    "text": "28.08.26"
+  },
+  {
+    "page": 2,
+    "y": 673,
+    "x": 319,
+    "text": "SOLBERG Testsenter TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 673,
+    "x": 382,
+    "text": "LUNDE TESTBY 111111 TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 673,
+    "x": 507,
+    "text": "819,31"
+  },
+  {
+    "page": 2,
+    "y": 666,
+    "x": 14,
+    "text": "Sum nye betalinger"
+  },
+  {
+    "page": 2,
+    "y": 666,
+    "x": 226,
+    "text": "-10.000,00"
+  },
+  {
+    "page": 2,
+    "y": 662,
+    "x": 319,
+    "text": "Utenlandsk kjøp"
+  },
+  {
+    "page": 2,
+    "y": 662,
+    "x": 413,
+    "text": "638,62"
+  },
+  {
+    "page": 2,
+    "y": 662,
+    "x": 443,
+    "text": "SEK"
+  },
+  {
+    "page": 2,
+    "y": 657,
+    "x": 226,
+    "text": "Godskrevet"
+  },
+  {
+    "page": 2,
+    "y": 653,
+    "x": 319,
+    "text": "Transaksjonsavgift"
+  },
+  {
+    "page": 2,
+    "y": 653,
+    "x": 418,
+    "text": "97,93"
+  },
+  {
+    "page": 2,
+    "y": 653,
+    "x": 442,
+    "text": "Valutakurs"
+  },
+  {
+    "page": 2,
+    "y": 653,
+    "x": 486,
+    "text": "1.0210"
+  },
+  {
+    "page": 2,
+    "y": 639,
+    "x": 281,
+    "text": "29.08.26"
+  },
+  {
+    "page": 2,
+    "y": 639,
+    "x": 319,
+    "text": "HAVNA 1000 TESTVEIEN TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 639,
+    "x": 502,
+    "text": "-276,24"
+  },
+  {
+    "page": 2,
+    "y": 632,
+    "x": 20,
+    "text": "Nye transaksjoner"
+  },
+  {
+    "page": 2,
+    "y": 632,
+    "x": 492,
+    "text": "Godskrevet"
+  },
+  {
+    "page": 2,
+    "y": 619,
+    "x": 281,
+    "text": "11.09.26"
+  },
+  {
+    "page": 2,
+    "y": 619,
+    "x": 319,
+    "text": "BJORK MEGA TESTBY 222222 TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 619,
+    "x": 379,
+    "text": "granli.test - aaaaaa Oslo"
+  },
+  {
+    "page": 2,
+    "y": 619,
+    "x": 498,
+    "text": "4.595,55"
+  },
+  {
+    "page": 2,
+    "y": 616,
+    "x": 14,
+    "text": "Nye transaksjoner for Test Testesen"
+  },
+  {
+    "page": 2,
+    "y": 604,
+    "x": 281,
+    "text": "Totalt nye transaksjoner Test Testesen"
+  },
+  {
+    "page": 2,
+    "y": 604,
+    "x": 494,
+    "text": "17.743,09"
+  },
+  {
+    "page": 2,
+    "y": 601,
+    "x": 14,
+    "text": "Transaksjons"
+  },
+  {
+    "page": 2,
+    "y": 593,
+    "x": 14,
+    "text": "-dato"
+  },
+  {
+    "page": 2,
+    "y": 593,
+    "x": 52,
+    "text": "Detaljer denne periode"
+  },
+  {
+    "page": 2,
+    "y": 593,
+    "x": 233,
+    "text": "Beløp NOK"
+  },
+  {
+    "page": 2,
+    "y": 582,
+    "x": 14,
+    "text": "08.08.26"
+  },
+  {
+    "page": 2,
+    "y": 582,
+    "x": 52,
+    "text": "VESTLI HAGE TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 582,
+    "x": 233,
+    "text": "2.433,17"
+  },
+  {
+    "page": 2,
+    "y": 582,
+    "x": 281,
+    "text": "Sum totalt nye transaksjoner"
+  },
+  {
+    "page": 2,
+    "y": 582,
+    "x": 494,
+    "text": "17.743,09"
+  },
+  {
+    "page": 2,
+    "y": 567,
+    "x": 14,
+    "text": "17.08.26"
+  },
+  {
+    "page": 2,
+    "y": 567,
+    "x": 52,
+    "text": "TRANBY AS TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 567,
+    "x": 240,
+    "text": "452,48"
+  },
+  {
+    "page": 2,
+    "y": 558,
+    "x": 281,
+    "text": "Andre kontotransaksjoner"
+  },
+  {
+    "page": 2,
+    "y": 552,
+    "x": 14,
+    "text": "22.08.26"
+  },
+  {
+    "page": 2,
+    "y": 552,
+    "x": 52,
+    "text": "BJORK OBS TESTBY 333333 TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 552,
+    "x": 115,
+    "text": "NORD TESTVARER AS TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 552,
+    "x": 234,
+    "text": "9.271,79"
+  },
+  {
+    "page": 2,
+    "y": 543,
+    "x": 281,
+    "text": "Transaksjons"
+  },
+  {
+    "page": 2,
+    "y": 541,
+    "x": 52,
+    "text": "Utenlandsk kjøp"
+  },
+  {
+    "page": 2,
+    "y": 541,
+    "x": 147,
+    "text": "990,10"
+  },
+  {
+    "page": 2,
+    "y": 541,
+    "x": 177,
+    "text": "EUR"
+  },
+  {
+    "page": 2,
+    "y": 535,
+    "x": 281,
+    "text": "-dato"
+  },
+  {
+    "page": 2,
+    "y": 535,
+    "x": 319,
+    "text": "Detaljer denne periode"
+  },
+  {
+    "page": 2,
+    "y": 535,
+    "x": 499,
+    "text": "Beløp NOK"
+  },
+  {
+    "page": 2,
+    "y": 532,
+    "x": 52,
+    "text": "Transaksjonsavgift"
+  },
+  {
+    "page": 2,
+    "y": 532,
+    "x": 150,
+    "text": "89,41"
+  },
+  {
+    "page": 2,
+    "y": 532,
+    "x": 176,
+    "text": "Valutakurs"
+  },
+  {
+    "page": 2,
+    "y": 532,
+    "x": 219,
+    "text": "0.0915"
+  },
+  {
+    "page": 2,
+    "y": 523,
+    "x": 281,
+    "text": "13.09.26"
+  },
+  {
+    "page": 2,
+    "y": 523,
+    "x": 319,
+    "text": "AASEN.TEST XXXXXXXXXXX TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 523,
+    "x": 505,
+    "text": "628,72"
+  },
+  {
+    "page": 2,
+    "y": 518,
+    "x": 14,
+    "text": "24.08.26"
+  },
+  {
+    "page": 2,
+    "y": 518,
+    "x": 52,
+    "text": "HAVNA 1000 TESTVEIEN TESTBY"
+  },
+  {
+    "page": 2,
+    "y": 518,
+    "x": 238,
+    "text": "447,03"
+  },
+  {
+    "page": 2,
+    "y": 509,
+    "x": 281,
+    "text": "Sum andre kontotransaksjoner"
+  },
+  {
+    "page": 2,
+    "y": 509,
+    "x": 505,
+    "text": "628,72"
+  },
+  {
+    "page": 2,
+    "y": 476,
+    "x": 20,
+    "text": "Gjeldende renter"
+  },
+  {
+    "page": 2,
+    "y": 460,
+    "x": 265,
+    "text": "Belastet rente"
+  },
+  {
+    "page": 2,
+    "y": 450,
+    "x": 14,
+    "text": "Kategori"
+  },
+  {
+    "page": 2,
+    "y": 450,
+    "x": 224,
+    "text": "Saldo"
+  },
+  {
+    "page": 2,
+    "y": 450,
+    "x": 269,
+    "text": "denna period"
+  },
+  {
+    "page": 2,
+    "y": 450,
+    "x": 367,
+    "text": "Rente"
+  },
+  {
+    "page": 2,
+    "y": 434,
+    "x": 14,
+    "text": "Varer og tjenester"
+  },
+  {
+    "page": 2,
+    "y": 434,
+    "x": 207,
+    "text": "57.514,86"
+  },
+  {
+    "page": 2,
+    "y": 434,
+    "x": 299,
+    "text": "0,00"
+  },
+  {
+    "page": 2,
+    "y": 434,
+    "x": 360,
+    "text": "19,80%"
+  },
+  {
+    "page": 2,
+    "y": 419,
+    "x": 14,
+    "text": "Medlemsgebyrer"
+  },
+  {
+    "page": 2,
+    "y": 419,
+    "x": 219,
+    "text": "628,72"
+  },
+  {
+    "page": 2,
+    "y": 419,
+    "x": 299,
+    "text": "0,00"
+  },
+  {
+    "page": 2,
+    "y": 419,
+    "x": 363,
+    "text": "0,00%"
+  },
+  {
+    "page": 2,
+    "y": 403,
+    "x": 14,
+    "text": "Kontanter"
+  },
+  {
+    "page": 2,
+    "y": 403,
+    "x": 227,
+    "text": "0,00"
+  },
+  {
+    "page": 2,
+    "y": 403,
+    "x": 299,
+    "text": "0,00"
+  },
+  {
+    "page": 2,
+    "y": 403,
+    "x": 360,
+    "text": "19,80%"
+  },
+  {
+    "page": 2,
+    "y": 210,
+    "x": 18,
+    "text": "Eksempel på betalingsalternativ"
+  },
+  {
+    "page": 2,
+    "y": 192,
+    "x": 120,
+    "text": "Saldo denne"
+  },
+  {
+    "page": 2,
+    "y": 192,
+    "x": 172,
+    "text": "Totale renter som"
+  },
+  {
+    "page": 2,
+    "y": 192,
+    "x": 265,
+    "text": "Totalt andre"
+  },
+  {
+    "page": 2,
+    "y": 192,
+    "x": 324,
+    "text": "Totale kostnader"
+  },
+  {
+    "page": 2,
+    "y": 192,
+    "x": 393,
+    "text": "Hvor lang tid det"
+  },
+  {
+    "page": 2,
+    "y": 192,
+    "x": 466,
+    "text": "Månedlig betaling"
+  },
+  {
+    "page": 2,
+    "y": 156,
+    "x": 18,
+    "text": "Hvis du betaler alt"
+  },
+  {
+    "page": 2,
+    "y": 156,
+    "x": 128,
+    "text": "57.514,86"
+  },
+  {
+    "page": 2,
+    "y": 156,
+    "x": 215,
+    "text": "985,65"
+  },
+  {
+    "page": 2,
+    "y": 156,
+    "x": 283,
+    "text": "628,72"
+  },
+  {
+    "page": 2,
+    "y": 156,
+    "x": 350,
+    "text": "46.704,96"
+  },
+  {
+    "page": 2,
+    "y": 156,
+    "x": 421,
+    "text": "27.10.26"
+  },
+  {
+    "page": 2,
+    "y": 156,
+    "x": 494,
+    "text": "46.704,96"
+  },
+  {
+    "page": 2,
+    "y": 120,
+    "x": 18,
+    "text": "Hvis du kun"
+  },
+  {
+    "page": 2,
+    "y": 120,
+    "x": 128,
+    "text": "57.514,86"
+  },
+  {
+    "page": 2,
+    "y": 120,
+    "x": 220,
+    "text": "0,00"
+  },
+  {
+    "page": 2,
+    "y": 120,
+    "x": 283,
+    "text": "628,72"
+  },
+  {
+    "page": 2,
+    "y": 120,
+    "x": 349,
+    "text": "54.623,27"
+  },
+  {
+    "page": 2,
+    "y": 120,
+    "x": 420,
+    "text": "27.09.26"
+  },
+  {
+    "page": 2,
+    "y": 120,
+    "x": 493,
+    "text": "54.623,27"
+  },
+  {
+    "page": 1,
+    "y": 690,
+    "x": 369,
+    "text": "Saldo forrige periode"
+  },
+  {
+    "page": 1,
+    "y": 690,
+    "x": 489,
+    "text": "20.000,00"
+  },
+  {
+    "page": 1,
+    "y": 651,
+    "x": 369,
+    "text": "Ny saldo"
+  },
+  {
+    "page": 1,
+    "y": 651,
+    "x": 487,
+    "text": "28.371,81"
+  }
+]

@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type CsvParserResult,
@@ -81,6 +82,62 @@ function jsonRequest(body: unknown): Request {
   });
 }
 
+function formRequest(file: {
+  bytes: Uint8Array;
+  name: string;
+  type: string;
+}): Request {
+  const formData = new FormData();
+  formData.set("accountId", "account-1");
+  formData.set(
+    "file",
+    new File([file.bytes as BlobPart], file.name, { type: file.type }),
+  );
+
+  return new Request("http://localhost/api/imports/parse", {
+    method: "POST",
+    body: formData,
+  });
+}
+
+const FIXTURE_PDF = new URL(
+  "../../../../lib/import/pdf/__fixtures__/trumf-2026-09.pdf",
+  import.meta.url,
+);
+
+function readFixturePdf(): Promise<Uint8Array> {
+  return readFile(FIXTURE_PDF).then((bytes) => new Uint8Array(bytes));
+}
+
+// pdfjs rejects a PDF without an xref table, so the synthetic cases below need
+// a real one rather than a `%PDF-` header over arbitrary bytes.
+function syntheticPdf(text: string | null): Uint8Array {
+  const content = text === null ? "" : `BT /F1 12 Tf 48 780 Td (${text}) Tj ET`;
+  const bodies = [
+    "<</Type/Catalog/Pages 2 0 R>>",
+    "<</Type/Pages/Kids[3 0 R]/Count 1>>",
+    "<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 4 0 R>>>>/Contents 5 0 R>>",
+    "<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>",
+    `<</Length ${content.length}>>\nstream\n${content}\nendstream`,
+  ];
+
+  let pdf = "%PDF-1.4\n";
+  const offsets: number[] = [];
+  for (const [index, body] of bodies.entries()) {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
+  }
+
+  const startxref = pdf.length;
+  pdf += `xref\n0 ${bodies.length + 1}\n0000000000 65535 f \n`;
+  for (const offset of offsets) {
+    pdf += `${offset.toString().padStart(10, "0")} 00000 n \n`;
+  }
+  pdf += `trailer\n<</Size ${bodies.length + 1}/Root 1 0 R>>\nstartxref\n${startxref}\n%%EOF\n`;
+
+  return new TextEncoder().encode(pdf);
+}
+
 const CSV_CONTENT = "Bokføringsdato;Beløp\n01.01.2026;100,00";
 
 describe("POST /api/imports/parse", () => {
@@ -112,7 +169,7 @@ describe("POST /api/imports/parse", () => {
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_IMPORT_PAYLOAD",
       message:
-        "Expected accountId and CSV content via multipart form-data or JSON payload.",
+        "Expected accountId and a CSV or PDF upload via multipart form-data, or accountId and csvContent via JSON payload.",
     });
     expect(loadProviderAdaptersMock).not.toHaveBeenCalled();
   });
@@ -150,7 +207,7 @@ describe("POST /api/imports/parse", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "CSV_FILE_REQUIRED",
-      message: "A CSV file is required for transaction import.",
+      message: "A statement file is required for transaction import.",
     });
   });
 
@@ -242,6 +299,7 @@ describe("POST /api/imports/parse", () => {
     expect(body.summary).toEqual(STAGED_RESULT.summary);
     expect(body.errors).toEqual(STAGED_RESULT.errors);
     expect(body.review).toEqual(STAGED_RESULT.review);
+    expect(body.reconciliation).toBeNull();
     expect(body.cleanup).toEqual({
       status: "planned",
       sessionId: STAGED_RESULT.review.sessionId,
@@ -425,5 +483,164 @@ describe("POST /api/imports/parse", () => {
       reason: "disabled",
       rowIds: [],
     });
+  });
+
+  it("returns 413 when a CSV upload exceeds the 10 MB limit", async () => {
+    const response = await POST(
+      formRequest({
+        bytes: new Uint8Array(10 * 1024 * 1024 + 1).fill(0x61),
+        name: "transactions.csv",
+        type: "text/csv",
+      }),
+    );
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({
+      error: "IMPORT_FILE_TOO_LARGE",
+      message: "The file is larger than the 10 MB import limit.",
+    });
+    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
+  });
+
+  it("stages a PDF statement's rows and reports its reconciliation drift", async () => {
+    const response = await POST(
+      formRequest({
+        bytes: await readFixturePdf(),
+        name: "trumf-2026-09.pdf",
+        type: "application/pdf",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.detection).toEqual({
+      state: "certain",
+      providerId: "trumf",
+      providerName: "Trumf Kredittkort",
+      score: 1,
+      matchedHeaders: [],
+      candidates: [],
+    });
+    expect(body.reconciliation).toEqual({
+      openingNok: -10000,
+      movementNok: 8907.94,
+      closingNok: -1092.06,
+      driftNok: 0,
+    });
+    expect(body.summary).toEqual(STAGED_RESULT.summary);
+    expect(body.cleanup).toEqual({
+      status: "planned",
+      sessionId: "session-1",
+      chunks: [],
+    });
+
+    const [, staged] = stageParsedImportRowsMock.mock.calls[0];
+    expect(staged.accountId).toBe("account-1");
+    expect(staged.parsed.rows).toHaveLength(39);
+    expect(staged.parsed.rows[0]).toEqual({
+      bookingDate: "17.08.2026",
+      amountNok: 49595.55,
+      currency: "NOK",
+      sender: "",
+      recipient: "",
+      name: "",
+      title: "NORDVIK 101 Testveien TESTBY",
+      paymentType: "Kort",
+    });
+    expect(loadProviderAdaptersMock).not.toHaveBeenCalled();
+  });
+
+  it("reads the upload kind from its leading bytes, not its mime type or filename", async () => {
+    const pdfClaimingCsv = await POST(
+      formRequest({
+        bytes: await readFixturePdf(),
+        name: "transactions.csv",
+        type: "text/csv",
+      }),
+    );
+
+    expect(pdfClaimingCsv.status).toBe(200);
+    expect((await pdfClaimingCsv.json()).detection.providerId).toBe("trumf");
+    expect(loadProviderAdaptersMock).not.toHaveBeenCalled();
+
+    const csvClaimingPdf = await POST(
+      formRequest({
+        bytes: new TextEncoder().encode(CSV_CONTENT),
+        name: "statement.pdf",
+        type: "application/pdf",
+      }),
+    );
+
+    expect(csvClaimingPdf.status).toBe(200);
+    expect((await csvClaimingPdf.json()).reconciliation).toBeNull();
+    expect(loadProviderAdaptersMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns 400 PDF_TEXT_EXTRACTION_FAILED when the PDF carries no text layer", async () => {
+    const response = await POST(
+      formRequest({
+        bytes: syntheticPdf(null),
+        name: "scanned.pdf",
+        type: "application/pdf",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "PDF_TEXT_EXTRACTION_FAILED",
+      message:
+        "No text could be read from this PDF. A scanned or photographed statement carries only an image, so ask your provider for the PDF they generated.",
+    });
+    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 PDF_TEXT_EXTRACTION_FAILED when the PDF cannot be opened at all", async () => {
+    const response = await POST(
+      formRequest({
+        bytes: new TextEncoder().encode("%PDF-1.7\ntruncated"),
+        name: "broken.pdf",
+        type: "application/pdf",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toBe("PDF_TEXT_EXTRACTION_FAILED");
+    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 PDF_PROVIDER_NOT_RECOGNIZED for an issuer no extractor claims", async () => {
+    const response = await POST(
+      formRequest({
+        bytes: syntheticPdf("Some other bank AS"),
+        name: "other-bank.pdf",
+        type: "application/pdf",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "PDF_PROVIDER_NOT_RECOGNIZED",
+      message:
+        "No supported card issuer was found in this PDF. Supported: Trumf Kredittkort, SAS Amex Premium.",
+    });
+    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 PDF_NO_TRANSACTIONS_FOUND when the matched extractor finds no rows", async () => {
+    const response = await POST(
+      formRequest({
+        bytes: syntheticPdf("NorgesGruppen Finans AS"),
+        name: "empty-trumf.pdf",
+        type: "application/pdf",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "PDF_NO_TRANSACTIONS_FOUND",
+      message:
+        "This PDF was read as a Trumf Kredittkort statement but holds no transactions.",
+    });
+    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
   });
 });

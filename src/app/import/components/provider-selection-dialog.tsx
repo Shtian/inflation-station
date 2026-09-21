@@ -39,7 +39,7 @@ export function ProviderSelectionDialog({
         <DialogHeader>
           <DialogTitle>Select provider</DialogTitle>
           <DialogDescription>
-            Choose the provider that matches your CSV file format.
+            Choose the provider that matches your statement format.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">

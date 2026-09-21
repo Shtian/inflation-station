@@ -26,7 +26,7 @@ test(
 
     await page.goto("/import");
     await page.getByRole("button", { name: ACCOUNT, exact: true }).click();
-    await page.getByLabel("CSV file").setInputFiles({
+    await page.getByLabel("Statement file").setInputFiles({
       name: "transactions.csv",
       mimeType: "text/csv",
       buffer: Buffer.from(CSV_CONTENT, "utf8"),
