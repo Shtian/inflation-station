@@ -115,6 +115,8 @@ type TransactionsTableSectionProps = {
   globalQuery: string;
   dateFrom: string;
   dateTo: string;
+  hasActiveFilters: boolean;
+  onClearFilters: () => void;
   sorting?: TransactionSorting;
   onAdd: () => void;
   onEdit: (row: TransactionRow) => void;
@@ -221,6 +223,8 @@ export function TransactionsTableSection({
   globalQuery,
   dateFrom,
   dateTo,
+  hasActiveFilters,
+  onClearFilters,
   sorting,
   onAdd,
   onEdit,
@@ -536,13 +540,6 @@ export function TransactionsTableSection({
     return null;
   }
 
-  const hasActiveFilters =
-    accountId.length > 0 ||
-    categoryId.length > 0 ||
-    globalQuery.length > 0 ||
-    dateFrom.length > 0 ||
-    dateTo.length > 0;
-
   return (
     <section className="space-y-2" aria-live="polite">
       {/* Filters and Actions Card */}
@@ -701,6 +698,16 @@ export function TransactionsTableSection({
               showClear
             />
           </div>
+          {hasActiveFilters ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9"
+              onClick={onClearFilters}
+            >
+              Clear filters
+            </Button>
+          ) : null}
         </div>
       </div>
 

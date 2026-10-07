@@ -1,4 +1,392 @@
 import { expect, type Page, test } from "@playwright/test";
+import type { TransactionRow } from "../../src/app/transactions/transactions-manager.types";
+
+test.describe("Clear filters", () => {
+  async function stubTransactions(page: Page) {
+    const requests: URLSearchParams[] = [];
+    const coffeeRows: TransactionRow[] = Array.from(
+      { length: 11 },
+      (_, index) => ({
+        id: `coffee-${index + 1}`,
+        accountId: "acc-1",
+        accountName: "Main Account",
+        categoryId: "cat-food",
+        categoryName: "Food",
+        bookingDate: "2026-02-15",
+        amountNok: -50,
+        currency: "NOK",
+        merchant: `Coffee ${String(index + 1).padStart(2, "0")}`,
+        normalizedMerchant: `coffee ${index + 1}`,
+        paymentType: "CARD",
+        note: null,
+      }),
+    );
+    const rows: TransactionRow[] = [
+      ...coffeeRows,
+      {
+        ...coffeeRows[0],
+        id: "other-account",
+        merchant: "A Coffee savings",
+        accountId: "acc-2",
+        accountName: "Savings Account",
+      },
+      {
+        ...coffeeRows[0],
+        id: "other-category",
+        merchant: "A Coffee groceries",
+        categoryId: "cat-groceries",
+        categoryName: "Groceries",
+      },
+      {
+        ...coffeeRows[0],
+        id: "before-range",
+        merchant: "A Coffee January",
+        bookingDate: "2026-01-31",
+      },
+      {
+        ...coffeeRows[0],
+        id: "after-range",
+        merchant: "A Coffee March",
+        bookingDate: "2026-03-01",
+      },
+      {
+        ...coffeeRows[0],
+        id: "other-query",
+        merchant: "A Supermarket",
+        normalizedMerchant: "supermarket",
+      },
+    ];
+
+    await page.route("**/api/accounts", (route) =>
+      route.fulfill({
+        json: {
+          accounts: [
+            { id: "acc-1", name: "Main Account" },
+            { id: "acc-2", name: "Savings Account" },
+          ],
+        },
+      }),
+    );
+    await page.route("**/api/categories", (route) =>
+      route.fulfill({
+        json: {
+          categories: [
+            { id: "cat-food", name: "Food", accountId: null },
+            { id: "cat-groceries", name: "Groceries", accountId: null },
+          ],
+        },
+      }),
+    );
+    await page.route("**/api/transactions**", (route, request) => {
+      const params = new URL(request.url()).searchParams;
+      requests.push(params);
+      const query = params.get("globalQuery")?.toLowerCase();
+      const filtered = rows.filter(
+        (row) =>
+          (!params.has("accountId") ||
+            row.accountId === params.get("accountId")) &&
+          (!params.has("categoryId") ||
+            row.categoryId === params.get("categoryId")) &&
+          (!query ||
+            [row.merchant, row.normalizedMerchant, row.note].some((value) =>
+              value?.toLowerCase().includes(query),
+            )) &&
+          (!params.has("dateFrom") ||
+            row.bookingDate >= (params.get("dateFrom") ?? "")) &&
+          (!params.has("dateTo") ||
+            row.bookingDate <= (params.get("dateTo") ?? "")),
+      );
+      if (params.get("sorting") === "merchant:asc") {
+        filtered.sort((left, right) =>
+          (left.merchant ?? "").localeCompare(right.merchant ?? ""),
+        );
+      }
+      const currentPage = Number(params.get("page") ?? 1);
+      const pageSize = Number(params.get("pageSize") ?? 25);
+      return route.fulfill({
+        json: {
+          rows: filtered.slice(
+            (currentPage - 1) * pageSize,
+            currentPage * pageSize,
+          ),
+          pagination: {
+            total: filtered.length,
+            page: currentPage,
+            pageSize,
+            totalPages: Math.max(1, Math.ceil(filtered.length / pageSize)),
+          },
+        },
+      });
+    });
+    return requests;
+  }
+
+  test("clears all five filters and page offset without changing table preferences", async ({
+    page,
+  }) => {
+    const requests = await stubTransactions(page);
+    await page.goto(
+      "/transactions?accountId=acc-1&categoryId=cat-food&globalQuery=coffee&dateFrom=2026-02-01&dateTo=2026-02-28&page=2&pageSize=10&sorting=merchant%3Aasc&source=review",
+    );
+    await expect(page.getByText("Coffee 11", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Search")).toHaveValue("coffee");
+    await expect(page.getByLabel("Account", { exact: true })).toContainText(
+      "Main Account",
+    );
+    await expect(page.getByLabel("Category", { exact: true })).toHaveValue(
+      "Food",
+    );
+    await expect(page.getByLabel("Date from")).toHaveText("01/02/2026");
+    await expect(page.getByLabel("Date to")).toHaveText("28/02/2026");
+
+    await page.getByRole("button", { name: "Columns", exact: true }).click();
+    await page.getByRole("menuitemcheckbox", { name: "Payment type" }).click();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("columnheader", { name: "Payment type" }),
+    ).toBeVisible();
+
+    const clear = page.getByRole("button", {
+      name: "Clear filters",
+      exact: true,
+    });
+    await expect(clear).toBeVisible();
+    await clear.click();
+
+    await expect(page.getByLabel("Search")).toHaveValue("");
+    await expect(page.getByLabel("Account", { exact: true })).toContainText(
+      "All accounts",
+    );
+    await expect(page.getByLabel("Category", { exact: true })).toHaveValue("");
+    await expect(page.getByLabel("Date from")).toHaveText("Pick date");
+    await expect(page.getByLabel("Date to")).toHaveText("Pick date");
+    await expect(page).toHaveURL(
+      "/transactions?source=review&page=1&pageSize=10&sorting=merchant%3Aasc",
+    );
+    await expect
+      .poll(() => Object.fromEntries(requests.at(-1) ?? []))
+      .toEqual({ page: "1", pageSize: "10", sorting: "merchant:asc" });
+    for (const merchant of [
+      "A Coffee savings",
+      "A Coffee groceries",
+      "A Coffee January",
+      "A Coffee March",
+      "A Supermarket",
+    ]) {
+      await expect(page.getByText(merchant, { exact: true })).toBeVisible();
+    }
+    await expect(page.getByText("16 total transactions.")).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "Payment type" }),
+    ).toBeVisible();
+    await expect(page.locator("#transactions-rows-per-page")).toContainText(
+      "10",
+    );
+    await expect(clear).toHaveCount(0);
+  });
+
+  test("is absent without filters and when only sorting and page size change", async ({
+    page,
+  }) => {
+    await stubTransactions(page);
+    await page.goto("/transactions");
+    await expect(page.getByText("16 total transactions.")).toBeVisible();
+    const clear = page.getByRole("button", {
+      name: "Clear filters",
+      exact: true,
+    });
+    await expect(clear).toHaveCount(0);
+    await page
+      .getByRole("columnheader", { name: "Merchant" })
+      .getByRole("button")
+      .click();
+    await page.locator("#transactions-rows-per-page").click();
+    await page.getByRole("option", { name: "10", exact: true }).click();
+    await expect(page).toHaveURL(/sorting=merchant%3Aasc/);
+    await expect(page).toHaveURL(/pageSize=10/);
+    await expect(clear).toHaveCount(0);
+    await page.getByLabel("Search").fill("coffee");
+    await expect(clear).toBeVisible();
+  });
+
+  test("recovers empty results with keyboard activation", async ({ page }) => {
+    const requests = await stubTransactions(page);
+    await page.goto("/transactions?globalQuery=missing");
+    await expect(
+      page.getByText("No transactions found for the selected filters."),
+    ).toBeVisible();
+    const clear = page.getByRole("button", {
+      name: "Clear filters",
+      exact: true,
+    });
+    await page.getByRole("button", { name: "Columns", exact: true }).focus();
+    await page.keyboard.press("Shift+Tab");
+    await expect(clear).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByText("A Supermarket", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("16 total transactions.")).toBeVisible();
+    await expect.poll(() => requests.at(-1)?.get("globalQuery")).toBeNull();
+    await expect(clear).toHaveCount(0);
+  });
+
+  test("ignores a filtered response arriving after cleared rows are restored", async ({
+    page,
+  }) => {
+    await stubTransactions(page);
+    let releaseResponse = () => {};
+    const responseGate = new Promise<void>((resolve) => {
+      releaseResponse = resolve;
+    });
+    let markRequestHeld = () => {};
+    const requestHeld = new Promise<void>((resolve) => {
+      markRequestHeld = resolve;
+    });
+    await page.route("**/api/transactions**", async (route, request) => {
+      if (
+        new URL(request.url()).searchParams.get("globalQuery") === "missing"
+      ) {
+        markRequestHeld();
+        await responseGate;
+      }
+      await route.fallback();
+    });
+
+    await page.goto("/transactions");
+    await expect(page.getByText("16 total transactions.")).toBeVisible();
+    await page.getByLabel("Search").fill("missing");
+    await requestHeld;
+    await expect(page).toHaveURL(/globalQuery=missing/);
+
+    const clearedResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/transactions?") &&
+        !new URL(response.url()).searchParams.has("globalQuery"),
+    );
+    const clear = page.getByRole("button", {
+      name: "Clear filters",
+      exact: true,
+    });
+    await clear.click();
+    await (await clearedResponse).finished();
+    await expect(
+      page.getByText("A Supermarket", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("16 total transactions.")).toBeVisible();
+
+    const lateResponse = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).searchParams.get("globalQuery") === "missing",
+    );
+    releaseResponse();
+    await (await lateResponse).finished();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+
+    await expect(
+      page.getByText("A Supermarket", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("16 total transactions.")).toBeVisible();
+    await expect(
+      page.getByText("No transactions found for the selected filters."),
+    ).toHaveCount(0);
+    await expect(page).toHaveURL("/transactions?page=1&pageSize=25");
+    await expect(page.getByLabel("Search")).toHaveValue("");
+    await expect(clear).toHaveCount(0);
+  });
+
+  test("cancels pending debounce including raw whitespace input", async ({
+    page,
+  }) => {
+    await page.clock.install({ time: new Date("2026-02-15T12:00:00") });
+    await page.clock.pauseAt(new Date("2026-02-15T12:00:01"));
+    const requests = await stubTransactions(page);
+    await page.goto("/transactions");
+    await expect(page.getByText("16 total transactions.")).toBeVisible();
+    const clear = page.getByRole("button", {
+      name: "Clear filters",
+      exact: true,
+    });
+    await page.getByLabel("Search").fill("coffee");
+    await expect(clear).toBeVisible();
+    await page.clock.runFor(100);
+    await clear.click();
+    await page.clock.runFor(500);
+    await expect(page.getByLabel("Search")).toHaveValue("");
+    await expect(page).not.toHaveURL(/globalQuery=/);
+    expect(requests.some((params) => params.has("globalQuery"))).toBe(false);
+    await expect(page.getByText("16 total transactions.")).toBeVisible();
+    await expect(clear).toHaveCount(0);
+
+    await page.getByLabel("Search").fill("   ");
+    await expect(clear).toBeVisible();
+    await clear.click();
+    await page.clock.runFor(500);
+    await expect(page.getByLabel("Search")).toHaveValue("");
+    await expect(clear).toHaveCount(0);
+  });
+
+  test("keeps an emptied committed query clearable until its debounce commits", async ({
+    page,
+  }) => {
+    await page.clock.install({ time: new Date("2026-02-15T12:00:00") });
+    await page.clock.pauseAt(new Date("2026-02-15T12:00:01"));
+    await stubTransactions(page);
+    await page.goto("/transactions?globalQuery=missing");
+    await expect(
+      page.getByText("No transactions found for the selected filters."),
+    ).toBeVisible();
+    await page.getByLabel("Search").fill("");
+    await expect(page).toHaveURL(/globalQuery=missing/);
+    const clear = page.getByRole("button", {
+      name: "Clear filters",
+      exact: true,
+    });
+    await expect(clear).toBeVisible();
+    await expect(
+      page.getByText("No transactions found for the selected filters."),
+    ).toBeVisible();
+    await clear.click();
+    await expect(
+      page.getByText("A Supermarket", { exact: true }),
+    ).toBeVisible();
+    await expect(page).not.toHaveURL(/globalQuery=/);
+    await page.clock.runFor(500);
+    await expect(clear).toHaveCount(0);
+  });
+
+  test("commits the same query immediately re-entered after clearing", async ({
+    page,
+  }) => {
+    await page.clock.install({ time: new Date("2026-02-15T12:00:00") });
+    await page.clock.pauseAt(new Date("2026-02-15T12:00:01"));
+    const requests = await stubTransactions(page);
+    await page.goto("/transactions?globalQuery=coffee");
+    await expect(page.getByText("15 total transactions.")).toBeVisible();
+    await page
+      .getByRole("button", { name: "Clear filters", exact: true })
+      .click();
+    await expect(page).not.toHaveURL(/globalQuery=/);
+    await expect(
+      page.getByText("A Supermarket", { exact: true }),
+    ).toBeVisible();
+    await page.getByLabel("Search").fill("coffee");
+    await page.clock.runFor(249);
+    await expect(page).not.toHaveURL(/globalQuery=/);
+    await page.clock.runFor(1);
+    await expect(page).toHaveURL(/globalQuery=coffee/);
+    await expect.poll(() => requests.at(-1)?.get("globalQuery")).toBe("coffee");
+    await expect(page.getByText("15 total transactions.")).toBeVisible();
+    await expect(page.getByText("A Supermarket", { exact: true })).toHaveCount(
+      0,
+    );
+  });
+});
 
 /**
  * The date filters are calendar popovers, not text inputs: open the popover,

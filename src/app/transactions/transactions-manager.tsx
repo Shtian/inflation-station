@@ -52,6 +52,8 @@ export function TransactionsManager() {
     globalQuery,
     dateFrom,
     dateTo,
+    hasActiveFilters,
+    clearFilters,
     sorting,
     pageSize,
     loading,
@@ -313,6 +315,8 @@ export function TransactionsManager() {
         globalQuery={globalQuery}
         dateFrom={dateFrom}
         dateTo={dateTo}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={clearFilters}
         sorting={sorting}
         onAdd={openAddDialog}
         onEdit={openEditDialog}

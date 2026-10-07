@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   Account,
   Category,
@@ -26,22 +26,6 @@ function getTransactionsErrorMessage(body: unknown) {
   return "Could not load transactions.";
 }
 
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setDebouncedValue(value);
-    }, delayMs);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [delayMs, value]);
-
-  return debouncedValue;
-}
-
 export function useTransactionsManager() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -58,12 +42,12 @@ export function useTransactionsManager() {
   const [globalQueryInput, setGlobalQueryInput] = useState(
     parsedUrlState.globalQuery ?? "",
   );
-  const debouncedGlobalQueryInput = useDebouncedValue(globalQueryInput, 250);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<TransactionsResponse | null>(
     null,
   );
+  const latestRequest = useRef(0);
 
   useEffect(() => {
     setTableState((current) =>
@@ -78,19 +62,25 @@ export function useTransactionsManager() {
   }, [parsedUrlState.globalQuery]);
 
   useEffect(() => {
-    const trimmed = debouncedGlobalQueryInput.trim();
-    const nextGlobalQuery = trimmed.length > 0 ? trimmed : undefined;
+    const timeoutId = window.setTimeout(() => {
+      const trimmed = globalQueryInput.trim();
+      const nextGlobalQuery = trimmed.length > 0 ? trimmed : undefined;
 
-    setTableState((current) => {
-      if (current.globalQuery === nextGlobalQuery) {
-        return current;
-      }
+      setTableState((current) => {
+        if (current.globalQuery === nextGlobalQuery) {
+          return current;
+        }
 
-      return withFilterStateChange(current, {
-        globalQuery: nextGlobalQuery,
+        return withFilterStateChange(current, {
+          globalQuery: nextGlobalQuery,
+        });
       });
-    });
-  }, [debouncedGlobalQueryInput]);
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [globalQueryInput]);
 
   useEffect(() => {
     const nextParams = toTransactionsTableSearchParams(
@@ -170,6 +160,7 @@ export function useTransactionsManager() {
   }, []);
 
   const loadTransactions = useCallback(async () => {
+    const requestNumber = ++latestRequest.current;
     setLoading(true);
     setError(null);
 
@@ -200,6 +191,10 @@ export function useTransactionsManager() {
 
     const response = await fetch(`/api/transactions?${params.toString()}`);
     const body = await response.json().catch(() => null);
+
+    if (requestNumber !== latestRequest.current) {
+      return;
+    }
 
     if (
       !response.ok ||
@@ -301,6 +296,28 @@ export function useTransactionsManager() {
     );
   }, []);
 
+  const clearFilters = useCallback(() => {
+    setGlobalQueryInput("");
+    setTableState((current) =>
+      withFilterStateChange(current, {
+        accountId: undefined,
+        categoryId: undefined,
+        globalQuery: undefined,
+        dateFrom: undefined,
+        dateTo: undefined,
+      }),
+    );
+  }, []);
+
+  const hasActiveFilters =
+    Boolean(
+      tableState.accountId ||
+        tableState.categoryId ||
+        tableState.globalQuery ||
+        tableState.dateFrom ||
+        tableState.dateTo,
+    ) || globalQueryInput.length > 0;
+
   const setSorting = useCallback(
     (nextSorting: TransactionSorting | undefined) => {
       setTableState((current) =>
@@ -320,6 +337,8 @@ export function useTransactionsManager() {
     globalQuery: globalQueryInput,
     dateFrom: tableState.dateFrom ?? "",
     dateTo: tableState.dateTo ?? "",
+    hasActiveFilters,
+    clearFilters,
     sorting: tableState.sorting,
     pageSize: tableState.pageSize,
     loading,
