@@ -76,12 +76,14 @@ function sampleValues(proposal: ColumnMappingProposal, index: number): string {
 
 function SourceBadge({
   source,
+  optional = false,
 }: {
   source: ColumnMappingDraftSources[ColumnMappingField];
+  optional?: boolean;
 }) {
   return (
     <Badge
-      variant={source === "none" ? "destructive" : "outline"}
+      variant={source === "none" && !optional ? "destructive" : "outline"}
       className="text-xs"
     >
       {SOURCE_LABELS[source]}
@@ -335,7 +337,7 @@ export function ImportColumnMappingPhase({
               onChange("paymentType", { ...draft, paymentType: ref })
             }
           />
-          <SourceBadge source={sources.paymentType} />
+          <SourceBadge source={sources.paymentType} optional />
         </div>
 
         <FieldSet className="space-y-2 sm:col-span-2">
