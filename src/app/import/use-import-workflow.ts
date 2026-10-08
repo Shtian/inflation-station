@@ -2,6 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { saveAccountCsvColumnMappingAction } from "@/app/actions/save-account-csv-column-mapping";
+import {
+  type ColumnMapping,
+  type ColumnMappingDraft,
+  type ColumnMappingField,
+  type ColumnMappingGuess,
+  type ColumnMappingSource,
+  completeColumnMapping,
+} from "@/lib/import/csv/column-mapping";
+import type { TokenizedCsvRow } from "@/lib/import/csv/csv-statement";
 import type { CleanupPlan } from "@/lib/import/message-cleanup/plan";
 import type { CleanupChunkResponse } from "@/lib/import/message-cleanup/wire";
 import {
@@ -54,26 +64,26 @@ type ImportError = {
   message: string;
 };
 
-type ProviderDetectionState = "certain" | "uncertain" | "missing";
-
-export type ProviderDetection = {
-  state: ProviderDetectionState;
-  providerId: string | null;
-  providerName: string | null;
-  score: number;
-  matchedHeaders: string[];
-  candidates: Array<{
-    providerId: string;
-    providerName: string;
-    requiredMatches: number;
-    requiredTotal: number;
-    patternMatches: number;
-    score: number;
-  }>;
+/** Only PDF imports report a detected statement issuer. */
+type PdfDetection = {
+  providerName: string;
 };
 
+export type ColumnMappingProposal = {
+  headers: string[];
+  sampleRows: TokenizedCsvRow[];
+  guess: ColumnMappingGuess;
+};
+
+/** Where each field's current value came from; "manual" once the user changes it. */
+export type ColumnMappingDraftSources = Record<
+  ColumnMappingField,
+  ColumnMappingSource | "manual"
+>;
+
 export type ParseResponse = {
-  detection: ProviderDetection;
+  detection?: PdfDetection;
+  columnMapping?: ColumnMappingProposal;
   summary: ImportSummary;
   errors: ImportError[];
   cleanup?: CleanupPlan;
@@ -90,8 +100,6 @@ type SubmitResponse = {
     invalid: number;
   };
 };
-
-const AUTO_PROVIDER_SELECT_VALUE = "__auto_provider__";
 
 function getRequestErrorMessage(body: unknown) {
   if (typeof body === "object" && body && "message" in body) {
@@ -135,16 +143,14 @@ export function useImportWorkflow() {
   const [importError, setImportError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [parseResult, setParseResult] = useState<ParseResponse | null>(null);
-  const [providerDetection, setProviderDetection] =
-    useState<ProviderDetection | null>(null);
-  const [selectedProviderId, setSelectedProviderId] = useState(
-    AUTO_PROVIDER_SELECT_VALUE,
+  const [mappingProposal, setMappingProposal] =
+    useState<ColumnMappingProposal | null>(null);
+  const [mappingDraft, setMappingDraft] = useState<ColumnMappingDraft | null>(
+    null,
   );
-  const [isProviderDialogOpen, setIsProviderDialogOpen] = useState(false);
-  const [dialogSelectedProviderId, setDialogSelectedProviderId] = useState("");
-  const [allProviders, setAllProviders] = useState<
-    { id: string; name: string }[]
-  >([]);
+  const [mappingDraftSources, setMappingDraftSources] =
+    useState<ColumnMappingDraftSources | null>(null);
+  const [isMappingStepOpen, setIsMappingStepOpen] = useState(false);
   const [categoryDecisions, setCategoryDecisions] = useState<
     Record<string, string>
   >({});
@@ -221,33 +227,10 @@ export function useImportWorkflow() {
     );
   }, []);
 
-  const loadAllProviders = useCallback(async () => {
-    if (allProviders.length > 0) {
-      return;
-    }
-
-    const response = await fetch("/api/import-provider-mappings");
-    const body = await response.json().catch(() => null);
-
-    if (
-      body &&
-      typeof body === "object" &&
-      "mappings" in body &&
-      Array.isArray(body.mappings)
-    ) {
-      setAllProviders(
-        (body.mappings as Array<{ id: string; providerName: string }>).map(
-          (mapping) => ({ id: mapping.id, name: mapping.providerName }),
-        ),
-      );
-    }
-  }, [allProviders.length]);
-
   useEffect(() => {
     void loadAccounts();
     void loadCategories();
-    void loadAllProviders();
-  }, [loadAccounts, loadCategories, loadAllProviders]);
+  }, [loadAccounts, loadCategories]);
 
   const activeAccounts = useMemo(
     () => accounts.filter((account) => account.isActive),
@@ -257,20 +240,6 @@ export function useImportWorkflow() {
   const hasActiveAccounts = activeAccounts.length > 0;
 
   const reviewCategoryOptions = useMemo(() => categories, [categories]);
-
-  const dialogProviderOptions = useMemo(() => {
-    if (
-      providerDetection?.candidates &&
-      providerDetection.candidates.length > 0
-    ) {
-      return providerDetection.candidates.map((candidate) => ({
-        id: candidate.providerId,
-        name: candidate.providerName,
-      }));
-    }
-
-    return allProviders;
-  }, [providerDetection, allProviders]);
 
   const resolvedMessages = useMemo(() => {
     const rows = parseResult?.review?.rows ?? [];
@@ -358,8 +327,10 @@ export function useImportWorkflow() {
     setNoteDecisions({});
     setNoteValidationErrors({});
     setSelectedRowIds(new Set());
-    setProviderDetection(null);
-    setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
+    setMappingProposal(null);
+    setMappingDraft(null);
+    setMappingDraftSources(null);
+    setIsMappingStepOpen(false);
     setImportError(null);
   }, [cancelCleanup]);
 
@@ -378,141 +349,166 @@ export function useImportWorkflow() {
     }
   }, []);
 
-  const openProviderDialog = useCallback(() => {
-    const currentId =
-      selectedProviderId !== AUTO_PROVIDER_SELECT_VALUE
-        ? selectedProviderId
-        : (providerDetection?.providerId ?? "");
+  const openMappingStep = useCallback((proposal: ColumnMappingProposal) => {
+    setMappingProposal(proposal);
+    setMappingDraft(proposal.guess.mapping);
+    setMappingDraftSources(proposal.guess.sources);
+    setIsMappingStepOpen(true);
+  }, []);
 
-    setDialogSelectedProviderId(currentId);
-    if ((providerDetection?.candidates ?? []).length === 0) {
-      void loadAllProviders();
-    }
-    setIsProviderDialogOpen(true);
-  }, [selectedProviderId, providerDetection, loadAllProviders]);
+  const updateMappingDraft = useCallback(
+    (field: ColumnMappingField, next: ColumnMappingDraft) => {
+      setMappingDraft(next);
+      setMappingDraftSources((current) =>
+        current ? { ...current, [field]: "manual" } : current,
+      );
+    },
+    [],
+  );
 
-  const handleProviderConfirm = useCallback(() => {
-    if (!dialogSelectedProviderId) {
-      setIsProviderDialogOpen(false);
-      return;
-    }
-
-    const chosen = dialogProviderOptions.find(
-      (provider) => provider.id === dialogSelectedProviderId,
-    );
-
-    if (chosen) {
-      setSelectedProviderId(chosen.id);
-      if (providerDetection) {
-        setProviderDetection({
-          ...providerDetection,
-          state: "certain",
-          providerId: chosen.id,
-          providerName: chosen.name,
-        });
+  const parseCsv = useCallback(
+    async (columnMapping?: ColumnMapping) => {
+      if (!selectedAccountId) {
+        setImportError("Select an account before parsing.");
+        return;
       }
-    }
 
-    setIsProviderDialogOpen(false);
-  }, [dialogProviderOptions, dialogSelectedProviderId, providerDetection]);
+      if (!selectedFile) {
+        setImportError("Choose a statement file to parse.");
+        return;
+      }
 
-  const parseCsv = useCallback(async () => {
-    if (!selectedAccountId) {
-      setImportError("Select an account before parsing.");
-      return;
-    }
+      setImportLoading(true);
+      setImportError(null);
+      setSubmitError(null);
+      setParseResult(null);
+      setCategoryDecisions({});
+      setMessageOverrides({});
+      setSuggestions({});
+      setFailedChunkIndexes(new Set());
+      setNoteDecisions({});
+      setNoteValidationErrors({});
 
-    if (!selectedFile) {
-      setImportError("Choose a statement file to parse.");
+      const formData = new FormData();
+      formData.set("accountId", selectedAccountId);
+      formData.set("file", selectedFile);
+      if (columnMapping) {
+        formData.set("columnMapping", JSON.stringify(columnMapping));
+      }
+
+      const response = await fetch("/api/imports/parse", {
+        method: "POST",
+        body: formData,
+      });
+
+      const body = await response.json().catch(() => null);
+
+      if (
+        response.ok &&
+        body &&
+        typeof body === "object" &&
+        "mappingRequired" in body &&
+        "columnMapping" in body
+      ) {
+        openMappingStep(
+          (body as { columnMapping: ColumnMappingProposal }).columnMapping,
+        );
+        setImportLoading(false);
+        return;
+      }
+
+      if (
+        !response.ok ||
+        !body ||
+        typeof body !== "object" ||
+        !("summary" in body)
+      ) {
+        setImportError(getRequestErrorMessage(body));
+        setImportLoading(false);
+        return;
+      }
+
+      const parseResponse = body as ParseResponse;
+      setParseResult(parseResponse);
+      setIsMappingStepOpen(false);
+      setMappingProposal(parseResponse.columnMapping ?? null);
+
+      const reviewRows = Array.isArray(parseResponse.review?.rows)
+        ? parseResponse.review.rows
+        : [];
+
+      setCategoryDecisions(
+        reviewRows.reduce<Record<string, string>>((acc, row) => {
+          if (row.categoryId) {
+            acc[row.id] = row.categoryId;
+          }
+          return acc;
+        }, {}),
+      );
+
+      setNoteDecisions({});
+      setNoteValidationErrors({});
+      setSelectedRowIds(new Set(reviewRows.map((row) => row.id)));
+
+      setImportLoading(false);
+    },
+    [selectedAccountId, selectedFile, openMappingStep],
+  );
+
+  const confirmColumnMapping = useCallback(async () => {
+    const mapping = mappingDraft ? completeColumnMapping(mappingDraft) : null;
+    if (!mapping || !mappingProposal) {
+      setImportError(
+        "Choose a date column, an amount and at least one description column.",
+      );
       return;
     }
 
     setImportLoading(true);
+    let saveError: string | null = null;
+    try {
+      const saved = await saveAccountCsvColumnMappingAction({
+        accountId: selectedAccountId,
+        headers: mappingProposal.headers,
+        mapping,
+      });
+      saveError = saved.ok ? null : saved.error.message;
+    } catch {
+      saveError = "Could not save the column mapping for this account.";
+    }
+
+    // Remembering the mapping is a convenience for the next import; failing to
+    // save it must not block this one.
+    if (saveError) {
+      toast.warning(`Column mapping not saved for next time. ${saveError}`);
+    }
+
+    await parseCsv(mapping);
+  }, [mappingDraft, mappingProposal, selectedAccountId, parseCsv]);
+
+  const editColumnMapping = useCallback(() => {
+    if (parseResult?.columnMapping) {
+      openMappingStep(parseResult.columnMapping);
+    }
+  }, [parseResult, openMappingStep]);
+
+  const closeMappingStep = useCallback(() => {
+    setIsMappingStepOpen(false);
     setImportError(null);
-    setSubmitError(null);
-    setParseResult(null);
-    setCategoryDecisions({});
-    setMessageOverrides({});
-    setSuggestions({});
-    setFailedChunkIndexes(new Set());
-    setNoteDecisions({});
-    setNoteValidationErrors({});
-
-    const formData = new FormData();
-    formData.set("accountId", selectedAccountId);
-    formData.set("file", selectedFile);
-    if (selectedProviderId !== AUTO_PROVIDER_SELECT_VALUE) {
-      formData.set("providerId", selectedProviderId);
+    if (!parseResult) {
+      setMappingProposal(null);
+      setMappingDraft(null);
+      setMappingDraftSources(null);
     }
-
-    const response = await fetch("/api/imports/parse", {
-      method: "POST",
-      body: formData,
-    });
-
-    const body = await response.json().catch(() => null);
-
-    if (
-      response.status === 409 &&
-      body &&
-      typeof body === "object" &&
-      "error" in body &&
-      (body as { error: unknown }).error === "PROVIDER_SELECTION_REQUIRED"
-    ) {
-      const detection =
-        "detection" in body
-          ? ((body as { detection: ProviderDetection }).detection ?? null)
-          : null;
-      setProviderDetection(detection);
-      setImportError(getRequestErrorMessage(body));
-      setImportLoading(false);
-      return;
-    }
-
-    if (
-      !response.ok ||
-      !body ||
-      typeof body !== "object" ||
-      !("summary" in body)
-    ) {
-      setImportError(getRequestErrorMessage(body));
-      setImportLoading(false);
-      return;
-    }
-
-    const parseResponse = body as ParseResponse;
-    setParseResult(parseResponse);
-    setProviderDetection(parseResponse.detection);
-
-    if (parseResponse.detection.providerId) {
-      setSelectedProviderId(parseResponse.detection.providerId);
-    }
-
-    const reviewRows = Array.isArray(parseResponse.review?.rows)
-      ? parseResponse.review.rows
-      : [];
-
-    setCategoryDecisions(
-      reviewRows.reduce<Record<string, string>>((acc, row) => {
-        if (row.categoryId) {
-          acc[row.id] = row.categoryId;
-        }
-        return acc;
-      }, {}),
-    );
-
-    setNoteDecisions({});
-    setNoteValidationErrors({});
-    setSelectedRowIds(new Set(reviewRows.map((row) => row.id)));
-
-    setImportLoading(false);
-  }, [selectedAccountId, selectedFile, selectedProviderId]);
+  }, [parseResult]);
 
   const resetImport = useCallback(() => {
     cancelCleanup();
     setParseResult(null);
-    setProviderDetection(null);
-    setSelectedProviderId(AUTO_PROVIDER_SELECT_VALUE);
+    setMappingProposal(null);
+    setMappingDraft(null);
+    setMappingDraftSources(null);
+    setIsMappingStepOpen(false);
     setCategoryDecisions({});
     setMessageOverrides({});
     setSuggestions({});
@@ -631,6 +627,9 @@ export function useImportWorkflow() {
     setFailedChunkIndexes(new Set());
     setNoteDecisions({});
     setNoteValidationErrors({});
+    setMappingProposal(null);
+    setMappingDraft(null);
+    setMappingDraftSources(null);
     setSelectedFile(null);
 
     if (fileInputRef.current) {
@@ -650,26 +649,26 @@ export function useImportWorkflow() {
   return {
     accountError,
     activeAccounts,
-    allProviders,
     categoryDecisions,
     categoryError,
-    dialogProviderOptions,
-    dialogSelectedProviderId,
+    closeMappingStep,
+    confirmColumnMapping,
+    editColumnMapping,
     fileInputRef,
     hasActiveAccounts,
     importError,
     importLoading,
-    isProviderDialogOpen,
+    isMappingStepOpen,
+    mappingDraft,
+    mappingDraftSources,
+    mappingProposal,
     messageOverrides,
     noteValidationErrors,
     noteDecisions,
     onFileSelected,
     clearSelectedFile,
-    openProviderDialog,
-    handleProviderConfirm,
     parseCsv,
     parseResult,
-    providerDetection,
     resetImport,
     resolvedMessages,
     retryFailed,
@@ -679,13 +678,12 @@ export function useImportWorkflow() {
     selectedFile,
     selectedRowIds,
     setCategoryDecisions,
-    setDialogSelectedProviderId,
-    setIsProviderDialogOpen,
     setNoteDecision,
     setNoteDecisions,
     setSelectedAccountId,
     toggleAllRows,
     toggleRowSelection,
+    updateMappingDraft,
     submitError,
     submitLoading,
     submitReviewRows,

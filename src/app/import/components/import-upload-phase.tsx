@@ -6,15 +6,13 @@ import {
   FileText,
   Landmark,
   Loader2,
-  Pencil,
   UploadCloud,
   X,
 } from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { Account, ProviderDetection } from "../use-import-workflow";
+import type { Account } from "../use-import-workflow";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -22,15 +20,9 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-type Provider = {
-  id: string;
-  name: string;
-};
-
 type ImportUploadPhaseProps = {
   accountError: string | null;
   activeAccounts: Account[];
-  allProviders: Provider[];
   categoryError: string | null;
   clearSelectedFile: () => void;
   fileInputRef: RefObject<HTMLInputElement | null>;
@@ -39,9 +31,7 @@ type ImportUploadPhaseProps = {
   importLoading: boolean;
   isDraggingOver: boolean;
   onFileSelected: (file: File | null) => void;
-  openProviderDialog: () => void;
   parseCsv: () => void;
-  providerDetection: ProviderDetection | null;
   selectedAccountId: string;
   selectedFile: File | null;
   setIsDraggingOver: (value: boolean) => void;
@@ -83,7 +73,6 @@ function FadeIn({
 export function ImportUploadPhase({
   accountError,
   activeAccounts,
-  allProviders,
   categoryError,
   clearSelectedFile,
   fileInputRef,
@@ -92,9 +81,7 @@ export function ImportUploadPhase({
   importLoading,
   isDraggingOver,
   onFileSelected,
-  openProviderDialog,
   parseCsv,
-  providerDetection,
   selectedAccountId,
   selectedFile,
   setIsDraggingOver,
@@ -157,26 +144,6 @@ export function ImportUploadPhase({
             >
               {accountError}
             </p>
-          </FadeIn>
-        ) : null}
-
-        {allProviders.length > 0 ? (
-          <FadeIn delay={160} className="mt-5 w-full max-w-xl">
-            <div className="flex flex-wrap items-center justify-center gap-1.5">
-              <span className="mr-1 text-muted-foreground text-xs">
-                Supported:
-              </span>
-              {allProviders.slice(0, 5).map((provider) => (
-                <Badge key={provider.id} variant="outline" className="text-xs">
-                  {provider.name}
-                </Badge>
-              ))}
-              {allProviders.length > 5 ? (
-                <Badge variant="outline" className="text-xs">
-                  +{allProviders.length - 5} more
-                </Badge>
-              ) : null}
-            </div>
           </FadeIn>
         ) : null}
       </div>
@@ -293,60 +260,6 @@ export function ImportUploadPhase({
               </div>
             </button>
           )}
-
-          {providerDetection ? (
-            <div className="flex items-center gap-2">
-              {providerDetection.state === "certain" ? (
-                <>
-                  <Badge className="border-success/30 bg-success/10 text-success">
-                    {providerDetection.providerName}
-                  </Badge>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 gap-1 text-xs"
-                    onClick={openProviderDialog}
-                  >
-                    <Pencil className="h-3 w-3" />
-                    Change
-                  </Button>
-                </>
-              ) : providerDetection.state === "uncertain" ? (
-                <>
-                  <Badge className="border-warning/30 bg-warning/10 text-warning">
-                    {providerDetection.providerName ?? "Unknown"}
-                  </Badge>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 gap-1 text-xs"
-                    onClick={openProviderDialog}
-                  >
-                    <Pencil className="h-3 w-3" />
-                    Change
-                  </Button>
-                  <span className="text-muted-foreground text-xs">
-                    Uncertain — please confirm
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Badge variant="destructive">No provider detected</Badge>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 gap-1 text-xs"
-                    onClick={openProviderDialog}
-                  >
-                    Select provider
-                  </Button>
-                </>
-              )}
-            </div>
-          ) : null}
 
           {importError ? (
             <p

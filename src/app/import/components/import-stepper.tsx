@@ -1,7 +1,14 @@
-const STEPS = ["Select Account", "Upload File", "Review & Import"] as const;
+const STEPS = [
+  "Select Account",
+  "Upload File",
+  "Map Columns",
+  "Review & Import",
+] as const;
+
+export type ImportStep = 1 | 2 | 3 | 4;
 
 type ImportStepperProps = {
-  currentStep: 1 | 2 | 3;
+  currentStep: ImportStep;
 };
 
 export function ImportStepper({ currentStep }: ImportStepperProps) {

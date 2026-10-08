@@ -29,23 +29,6 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        detection: {
-          state: "certain",
-          providerId: "provider-1",
-          providerName: "DNB",
-          score: 1,
-          matchedHeaders: ["bokforingsdato", "belop"],
-          candidates: [
-            {
-              providerId: "provider-1",
-              providerName: "DNB",
-              requiredMatches: 2,
-              requiredTotal: 2,
-              patternMatches: 0,
-              score: 1,
-            },
-          ],
-        },
         summary: {
           imported: 2,
           duplicates: 0,
@@ -284,10 +267,57 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   expect(submitRequestBody).not.toHaveProperty("invalidCount");
 });
 
-test("requires provider override when detection is uncertain and continues after manual selection", async ({
+test("maps a CSV's columns before review, previews the parse and sends the confirmed mapping", async ({
   page,
 }) => {
-  let parseAttempt = 0;
+  const parseBodies: string[] = [];
+  const headers = [
+    "Dato",
+    "Forklaring",
+    "Rentedato",
+    "Ut fra konto",
+    "Inn på konto",
+  ];
+  const sampleRows = [
+    {
+      sourceRowNumber: 2,
+      cells: ["02.01.2026", "Kiwi Majorstuen", "02.01.2026", "249,90", ""],
+    },
+    {
+      sourceRowNumber: 3,
+      cells: ["03.01.2026", "Lønn", "03.01.2026", "", "35 000,00"],
+    },
+    {
+      sourceRowNumber: 4,
+      cells: ["Reservert", "Narvesen", "", "45,00", ""],
+    },
+    {
+      sourceRowNumber: 5,
+      cells: ["05.01.2026", "Vy", "05.01.2026", "tolv", ""],
+    },
+  ];
+  const guessedMapping = {
+    date: { index: 0, header: "Dato" },
+    amount: {
+      kind: "split",
+      inflow: { index: 4, header: "Inn på konto" },
+      outflow: { index: 3, header: "Ut fra konto" },
+    },
+    description: [{ index: 1, header: "Forklaring" }],
+    paymentType: null,
+  };
+  const confirmedMapping = {
+    date: { index: 0, header: "Dato" },
+    amount: {
+      kind: "split",
+      inflow: { index: 4, header: "Inn på konto" },
+      outflow: { index: 3, header: "Ut fra konto" },
+    },
+    description: [
+      { index: 1, header: "Forklaring" },
+      { index: 2, header: "Rentedato" },
+    ],
+  };
 
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
@@ -310,99 +340,71 @@ test("requires provider override when detection is uncertain and continues after
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({
-        categories: [],
-      }),
+      body: JSON.stringify({ categories: [] }),
     });
   });
 
   await page.route("**/api/imports/parse", async (route, request) => {
     const postData = request.postData() ?? "";
+    parseBodies.push(postData);
 
-    if (parseAttempt === 0) {
-      expect(postData).not.toContain('name="providerId"');
-      parseAttempt += 1;
+    if (!postData.includes('name="columnMapping"')) {
       await route.fulfill({
-        status: 409,
+        status: 200,
         contentType: "application/json",
         body: JSON.stringify({
-          error: "PROVIDER_SELECTION_REQUIRED",
-          message:
-            "Provider detection is uncertain. Select a provider and parse again.",
-          detection: {
-            state: "uncertain",
-            providerId: "provider-1",
-            providerName: "Bank A",
-            score: 0.6,
-            matchedHeaders: ["dato"],
-            candidates: [
-              {
-                providerId: "provider-1",
-                providerName: "Bank A",
-                requiredMatches: 2,
-                requiredTotal: 3,
-                patternMatches: 0,
-                score: 0.6,
+          mappingRequired: true,
+          columnMapping: {
+            headers,
+            sampleRows,
+            guess: {
+              mapping: guessedMapping,
+              sources: {
+                date: "heuristic",
+                amount: "heuristic",
+                description: "jev",
+                paymentType: "none",
               },
-              {
-                providerId: "provider-2",
-                providerName: "Bank B",
-                requiredMatches: 2,
-                requiredTotal: 3,
-                patternMatches: 0,
-                score: 0.55,
-              },
-            ],
+            },
           },
         }),
       });
       return;
     }
 
-    expect(postData).toContain('name="providerId"');
-    expect(postData).toContain("provider-2");
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        detection: {
-          state: "certain",
-          providerId: "provider-2",
-          providerName: "Bank B",
-          score: 0.9,
-          matchedHeaders: ["dato", "belop"],
-          candidates: [
-            {
-              providerId: "provider-2",
-              providerName: "Bank B",
-              requiredMatches: 3,
-              requiredTotal: 3,
-              patternMatches: 0,
-              score: 0.9,
+        columnMapping: {
+          headers,
+          sampleRows,
+          guess: {
+            mapping: { ...confirmedMapping, paymentType: null },
+            sources: {
+              date: "saved",
+              amount: "saved",
+              description: "saved",
+              paymentType: "saved",
             },
-          ],
+          },
         },
-        summary: {
-          imported: 1,
-          duplicates: 0,
-          ignoredReserved: 0,
-          invalid: 0,
-        },
+        summary: { imported: 1, duplicates: 0, ignoredReserved: 1, invalid: 1 },
         errors: [],
         review: {
-          sessionId: "session-override",
+          sessionId: "session-mapped",
           potentialDuplicates: 0,
           rows: [
             {
               id: "row-1",
               rowNumber: 2,
-              bookingDate: "2026-01-01",
-              amountNok: -200,
+              bookingDate: "2026-01-02",
+              amountNok: -249.9,
               currency: "NOK",
-              normalizedMerchant: "butikk",
-              paymentType: "CARD",
-              name: "butikk",
-              title: "BUTIKK",
+              normalizedMerchant: "kiwi majorstuen 02 01 2026",
+              paymentType: "OTHER",
+              name: "",
+              title: "Kiwi Majorstuen 02.01.2026",
               categoryId: null,
               potentialDuplicate: false,
             },
@@ -420,25 +422,82 @@ test("requires provider override when detection is uncertain and continues after
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
   await page.getByLabel("Statement file").setInputFiles({
-    name: "transactions.csv",
+    name: "dnb.csv",
     mimeType: "text/csv",
-    buffer: Buffer.from("Dato;Beløp\n01.01.2026;200,00", "utf8"),
+    buffer: Buffer.from(
+      '"Dato";"Forklaring";"Rentedato";"Ut fra konto";"Inn på konto"',
+      "utf8",
+    ),
   });
-
   await page.getByRole("button", { name: /Parse/ }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "Map Columns" }),
+  ).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Date column" })).toHaveText(
+    /^Dato/,
+  );
+  await expect(
+    page.getByRole("button", { name: "Separate in and out columns" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(
+    page.getByRole("combobox", { name: "Money in column" }),
+  ).toHaveText(/^Inn på konto/);
+  await expect(
+    page.getByRole("combobox", { name: "Money out column" }),
+  ).toHaveText(/^Ut fra konto/);
+  await expect(
+    page.getByRole("combobox", { name: "Payment type column" }),
+  ).toHaveText(/^None/);
+  await expect(
+    page.getByRole("checkbox", { name: "Forklaring" }),
+  ).toBeChecked();
+  await expect(page.getByText("Suggested by Jev")).toBeVisible();
+  await expect(page.getByText("Not found")).toBeVisible();
+
+  const preview = page.getByRole("table", { name: "Column mapping preview" });
+  await expect(preview.getByRole("row")).toHaveCount(3);
+  await expect(preview.getByRole("row").nth(1)).toContainText("2026-01-02");
+  await expect(preview.getByRole("row").nth(1)).toContainText("249,90");
+  await expect(preview.getByRole("row").nth(1)).toContainText(
+    "Kiwi Majorstuen",
+  );
+  await expect(preview.getByRole("row").nth(2)).toContainText("35 000,00");
+  await expect(page.getByText("1 reserved row will be skipped.")).toBeVisible();
+  await expect(
+    page.getByRole("list", { name: "Preview parse errors" }),
+  ).toHaveText(
+    'Row 5 has invalid amount "tolv". Expected a number using "," as the decimal separator.',
+  );
+
+  await page.getByRole("checkbox", { name: "Rentedato" }).click();
+  await expect(preview.getByRole("row").nth(1)).toContainText(
+    "Kiwi Majorstuen 02.01.2026",
+  );
+  await expect(page.getByText("Chosen by you")).toBeVisible();
+
+  await page.getByRole("button", { name: "Confirm mapping" }).click();
+
+  await expect(page.getByText("Import Preview")).toBeVisible();
   await expect(
     page.getByText(
-      "Provider detection is uncertain. Select a provider and parse again.",
+      "Dato · Inn på konto / Ut fra konto · Forklaring + Rentedato",
     ),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Change" }).click();
-  await page.getByRole("button", { name: "Bank B", exact: true }).click();
-  await page.getByRole("button", { name: "Confirm", exact: true }).click();
+  expect(parseBodies).toHaveLength(2);
+  const sentMapping = /name="columnMapping"\r\n\r\n(.*)\r\n/.exec(
+    parseBodies[1],
+  )?.[1];
+  expect(JSON.parse(sentMapping ?? "null")).toEqual(confirmedMapping);
 
-  await page.getByRole("button", { name: /Parse/ }).click();
+  await page.getByRole("button", { name: "Edit column mapping" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Map Columns" }),
+  ).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: "Rentedato" })).toBeChecked();
+  await expect(page.getByText("Saved", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.getByText("Import Preview")).toBeVisible();
-  await expect(page.getByText("Detected provider:")).toBeVisible();
-  await expect(page.getByText("Bank B")).toBeVisible();
 });
 
 test("keeps review state visible when a blocking submit failure occurs", async ({
@@ -474,14 +533,6 @@ test("keeps review state visible when a blocking submit failure occurs", async (
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        detection: {
-          state: "certain",
-          providerId: "provider-1",
-          providerName: "DNB",
-          score: 1,
-          matchedHeaders: ["bokforingsdato", "belop"],
-          candidates: [],
-        },
         summary: {
           imported: 2,
           duplicates: 0,
@@ -633,14 +684,6 @@ test("applies a fast later-dispatched cleanup chunk without waiting on a slower 
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        detection: {
-          state: "certain",
-          providerId: "provider-1",
-          providerName: "DNB",
-          score: 1,
-          matchedHeaders: ["bokforingsdato", "belop"],
-          candidates: [],
-        },
         summary: {
           imported: 30,
           duplicates: 0,
@@ -778,14 +821,6 @@ test("isolates one chunk's failure from the others and clears it on retry", asyn
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        detection: {
-          state: "certain",
-          providerId: "provider-1",
-          providerName: "DNB",
-          score: 1,
-          matchedHeaders: ["bokforingsdato", "belop"],
-          candidates: [],
-        },
         summary: { imported: 3, duplicates: 0, ignoredReserved: 0, invalid: 0 },
         errors: [],
         review: {
@@ -998,14 +1033,6 @@ test("aborts the in-flight cleanup chunk on submit and persists what the table s
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        detection: {
-          state: "certain",
-          providerId: "provider-1",
-          providerName: "DNB",
-          score: 1,
-          matchedHeaders: ["bokforingsdato", "belop"],
-          candidates: [],
-        },
         summary: { imported: 1, duplicates: 0, ignoredReserved: 0, invalid: 0 },
         errors: [],
         review: {
@@ -1155,14 +1182,6 @@ test("re-parsing mid-stream cancels the first run and drops a late response for 
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        detection: {
-          state: "certain",
-          providerId: "provider-1",
-          providerName: "DNB",
-          score: 1,
-          matchedHeaders: ["bokforingsdato", "belop"],
-          candidates: [],
-        },
         summary: { imported: 1, duplicates: 0, ignoredReserved: 0, invalid: 0 },
         errors: [],
         review: {
