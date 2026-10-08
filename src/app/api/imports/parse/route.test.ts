@@ -1,42 +1,22 @@
 import { readFile } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  type CsvParserResult,
-  parseNorwegianBankCsv,
-} from "@/lib/import/csv-parser";
-import type {
-  ProviderAdapter,
-  ProviderAdapterDetectionCandidate,
-} from "@/lib/import/provider-adapter/adapter";
-import type { ProviderMappingConfigurationError } from "@/lib/import/provider-adapter/mapping-definition";
+import type { ColumnMapping } from "@/lib/import/csv/column-mapping";
 import { POST } from "./route";
 
-const { prismaMock, loadProviderAdaptersMock, stageParsedImportRowsMock } =
-  vi.hoisted(() => ({
-    prismaMock: {
-      account: { findUnique: vi.fn() },
-    },
-    loadProviderAdaptersMock: vi.fn(),
-    stageParsedImportRowsMock: vi.fn(),
-  }));
+const { prismaMock, stageParsedImportRowsMock } = vi.hoisted(() => ({
+  prismaMock: {
+    account: { findUnique: vi.fn() },
+  },
+  stageParsedImportRowsMock: vi.fn(),
+}));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
 }));
 
-vi.mock("@/lib/import/provider-adapter/repository", () => ({
-  loadProviderAdapters: loadProviderAdaptersMock,
-}));
-
 vi.mock("@/lib/import/review-stage", () => ({
   stageParsedImportRows: stageParsedImportRowsMock,
 }));
-
-const EMPTY_PARSE_RESULT: CsvParserResult = {
-  rows: [],
-  errors: [],
-  summary: { imported: 0, duplicates: 0, ignoredReserved: 0, invalid: 0 },
-};
 
 const STAGED_RESULT = {
   summary: { imported: 1, duplicates: 0, ignoredReserved: 0, invalid: 0 },
@@ -48,32 +28,6 @@ const STAGED_RESULT = {
   },
 };
 
-function createFakeAdapter(options: {
-  providerId: string;
-  providerName: string;
-  score: number;
-  requiredMatches: number;
-  requiredTotal: number;
-  parseResult?: CsvParserResult;
-}): ProviderAdapter {
-  const candidate: ProviderAdapterDetectionCandidate = {
-    providerId: options.providerId,
-    providerName: options.providerName,
-    requiredMatches: options.requiredMatches,
-    requiredTotal: options.requiredTotal,
-    patternMatches: 0,
-    score: options.score,
-    matchedHeaders: [],
-  };
-
-  return {
-    providerId: options.providerId,
-    providerName: options.providerName,
-    detect: vi.fn(() => candidate),
-    parse: vi.fn(() => options.parseResult ?? EMPTY_PARSE_RESULT),
-  };
-}
-
 function jsonRequest(body: unknown): Request {
   return new Request("http://localhost/api/imports/parse", {
     method: "POST",
@@ -82,13 +36,19 @@ function jsonRequest(body: unknown): Request {
   });
 }
 
-function formRequest(file: {
-  bytes: Uint8Array;
-  name: string;
-  type: string;
-}): Request {
+function formRequest(
+  file: {
+    bytes: Uint8Array;
+    name: string;
+    type: string;
+  },
+  fields: Record<string, string> = {},
+): Request {
   const formData = new FormData();
   formData.set("accountId", "account-1");
+  for (const [name, value] of Object.entries(fields)) {
+    formData.set(name, value);
+  }
   formData.set(
     "file",
     new File([file.bytes as BlobPart], file.name, { type: file.type }),
@@ -138,24 +98,38 @@ function syntheticPdf(text: string | null): Uint8Array {
   return new TextEncoder().encode(pdf);
 }
 
-const CSV_CONTENT = "Bokføringsdato;Beløp\n01.01.2026;100,00";
+const CSV_CONTENT = [
+  "Bokføringsdato;Beløp;Tittel;Betalingstype",
+  "01.01.2026;-100,00;Rema 1000;Kort",
+  "Reservert;-20,00;Kiwi;Kort",
+].join("\n");
+
+const CSV_HEADER_SIGNATURE = "bokforingsdato|belop|tittel|betalingstype";
+
+const CSV_MAPPING: ColumnMapping = {
+  date: { index: 0, header: "Bokføringsdato" },
+  amount: { kind: "signed", column: { index: 1, header: "Beløp" } },
+  description: [{ index: 2, header: "Tittel" }],
+  paymentType: { index: 3, header: "Betalingstype" },
+};
+
+const ACCOUNT_WITHOUT_MAPPING = {
+  id: "account-1",
+  csvColumnMapping: null,
+  csvHeaderSignature: null,
+};
 
 describe("POST /api/imports/parse", () => {
   beforeEach(() => {
     prismaMock.account.findUnique.mockReset();
-    prismaMock.account.findUnique.mockResolvedValue({ id: "account-1" });
-
-    loadProviderAdaptersMock.mockReset();
-    loadProviderAdaptersMock.mockResolvedValue({
-      adapters: [],
-      configurationErrors: [],
-    });
+    prismaMock.account.findUnique.mockResolvedValue(ACCOUNT_WITHOUT_MAPPING);
 
     stageParsedImportRowsMock.mockReset();
     stageParsedImportRowsMock.mockResolvedValue(STAGED_RESULT);
 
     vi.stubEnv("OPENAI_API_KEY", "test-key");
     vi.stubEnv("OPENAI_MESSAGE_CLEANUP_ENABLED", "true");
+    vi.stubEnv("TYPESAFE_API_KEY", "");
   });
 
   afterEach(() => {
@@ -171,7 +145,7 @@ describe("POST /api/imports/parse", () => {
       message:
         "Expected accountId and a CSV or PDF upload via multipart form-data, or accountId and csvContent via JSON payload.",
     });
-    expect(loadProviderAdaptersMock).not.toHaveBeenCalled();
+    expect(prismaMock.account.findUnique).not.toHaveBeenCalled();
   });
 
   it("returns 400 when accountId is blank", async () => {
@@ -211,176 +185,113 @@ describe("POST /api/imports/parse", () => {
     });
   });
 
-  it("loads adapters exactly once and requires explicit selection when detection is uncertain", async () => {
-    const bankA = createFakeAdapter({
-      providerId: "bank-a",
-      providerName: "Bank A",
-      score: 0.5,
-      requiredMatches: 1,
-      requiredTotal: 2,
-    });
-    const bankB = createFakeAdapter({
-      providerId: "bank-b",
-      providerName: "Bank B",
-      score: 0.45,
-      requiredMatches: 1,
-      requiredTotal: 2,
-    });
-    loadProviderAdaptersMock.mockResolvedValue({
-      adapters: [bankA, bankB],
-      configurationErrors: [],
-    });
+  it("returns 400 CSV_HEADERS_NOT_FOUND when no line names the columns", async () => {
+    const response = await POST(
+      jsonRequest({ accountId: "account-1", csvContent: "01.01.2026;100,00" }),
+    );
 
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "CSV_HEADERS_NOT_FOUND",
+      message:
+        "No header row was found in this CSV. The first non-blank line must name its columns.",
+    });
+  });
+
+  it("returns the headers, sample rows and a guessed mapping when the account has no saved mapping", async () => {
     const response = await POST(
       jsonRequest({ accountId: "account-1", csvContent: CSV_CONTENT }),
     );
 
-    expect(response.status).toBe(409);
-    const body = await response.json();
-    expect(body.error).toBe("PROVIDER_SELECTION_REQUIRED");
-    expect(body.detection.state).toBe("uncertain");
-    expect(body.detection.candidates).toHaveLength(2);
-    expect(loadProviderAdaptersMock).toHaveBeenCalledTimes(1);
-    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
-  });
-
-  it("runs the explicitly selected adapter and stages its parse output", async () => {
-    const parseResult: CsvParserResult = {
-      rows: [
-        {
-          bookingDate: "2026-01-01",
-          amountNok: 100,
-          currency: "NOK",
-          sender: "",
-          recipient: "",
-          name: "Groceries",
-          title: "",
-          paymentType: "",
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      mappingRequired: true,
+      columnMapping: {
+        headers: ["Bokføringsdato", "Beløp", "Tittel", "Betalingstype"],
+        sampleRows: [
+          {
+            sourceRowNumber: 2,
+            cells: ["01.01.2026", "-100,00", "Rema 1000", "Kort"],
+          },
+          {
+            sourceRowNumber: 3,
+            cells: ["Reservert", "-20,00", "Kiwi", "Kort"],
+          },
+        ],
+        guess: {
+          mapping: {
+            date: { index: 0, header: "Bokføringsdato" },
+            amount: {
+              kind: "signed",
+              column: { index: 1, header: "Beløp" },
+            },
+            description: [{ index: 2, header: "Tittel" }],
+            paymentType: { index: 3, header: "Betalingstype" },
+          },
+          sources: {
+            date: "heuristic",
+            amount: "heuristic",
+            description: "heuristic",
+            paymentType: "heuristic",
+          },
         },
-      ],
-      errors: [],
-      summary: { imported: 1, duplicates: 0, ignoredReserved: 0, invalid: 0 },
-    };
-    const bankA = createFakeAdapter({
-      providerId: "bank-a",
-      providerName: "Bank A",
-      score: 0.5,
-      requiredMatches: 1,
-      requiredTotal: 2,
+      },
     });
-    const bankB = createFakeAdapter({
-      providerId: "bank-b",
-      providerName: "Bank B",
-      score: 0.45,
-      requiredMatches: 1,
-      requiredTotal: 2,
-      parseResult,
-    });
-    loadProviderAdaptersMock.mockResolvedValue({
-      adapters: [bankA, bankB],
-      configurationErrors: [],
+    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
+  });
+
+  it("stages straight away with the account's saved mapping when the headers match", async () => {
+    prismaMock.account.findUnique.mockResolvedValue({
+      id: "account-1",
+      csvColumnMapping: CSV_MAPPING,
+      csvHeaderSignature: CSV_HEADER_SIGNATURE,
     });
 
     const response = await POST(
-      jsonRequest({
-        accountId: "account-1",
-        csvContent: CSV_CONTENT,
-        providerId: "bank-b",
-      }),
+      jsonRequest({ accountId: "account-1", csvContent: CSV_CONTENT }),
     );
 
     expect(response.status).toBe(200);
     const body = await response.json();
-    expect(body.detection).toMatchObject({
-      state: "certain",
-      providerId: "bank-b",
-      providerName: "Bank B",
-    });
-    expect(body.summary).toEqual(STAGED_RESULT.summary);
-    expect(body.errors).toEqual(STAGED_RESULT.errors);
+    expect(body.mappingRequired).toBeUndefined();
     expect(body.review).toEqual(STAGED_RESULT.review);
-    expect(body.reconciliation).toBeNull();
-    expect(body.cleanup).toEqual({
-      status: "planned",
-      sessionId: STAGED_RESULT.review.sessionId,
-      chunks: [],
+    expect(body.columnMapping.guess.sources).toEqual({
+      date: "saved",
+      amount: "saved",
+      description: "saved",
+      paymentType: "saved",
     });
-
-    expect(bankA.parse).not.toHaveBeenCalled();
-    expect(bankB.parse).toHaveBeenCalledTimes(1);
     expect(stageParsedImportRowsMock).toHaveBeenCalledWith(prismaMock, {
       accountId: "account-1",
-      parsed: parseResult,
+      parsed: {
+        rows: [
+          {
+            bookingDate: "2026-01-01",
+            amountNok: -100,
+            currency: "NOK",
+            sender: "",
+            recipient: "",
+            name: "",
+            title: "Rema 1000",
+            paymentType: "Kort",
+          },
+        ],
+        errors: [],
+        summary: {
+          imported: 1,
+          duplicates: 0,
+          ignoredReserved: 1,
+          invalid: 0,
+        },
+      },
     });
   });
 
-  it("returns 400 PROVIDER_NOT_FOUND when the selected provider id is unknown", async () => {
-    loadProviderAdaptersMock.mockResolvedValue({
-      adapters: [],
-      configurationErrors: [],
-    });
-
-    const response = await POST(
-      jsonRequest({
-        accountId: "account-1",
-        csvContent: CSV_CONTENT,
-        providerId: "does-not-exist",
-      }),
-    );
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: "PROVIDER_NOT_FOUND",
-      message: "The selected provider could not be found.",
-    });
-    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
-  });
-
-  it("returns a stable configuration-error response when the selected provider failed compilation, without falling back", async () => {
-    const configurationError: ProviderMappingConfigurationError = {
-      code: "UNKNOWN_NORMALIZATION_RULE",
-      message: "Unknown normalization rule key(s): encoding.",
-      providerName: "Broken Bank",
-      details: { providerMappingId: "broken-bank", unknownKeys: ["encoding"] },
-    };
-    loadProviderAdaptersMock.mockResolvedValue({
-      adapters: [],
-      configurationErrors: [configurationError],
-    });
-
-    const response = await POST(
-      jsonRequest({
-        accountId: "account-1",
-        csvContent: CSV_CONTENT,
-        providerId: "broken-bank",
-      }),
-    );
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({
-      error: "PROVIDER_MAPPING_CONFIGURATION_ERROR",
-      message: configurationError.message,
-      code: "UNKNOWN_NORMALIZATION_RULE",
-    });
-    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
-  });
-
-  it("runs the certain automatic detection match without a second lookup", async () => {
-    const parseResult: CsvParserResult = {
-      ...EMPTY_PARSE_RESULT,
-      summary: { imported: 2, duplicates: 0, ignoredReserved: 0, invalid: 0 },
-    };
-    const bankA = createFakeAdapter({
-      providerId: "bank-a",
-      providerName: "Bank A",
-      score: 1,
-      requiredMatches: 2,
-      requiredTotal: 2,
-      parseResult,
-    });
-    loadProviderAdaptersMock.mockResolvedValue({
-      adapters: [bankA],
-      configurationErrors: [],
+  it("asks for a mapping when the saved one was confirmed on different headers", async () => {
+    prismaMock.account.findUnique.mockResolvedValue({
+      id: "account-1",
+      csvColumnMapping: CSV_MAPPING,
+      csvHeaderSignature: "dato|forklaring|rentedato|utfrakonto|innpakonto",
     });
 
     const response = await POST(
@@ -388,31 +299,70 @@ describe("POST /api/imports/parse", () => {
     );
 
     expect(response.status).toBe(200);
-    const body = await response.json();
-    expect(body.detection).toMatchObject({
-      state: "certain",
-      providerId: "bank-a",
-      providerName: "Bank A",
-    });
-    expect(bankA.parse).toHaveBeenCalledTimes(1);
-    expect(loadProviderAdaptersMock).toHaveBeenCalledTimes(1);
+    expect((await response.json()).mappingRequired).toBe(true);
+    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
   });
 
-  it("falls back to the built-in parser when no persisted provider is detected", async () => {
-    loadProviderAdaptersMock.mockResolvedValue({
-      adapters: [],
-      configurationErrors: [],
-    });
+  it("stages with a confirmed mapping sent alongside the uploaded file", async () => {
+    const descriptionAndType: ColumnMapping = {
+      ...CSV_MAPPING,
+      description: [
+        { index: 2, header: "Tittel" },
+        { index: 3, header: "Betalingstype" },
+      ],
+    };
 
     const response = await POST(
-      jsonRequest({ accountId: "account-1", csvContent: CSV_CONTENT }),
+      formRequest(
+        {
+          bytes: new TextEncoder().encode(CSV_CONTENT),
+          name: "transactions.csv",
+          type: "text/csv",
+        },
+        { columnMapping: JSON.stringify(descriptionAndType) },
+      ),
     );
 
     expect(response.status).toBe(200);
-    expect(stageParsedImportRowsMock).toHaveBeenCalledWith(prismaMock, {
-      accountId: "account-1",
-      parsed: parseNorwegianBankCsv(CSV_CONTENT),
+    const [, staged] = stageParsedImportRowsMock.mock.calls[0];
+    expect(
+      staged.parsed.rows.map((row: { title: string }) => row.title),
+    ).toEqual(["Rema 1000 Kort"]);
+  });
+
+  it("returns 400 INVALID_COLUMN_MAPPING for a malformed confirmed mapping", async () => {
+    const response = await POST(
+      jsonRequest({
+        accountId: "account-1",
+        csvContent: CSV_CONTENT,
+        columnMapping: { ...CSV_MAPPING, description: [] },
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_COLUMN_MAPPING",
+      message:
+        "The column mapping must name a date column, an amount and at least one description column.",
     });
+    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 COLUMN_MAPPING_MISMATCH when the mapping names columns the file lacks", async () => {
+    const response = await POST(
+      jsonRequest({
+        accountId: "account-1",
+        csvContent: CSV_CONTENT,
+        columnMapping: {
+          ...CSV_MAPPING,
+          description: [{ index: 2, header: "Forklaring" }],
+        },
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect((await response.json()).error).toBe("COLUMN_MAPPING_MISMATCH");
+    expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
   });
 
   it("issues no OpenAI request and returns a planned cleanup chunk per row", async () => {
@@ -441,7 +391,11 @@ describe("POST /api/imports/parse", () => {
     });
 
     const response = await POST(
-      jsonRequest({ accountId: "account-1", csvContent: CSV_CONTENT }),
+      jsonRequest({
+        accountId: "account-1",
+        csvContent: CSV_CONTENT,
+        columnMapping: CSV_MAPPING,
+      }),
     );
 
     expect(response.status).toBe(200);
@@ -457,7 +411,11 @@ describe("POST /api/imports/parse", () => {
     vi.stubEnv("OPENAI_API_KEY", "");
 
     const response = await POST(
-      jsonRequest({ accountId: "account-1", csvContent: CSV_CONTENT }),
+      jsonRequest({
+        accountId: "account-1",
+        csvContent: CSV_CONTENT,
+        columnMapping: CSV_MAPPING,
+      }),
     );
 
     expect(response.status).toBe(200);
@@ -473,7 +431,11 @@ describe("POST /api/imports/parse", () => {
     vi.stubEnv("OPENAI_MESSAGE_CLEANUP_ENABLED", "false");
 
     const response = await POST(
-      jsonRequest({ accountId: "account-1", csvContent: CSV_CONTENT }),
+      jsonRequest({
+        accountId: "account-1",
+        csvContent: CSV_CONTENT,
+        columnMapping: CSV_MAPPING,
+      }),
     );
 
     expect(response.status).toBe(200);
@@ -547,7 +509,6 @@ describe("POST /api/imports/parse", () => {
       title: "NORDVIK 101 Testveien TESTBY",
       paymentType: "Kort",
     });
-    expect(loadProviderAdaptersMock).not.toHaveBeenCalled();
   });
 
   it("reads the upload kind from its leading bytes, not its mime type or filename", async () => {
@@ -561,7 +522,6 @@ describe("POST /api/imports/parse", () => {
 
     expect(pdfClaimingCsv.status).toBe(200);
     expect((await pdfClaimingCsv.json()).detection.providerId).toBe("trumf");
-    expect(loadProviderAdaptersMock).not.toHaveBeenCalled();
 
     const csvClaimingPdf = await POST(
       formRequest({
@@ -572,8 +532,7 @@ describe("POST /api/imports/parse", () => {
     );
 
     expect(csvClaimingPdf.status).toBe(200);
-    expect((await csvClaimingPdf.json()).reconciliation).toBeNull();
-    expect(loadProviderAdaptersMock).toHaveBeenCalledTimes(1);
+    expect((await csvClaimingPdf.json()).mappingRequired).toBe(true);
   });
 
   it("returns 400 PDF_TEXT_EXTRACTION_FAILED when the PDF carries no text layer", async () => {
