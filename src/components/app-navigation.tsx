@@ -29,11 +29,6 @@ const configurationLinks = [
     description: "Edit AI system prompt defaults for monthly reviews.",
   },
   {
-    href: "/import-provider-mappings",
-    label: "Providers",
-    description: "Manage CSV provider mappings and field transforms.",
-  },
-  {
     href: "/accounts",
     label: "Accounts",
     description: "Create and maintain the accounts used for imports.",
