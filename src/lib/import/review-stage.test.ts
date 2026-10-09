@@ -83,6 +83,7 @@ function createDbMock(options?: {
     amountNok: number;
     normalizedMerchant: string;
     paymentType: PaymentType;
+    categoryId?: string | null;
   }>;
 }) {
   const importReviewSession = {
@@ -125,7 +126,12 @@ function createDbMock(options?: {
     importReviewSession,
     importReviewRow,
     transaction: {
-      findMany: vi.fn(async () => options?.existingTransactions ?? []),
+      findMany: vi.fn(async () =>
+        (options?.existingTransactions ?? []).map((transaction) => ({
+          ...transaction,
+          categoryId: transaction.categoryId ?? null,
+        })),
+      ),
     },
     $transaction: runTransaction,
   };
@@ -1194,6 +1200,240 @@ describe("stageParsedImportRows", () => {
       key_missing: 0,
       timeout: 0,
       provider_error: 1,
+    });
+  });
+
+  describe("history stage", () => {
+    const kiwiRow = buildParsedRow({
+      name: "",
+      title: "KIWI 0312 MAJORSTUEN",
+      bookingDate: "02.01.2026",
+      amountNok: 250,
+    });
+    const cinemaRow = buildParsedRow({
+      name: "Cinema",
+      title: "Movie Night",
+      bookingDate: "03.01.2026",
+      amountNok: 50,
+    });
+
+    it("suggests a past category for an unmatched row and sends only the rest to Jev", async () => {
+      const jevFetchImpl = vi.fn(async (_input: unknown, _init: RequestInit) =>
+        systemOneResponse("cat-entertainment", 0.83),
+      );
+      const db = createDbMock({
+        categories: [
+          {
+            id: "cat-entertainment",
+            name: "Entertainment",
+            classifierHint: null,
+          },
+        ],
+        existingTransactions: [
+          {
+            bookingDate: new Date("2025-12-01T00:00:00.000Z"),
+            amountNok: 300,
+            normalizedMerchant: "kiwi 0445 stovner",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-groceries",
+          },
+          {
+            bookingDate: new Date("2025-12-05T00:00:00.000Z"),
+            amountNok: 120,
+            normalizedMerchant: "kiwi 0100 sentrum",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-groceries",
+          },
+          {
+            bookingDate: new Date("2025-12-06T00:00:00.000Z"),
+            amountNok: -40,
+            normalizedMerchant: "kiwi 0100 sentrum",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-refunds",
+          },
+          {
+            bookingDate: new Date("2025-12-07T00:00:00.000Z"),
+            amountNok: -60,
+            normalizedMerchant: "kiwi 0445 stovner",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-refunds",
+          },
+        ],
+      });
+
+      const result = await stageParsedImportRows(db, {
+        accountId: "account-1",
+        parsed: buildParsedResult([kiwiRow, cinemaRow]),
+        jevApiKey: "test-key",
+        jevFetchImpl: jevFetchImpl as unknown as Fetch,
+      });
+
+      expect(db.transaction.findMany).toHaveBeenCalledTimes(1);
+      expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            rowNumber: 2,
+            categoryId: "cat-groceries",
+            suggestionSource: "HISTORY",
+            suggestionConfidence: 1,
+          }),
+          expect.objectContaining({
+            rowNumber: 3,
+            categoryId: "cat-entertainment",
+            suggestionSource: "JEV",
+            suggestionConfidence: 0.83,
+          }),
+        ],
+      });
+      expect(jevFetchImpl).toHaveBeenCalledTimes(1);
+      const [, requestInit] = jevFetchImpl.mock.calls[0];
+      const requestBody = JSON.parse(
+        (requestInit as RequestInit).body as string,
+      );
+      expect(requestBody.state.title).toBe("Movie Night");
+      expect(result.jevOutcomes).toEqual({
+        ok: 1,
+        uncategorized: 0,
+        below_floor: 0,
+        disabled: 0,
+        key_missing: 0,
+        timeout: 0,
+        provider_error: 0,
+      });
+    });
+
+    it("lets a matching rule win over history", async () => {
+      const jevFetchImpl = vi.fn(async () =>
+        systemOneResponse("cat-entertainment", 0.83),
+      );
+      const db = createDbMock({
+        categoryRules: [
+          {
+            id: "rule-1",
+            categoryId: "cat-household",
+            merchantContains: "kiwi",
+            paymentType: null,
+            priority: 10,
+          },
+        ],
+        existingTransactions: [
+          {
+            bookingDate: new Date("2025-12-01T00:00:00.000Z"),
+            amountNok: 300,
+            normalizedMerchant: "kiwi 0445 stovner",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-groceries",
+          },
+        ],
+      });
+
+      const result = await stageParsedImportRows(db, {
+        accountId: "account-1",
+        parsed: buildParsedResult([kiwiRow]),
+        jevApiKey: "test-key",
+        jevFetchImpl: jevFetchImpl as unknown as Fetch,
+      });
+
+      expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            rowNumber: 2,
+            categoryId: "cat-household",
+            suggestionSource: "RULE",
+          }),
+        ],
+      });
+      expect(jevFetchImpl).not.toHaveBeenCalled();
+      expect(result.jevOutcomes).toEqual({
+        ok: 0,
+        uncategorized: 0,
+        below_floor: 0,
+        disabled: 0,
+        key_missing: 0,
+        timeout: 0,
+        provider_error: 0,
+      });
+    });
+
+    it("ignores uncategorized past transactions and a split history", async () => {
+      const db = createDbMock({
+        categories: [
+          {
+            id: "cat-entertainment",
+            name: "Entertainment",
+            classifierHint: null,
+          },
+        ],
+        existingTransactions: [
+          {
+            bookingDate: new Date("2025-12-01T00:00:00.000Z"),
+            amountNok: 300,
+            normalizedMerchant: "kiwi 0312 majorstuen",
+            paymentType: PaymentType.CARD,
+            categoryId: null,
+          },
+          {
+            bookingDate: new Date("2025-12-02T00:00:00.000Z"),
+            amountNok: 80,
+            normalizedMerchant: "cinema movie night",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-entertainment",
+          },
+          {
+            bookingDate: new Date("2025-12-03T00:00:00.000Z"),
+            amountNok: 80,
+            normalizedMerchant: "cinema movie night",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-dining",
+          },
+          {
+            bookingDate: new Date("2025-12-04T00:00:00.000Z"),
+            amountNok: 120,
+            normalizedMerchant: "groceries friday",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-groceries",
+          },
+        ],
+      });
+
+      const result = await stageParsedImportRows(db, {
+        accountId: "account-1",
+        parsed: buildParsedResult([
+          kiwiRow,
+          cinemaRow,
+          buildParsedRow({ bookingDate: "04.01.2026" }),
+        ]),
+      });
+
+      expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            rowNumber: 2,
+            categoryId: null,
+            suggestionSource: null,
+          }),
+          expect.objectContaining({
+            rowNumber: 3,
+            categoryId: null,
+            suggestionSource: null,
+          }),
+          expect.objectContaining({
+            rowNumber: 4,
+            categoryId: "cat-groceries",
+            suggestionSource: "HISTORY",
+            suggestionConfidence: 1,
+          }),
+        ],
+      });
+      expect(result.jevOutcomes).toEqual({
+        ok: 0,
+        uncategorized: 0,
+        below_floor: 0,
+        disabled: 0,
+        key_missing: 2,
+        timeout: 0,
+        provider_error: 0,
+      });
     });
   });
 });

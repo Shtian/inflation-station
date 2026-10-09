@@ -1,5 +1,6 @@
 "use client";
 
+import type { SuggestionSource } from "@prisma/client";
 import { TriangleAlert } from "lucide-react";
 import { type Dispatch, type SetStateAction, useMemo } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -45,13 +46,21 @@ export type ReviewRow = {
   title?: string;
   categoryId: string | null;
   potentialDuplicate: boolean;
-  suggestionSource: "RULE" | "OPENAI" | "JEV" | null;
+  suggestionSource: SuggestionSource | null;
   suggestionConfidence: number | null;
 };
 
 type Category = {
   id: string;
   name: string;
+};
+
+// Jev suggestions carry the certainty bar instead of a label.
+const SUGGESTION_SOURCE_LABEL: Record<SuggestionSource, string | null> = {
+  RULE: "From rule",
+  HISTORY: "From history",
+  OPENAI: null,
+  JEV: null,
 };
 
 const SKELETON_ROWS = ["r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8"] as const;
@@ -188,6 +197,10 @@ export function ImportReviewTable({
               row.suggestionSource === "JEV" && suggestionStillSelected
                 ? resolveJevCertainty(row.suggestionConfidence)
                 : null;
+            const sourceLabel =
+              row.suggestionSource !== null && suggestionStillSelected
+                ? SUGGESTION_SOURCE_LABEL[row.suggestionSource]
+                : null;
             return (
               <TableRow
                 key={row.id}
@@ -227,6 +240,7 @@ export function ImportReviewTable({
                     selectedCategoryId={selectedCategoryId}
                     categories={categories}
                     certainty={certainty}
+                    sourceLabel={sourceLabel}
                     onCategoryChange={(rowId, categoryId) =>
                       setCategoryDecisions((current) => ({
                         ...current,

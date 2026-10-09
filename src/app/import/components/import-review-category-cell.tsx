@@ -1,4 +1,5 @@
 import { CategoryCombobox } from "@/components/category-combobox";
+import { Badge } from "@/components/ui/badge";
 import type { JevCertaintySignal } from "@/lib/jev/confidence-tier";
 import { cn } from "@/lib/utils";
 import { ImportReviewCertaintyBar } from "./import-review-certainty-bar";
@@ -14,6 +15,7 @@ type ImportReviewCategoryCellProps = {
   selectedCategoryId: string;
   categories: Category[];
   certainty: JevCertaintySignal | null;
+  sourceLabel: string | null;
   onCategoryChange: (rowId: string, categoryId: string) => void;
 };
 
@@ -23,6 +25,7 @@ export function ImportReviewCategoryCell({
   selectedCategoryId,
   categories,
   certainty,
+  sourceLabel,
   onCategoryChange,
 }: ImportReviewCategoryCellProps) {
   const isUncategorized = selectedCategoryId.length === 0;
@@ -46,6 +49,7 @@ export function ImportReviewCategoryCell({
           rowNumber={rowNumber}
         />
       )}
+      {sourceLabel != null && <Badge variant="outline">{sourceLabel}</Badge>}
     </div>
   );
 }

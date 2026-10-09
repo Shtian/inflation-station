@@ -1,6 +1,10 @@
 import { type PaymentType, SuggestionSource } from "@prisma/client";
 import type { Fetch } from "@typesafe-ai/sdk";
 import {
+  type CategorizedHistoryEntry,
+  suggestCategoriesFromHistory,
+} from "../categorization/history-suggestions";
+import {
   categorizeRowsWithJev,
   emptyJevOutcomeSummary,
   type JevCategorizeRow,
@@ -113,6 +117,7 @@ type ImportReviewStageDbClient = {
         amountNok: true;
         normalizedMerchant: true;
         paymentType: true;
+        categoryId: true;
       };
     }): Promise<
       Array<{
@@ -120,6 +125,7 @@ type ImportReviewStageDbClient = {
         amountNok: { toString(): string } | number;
         normalizedMerchant: string;
         paymentType: PaymentType;
+        categoryId: string | null;
       }>
     >;
   };
@@ -404,6 +410,43 @@ async function buildRuleSuggestionMap(
   }, new Map<number, ImportRowSuggestion>());
 }
 
+function addHistorySuggestions(
+  validRows: ValidatedStageRow[],
+  accountTransactions: Array<{
+    normalizedMerchant: string;
+    amountNok: { toString(): string } | number;
+    categoryId: string | null;
+  }>,
+  suggestionByRowNumber: Map<number, ImportRowSuggestion>,
+): void {
+  const history: CategorizedHistoryEntry[] = accountTransactions.flatMap(
+    ({ normalizedMerchant, amountNok, categoryId }) =>
+      categoryId === null
+        ? []
+        : [
+            {
+              normalizedMerchant,
+              amountNok: Number.parseFloat(amountNok.toString()),
+              categoryId,
+            },
+          ],
+  );
+  const unmatchedRows = validRows.filter(
+    (row) => !suggestionByRowNumber.has(row.rowNumber),
+  );
+
+  for (const suggestion of suggestCategoriesFromHistory(
+    unmatchedRows,
+    history,
+  )) {
+    suggestionByRowNumber.set(suggestion.rowNumber, {
+      categoryId: suggestion.categoryId,
+      source: SuggestionSource.HISTORY,
+      confidence: suggestion.confidence,
+    });
+  }
+}
+
 function toJevCategorizeRow(row: ValidatedStageRow): JevCategorizeRow {
   return {
     rowNumber: row.rowNumber,
@@ -544,19 +587,20 @@ export async function stageParsedImportRows(
     };
   }
 
-  const existingTransactions = await db.transaction.findMany({
+  const accountTransactions = await db.transaction.findMany({
     where: { accountId: params.accountId },
     select: {
       bookingDate: true,
       amountNok: true,
       normalizedMerchant: true,
       paymentType: true,
+      categoryId: true,
     },
   });
   const potentialDuplicateRowNumbers = buildPotentialDuplicateRowNumbers(
     params.accountId,
     validRows,
-    existingTransactions,
+    accountTransactions,
   );
 
   let suggestionByRowNumber = new Map<number, ImportRowSuggestion>();
@@ -570,6 +614,8 @@ export async function stageParsedImportRows(
     suggestionByRowNumber = new Map<number, ImportRowSuggestion>();
   }
 
+  addHistorySuggestions(validRows, accountTransactions, suggestionByRowNumber);
+
   let jevOutcomes = emptyJevOutcomeSummary();
   try {
     jevOutcomes = await addJevSuggestions(
@@ -580,7 +626,7 @@ export async function stageParsedImportRows(
       params.jevFetchImpl,
     );
   } catch {
-    // JEV categorization is best-effort; suggestionByRowNumber stays rule-only.
+    // JEV categorization is best-effort; rule and history suggestions stand.
   }
 
   const finalInvalidCount = parsed.summary.invalid + invalidRows.length;
