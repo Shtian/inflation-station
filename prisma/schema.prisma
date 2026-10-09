@@ -37,6 +37,10 @@ model Account {
   name        String         @unique
   institution String?
   isActive    Boolean        @default(true)
+  /// ColumnMapping JSON the user last confirmed for this account's CSV export.
+  csvColumnMapping   Json?
+  /// Normalized headers the mapping was confirmed on; reuse requires a match.
+  csvHeaderSignature String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
   transactions Transaction[]
@@ -142,30 +146,6 @@ model ImportReviewRow {
   updatedAt          DateTime            @updatedAt
 
   @@index([sessionId, rowNumber])
-}
-
-model ImportProviderMapping {
-  id                 String                       @id @default(cuid())
-  providerName       String                       @unique
-  fieldMappings      ImportProviderFieldMapping[]
-  normalizationRules Json
-  mappingVersion     Int                          @default(1)
-  createdAt          DateTime                     @default(now())
-  updatedAt          DateTime                     @updatedAt
-}
-
-model ImportProviderFieldMapping {
-  id               String                @id @default(cuid())
-  providerMappingId String
-  providerMapping  ImportProviderMapping @relation(fields: [providerMappingId], references: [id], onDelete: Cascade)
-  sourceField      String
-  canonicalField   String
-  transformRules   Json?
-  createdAt        DateTime              @default(now())
-  updatedAt        DateTime              @updatedAt
-
-  @@unique([providerMappingId, canonicalField])
-  @@index([providerMappingId, sourceField])
 }
 
 model MonthlyReview {

@@ -1,7 +1,6 @@
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import prismaClient from "@prisma/client";
 import { resolveDatabaseUrl } from "../src/lib/database-url.ts";
-import { SEEDED_PROVIDER_MAPPINGS } from "../src/lib/import/provider-adapter/seed-provider-mappings.ts";
 
 const { PrismaClient } = prismaClient;
 
@@ -39,8 +38,6 @@ async function clearAll() {
   await prisma.category.deleteMany();
   await prisma.account.deleteMany();
   await prisma.monthlyReview.deleteMany();
-  await prisma.importProviderFieldMapping.deleteMany();
-  await prisma.importProviderMapping.deleteMany();
 }
 
 // --- Main ---
@@ -162,41 +159,6 @@ async function main() {
         priority: (i + 1) * 10,
       },
     });
-  }
-
-  // --- Import Provider Mappings (Norwegian banks) ---
-  console.log("Creating import provider mappings...");
-
-  // DNB Bank is intentionally not seeded here. Its statement export reports
-  // debits and credits in two separate columns ("Ut fra konto" / "Inn på
-  // konto") that must be composed into one signed `amount` value. Executable
-  // mapping version 1 has no supported debit/credit composition transform,
-  // and `ImportProviderFieldMapping`'s @@unique([providerMappingId,
-  // canonicalField]) forbids mapping both columns to `amount`. Restore this
-  // mapping once a supported composition transform exists (see #59, #40).
-  // The full definitions actually seeded live in
-  // src/lib/import/provider-adapter/seed-provider-mappings.ts, shared with
-  // that module's compile/parse fixture test so seed data and test coverage
-  // cannot drift apart.
-  for (const definition of SEEDED_PROVIDER_MAPPINGS) {
-    const providerMapping = await prisma.importProviderMapping.create({
-      data: {
-        providerName: definition.providerName,
-        normalizationRules: definition.normalizationRules,
-        mappingVersion: definition.mappingVersion,
-      },
-    });
-
-    for (const fieldMapping of definition.fieldMappings) {
-      await prisma.importProviderFieldMapping.create({
-        data: {
-          providerMappingId: providerMapping.id,
-          sourceField: fieldMapping.sourceField,
-          canonicalField: fieldMapping.canonicalField,
-          transformRules: fieldMapping.transformRules,
-        },
-      });
-    }
   }
 
   // --- Transactions by month ---
@@ -653,9 +615,6 @@ async function main() {
   );
   console.log(`  Categories: ${categoryDefs.length}`);
   console.log(`  Category rules: ${ruleDefs.length} (on Lønnskonto)`);
-  console.log(
-    `  Import provider mappings: ${SEEDED_PROVIDER_MAPPINGS.length} (${SEEDED_PROVIDER_MAPPINGS.map((definition) => definition.providerName).join(", ")})`,
-  );
   console.log(
     `  Months seeded: ${months.length} (${months.map((m) => m.toISOString().slice(0, 7)).join(", ")})`,
   );

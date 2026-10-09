@@ -206,8 +206,6 @@ async function truncateAll(client: PrismaClient): Promise<void> {
     client.monthlyReview.deleteMany(),
     client.monthlyReviewSystemPrompt.deleteMany(),
     client.messageCleanupSettings.deleteMany(),
-    client.importProviderFieldMapping.deleteMany(),
-    client.importProviderMapping.deleteMany(),
   ]);
 }
 

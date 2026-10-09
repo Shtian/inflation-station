@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 import { INTEGRATED_DB_LOCK, layFixture } from "../support/integrated-database";
 
 const ACCOUNT = "Integrated Checking";
-const ORIGINAL_MESSAGE = "Espresso og croissant";
+// The guessed mapping joins Navn and Tittel into the description.
+const ORIGINAL_MESSAGE = "Kaffeslabberas Espresso og croissant";
 const CSV_CONTENT = [
   "Bokføringsdato;Beløp;Avsender;Mottaker;Navn;Tittel;Valuta;Betalingstype",
   "01.03.2026;100,00;Alice;Kaffeslabberas;Kaffeslabberas;Espresso og croissant;NOK;Kort",
@@ -32,6 +33,7 @@ test(
       buffer: Buffer.from(CSV_CONTENT, "utf8"),
     });
     await page.getByRole("button", { name: "Parse & Preview" }).click();
+    await page.getByRole("button", { name: "Confirm mapping" }).click();
 
     await expect(page.getByText("Import Preview")).toBeVisible();
     await expect(

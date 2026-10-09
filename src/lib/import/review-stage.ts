@@ -512,7 +512,7 @@ export async function stageParsedImportRows(
   db: ImportReviewStageDbClient,
   params: {
     accountId: string;
-    /** Canonical output already produced by a selected provider adapter. */
+    /** Canonical output of the column-mapped CSV parser or a PDF extractor. */
     parsed: CsvParserResult;
     jevApiKey?: string;
     jevFetchImpl?: Fetch;

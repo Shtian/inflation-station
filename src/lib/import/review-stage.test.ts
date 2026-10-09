@@ -134,7 +134,7 @@ function createDbMock(options?: {
 }
 
 describe("stageParsedImportRows", () => {
-  it("stages canonical rows produced by a provider adapter without parser-specific branching", async () => {
+  it("stages canonical parser rows without parser-specific branching", async () => {
     const db = createDbMock({
       stagedRows: [
         {
@@ -368,7 +368,7 @@ describe("stageParsedImportRows", () => {
     });
   });
 
-  it("returns parser diagnostics and skips staging when the adapter produced no data rows", async () => {
+  it("returns parser diagnostics and skips staging when the parser produced no data rows", async () => {
     const db = createDbMock();
 
     const result = await stageParsedImportRows(db, {
@@ -377,9 +377,9 @@ describe("stageParsedImportRows", () => {
         rows: [],
         errors: [
           {
-            rowNumber: 1,
-            code: "MISSING_REQUIRED_HEADERS",
-            message: "CSV is empty.",
+            rowNumber: 2,
+            code: "INVALID_AMOUNT",
+            message: 'Row 2 has invalid amount "abc".',
           },
         ],
         summary: { imported: 0, duplicates: 0, ignoredReserved: 0, invalid: 1 },

@@ -22,9 +22,25 @@ import type {
 } from "../message-cleanup/resolve-row-message";
 import type {
   Category,
+  ColumnMappingProposal,
   ParseResponse,
-  ProviderDetection,
 } from "../use-import-workflow";
+
+function describeColumnMapping(proposal: ColumnMappingProposal): string {
+  const { mapping } = proposal.guess;
+  const amount =
+    mapping.amount?.kind === "split"
+      ? `${mapping.amount.inflow.header} / ${mapping.amount.outflow.header}`
+      : mapping.amount?.column.header;
+
+  return [
+    mapping.date?.header,
+    amount,
+    mapping.description.map((ref) => ref.header).join(" + "),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 function getCleanupUnavailableMessage(reason: CleanupDisabledReason | null) {
   if (reason === "disabled") {
@@ -49,13 +65,12 @@ type ImportReviewPhaseProps = {
   categoryDecisions: Record<string, string>;
   noteDecisions: Record<string, string>;
   categoryError: string | null;
+  editColumnMapping: () => void;
   importError: string | null;
   importLoading: boolean;
   resolvedMessages: Record<string, ResolvedRowMessage>;
   noteValidationErrors: Record<string, string>;
-  openProviderDialog: () => void;
   parseResult: ParseResponse | null;
-  providerDetection: ProviderDetection | null;
   resetImport: () => void;
   retryFailed: () => void;
   reviewCategoryOptions: Category[];
@@ -84,13 +99,12 @@ export function ImportReviewPhase({
   categoryDecisions,
   noteDecisions,
   categoryError,
+  editColumnMapping,
   importError,
   importLoading,
   resolvedMessages,
   noteValidationErrors,
-  openProviderDialog,
   parseResult,
-  providerDetection,
   resetImport,
   retryFailed,
   reviewCategoryOptions,
@@ -198,25 +212,31 @@ export function ImportReviewPhase({
       </div>
 
       <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-muted-foreground text-sm">
-        {providerDetection ? (
+        {parseResult.detection ? (
           <div>
             <span>Detected provider: </span>
             <span className="font-semibold text-foreground">
-              {providerDetection.providerName ?? "Unknown"}
+              {parseResult.detection.providerName}
             </span>
-            {providerDetection.state !== "certain" ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-5 gap-0.5 px-1 text-xs"
-                onClick={openProviderDialog}
-              >
-                <Pencil className="h-3 w-3" aria-hidden="true" />
-                Change
-              </Button>
-            ) : null}
-            <span className="mx-1 text-border">·</span>
+          </div>
+        ) : null}
+        {parseResult.columnMapping ? (
+          <div className="flex flex-wrap items-center gap-1">
+            <span>Columns: </span>
+            <span className="font-semibold text-foreground">
+              {describeColumnMapping(parseResult.columnMapping)}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-5 gap-0.5 px-1 text-xs"
+              onClick={editColumnMapping}
+              disabled={submitLoading}
+            >
+              <Pencil className="h-3 w-3" aria-hidden="true" />
+              Edit column mapping
+            </Button>
           </div>
         ) : null}
         <div>

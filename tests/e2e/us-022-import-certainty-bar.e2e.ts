@@ -115,14 +115,6 @@ async function stubParse(page: Page) {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        detection: {
-          state: "certain",
-          providerId: "provider-1",
-          providerName: "DNB",
-          score: 1,
-          matchedHeaders: ["bokforingsdato", "belop"],
-          candidates: [],
-        },
         summary: {
           imported: reviewRows.length,
           duplicates: 0,

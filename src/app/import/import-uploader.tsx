@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { ImportColumnMappingPhase } from "./components/import-column-mapping-phase";
 import { ImportReviewPhase } from "./components/import-review-phase";
-import { ImportStepper } from "./components/import-stepper";
+import { type ImportStep, ImportStepper } from "./components/import-stepper";
 import { ImportUploadPhase } from "./components/import-upload-phase";
-import { ProviderSelectionDialog } from "./components/provider-selection-dialog";
 import { useImportWorkflow } from "./use-import-workflow";
 
 export function ImportUploader() {
@@ -12,26 +12,26 @@ export function ImportUploader() {
   const {
     accountError,
     activeAccounts,
-    allProviders,
     categoryDecisions,
     noteDecisions,
     categoryError,
     clearSelectedFile,
-    dialogProviderOptions,
-    dialogSelectedProviderId,
+    closeMappingStep,
+    confirmColumnMapping,
+    editColumnMapping,
     fileInputRef,
     hasActiveAccounts,
     importError,
     importLoading,
-    isProviderDialogOpen,
+    isMappingStepOpen,
+    mappingDraft,
+    mappingDraftSources,
+    mappingProposal,
     resolvedMessages,
     noteValidationErrors,
     onFileSelected,
-    openProviderDialog,
-    handleProviderConfirm,
     parseCsv,
     parseResult,
-    providerDetection,
     resetImport,
     retryFailed,
     reviewCategoryOptions,
@@ -39,8 +39,6 @@ export function ImportUploader() {
     selectedAccountId,
     selectedFile,
     setCategoryDecisions,
-    setDialogSelectedProviderId,
-    setIsProviderDialogOpen,
     setNoteDecision,
     setSelectedAccountId,
     selectedRowIds,
@@ -49,10 +47,32 @@ export function ImportUploader() {
     submitReviewRows,
     toggleAllRows,
     toggleRowSelection,
+    updateMappingDraft,
   } = useImportWorkflow();
 
-  const currentStep =
-    importLoading || parseResult ? 3 : selectedAccountId ? 2 : 1;
+  const showMapping =
+    !importLoading &&
+    isMappingStepOpen &&
+    mappingProposal !== null &&
+    mappingDraft !== null &&
+    mappingDraftSources !== null;
+  // A first parse may still land on the mapping step, so it stays on the
+  // upload step behind the Parse button's spinner; only a parse started by
+  // confirming a mapping is known to end in review.
+  const confirmingMapping = importLoading && isMappingStepOpen;
+  const showReview =
+    !showMapping &&
+    (confirmingMapping || (!importLoading && parseResult !== null));
+  const currentStep: ImportStep = showReview
+    ? 4
+    : showMapping
+      ? 3
+      : selectedAccountId
+        ? 2
+        : 1;
+  const selectedAccountName =
+    activeAccounts.find((account) => account.id === selectedAccountId)?.name ??
+    selectedAccountId;
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
@@ -60,22 +80,33 @@ export function ImportUploader() {
         Import
       </h1>
 
-      <ImportStepper currentStep={currentStep as 1 | 2 | 3} />
+      <ImportStepper currentStep={currentStep} />
 
-      {importLoading || parseResult ? (
+      {showMapping ? (
+        <ImportColumnMappingPhase
+          accountName={selectedAccountName}
+          proposal={mappingProposal}
+          draft={mappingDraft}
+          sources={mappingDraftSources}
+          importError={importError}
+          importLoading={importLoading}
+          onChange={updateMappingDraft}
+          onConfirm={() => void confirmColumnMapping()}
+          onBack={closeMappingStep}
+        />
+      ) : showReview ? (
         <ImportReviewPhase
           accountError={accountError}
           activeAccounts={activeAccounts}
           categoryDecisions={categoryDecisions}
           noteDecisions={noteDecisions}
           categoryError={categoryError}
+          editColumnMapping={editColumnMapping}
           importError={importError}
           importLoading={importLoading}
           resolvedMessages={resolvedMessages}
           noteValidationErrors={noteValidationErrors}
-          openProviderDialog={openProviderDialog}
           parseResult={parseResult}
-          providerDetection={providerDetection}
           resetImport={resetImport}
           retryFailed={retryFailed}
           reviewCategoryOptions={reviewCategoryOptions}
@@ -94,7 +125,6 @@ export function ImportUploader() {
         <ImportUploadPhase
           accountError={accountError}
           activeAccounts={activeAccounts}
-          allProviders={allProviders}
           categoryError={categoryError}
           clearSelectedFile={clearSelectedFile}
           fileInputRef={fileInputRef}
@@ -103,25 +133,13 @@ export function ImportUploader() {
           importLoading={importLoading}
           isDraggingOver={isDraggingOver}
           onFileSelected={onFileSelected}
-          openProviderDialog={openProviderDialog}
-          parseCsv={parseCsv}
-          providerDetection={providerDetection}
+          parseCsv={() => void parseCsv()}
           selectedAccountId={selectedAccountId}
           selectedFile={selectedFile}
           setIsDraggingOver={setIsDraggingOver}
           setSelectedAccountId={setSelectedAccountId}
         />
       )}
-
-      <ProviderSelectionDialog
-        open={isProviderDialogOpen}
-        onOpenChange={setIsProviderDialogOpen}
-        providerOptions={dialogProviderOptions}
-        selectedProviderId={dialogSelectedProviderId}
-        onSelectProvider={setDialogSelectedProviderId}
-        onCancel={() => setIsProviderDialogOpen(false)}
-        onConfirm={handleProviderConfirm}
-      />
     </main>
   );
 }

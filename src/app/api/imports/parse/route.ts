@@ -1,4 +1,22 @@
 import { NextResponse } from "next/server";
+import {
+  type ColumnMapping,
+  type ColumnMappingGuess,
+  columnMappingFitsHeaders,
+  parseColumnMapping,
+} from "@/lib/import/csv/column-mapping";
+import type { TokenizedCsvRow } from "@/lib/import/csv/csv-statement";
+import {
+  COLUMN_MAPPING_SAMPLE_ROWS,
+  guessColumnMapping,
+  resolveSavedColumnMapping,
+  savedColumnMappingGuess,
+} from "@/lib/import/csv/guess-column-mapping";
+import {
+  type CsvTable,
+  parseMappedCsv,
+  readCsvTable,
+} from "@/lib/import/csv/parse-mapped-csv";
 import type { CsvParserResult } from "@/lib/import/csv-parser";
 import {
   planCleanupChunks,
@@ -14,14 +32,6 @@ import {
   type StatementReconciliation,
   statementDriftNok,
 } from "@/lib/import/pdf/statement-items";
-import type { ProviderAdapter } from "@/lib/import/provider-adapter/adapter";
-import { createBuiltInNorwegianAdapter } from "@/lib/import/provider-adapter/built-in-norwegian";
-import { createCsvStatement } from "@/lib/import/provider-adapter/csv-statement";
-import {
-  detectProviderFromAdapters,
-  type ProviderDetectionResult,
-} from "@/lib/import/provider-adapter/detection";
-import { loadProviderAdapters } from "@/lib/import/provider-adapter/repository";
 import { stageParsedImportRows } from "@/lib/import/review-stage";
 import { prisma } from "@/lib/prisma";
 
@@ -35,7 +45,24 @@ type ParseImportSource =
 type ParseImportPayload = {
   accountId: string;
   source: ParseImportSource;
-  providerId: string | null;
+  /** Absent when the request carries none; null when it carries a malformed one. */
+  columnMapping: ColumnMapping | null | undefined;
+};
+
+type PdfDetection = {
+  state: "certain";
+  providerId: string;
+  providerName: string;
+  score: number;
+  matchedHeaders: string[];
+  candidates: [];
+};
+
+/** What the column-mapping step needs to show, edit and preview a mapping. */
+type CsvColumnMappingProposal = {
+  headers: string[];
+  sampleRows: TokenizedCsvRow[];
+  guess: ColumnMappingGuess;
 };
 
 type ParseReconciliation = StatementReconciliation & { driftNok: number };
@@ -70,6 +97,14 @@ function sourceByteLength(source: ParseImportSource): number {
     : Buffer.byteLength(source.content, "utf8");
 }
 
+function parseColumnMappingJson(value: string): ColumnMapping | null {
+  try {
+    return parseColumnMapping(JSON.parse(value));
+  } catch {
+    return null;
+  }
+}
+
 async function parseImportPayload(
   request: Request,
 ): Promise<ParseImportPayload | null> {
@@ -83,11 +118,7 @@ async function parseImportPayload(
 
     const accountId = formData.get("accountId");
     const file = formData.get("file");
-    const providerIdValue = formData.get("providerId");
-    const providerId =
-      typeof providerIdValue === "string" && providerIdValue.trim().length > 0
-        ? providerIdValue.trim()
-        : null;
+    const columnMappingValue = formData.get("columnMapping");
 
     if (typeof accountId !== "string") {
       return null;
@@ -111,7 +142,10 @@ async function parseImportPayload(
     return {
       accountId,
       source,
-      providerId,
+      columnMapping:
+        typeof columnMappingValue === "string"
+          ? parseColumnMappingJson(columnMappingValue)
+          : undefined,
     };
   }
 
@@ -126,24 +160,22 @@ async function parseImportPayload(
     return null;
   }
 
-  const providerId =
-    typeof payload.providerId === "string" &&
-    payload.providerId.trim().length > 0
-      ? payload.providerId.trim()
-      : null;
-
   return {
     accountId: payload.accountId,
     source: { kind: "csv", content: payload.csvContent },
-    providerId,
+    columnMapping:
+      payload.columnMapping === undefined
+        ? undefined
+        : parseColumnMapping(payload.columnMapping),
   };
 }
 
 async function stageAndRespond(options: {
   accountId: string;
-  detection: ProviderDetectionResult;
   parsed: CsvParserResult;
   reconciliation: StatementReconciliation | null;
+  detection?: PdfDetection;
+  columnMapping?: CsvColumnMappingProposal;
 }) {
   const staged = await stageParsedImportRows(prisma, {
     accountId: options.accountId,
@@ -162,7 +194,8 @@ async function stageAndRespond(options: {
   };
 
   return NextResponse.json({
-    detection: options.detection,
+    ...(options.detection ? { detection: options.detection } : {}),
+    ...(options.columnMapping ? { columnMapping: options.columnMapping } : {}),
     summary: staged.summary,
     errors: staged.errors,
     review: staged.review,
@@ -204,8 +237,6 @@ async function parsePdfImport(accountId: string, bytes: Uint8Array) {
 
   return stageAndRespond({
     accountId,
-    // PDF detection matches an issuer letterhead or it fails, so there is no
-    // uncertain state to hand back for the provider-selection dialog.
     detection: {
       state: "certain",
       providerId: extractor.providerId,
@@ -216,6 +247,66 @@ async function parsePdfImport(accountId: string, bytes: Uint8Array) {
     },
     parsed,
     reconciliation,
+  });
+}
+
+async function parseCsvImport(options: {
+  account: {
+    id: string;
+    csvColumnMapping: unknown;
+    csvHeaderSignature: string | null;
+  };
+  table: CsvTable;
+  columnMapping: ColumnMapping | null | undefined;
+}) {
+  const { account, table } = options;
+
+  if (table.headers.length === 0) {
+    return badRequest(
+      "CSV_HEADERS_NOT_FOUND",
+      "No header row was found in this CSV. The first non-blank line must name its columns.",
+    );
+  }
+
+  if (options.columnMapping === null) {
+    return badRequest(
+      "INVALID_COLUMN_MAPPING",
+      "The column mapping must name a date column, an amount and at least one description column.",
+    );
+  }
+
+  const sampleRows = table.rows.slice(0, COLUMN_MAPPING_SAMPLE_ROWS);
+  const confirmed =
+    options.columnMapping ?? resolveSavedColumnMapping(account, table.headers);
+
+  if (confirmed) {
+    if (!columnMappingFitsHeaders(confirmed, table.headers)) {
+      return badRequest(
+        "COLUMN_MAPPING_MISMATCH",
+        "The column mapping names columns this file does not have. Map the columns again.",
+      );
+    }
+
+    return stageAndRespond({
+      accountId: account.id,
+      parsed: parseMappedCsv(table, confirmed),
+      reconciliation: null,
+      columnMapping: {
+        headers: table.headers,
+        sampleRows,
+        guess: savedColumnMappingGuess(confirmed),
+      },
+    });
+  }
+
+  const guess = await guessColumnMapping({
+    headers: table.headers,
+    sampleRows: sampleRows.map((row) => row.cells),
+  });
+
+  return NextResponse.json({
+    mappingRequired: true,
+    columnMapping: { headers: table.headers, sampleRows, guess },
   });
 }
 
@@ -246,7 +337,7 @@ export async function POST(request: Request) {
 
   const account = await prisma.account.findUnique({
     where: { id: accountId },
-    select: { id: true },
+    select: { id: true, csvColumnMapping: true, csvHeaderSignature: true },
   });
 
   if (!account) {
@@ -265,77 +356,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const { adapters, configurationErrors } = await loadProviderAdapters(prisma);
-  const statement = createCsvStatement(csvContent);
-  const detectedProvider = detectProviderFromAdapters(adapters, statement);
-  let detection = detectedProvider;
-  let selectedAdapter: ProviderAdapter | null = null;
-
-  if (payload.providerId) {
-    const selectedProviderId = payload.providerId;
-    const adapter = adapters.find(
-      (candidate) => candidate.providerId === selectedProviderId,
-    );
-
-    if (!adapter) {
-      const configurationError = configurationErrors.find(
-        (error) => error.details?.providerMappingId === selectedProviderId,
-      );
-
-      if (configurationError) {
-        return NextResponse.json(
-          {
-            error: "PROVIDER_MAPPING_CONFIGURATION_ERROR",
-            message: configurationError.message,
-            code: configurationError.code,
-          },
-          { status: 400 },
-        );
-      }
-
-      return badRequest(
-        "PROVIDER_NOT_FOUND",
-        "The selected provider could not be found.",
-      );
-    }
-
-    selectedAdapter = adapter;
-    const selectedCandidate = detectedProvider.candidates.find(
-      (candidate) => candidate.providerId === adapter.providerId,
-    );
-
-    detection = {
-      ...detectedProvider,
-      state: "certain",
-      providerId: adapter.providerId,
-      providerName: adapter.providerName,
-      score: selectedCandidate?.score ?? detectedProvider.score,
-    };
-  } else if (detection.state !== "certain" && detection.candidates.length > 0) {
-    return NextResponse.json(
-      {
-        error: "PROVIDER_SELECTION_REQUIRED",
-        message:
-          "Provider detection is uncertain. Select a provider and parse again.",
-        detection,
-      },
-      { status: 409 },
-    );
-  }
-
-  if (!selectedAdapter && detection.providerId) {
-    selectedAdapter =
-      adapters.find(
-        (candidate) => candidate.providerId === detection.providerId,
-      ) ?? null;
-  }
-
-  const adapter = selectedAdapter ?? createBuiltInNorwegianAdapter();
-
-  return stageAndRespond({
-    accountId,
-    detection,
-    parsed: adapter.parse(statement),
-    reconciliation: null,
+  return parseCsvImport({
+    account,
+    table: readCsvTable(csvContent),
+    columnMapping: payload.columnMapping,
   });
 }
