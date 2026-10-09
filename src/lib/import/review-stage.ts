@@ -8,6 +8,7 @@ import {
 import {
   buildRuleBasedSuggestions,
   type CategoryRuleCandidate,
+  type RuleMatchTransaction,
 } from "../categorization/rule-engine";
 import { classifyJevConfidence } from "../jev/confidence-tier";
 import type {
@@ -346,12 +347,6 @@ function buildSummary(
   };
 }
 
-type RuleMatchSeed = {
-  id: string;
-  normalizedMerchant: string;
-  paymentType: PaymentType;
-};
-
 type ExistingTransactionFingerprintSource = {
   bookingDate: Date;
   amountNok: { toString(): string } | number;
@@ -384,9 +379,9 @@ async function buildRuleSuggestionMap(
     orderBy: [{ priority: "asc" }, { id: "asc" }],
   });
 
-  const suggestionSeeds: RuleMatchSeed[] = validRows.map((row) => ({
+  const suggestionSeeds: RuleMatchTransaction[] = validRows.map((row) => ({
     id: `row-${row.rowNumber}`,
-    normalizedMerchant: row.normalizedMerchant,
+    merchant: [row.name, row.title].join(" "),
     paymentType: row.paymentType,
   }));
   const suggestions = buildRuleBasedSuggestions(suggestionSeeds, categoryRules);

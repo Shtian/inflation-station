@@ -8,12 +8,12 @@ describe("buildRuleBasedSuggestions", () => {
       [
         {
           id: "tx-1",
-          normalizedMerchant: "rema 1000 oslo",
+          merchant: "rema 1000 oslo",
           paymentType: PaymentType.CARD,
         },
         {
           id: "tx-2",
-          normalizedMerchant: "husleie as",
+          merchant: "husleie as",
           paymentType: PaymentType.TRANSFER,
         },
       ],
@@ -58,7 +58,7 @@ describe("buildRuleBasedSuggestions", () => {
       [
         {
           id: "tx-1",
-          normalizedMerchant: "coop mega trondheim",
+          merchant: "coop mega trondheim",
           paymentType: PaymentType.CARD,
         },
       ],
@@ -89,7 +89,7 @@ describe("buildRuleBasedSuggestions", () => {
       [
         {
           id: "tx-1",
-          normalizedMerchant: "osteras bakeri",
+          merchant: "osteras bakeri",
           paymentType: PaymentType.CARD,
         },
       ],
@@ -113,7 +113,7 @@ describe("buildRuleBasedSuggestions", () => {
       [
         {
           id: "tx-1",
-          normalizedMerchant: "electric company",
+          merchant: "electric company",
           paymentType: PaymentType.EFT,
         },
       ],

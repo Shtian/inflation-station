@@ -3,7 +3,7 @@ import { normalizeMerchantKey } from "@/lib/transactions/merchant";
 
 export type RuleMatchTransaction = {
   id: string;
-  normalizedMerchant: string;
+  merchant: string;
   paymentType: PaymentType;
 };
 
@@ -34,7 +34,7 @@ function ruleMatchesTransaction(
   }
 
   if (
-    !normalizeMerchantKey(transaction.normalizedMerchant).includes(
+    !normalizeMerchantKey(transaction.merchant).includes(
       normalizedNeedle,
     )
   ) {
