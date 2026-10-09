@@ -209,7 +209,7 @@ test("manages categories and category rules from /categories", async ({
     page.getByRole("heading", { name: "Category Management" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "Food", exact: true }),
+    page.getByRole("cell", { name: "Food No hint", exact: true }),
   ).toBeVisible();
 
   await page.getByRole("tab", { name: "Category rules" }).click();
@@ -226,7 +226,7 @@ test("manages categories and category rules from /categories", async ({
     page.locator("[data-sonner-toast]", { hasText: "Category added." }),
   ).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "Transport", exact: true }),
+    page.getByRole("cell", { name: "Transport No hint", exact: true }),
   ).toBeVisible();
 
   await page
@@ -241,7 +241,7 @@ test("manages categories and category rules from /categories", async ({
     page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
   ).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "Commute", exact: true }),
+    page.getByRole("cell", { name: "Commute No hint", exact: true }),
   ).toBeVisible();
 
   await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
@@ -255,7 +255,7 @@ test("manages categories and category rules from /categories", async ({
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await page
     .getByRole("dialog")
-    .getByLabel("Classifier hint (optional)")
+    .getByLabel("Classifier hint (recommended)")
     .fill("Recurring transport top-ups");
   await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
 
@@ -272,7 +272,7 @@ test("manages categories and category rules from /categories", async ({
     .click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await expect(
-    page.getByRole("dialog").getByLabel("Classifier hint (optional)"),
+    page.getByRole("dialog").getByLabel("Classifier hint (recommended)"),
   ).toHaveValue("Recurring transport top-ups");
   await page
     .getByRole("dialog")
@@ -332,4 +332,135 @@ test("manages categories and category rules from /categories", async ({
   await expect(
     page.getByRole("cell", { name: "Commute", exact: true }),
   ).toHaveCount(0);
+});
+
+test("flags categories without a classifier hint on /categories", async ({
+  page,
+}) => {
+  let categories: Category[] = [
+    {
+      id: "cat-groceries",
+      name: "Groceries",
+      kind: "EXPENSE",
+      accountId: null,
+      classifierHint: "Rema 1000, Kiwi",
+    },
+    {
+      id: "cat-food",
+      name: "Food",
+      kind: "EXPENSE",
+      accountId: null,
+      classifierHint: null,
+    },
+  ];
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ accounts: [] }),
+    });
+  });
+
+  await page.route("**/api/category-rules", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ rules: [] }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ categories }),
+    });
+  });
+
+  await page.route("**/api/categories/*", async (route, request) => {
+    if (request.method() !== "PATCH") {
+      await route.fallback();
+      return;
+    }
+
+    const categoryId = request.url().split("/").at(-1) ?? "";
+    const payload = request.postDataJSON() as {
+      name: string;
+      classifierHint: string | null;
+    };
+    categories = categories.map((category) =>
+      category.id === categoryId
+        ? {
+            ...category,
+            name: payload.name,
+            classifierHint: payload.classifierHint,
+          }
+        : category,
+    );
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        category:
+          categories.find((category) => category.id === categoryId) ?? null,
+      }),
+    });
+  });
+
+  const notice = page
+    .getByRole("status")
+    .filter({ hasText: "Hints improve automatic categorization." });
+  const foodRow = page.getByRole("row", { name: /Food/ });
+  const groceriesRow = page.getByRole("row", { name: /Groceries/ });
+
+  await page.goto("/categories");
+
+  await expect(notice).toHaveText(
+    "1 category has no hint. Hints improve automatic categorization.",
+  );
+  await expect(foodRow.getByText("No hint", { exact: true })).toBeVisible();
+  await expect(groceriesRow).toBeVisible();
+  await expect(groceriesRow.getByText("No hint", { exact: true })).toHaveCount(
+    0,
+  );
+
+  await foodRow
+    .getByRole("button", { name: "Actions for category Food" })
+    .click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page
+    .getByRole("dialog")
+    .getByLabel("Classifier hint (recommended)")
+    .fill("Restaurants and takeaway: Foodora, Wolt");
+  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+  ).toBeVisible();
+  await expect(notice).toHaveCount(0);
+  await expect(foodRow.getByText("No hint", { exact: true })).toHaveCount(0);
+
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
+    timeout: 15_000,
+  });
+
+  await foodRow
+    .getByRole("button", { name: "Actions for category Food" })
+    .click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page
+    .getByRole("dialog")
+    .getByLabel("Classifier hint (recommended)")
+    .fill("");
+  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+  ).toBeVisible();
+  await expect(notice).toHaveText(
+    "1 category has no hint. Hints improve automatic categorization.",
+  );
+  await expect(foodRow.getByText("No hint", { exact: true })).toBeVisible();
 });

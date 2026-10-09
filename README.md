@@ -133,6 +133,15 @@ Jev suggests a category for each imported row and helps guess which CSV columns 
   ```
 - If `TYPESAFE_API_KEY` is not set, imports still complete: rows go to review without Jev's category suggestions, and the column-mapping step uses the built-in guesser alone.
 
+### Evaluating Jev categorization
+
+`pnpm eval:jev --limit 20` measures how well Jev picks categories, so a change to category hints, the prompt or the confidence floor can be compared with numbers. It needs `TYPESAFE_API_KEY`, makes one live API call per case, and is not part of `pnpm test` or CI.
+
+- Labels come from already-categorized transactions in `DATABASE_URL` (default `prisma/dev.db`), one per distinct merchant, most recent first. `--limit` caps the cases (default 50).
+- Each case runs through the production `categorizeRowsWithJev`, including the confidence floor, with the categories and their classifier hints from the same database.
+- Transactions do not store the import's name, title, sender or recipient. The eval sends `merchant` (or the normalized merchant) as the name and leaves the other three empty, so it is a little harder than a real import.
+- The report counts suggested (correct and wrong), uncategorized, below floor and each unavailable reason, with p50 and max latency, then lists every wrong or missed row.
+
 ## Useful Commands
 
 - `pnpm lint`

@@ -1,6 +1,7 @@
 import type { CategoryKind } from "@prisma/client";
 import { Ellipsis, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { CategoryBadge } from "@/components/category-badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,7 +19,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -37,12 +43,19 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import type { Category } from "../categories-manager.types";
+import { hasClassifierHint } from "../categories-manager.utils";
 
 const CATEGORY_KIND_LABELS: Record<CategoryKind, string> = {
   EXPENSE: "Expense",
   INCOME: "Income",
   TRANSFER: "Transfer",
 };
+
+const CLASSIFIER_HINT_LABEL = "Classifier hint (recommended)";
+const CLASSIFIER_HINT_PLACEHOLDER =
+  "Groceries: Rema 1000, Kiwi, Meny, Coop Extra, Joker, Bunnpris";
+const CLASSIFIER_HINT_DESCRIPTION =
+  "Describe what belongs here in plain words and list typical merchants as they appear on your bank statement.";
 
 type CategoryManagementSectionProps = {
   categories: Category[];
@@ -87,6 +100,10 @@ export function CategoryManagementSection({
   onEditCategoryClassifierHintChange,
   onRenameCategory,
 }: CategoryManagementSectionProps) {
+  const missingHintCount = categories.filter(
+    (category) => !hasClassifierHint(category),
+  ).length;
+
   return (
     <section className="space-y-4">
       <div className="space-y-1">
@@ -137,7 +154,7 @@ export function CategoryManagementSection({
         </Field>
         <Field>
           <FieldLabel htmlFor="new-category-classifier-hint">
-            Classifier hint (optional)
+            {CLASSIFIER_HINT_LABEL}
           </FieldLabel>
           <FieldContent>
             <Textarea
@@ -146,9 +163,10 @@ export function CategoryManagementSection({
               onChange={(event) =>
                 onNewCategoryClassifierHintChange(event.target.value)
               }
-              placeholder="Short note to help the AI pick this category for non-obvious transactions."
+              placeholder={CLASSIFIER_HINT_PLACEHOLDER}
               rows={2}
             />
+            <FieldDescription>{CLASSIFIER_HINT_DESCRIPTION}</FieldDescription>
           </FieldContent>
         </Field>
         <Button
@@ -167,6 +185,15 @@ export function CategoryManagementSection({
           )}
         </Button>
       </div>
+
+      {!loading && missingHintCount > 0 ? (
+        <output className="block rounded-md border border-border bg-muted/40 px-3 py-2 text-muted-foreground text-sm">
+          {missingHintCount === 1
+            ? "1 category has no hint."
+            : `${missingHintCount} categories have no hint.`}{" "}
+          Hints improve automatic categorization.
+        </output>
+      ) : null}
 
       <div className="overflow-x-auto rounded-md border border-border">
         <Table>
@@ -192,7 +219,12 @@ export function CategoryManagementSection({
               ? categories.map((category) => (
                   <TableRow key={category.id}>
                     <TableCell>
-                      <CategoryBadge label={category.name} />
+                      <div className="flex items-center gap-2">
+                        <CategoryBadge label={category.name} />
+                        {hasClassifierHint(category) ? null : (
+                          <Badge variant="outline">No hint</Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{category.kind}</TableCell>
                     <TableCell className="text-right">
@@ -288,7 +320,7 @@ export function CategoryManagementSection({
 
           <Field>
             <FieldLabel htmlFor="edit-category-classifier-hint">
-              Classifier hint (optional)
+              {CLASSIFIER_HINT_LABEL}
             </FieldLabel>
             <FieldContent>
               <Textarea
@@ -297,13 +329,14 @@ export function CategoryManagementSection({
                 onChange={(event) =>
                   onEditCategoryClassifierHintChange(event.target.value)
                 }
-                placeholder="Short note to help the AI pick this category for non-obvious transactions."
+                placeholder={CLASSIFIER_HINT_PLACEHOLDER}
                 rows={2}
                 disabled={
                   editingCategoryId !== null &&
                   busyKey === `rename-category-${editingCategoryId}`
                 }
               />
+              <FieldDescription>{CLASSIFIER_HINT_DESCRIPTION}</FieldDescription>
             </FieldContent>
           </Field>
 
