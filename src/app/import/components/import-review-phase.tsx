@@ -15,6 +15,7 @@ import {
   type ReviewRow,
   ReviewTableSkeleton,
 } from "../import-review-table";
+import { describeJevUnavailability } from "../jev-unavailable-notice";
 import { deriveCleanupStreamStatus } from "../message-cleanup/cleanup-stream-status";
 import type {
   MessageSource,
@@ -125,6 +126,10 @@ export function ImportReviewPhase({
     parseResult?.cleanup?.status === "unavailable"
       ? parseResult.cleanup.reason
       : null,
+  );
+  const jevUnavailableMessage = describeJevUnavailability(
+    parseResult?.jevOutcomes,
+    reviewRows.length,
   );
 
   if (importLoading) {
@@ -325,6 +330,12 @@ export function ImportReviewPhase({
       {cleanupUnavailableMessage ? (
         <p className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning">
           {cleanupUnavailableMessage}
+        </p>
+      ) : null}
+
+      {jevUnavailableMessage ? (
+        <p className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning">
+          {jevUnavailableMessage}
         </p>
       ) : null}
 

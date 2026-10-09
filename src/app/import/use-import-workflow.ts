@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { saveAccountCsvColumnMappingAction } from "@/app/actions/save-account-csv-column-mapping";
+import type { JevOutcomeSummary } from "@/lib/categorization/jev-categorize";
 import {
   type ColumnMapping,
   type ColumnMappingDraft,
@@ -87,6 +88,7 @@ export type ParseResponse = {
   summary: ImportSummary;
   errors: ImportError[];
   cleanup?: CleanupPlan;
+  jevOutcomes?: JevOutcomeSummary;
   review?: {
     sessionId: string | null;
     potentialDuplicates: number;
