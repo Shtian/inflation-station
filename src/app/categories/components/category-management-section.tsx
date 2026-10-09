@@ -1,6 +1,7 @@
 import type { CategoryKind } from "@prisma/client";
 import { Ellipsis, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { CategoryBadge } from "@/components/category-badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,6 +43,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import type { Category } from "../categories-manager.types";
+import { hasClassifierHint } from "../categories-manager.utils";
 
 const CATEGORY_KIND_LABELS: Record<CategoryKind, string> = {
   EXPENSE: "Expense",
@@ -98,6 +100,10 @@ export function CategoryManagementSection({
   onEditCategoryClassifierHintChange,
   onRenameCategory,
 }: CategoryManagementSectionProps) {
+  const missingHintCount = categories.filter(
+    (category) => !hasClassifierHint(category),
+  ).length;
+
   return (
     <section className="space-y-4">
       <div className="space-y-1">
@@ -180,6 +186,15 @@ export function CategoryManagementSection({
         </Button>
       </div>
 
+      {!loading && missingHintCount > 0 ? (
+        <output className="block rounded-md border border-border bg-muted/40 px-3 py-2 text-muted-foreground text-sm">
+          {missingHintCount === 1
+            ? "1 category has no hint."
+            : `${missingHintCount} categories have no hint.`}{" "}
+          Hints improve automatic categorization.
+        </output>
+      ) : null}
+
       <div className="overflow-x-auto rounded-md border border-border">
         <Table>
           <TableHeader>
@@ -204,7 +219,12 @@ export function CategoryManagementSection({
               ? categories.map((category) => (
                   <TableRow key={category.id}>
                     <TableCell>
-                      <CategoryBadge label={category.name} />
+                      <div className="flex items-center gap-2">
+                        <CategoryBadge label={category.name} />
+                        {hasClassifierHint(category) ? null : (
+                          <Badge variant="outline">No hint</Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{category.kind}</TableCell>
                     <TableCell className="text-right">
