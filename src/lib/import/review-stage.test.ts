@@ -472,6 +472,39 @@ describe("stageParsedImportRows", () => {
     expect(result.review.rows[0]?.potentialDuplicate).toBe(false);
   });
 
+  it("matches rules against the raw merchant text while keeping the stored merchant key unchanged", async () => {
+    const db = createDbMock({
+      categoryRules: [
+        {
+          id: "rule-1",
+          categoryId: "cat-cafe",
+          merchantContains: "cafe",
+          paymentType: PaymentType.CARD,
+          priority: 10,
+        },
+      ],
+    });
+
+    await stageParsedImportRows(db, {
+      accountId: "account-1",
+      parsed: buildParsedResult([
+        buildParsedRow({ name: "", title: "Café Løkka", paymentType: "" }),
+      ]),
+    });
+
+    expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          normalizedMerchant: "caf lokka",
+          paymentType: PaymentType.OTHER,
+          categoryId: "cat-cafe",
+          suggestionSource: "RULE",
+          suggestionConfidence: 0.8,
+        }),
+      ],
+    });
+  });
+
   it("continues staging uncategorized rows when suggestion lookup fails", async () => {
     const db = createDbMock({
       throwOnCategoryRuleLookup: true,
