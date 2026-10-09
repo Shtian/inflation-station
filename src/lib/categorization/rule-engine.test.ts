@@ -8,12 +8,12 @@ describe("buildRuleBasedSuggestions", () => {
       [
         {
           id: "tx-1",
-          normalizedMerchant: "rema 1000 oslo",
+          merchant: "rema 1000 oslo",
           paymentType: PaymentType.CARD,
         },
         {
           id: "tx-2",
-          normalizedMerchant: "husleie as",
+          merchant: "husleie as",
           paymentType: PaymentType.TRANSFER,
         },
       ],
@@ -58,7 +58,7 @@ describe("buildRuleBasedSuggestions", () => {
       [
         {
           id: "tx-1",
-          normalizedMerchant: "coop mega trondheim",
+          merchant: "coop mega trondheim",
           paymentType: PaymentType.CARD,
         },
       ],
@@ -89,7 +89,7 @@ describe("buildRuleBasedSuggestions", () => {
       [
         {
           id: "tx-1",
-          normalizedMerchant: "osteras bakeri",
+          merchant: "osteras bakeri",
           paymentType: PaymentType.CARD,
         },
       ],
@@ -108,12 +108,70 @@ describe("buildRuleBasedSuggestions", () => {
     expect(suggestions[0]?.suggestedCategoryId).toBe("cat-food");
   });
 
+  it.each([
+    ["Rema 1000", "REMA1000 MAJORSTUEN"],
+    ["7-Eleven", "7ELEVEN OSLO S"],
+    ["mcdonalds", "McDonald's Storo"],
+    ["cafe", "Café Løkka"],
+  ])("matches rule %j against merchant %j", (merchantContains, merchant) => {
+    const suggestions = buildRuleBasedSuggestions(
+      [{ id: "tx-1", merchant, paymentType: PaymentType.CARD }],
+      [
+        {
+          id: "rule-1",
+          categoryId: "cat-food",
+          merchantContains,
+          paymentType: null,
+          priority: 10,
+        },
+      ],
+    );
+
+    expect(suggestions.map((s) => s.suggestedCategoryId)).toEqual(["cat-food"]);
+  });
+
+  it("matches a payment-type rule when the bank did not say how the transaction was paid", () => {
+    const suggestions = buildRuleBasedSuggestions(
+      [
+        {
+          id: "tx-other",
+          merchant: "KIWI 505 STORO",
+          paymentType: PaymentType.OTHER,
+        },
+        {
+          id: "tx-transfer",
+          merchant: "KIWI 505 STORO",
+          paymentType: PaymentType.TRANSFER,
+        },
+      ],
+      [
+        {
+          id: "rule-1",
+          categoryId: "cat-groceries",
+          merchantContains: "kiwi",
+          paymentType: PaymentType.CARD,
+          priority: 10,
+        },
+      ],
+    );
+
+    expect(suggestions).toEqual([
+      {
+        transactionId: "tx-other",
+        suggestedCategoryId: "cat-groceries",
+        source: SuggestionSource.RULE,
+        confidence: 0.8,
+        reasoning: 'Matched merchant "kiwi".',
+      },
+    ]);
+  });
+
   it("leaves unmatched transactions without a suggestion", () => {
     const suggestions = buildRuleBasedSuggestions(
       [
         {
           id: "tx-1",
-          normalizedMerchant: "electric company",
+          merchant: "electric company",
           paymentType: PaymentType.EFT,
         },
       ],
