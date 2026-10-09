@@ -10,7 +10,6 @@ import {
   type CategoryRuleCandidate,
   type RuleMatchTransaction,
 } from "../categorization/rule-engine";
-import { classifyJevConfidence } from "../jev/confidence-tier";
 import type {
   CsvParserResult,
   CsvValidationError,
@@ -435,17 +434,14 @@ async function addJevSuggestions(
     select: { id: true, name: true, classifierHint: true },
   });
 
-  const jevSuggestions = await categorizeRowsWithJev({
+  const { suggestions } = await categorizeRowsWithJev({
     rows: unmatchedRows.map(toJevCategorizeRow),
     categories,
     apiKey: jevApiKey,
     fetchImpl: jevFetchImpl,
   });
 
-  for (const suggestion of jevSuggestions) {
-    if (classifyJevConfidence(suggestion.confidence) === null) {
-      continue; // below the confidence floor: treat as no suggestion
-    }
+  for (const suggestion of suggestions) {
     suggestionByRowNumber.set(suggestion.rowNumber, {
       categoryId: suggestion.categoryId,
       source: SuggestionSource.JEV,
