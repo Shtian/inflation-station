@@ -18,6 +18,12 @@ fi
 echo "==> Installing dependencies..."
 pnpm install --frozen-lockfile
 
+# Back up the database before migrations touch it (skipped on first deploy, when no DB exists yet)
+if [ -n "${DB_PATH:-}" ] && [ -f "$DB_PATH" ]; then
+  echo "==> Backing up database..."
+  scripts/backup-db.sh
+fi
+
 echo "==> Running migrations..."
 pnpm db:migrate:deploy
 
