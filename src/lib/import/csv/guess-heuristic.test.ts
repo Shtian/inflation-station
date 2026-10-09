@@ -91,6 +91,23 @@ describe("guessColumnMappingHeuristically", () => {
     });
   });
 
+  it("skips a numeric ID column in favour of the one that holds money", () => {
+    const guess = guessColumnMappingHeuristically(
+      ["Txn ID", "Posted", "Counterparty", "Sum"],
+      [
+        ["88123", "2026-09-02", "Kiwi Majorstuen", "-249.90"],
+        ["88124", "2026-09-03", "Norsk Arbeidsgiver AS", "35000.00"],
+      ],
+    );
+
+    expect(guess).toEqual({
+      date: { index: 1, header: "Posted" },
+      amount: { kind: "signed", column: { index: 3, header: "Sum" } },
+      description: [{ index: 2, header: "Counterparty" }],
+      paymentType: null,
+    });
+  });
+
   it("leaves fields empty when neither headers nor samples settle them", () => {
     expect(guessColumnMappingHeuristically(["A", "B"], [])).toEqual({
       date: null,

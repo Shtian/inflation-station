@@ -99,6 +99,11 @@ function isAmountColumn(column: Column): boolean {
   );
 }
 
+// An ID or reference column is numeric too; money carries a sign or decimals.
+function looksMonetary(column: Column): boolean {
+  return column.samples.some((value) => /^[-+−]|[.,]\d{1,2}$/.test(value));
+}
+
 function averageLength(column: Column): number {
   const total = column.samples.reduce((sum, value) => sum + value.length, 0);
   return column.samples.length === 0 ? 0 : total / column.samples.length;
@@ -157,11 +162,10 @@ export function guessColumnMappingHeuristically(
   }
 
   if (!amount) {
-    const column = claim(
-      unused().find(
-        (candidate) => !isDateColumn(candidate) && isAmountColumn(candidate),
-      ),
+    const numeric = unused().filter(
+      (candidate) => !isDateColumn(candidate) && isAmountColumn(candidate),
     );
+    const column = claim(numeric.find(looksMonetary) ?? numeric[0]);
     amount = column ? { kind: "signed", column } : null;
   }
 
