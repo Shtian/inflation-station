@@ -38,6 +38,6 @@ cp -r .next/static .next/standalone/.next/static
 cp -r public .next/standalone/public
 
 echo "==> Restarting pm2..."
-pm2 restart inflation-station || pm2 start ecosystem.config.js
+pm2 restart "${PM2_APP_NAME:-inflation-station}" || pm2 start ecosystem.config.js
 
 echo "==> Done!"

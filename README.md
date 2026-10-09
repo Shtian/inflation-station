@@ -34,11 +34,11 @@ Local-first personal economy dashboard built with Next.js, TypeScript, Prisma, a
 
 ## Self-Hosting (Raspberry Pi / Linux)
 
-The app runs as a production build managed by pm2, served on port 3000.
+The app runs as a production build managed by pm2, served on port 3000 by default.
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22.5+ (the database backup script uses `node:sqlite`)
 - pnpm 10+
 - pm2 (`npm install -g pm2`)
 - Git
@@ -50,18 +50,18 @@ The app runs as a production build managed by pm2, served on port 3000.
    ```
    DATABASE_URL=file:/path/to/data.db
    ```
-3. Update `ecosystem.config.js` so `cwd` points to your local clone path.
-4. Run the update script to install, migrate, build, and start:
+   Optionally set `PM2_APP_NAME` (default `inflation-station`) and `PORT` (default `3000`).
+3. Run the update script to install, migrate, build, and start:
    ```bash
    bash update.sh
    ```
-5. Optionally save the pm2 process list to auto-start on reboot:
+4. Optionally save the pm2 process list to auto-start on reboot:
    ```bash
    pm2 save
    pm2 startup
    ```
 
-The app will be reachable at `http://<host-ip>:3000`.
+The app will be reachable at `http://<host-ip>:<PORT>`.
 
 ### Updating
 
@@ -72,7 +72,27 @@ git pull origin main
 bash update.sh
 ```
 
-The script installs dependencies, runs migrations, rebuilds, and restarts pm2 automatically. The currently running build is displayed in the app footer.
+The script installs dependencies, backs up the database (to `<database dir>/backups`), runs migrations, rebuilds, and restarts pm2 automatically. The currently running build is displayed in the app footer.
+
+To take a backup manually, run `scripts/backup-db.sh [output-dir]`. It is safe to run while the app is running.
+
+### Running Multiple Instances
+
+Each clone is a separate instance with its own database, so several people can run their own copy on the same machine. `ecosystem.config.js` runs the app from the folder it lives in and reads the pm2 name and port from that clone's `.env`.
+
+1. Clone the repo into a second folder.
+2. Give its `.env` a unique database path, pm2 name, and port:
+   ```
+   DATABASE_URL=file:/path/to/other-data/data.db
+   PM2_APP_NAME=inflation-station-other
+   PORT=3001
+   ```
+3. Run `bash update.sh` in that folder, then `pm2 save` so the new process starts on reboot.
+4. Point your reverse proxy at the new port. Use a separate hostname rather than a sub-path; the app is not configured with a `basePath`.
+
+Each clone's `update.sh` backs up, migrates, rebuilds, and restarts only its own instance, so update each clone separately.
+
+The app has no login. Anyone who can reach an instance's address can see its data, so add authentication at the reverse proxy (for example Caddy's `basic_auth`) if instances should be private from each other.
 
 ## Prisma Migration and Seed Workflow
 
