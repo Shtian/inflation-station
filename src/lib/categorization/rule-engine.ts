@@ -1,4 +1,4 @@
-import { type PaymentType, SuggestionSource } from "@prisma/client";
+import { PaymentType, SuggestionSource } from "@prisma/client";
 import { normalizeMerchantKey } from "@/lib/transactions/merchant";
 
 export type RuleMatchTransaction = {
@@ -23,45 +23,61 @@ export type RuleBasedSuggestion = {
   reasoning: string;
 };
 
+// Banks spell one merchant as "REMA 1000" and "REMA1000", or "Café" and "Cafe".
+// This stays separate from normalizeMerchantKey because that key is part of the
+// dedupe fingerprint of stored transactions.
+function toRuleMatchKey(value: string): string {
+  return normalizeMerchantKey(
+    value.normalize("NFD").replaceAll(/\p{M}/gu, ""),
+  ).replaceAll(" ", "");
+}
+
+function isPaymentTypeConfirmed(
+  transaction: RuleMatchTransaction,
+  rule: CategoryRuleCandidate,
+): boolean {
+  return (
+    rule.paymentType !== null && rule.paymentType === transaction.paymentType
+  );
+}
+
 function ruleMatchesTransaction(
   transaction: RuleMatchTransaction,
   rule: CategoryRuleCandidate,
 ): boolean {
-  const normalizedNeedle = normalizeMerchantKey(rule.merchantContains);
-
-  if (normalizedNeedle.length === 0) {
-    return false;
-  }
+  const needle = toRuleMatchKey(rule.merchantContains);
 
   if (
-    !normalizeMerchantKey(transaction.merchant).includes(
-      normalizedNeedle,
-    )
+    needle.length === 0 ||
+    !toRuleMatchKey(transaction.merchant).includes(needle)
   ) {
     return false;
   }
 
+  // OTHER means the import could not tell how the transaction was paid.
   return (
-    rule.paymentType === null || rule.paymentType === transaction.paymentType
+    rule.paymentType === null ||
+    transaction.paymentType === PaymentType.OTHER ||
+    isPaymentTypeConfirmed(transaction, rule)
   );
 }
 
 function getRuleSpecificity(rule: CategoryRuleCandidate): number {
-  return normalizeMerchantKey(rule.merchantContains).length;
+  return toRuleMatchKey(rule.merchantContains).length;
 }
 
 function toSuggestion(
-  transactionId: string,
+  transaction: RuleMatchTransaction,
   rule: CategoryRuleCandidate,
 ): RuleBasedSuggestion {
-  const hasPaymentTypeConstraint = rule.paymentType !== null;
+  const paymentTypeConfirmed = isPaymentTypeConfirmed(transaction, rule);
 
   return {
-    transactionId,
+    transactionId: transaction.id,
     suggestedCategoryId: rule.categoryId,
     source: SuggestionSource.RULE,
-    confidence: hasPaymentTypeConstraint ? 0.95 : 0.8,
-    reasoning: hasPaymentTypeConstraint
+    confidence: paymentTypeConfirmed ? 0.95 : 0.8,
+    reasoning: paymentTypeConfirmed
       ? `Matched merchant "${rule.merchantContains}" and payment type "${rule.paymentType}".`
       : `Matched merchant "${rule.merchantContains}".`,
   };
@@ -100,7 +116,7 @@ export function buildRuleBasedSuggestions(
       continue;
     }
 
-    suggestions.push(toSuggestion(transaction.id, matchedRule));
+    suggestions.push(toSuggestion(transaction, matchedRule));
   }
 
   return suggestions;
