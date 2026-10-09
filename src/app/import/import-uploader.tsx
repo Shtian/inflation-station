@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { ImportColumnMappingPhase } from "./components/import-column-mapping-phase";
+import { ColumnMappingPrototype } from "./components/column-mapping-prototype";
 import { ImportReviewPhase } from "./components/import-review-phase";
 import { type ImportStep, ImportStepper } from "./components/import-stepper";
 import { ImportUploadPhase } from "./components/import-upload-phase";
 import { useImportWorkflow } from "./use-import-workflow";
 
-export function ImportUploader() {
+export function ImportUploader({ variant }: { variant: string }) {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const {
     accountError,
@@ -77,7 +77,8 @@ export function ImportUploader() {
       <ImportStepper currentStep={currentStep} />
 
       {showMapping ? (
-        <ImportColumnMappingPhase
+        <ColumnMappingPrototype
+          variant={variant}
           accountName={selectedAccountName}
           proposal={mappingProposal}
           draft={mappingDraft}
