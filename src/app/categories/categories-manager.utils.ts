@@ -1,4 +1,4 @@
-import type { Account } from "./categories-manager.types";
+import type { Account, Category } from "./categories-manager.types";
 
 export const GLOBAL_SCOPE_VALUE = "__global__";
 export const ANY_PAYMENT_TYPE_VALUE = "__any__";
@@ -43,4 +43,10 @@ export function getScopeLabel(accountId: string | null, accounts: Account[]) {
   return (
     accounts.find((account) => account.id === accountId)?.name ?? "Unknown"
   );
+}
+
+export function hasClassifierHint(
+  category: Pick<Category, "classifierHint">,
+): boolean {
+  return (category.classifierHint?.trim() ?? "") !== "";
 }
