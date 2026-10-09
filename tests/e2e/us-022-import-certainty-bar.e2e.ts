@@ -119,14 +119,18 @@ const ANSWERED_OUTCOMES = {
   provider_error: 0,
 };
 
-async function stubParse(page: Page, jevOutcomes = ANSWERED_OUTCOMES) {
+async function stubParse(
+  page: Page,
+  jevOutcomes = ANSWERED_OUTCOMES,
+  rows: Array<{ id: string }> = reviewRows,
+) {
   await page.route("**/api/imports/parse", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         summary: {
-          imported: reviewRows.length,
+          imported: rows.length,
           duplicates: 0,
           ignoredReserved: 0,
           invalid: 0,
@@ -136,12 +140,12 @@ async function stubParse(page: Page, jevOutcomes = ANSWERED_OUTCOMES) {
         review: {
           sessionId: "session-1",
           potentialDuplicates: 0,
-          rows: reviewRows,
+          rows,
         },
         cleanup: {
           status: "unavailable",
           reason: "disabled",
-          rowIds: reviewRows.map((row) => row.id),
+          rowIds: rows.map((row) => row.id),
         },
       }),
     });
@@ -289,4 +293,55 @@ test("shows no Jev notice when Jev answered every row, even below the floor", as
   await expect(
     page.getByText(/Automatic categorization was unavailable/),
   ).toHaveCount(0);
+});
+
+test("labels rule and history suggestions with their source instead of a certainty bar", async ({
+  page,
+}) => {
+  await stubAccountsAndCategories(page);
+  const historyMatchedRow = {
+    ...reviewRows[4],
+    id: "row-6",
+    rowNumber: 7,
+    normalizedMerchant: "kiwi 0312 majorstuen",
+    name: "",
+    title: "KIWI 0312 MAJORSTUEN",
+    suggestionSource: "HISTORY",
+    suggestionConfidence: 0.75,
+  };
+  await stubParse(page, { ...ANSWERED_OUTCOMES, ok: 1, below_floor: 0 }, [
+    reviewRows[0],
+    reviewRows[4],
+    historyMatchedRow,
+  ]);
+
+  await uploadAndParse(page);
+
+  const rows = page.getByRole("row");
+  const jevRow = rows.filter({ hasText: "HIGH CONFIDENCE MERCHANT" });
+  const ruleRow = rows.filter({ hasText: "RULE MATCHED MERCHANT" });
+  const historyRow = rows.filter({ hasText: "KIWI 0312 MAJORSTUEN" });
+  const historyCategory = page.getByRole("combobox", {
+    name: "Category for row 7",
+  });
+
+  await expect(ruleRow.getByText("From rule", { exact: true })).toBeVisible();
+  await expect(
+    historyRow.getByText("From history", { exact: true }),
+  ).toBeVisible();
+  await expect(historyCategory).toHaveValue("Groceries");
+  await expect(
+    page.getByRole("img", { name: /confidence for row 7/i }),
+  ).toHaveCount(0);
+  await expect(jevRow.getByText(/^From /)).toHaveCount(0);
+  await expect(
+    page.getByRole("img", {
+      name: /AI suggestion confidence for row 2: high/i,
+    }),
+  ).toBeVisible();
+
+  await historyCategory.click();
+  await page.getByRole("option", { name: "Transport", exact: true }).click();
+  await expect(historyCategory).toHaveValue("Transport");
+  await expect(historyRow.getByText("From history")).toHaveCount(0);
 });
