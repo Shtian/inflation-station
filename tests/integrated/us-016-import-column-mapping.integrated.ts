@@ -34,8 +34,10 @@ test(
       page.getByRole("heading", { name: "Map Columns" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("combobox", { name: "Money out column" }),
-    ).toHaveText(/^Ut fra konto/);
+      page
+        .getByRole("list", { name: "Column mapping" })
+        .getByRole("button", { name: /^Amount/ }),
+    ).toContainText("Ut fra konto (out)");
     await page.getByRole("button", { name: "Confirm mapping" }).click();
 
     await expect(page.getByText("Import Preview")).toBeVisible();

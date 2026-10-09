@@ -56,7 +56,13 @@ export function ImportUploader() {
     mappingProposal !== null &&
     mappingDraft !== null &&
     mappingDraftSources !== null;
-  const showReview = !showMapping && (importLoading || parseResult !== null);
+  // A first parse may still land on the mapping step, so it stays on the
+  // upload step behind the Parse button's spinner; only a parse started by
+  // confirming a mapping is known to end in review.
+  const confirmingMapping = importLoading && isMappingStepOpen;
+  const showReview =
+    !showMapping &&
+    (confirmingMapping || (!importLoading && parseResult !== null));
   const currentStep: ImportStep = showReview
     ? 4
     : showMapping

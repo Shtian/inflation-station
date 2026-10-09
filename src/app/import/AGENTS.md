@@ -6,7 +6,7 @@ Load this when working in `src/app/import`.
 - Keep parse/submit orchestration and per-row decision transitions in `use-import-workflow.ts`.
 - Keep `import-uploader.tsx` focused on route orchestration: choosing the upload, column-mapping or review phase.
 - A CSV whose account has no saved mapping for its headers goes through `components/import-column-mapping-phase.tsx` before review. Confirm saves the mapping with `saveAccountCsvColumnMappingAction`, then re-posts the file with `columnMapping`; a failed save warns through a toast and does not block the import. The preview there runs `parseMappedCsv` on the sample rows in the browser, so keep that module free of server-only imports.
-- Keep the mapping controls' accessible names stable: `Date column`, `Amount column`, `Money in column`, `Money out column`, `Payment type column`, one checkbox per header under `Description columns`, and the `Confirm mapping` / `Edit column mapping` buttons.
+- Keep the mapping controls' accessible names stable: the `Column mapping` list with one expandable row per field; inside a row, the `Date column`, `Amount column`, `Money in column`, `Money out column` and `Payment type column` radio groups or the `Description columns` checkbox group, each control named by its header; and the `Confirm mapping` / `Edit column mapping` buttons.
 - Keep upload/review rendering in focused components under `src/app/import/components/*`.
 - Keep import settings save mutations in route-local client managers via typed Server Actions while preserving existing user-facing success/error copy.
 - In import settings managers, emit save success feedback through Sonner toasts and keep save/load failures as inline alerts.

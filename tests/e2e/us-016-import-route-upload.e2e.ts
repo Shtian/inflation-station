@@ -434,26 +434,32 @@ test("maps a CSV's columns before review, previews the parse and sends the confi
   await expect(
     page.getByRole("heading", { name: "Map Columns" }),
   ).toBeVisible();
-  await expect(page.getByRole("combobox", { name: "Date column" })).toHaveText(
-    /^Dato/,
+  const mappingRows = page.getByRole("list", { name: "Column mapping" });
+  const fieldRow = (label: string) =>
+    mappingRows.getByRole("button", { name: new RegExp(`^${label}`) });
+  await expect(fieldRow("Date")).toContainText("Dato");
+  await expect(fieldRow("Amount")).toContainText(
+    "Inn på konto (in) / Ut fra konto (out)",
   );
+  await expect(fieldRow("Description")).toContainText("Forklaring");
+  await expect(fieldRow("Description")).toContainText("Suggested by Jev");
+  await expect(fieldRow("Payment type")).toContainText("Not used");
+  await expect(fieldRow("Payment type")).toContainText("Not found");
+
+  await fieldRow("Amount").click();
   await expect(
-    page.getByRole("button", { name: "Separate in and out columns" }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(
-    page.getByRole("combobox", { name: "Money in column" }),
-  ).toHaveText(/^Inn på konto/);
-  await expect(
-    page.getByRole("combobox", { name: "Money out column" }),
-  ).toHaveText(/^Ut fra konto/);
-  await expect(
-    page.getByRole("combobox", { name: "Payment type column" }),
-  ).toHaveText(/^None/);
-  await expect(
-    page.getByRole("checkbox", { name: "Forklaring" }),
+    page.getByRole("radio", { name: "Separate in and out columns" }),
   ).toBeChecked();
-  await expect(page.getByText("Suggested by Jev")).toBeVisible();
-  await expect(page.getByText("Not found")).toBeVisible();
+  await expect(
+    page
+      .getByRole("group", { name: "Money in column" })
+      .getByRole("radio", { name: "Inn på konto" }),
+  ).toBeChecked();
+  await expect(
+    page
+      .getByRole("group", { name: "Money out column" })
+      .getByRole("radio", { name: "Ut fra konto" }),
+  ).toBeChecked();
 
   const preview = page.getByRole("table", { name: "Column mapping preview" });
   await expect(preview.getByRole("row")).toHaveCount(3);
@@ -470,11 +476,18 @@ test("maps a CSV's columns before review, previews the parse and sends the confi
     'Row 5 has invalid amount "tolv". Expected a number using "," as the decimal separator.',
   );
 
-  await page.getByRole("checkbox", { name: "Rentedato" }).click();
+  await fieldRow("Description").click();
+  const descriptionColumns = page.getByRole("group", {
+    name: "Description columns",
+  });
+  await expect(
+    descriptionColumns.getByRole("checkbox", { name: "Forklaring" }),
+  ).toBeChecked();
+  await descriptionColumns.getByRole("checkbox", { name: "Rentedato" }).click();
   await expect(preview.getByRole("row").nth(1)).toContainText(
     "Kiwi Majorstuen 02.01.2026",
   );
-  await expect(page.getByText("Chosen by you")).toBeVisible();
+  await expect(fieldRow("Description")).toContainText("Chosen by you");
 
   await page.getByRole("button", { name: "Confirm mapping" }).click();
 
@@ -494,8 +507,13 @@ test("maps a CSV's columns before review, previews the parse and sends the confi
   await expect(
     page.getByRole("heading", { name: "Map Columns" }),
   ).toBeVisible();
-  await expect(page.getByRole("checkbox", { name: "Rentedato" })).toBeChecked();
-  await expect(page.getByText("Saved", { exact: true }).first()).toBeVisible();
+  await fieldRow("Description").click();
+  await expect(
+    page
+      .getByRole("group", { name: "Description columns" })
+      .getByRole("checkbox", { name: "Rentedato" }),
+  ).toBeChecked();
+  await expect(fieldRow("Date")).toContainText("Saved");
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.getByText("Import Preview")).toBeVisible();
 });

@@ -1,25 +1,21 @@
 "use client";
 
-import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  CircleCheck,
+  Loader2,
+} from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Field,
-  FieldContent,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-} from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   Table,
   TableBody,
@@ -36,12 +32,11 @@ import {
   completeColumnMapping,
 } from "@/lib/import/csv/column-mapping";
 import { parseMappedCsv } from "@/lib/import/csv/parse-mapped-csv";
+import { cn } from "@/lib/utils";
 import type {
   ColumnMappingDraftSources,
   ColumnMappingProposal,
 } from "../use-import-workflow";
-
-const NO_COLUMN = "none";
 
 const SOURCE_LABELS: Record<
   ColumnMappingDraftSources[ColumnMappingField],
@@ -71,172 +66,155 @@ function sampleValues(proposal: ColumnMappingProposal, index: number): string {
     .map((row) => row.cells[index] ?? "")
     .filter((value) => value.trim().length > 0)
     .slice(0, 2)
-    .join(", ");
+    .join(" · ");
 }
 
-function SourceBadge({
-  source,
-  optional = false,
-}: {
-  source: ColumnMappingDraftSources[ColumnMappingField];
-  optional?: boolean;
-}) {
-  return (
-    <Badge
-      variant={source === "none" && !optional ? "destructive" : "outline"}
-      className="text-xs"
-    >
-      {SOURCE_LABELS[source]}
-    </Badge>
-  );
+function formatList(items: string[]): string {
+  return items.length <= 1
+    ? (items[0] ?? "")
+    : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
-function ColumnSelect({
-  id,
-  label,
+/** Every header as a radio or checkbox, each showing what that column holds. */
+function ColumnChoices({
+  legend,
   proposal,
-  value,
-  allowNone = false,
-  onChange,
+  multiple = false,
+  isSelected,
+  onSelect,
 }: {
-  id: string;
-  label: string;
+  legend: string;
   proposal: ColumnMappingProposal;
-  value: ColumnRef | null;
-  allowNone?: boolean;
-  onChange: (ref: ColumnRef | null) => void;
+  multiple?: boolean;
+  isSelected: (index: number) => boolean;
+  onSelect: (ref: ColumnRef, selected: boolean) => void;
 }) {
-  const items = [
-    ...(allowNone ? [{ value: NO_COLUMN, label: "None" }] : []),
-    ...proposal.headers.map((header, index) => ({
-      value: String(index),
-      label: header,
-    })),
-  ];
-
   return (
-    <Field>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <FieldContent>
-        <Select
-          items={items}
-          value={value ? String(value.index) : allowNone ? NO_COLUMN : null}
-          onValueChange={(next) => {
-            if (next === null || next === NO_COLUMN) {
-              onChange(null);
-              return;
-            }
-            const index = Number(next);
-            onChange({ index, header: proposal.headers[index] });
-          }}
-        >
-          <SelectTrigger id={id} className="w-full">
-            <SelectValue placeholder="Choose a column" />
-          </SelectTrigger>
-          <SelectContent>
-            {items.map((item) => {
-              const samples =
-                item.value === NO_COLUMN
-                  ? ""
-                  : sampleValues(proposal, Number(item.value));
-              return (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                  {samples ? (
-                    <span className="text-muted-foreground text-xs">
-                      {samples}
-                    </span>
-                  ) : null}
-                </SelectItem>
-              );
-            })}
-          </SelectContent>
-        </Select>
-      </FieldContent>
-    </Field>
-  );
-}
-
-function MappingPreview({
-  proposal,
-  draft,
-}: {
-  proposal: ColumnMappingProposal;
-  draft: ColumnMappingDraft;
-}) {
-  const mapping = completeColumnMapping(draft);
-
-  if (!mapping) {
-    return (
-      <p className="text-muted-foreground text-sm">
-        Choose a date column, an amount and at least one description column to
-        see a preview.
-      </p>
-    );
-  }
-
-  const preview = parseMappedCsv(
-    { headers: proposal.headers, rows: proposal.sampleRows },
-    mapping,
-  );
-
-  return (
-    <div className="space-y-2">
-      <div className="overflow-hidden rounded-lg border">
-        <Table aria-label="Column mapping preview">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Payment type</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {preview.rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={4}
-                  className="text-center text-muted-foreground"
-                >
-                  No sample row parses with this mapping.
-                </TableCell>
-              </TableRow>
-            ) : (
-              preview.rows.map((row, index) => (
-                // Sample rows have no identity beyond their position.
-                // biome-ignore lint/suspicious/noArrayIndexKey: see above
-                <TableRow key={index}>
-                  <TableCell className="font-mono text-xs">
-                    {row.bookingDate}
-                  </TableCell>
-                  <TableCell className="text-right font-mono text-xs">
-                    {formatNok(row.amountNok)}
-                  </TableCell>
-                  <TableCell>{row.title}</TableCell>
-                  <TableCell>{row.paymentType}</TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+    <fieldset className="space-y-1.5">
+      <legend className="mb-1.5 font-medium text-xs">{legend}</legend>
+      <div className="grid gap-1.5 sm:grid-cols-2">
+        {proposal.headers.map((header, index) => {
+          const selected = isSelected(index);
+          const ref = { index, header };
+          const id = `${legend}-${index}`.replaceAll(" ", "-").toLowerCase();
+          return (
+            <label
+              key={id}
+              htmlFor={id}
+              className={cn(
+                "flex cursor-pointer items-start gap-2.5 rounded-md border px-2.5 py-2 transition-colors hover:bg-muted/60",
+                selected && "border-primary bg-primary/5",
+              )}
+            >
+              {multiple ? (
+                <Checkbox
+                  id={id}
+                  aria-label={header}
+                  checked={selected}
+                  onCheckedChange={(checked) => onSelect(ref, checked)}
+                  className="mt-0.5"
+                />
+              ) : (
+                <input
+                  id={id}
+                  type="radio"
+                  name={legend}
+                  aria-label={header}
+                  checked={selected}
+                  onChange={() => onSelect(ref, true)}
+                  className="mt-0.5 accent-primary"
+                />
+              )}
+              <span className="min-w-0">
+                <span className="block font-medium text-sm">{header}</span>
+                <span className="block truncate font-mono text-muted-foreground text-xs">
+                  {sampleValues(proposal, index) || "Empty"}
+                </span>
+              </span>
+            </label>
+          );
+        })}
       </div>
-      {preview.summary.ignoredReserved > 0 ? (
-        <p className="text-muted-foreground text-xs">
-          {preview.summary.ignoredReserved} reserved row
-          {preview.summary.ignoredReserved === 1 ? "" : "s"} will be skipped.
-        </p>
-      ) : null}
-      {preview.errors.length > 0 ? (
-        <ul
-          aria-label="Preview parse errors"
-          className="space-y-1 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-        >
-          {preview.errors.map((error) => (
-            <li key={`${error.rowNumber}-${error.code}`}>{error.message}</li>
-          ))}
-        </ul>
-      ) : null}
+    </fieldset>
+  );
+}
+
+type PreviewCells = {
+  date: string | null;
+  amount: string | null;
+  description: string | null;
+  paymentType: string;
+};
+
+const PREVIEW_COLUMNS = [
+  { key: "date", label: "Date", className: "font-mono text-xs" },
+  { key: "amount", label: "Amount", className: "text-right font-mono text-xs" },
+  { key: "description", label: "Description", className: "" },
+  { key: "paymentType", label: "Payment type", className: "" },
+] as const;
+
+function PreviewTable({
+  rows,
+  missing,
+}: {
+  rows: PreviewCells[];
+  missing: Set<keyof PreviewCells>;
+}) {
+  return (
+    <div className="rounded-lg border">
+      <Table aria-label="Column mapping preview">
+        <TableHeader>
+          <TableRow>
+            {PREVIEW_COLUMNS.map((column) => (
+              <TableHead
+                key={column.key}
+                className={cn(
+                  column.key === "amount" && "text-right",
+                  missing.has(column.key) && "text-amber-600",
+                )}
+              >
+                {column.label}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.length === 0 ? (
+            <TableRow>
+              <TableCell
+                colSpan={4}
+                className="text-center text-muted-foreground"
+              >
+                No sample row parses with this mapping.
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((row, index) => (
+              // Sample rows have no identity beyond their position.
+              // biome-ignore lint/suspicious/noArrayIndexKey: see above
+              <TableRow key={index}>
+                {PREVIEW_COLUMNS.map((column) => (
+                  <TableCell
+                    key={column.key}
+                    className={cn(
+                      column.className,
+                      column.key === "description" &&
+                        "min-w-40 whitespace-normal",
+                    )}
+                  >
+                    {row[column.key] ?? (
+                      <span className="text-muted-foreground">
+                        <span aria-hidden="true">—</span>
+                        <span className="sr-only">Missing</span>
+                      </span>
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -252,9 +230,6 @@ export function ImportColumnMappingPhase({
   onConfirm,
   onBack,
 }: ImportColumnMappingPhaseProps) {
-  const selectedDescription = new Set(
-    draft.description.map((ref) => ref.index),
-  );
   // The draft only holds a complete amount, so a half-chosen split and the
   // chosen kind live here until both columns are picked.
   const [amountKind, setAmountKind] = useState<"signed" | "split">(
@@ -292,8 +267,221 @@ export function ImportColumnMappingPhase({
     }
   };
 
+  const mapping = completeColumnMapping(draft);
+  const preview = mapping
+    ? parseMappedCsv(
+        { headers: proposal.headers, rows: proposal.sampleRows },
+        mapping,
+      )
+    : null;
+  const firstRow = preview?.rows[0];
+  const firstSample = (ref: ColumnRef | null) =>
+    ref ? (sampleValues(proposal, ref.index).split(" · ")[0] ?? "") : "";
+
+  // Until the mapping is complete nothing parses, so the preview shows each
+  // chosen column's raw value and leaves the missing ones empty.
+  const rawCell = (cells: string[], ref: ColumnRef | null) =>
+    ref ? (cells[ref.index] ?? "").trim() : "";
+  const previewRows: PreviewCells[] = preview
+    ? preview.rows.map((row) => ({
+        date: row.bookingDate,
+        amount: formatNok(row.amountNok),
+        description: row.title,
+        paymentType: row.paymentType,
+      }))
+    : proposal.sampleRows.map(({ cells }) => ({
+        date: draft.date ? rawCell(cells, draft.date) : null,
+        amount:
+          draft.amount?.kind === "signed"
+            ? rawCell(cells, draft.amount.column)
+            : draft.amount?.kind === "split"
+              ? rawCell(cells, draft.amount.inflow) ||
+                `−${rawCell(cells, draft.amount.outflow)}`
+              : null,
+        description:
+          draft.description.length > 0
+            ? draft.description
+                .map((ref) => rawCell(cells, ref))
+                .filter(Boolean)
+                .join(" ")
+            : null,
+        paymentType: rawCell(cells, draft.paymentType),
+      }));
+
+  const rows: {
+    field: ColumnMappingField;
+    label: string;
+    columns: string;
+    example: string;
+    chosen: boolean;
+    optional?: boolean;
+  }[] = [
+    {
+      field: "date",
+      label: "Date",
+      columns: draft.date?.header ?? "",
+      example: firstRow?.bookingDate ?? firstSample(draft.date),
+      chosen: draft.date !== null,
+    },
+    {
+      field: "amount",
+      label: "Amount",
+      columns:
+        draft.amount?.kind === "signed"
+          ? draft.amount.column.header
+          : draft.amount?.kind === "split"
+            ? `${draft.amount.inflow.header} (in) / ${draft.amount.outflow.header} (out)`
+            : "",
+      example: firstRow ? formatNok(firstRow.amountNok) : "",
+      chosen: draft.amount !== null,
+    },
+    {
+      field: "description",
+      label: "Description",
+      columns: draft.description.map((ref) => ref.header).join(" + "),
+      example: previewRows[0]?.description ?? "",
+      chosen: draft.description.length > 0,
+    },
+    {
+      field: "paymentType",
+      label: "Payment type",
+      columns: draft.paymentType?.header ?? "",
+      example: firstSample(draft.paymentType),
+      chosen: draft.paymentType !== null,
+      optional: true,
+    },
+  ];
+  const missingLabels = rows
+    .filter((row) => !row.optional && !row.chosen)
+    .map((row) => row.label.toLowerCase());
+  const missingSummary = formatList(missingLabels);
+  const missingPreviewColumns = new Set<keyof PreviewCells>(
+    rows
+      .filter((row) => !row.optional && !row.chosen)
+      .map((row) => row.field as keyof PreviewCells),
+  );
+
+  const [openField, setOpenField] = useState<ColumnMappingField | null>(
+    rows.find((row) => !row.optional && !row.chosen)?.field ?? null,
+  );
+
+  const choices = (field: ColumnMappingField) => {
+    switch (field) {
+      case "date":
+        return (
+          <ColumnChoices
+            legend="Date column"
+            proposal={proposal}
+            isSelected={(index) => draft.date?.index === index}
+            onSelect={(ref) => onChange("date", { ...draft, date: ref })}
+          />
+        );
+      case "amount":
+        return (
+          <div className="space-y-3">
+            <fieldset className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
+              <legend className="sr-only">Amount format</legend>
+              {(
+                [
+                  ["signed", "One column, minus means money out"],
+                  ["split", "Separate in and out columns"],
+                ] as const
+              ).map(([kind, label]) => (
+                <label key={kind} className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="Amount format"
+                    checked={amountKind === kind}
+                    onChange={() => chooseAmountKind(kind)}
+                    className="accent-primary"
+                  />
+                  {label}
+                </label>
+              ))}
+            </fieldset>
+            {amountKind === "signed" ? (
+              <ColumnChoices
+                legend="Amount column"
+                proposal={proposal}
+                isSelected={(index) =>
+                  draft.amount?.kind === "signed" &&
+                  draft.amount.column.index === index
+                }
+                onSelect={(ref) =>
+                  onChange("amount", {
+                    ...draft,
+                    amount: { kind: "signed", column: ref },
+                  })
+                }
+              />
+            ) : (
+              <>
+                <ColumnChoices
+                  legend="Money in column"
+                  proposal={proposal}
+                  isSelected={(index) => split.inflow?.index === index}
+                  onSelect={(ref) => updateSplit({ ...split, inflow: ref })}
+                />
+                <ColumnChoices
+                  legend="Money out column"
+                  proposal={proposal}
+                  isSelected={(index) => split.outflow?.index === index}
+                  onSelect={(ref) => updateSplit({ ...split, outflow: ref })}
+                />
+              </>
+            )}
+          </div>
+        );
+      case "description":
+        return (
+          <ColumnChoices
+            legend="Description columns"
+            proposal={proposal}
+            multiple
+            isSelected={(index) =>
+              draft.description.some((ref) => ref.index === index)
+            }
+            onSelect={(ref, selected) => {
+              const next = selected
+                ? [...draft.description, ref]
+                : draft.description.filter((r) => r.index !== ref.index);
+              onChange("description", {
+                ...draft,
+                description: next.sort((a, b) => a.index - b.index),
+              });
+            }}
+          />
+        );
+      case "paymentType":
+        return (
+          <div className="space-y-2">
+            <ColumnChoices
+              legend="Payment type column"
+              proposal={proposal}
+              isSelected={(index) => draft.paymentType?.index === index}
+              onSelect={(ref) =>
+                onChange("paymentType", { ...draft, paymentType: ref })
+              }
+            />
+            {draft.paymentType ? (
+              <Button
+                type="button"
+                size="xs"
+                variant="ghost"
+                onClick={() =>
+                  onChange("paymentType", { ...draft, paymentType: null })
+                }
+              >
+                Don't use a payment type column
+              </Button>
+            ) : null}
+          </div>
+        );
+    }
+  };
+
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
+    <div className="mx-auto w-full max-w-2xl space-y-5">
       <div className="space-y-1">
         <button
           type="button"
@@ -307,139 +495,96 @@ export function ImportColumnMappingPhase({
         <h2 className="font-semibold text-foreground text-xl tracking-tight">
           Map Columns
         </h2>
-        <p className="text-muted-foreground text-sm">
-          Pick which columns hold each value. The mapping is saved for{" "}
-          <span className="font-medium text-foreground">{accountName}</span> and
-          reused when a file with the same headers is imported.
-        </p>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <ColumnSelect
-            id="column-mapping-date"
-            label="Date column"
-            proposal={proposal}
-            value={draft.date}
-            onChange={(ref) => onChange("date", { ...draft, date: ref })}
+      <output className="flex items-center gap-2 font-medium text-sm">
+        {mapping ? (
+          <CircleCheck
+            className="h-4 w-4 shrink-0 text-emerald-600"
+            aria-hidden="true"
           />
-          <SourceBadge source={sources.date} />
-        </div>
-
-        <div className="space-y-1.5">
-          <ColumnSelect
-            id="column-mapping-payment-type"
-            label="Payment type column"
-            proposal={proposal}
-            value={draft.paymentType}
-            allowNone
-            onChange={(ref) =>
-              onChange("paymentType", { ...draft, paymentType: ref })
-            }
+        ) : (
+          <AlertTriangle
+            className="h-4 w-4 shrink-0 text-amber-600"
+            aria-hidden="true"
           />
-          <SourceBadge source={sources.paymentType} optional />
-        </div>
+        )}
+        <span>
+          {mapping
+            ? `Ready to review · checked against ${proposal.sampleRows.length} sample rows`
+            : `${missingSummary.charAt(0).toUpperCase()}${missingSummary.slice(1)} ${missingLabels.length === 1 ? "needs" : "need"} a column`}
+        </span>
+      </output>
 
-        <FieldSet className="space-y-2 sm:col-span-2">
-          <FieldLegend variant="label">Amount</FieldLegend>
-          <ButtonGroup aria-label="Amount format">
-            <Button
-              type="button"
-              size="sm"
-              variant={amountKind === "signed" ? "default" : "outline"}
-              aria-pressed={amountKind === "signed"}
-              onClick={() => chooseAmountKind("signed")}
-            >
-              One signed column
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={amountKind === "split" ? "default" : "outline"}
-              aria-pressed={amountKind === "split"}
-              onClick={() => chooseAmountKind("split")}
-            >
-              Separate in and out columns
-            </Button>
-          </ButtonGroup>
-          {amountKind === "signed" ? (
-            <ColumnSelect
-              id="column-mapping-amount"
-              label="Amount column"
-              proposal={proposal}
-              value={
-                draft.amount?.kind === "signed" ? draft.amount.column : null
-              }
-              onChange={(ref) =>
-                onChange("amount", {
-                  ...draft,
-                  amount: ref ? { kind: "signed", column: ref } : null,
-                })
-              }
-            />
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <ColumnSelect
-                id="column-mapping-inflow"
-                label="Money in column"
-                proposal={proposal}
-                value={split.inflow}
-                onChange={(ref) => updateSplit({ ...split, inflow: ref })}
-              />
-              <ColumnSelect
-                id="column-mapping-outflow"
-                label="Money out column"
-                proposal={proposal}
-                value={split.outflow}
-                onChange={(ref) => updateSplit({ ...split, outflow: ref })}
-              />
-            </div>
-          )}
-          <SourceBadge source={sources.amount} />
-        </FieldSet>
-
-        <FieldSet className="space-y-2 sm:col-span-2">
-          <FieldLegend variant="label">Description columns</FieldLegend>
-          <p className="text-muted-foreground text-xs">
-            Checked columns are joined in file order.
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {proposal.headers.map((header, index) => {
-              const id = `column-mapping-description-${index}`;
-              const samples = sampleValues(proposal, index);
-              return (
-                <Field key={id} orientation="horizontal">
-                  <Checkbox
-                    id={id}
-                    aria-label={header}
-                    checked={selectedDescription.has(index)}
-                    onCheckedChange={(checked) => {
-                      const next = checked
-                        ? [...draft.description, { index, header }]
-                        : draft.description.filter(
-                            (ref) => ref.index !== index,
-                          );
-                      onChange("description", {
-                        ...draft,
-                        description: next.sort((a, b) => a.index - b.index),
-                      });
-                    }}
-                  />
-                  <FieldContent>
-                    <FieldLabel htmlFor={id}>{header}</FieldLabel>
-                    {samples ? (
-                      <span className="text-muted-foreground text-xs">
-                        {samples}
+      <ul aria-label="Column mapping" className="divide-y rounded-xl border">
+        {rows.map((row) => {
+          const open = openField === row.field;
+          return (
+            <li key={row.field}>
+              <Collapsible
+                open={open}
+                onOpenChange={(next) => setOpenField(next ? row.field : null)}
+              >
+                <CollapsibleTrigger className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40">
+                  {row.chosen ? (
+                    <Check
+                      className="h-4 w-4 shrink-0 text-emerald-600"
+                      aria-hidden="true"
+                    />
+                  ) : row.optional ? (
+                    <span
+                      className="h-4 w-4 shrink-0 rounded-full border border-dashed"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <AlertTriangle
+                      className="h-4 w-4 shrink-0 text-amber-600"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="w-24 shrink-0 font-medium text-sm sm:w-28">
+                    {row.label}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block break-words font-mono text-xs sm:truncate">
+                      {row.columns ||
+                        (row.optional ? "Not used" : "Choose a column")}
+                    </span>
+                    {row.example ? (
+                      <span className="block break-words text-muted-foreground text-xs sm:truncate">
+                        e.g. {row.example}
                       </span>
                     ) : null}
-                  </FieldContent>
-                </Field>
-              );
-            })}
-          </div>
-          <SourceBadge source={sources.description} />
-        </FieldSet>
-      </div>
+                    <span className="block text-muted-foreground text-xs sm:hidden">
+                      {SOURCE_LABELS[sources[row.field]]}
+                    </span>
+                  </span>
+                  <span
+                    className={cn(
+                      "hidden shrink-0 text-xs sm:inline",
+                      sources[row.field] === "none" && !row.optional
+                        ? "text-destructive"
+                        : "text-muted-foreground",
+                    )}
+                  >
+                    {SOURCE_LABELS[sources[row.field]]}
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+                      open && "rotate-180",
+                    )}
+                    aria-hidden="true"
+                  />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="border-t bg-muted/20 px-4 py-3">
+                  {choices(row.field)}
+                </CollapsibleContent>
+              </Collapsible>
+            </li>
+          );
+        })}
+      </ul>
 
       <section
         aria-labelledby="column-mapping-preview-heading"
@@ -449,10 +594,29 @@ export function ImportColumnMappingPhase({
           id="column-mapping-preview-heading"
           className="font-medium text-foreground text-sm"
         >
-          Preview of the first {proposal.sampleRows.length} rows
+          {mapping
+            ? `How the first ${proposal.sampleRows.length} rows will import`
+            : "Raw values so far"}
         </h3>
-        <MappingPreview proposal={proposal} draft={draft} />
+        <PreviewTable rows={previewRows} missing={missingPreviewColumns} />
       </section>
+
+      {preview && preview.summary.ignoredReserved > 0 ? (
+        <p className="text-muted-foreground text-xs">
+          {preview.summary.ignoredReserved} reserved row
+          {preview.summary.ignoredReserved === 1 ? "" : "s"} will be skipped.
+        </p>
+      ) : null}
+      {preview && preview.errors.length > 0 ? (
+        <ul
+          aria-label="Preview parse errors"
+          className="space-y-1 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+        >
+          {preview.errors.map((error) => (
+            <li key={`${error.rowNumber}-${error.code}`}>{error.message}</li>
+          ))}
+        </ul>
+      ) : null}
 
       {importError ? (
         <p
@@ -463,11 +627,26 @@ export function ImportColumnMappingPhase({
         </p>
       ) : null}
 
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-muted-foreground text-xs sm:max-w-sm">
+          {mapping ? (
+            <>
+              Saved for{" "}
+              <span className="font-medium text-foreground">{accountName}</span>{" "}
+              and reused for files with the same headers. Nothing is imported
+              until you finish the review.
+            </>
+          ) : (
+            <span id="column-mapping-missing">
+              Pick a column for {missingSummary} to continue.
+            </span>
+          )}
+        </p>
         <Button
           onClick={onConfirm}
-          disabled={importLoading || completeColumnMapping(draft) === null}
-          className="gap-2"
+          disabled={importLoading || mapping === null}
+          aria-describedby={mapping ? undefined : "column-mapping-missing"}
+          className="w-full gap-2 sm:w-auto"
         >
           {importLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
