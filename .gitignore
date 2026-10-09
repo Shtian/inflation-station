@@ -51,3 +51,6 @@ next-env.d.ts
 # local e2e sqlite db
 /prisma/ci.db
 /prisma/ci.db-*
+
+# impeccable design-skill run artifacts (critique snapshots, live sessions)
+/.impeccable/
