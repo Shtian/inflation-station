@@ -1237,6 +1237,27 @@ describe("stageParsedImportRows", () => {
             paymentType: PaymentType.CARD,
             categoryId: "cat-groceries",
           },
+          {
+            bookingDate: new Date("2025-12-05T00:00:00.000Z"),
+            amountNok: 120,
+            normalizedMerchant: "kiwi 0100 sentrum",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-groceries",
+          },
+          {
+            bookingDate: new Date("2025-12-06T00:00:00.000Z"),
+            amountNok: -40,
+            normalizedMerchant: "kiwi 0100 sentrum",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-refunds",
+          },
+          {
+            bookingDate: new Date("2025-12-07T00:00:00.000Z"),
+            amountNok: -60,
+            normalizedMerchant: "kiwi 0445 stovner",
+            paymentType: PaymentType.CARD,
+            categoryId: "cat-refunds",
+          },
         ],
       });
 

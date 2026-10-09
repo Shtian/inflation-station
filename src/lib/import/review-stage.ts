@@ -414,13 +414,22 @@ function addHistorySuggestions(
   validRows: ValidatedStageRow[],
   accountTransactions: Array<{
     normalizedMerchant: string;
+    amountNok: { toString(): string } | number;
     categoryId: string | null;
   }>,
   suggestionByRowNumber: Map<number, ImportRowSuggestion>,
 ): void {
   const history: CategorizedHistoryEntry[] = accountTransactions.flatMap(
-    ({ normalizedMerchant, categoryId }) =>
-      categoryId === null ? [] : [{ normalizedMerchant, categoryId }],
+    ({ normalizedMerchant, amountNok, categoryId }) =>
+      categoryId === null
+        ? []
+        : [
+            {
+              normalizedMerchant,
+              amountNok: Number.parseFloat(amountNok.toString()),
+              categoryId,
+            },
+          ],
   );
   const unmatchedRows = validRows.filter(
     (row) => !suggestionByRowNumber.has(row.rowNumber),
