@@ -1050,6 +1050,15 @@ describe("stageParsedImportRows", () => {
       ],
     });
     expect(result.review.rows[0]?.categoryId).toBeNull();
+    expect(result.jevOutcomes).toEqual({
+      ok: 0,
+      uncategorized: 0,
+      below_floor: 1,
+      disabled: 0,
+      key_missing: 0,
+      timeout: 0,
+      provider_error: 0,
+    });
   });
 
   it("persists a Jev suggestion exactly at the confidence floor", async () => {
@@ -1177,5 +1186,14 @@ describe("stageParsedImportRows", () => {
       ],
     });
     expect(result.review.rows[0]?.categoryId).toBeNull();
+    expect(result.jevOutcomes).toEqual({
+      ok: 0,
+      uncategorized: 0,
+      below_floor: 0,
+      disabled: 0,
+      key_missing: 0,
+      timeout: 0,
+      provider_error: 1,
+    });
   });
 });

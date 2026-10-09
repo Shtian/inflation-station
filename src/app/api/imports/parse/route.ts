@@ -182,6 +182,11 @@ async function stageAndRespond(options: {
     parsed: options.parsed,
   });
 
+  console.info("Import Jev categorization outcomes", {
+    sessionId: staged.review.sessionId,
+    ...staged.jevOutcomes,
+  });
+
   const cleanup = planCleanupChunks({
     sessionId: staged.review.sessionId ?? "",
     disabledReason: resolveCleanupDisabledReason(),
@@ -198,6 +203,7 @@ async function stageAndRespond(options: {
     ...(options.columnMapping ? { columnMapping: options.columnMapping } : {}),
     summary: staged.summary,
     errors: staged.errors,
+    jevOutcomes: staged.jevOutcomes,
     review: staged.review,
     cleanup,
     reconciliation,
