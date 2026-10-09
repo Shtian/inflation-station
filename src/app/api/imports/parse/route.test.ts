@@ -21,6 +21,15 @@ vi.mock("@/lib/import/review-stage", () => ({
 const STAGED_RESULT = {
   summary: { imported: 1, duplicates: 0, ignoredReserved: 0, invalid: 0 },
   errors: [],
+  jevOutcomes: {
+    ok: 0,
+    uncategorized: 0,
+    below_floor: 0,
+    disabled: 0,
+    key_missing: 1,
+    timeout: 0,
+    provider_error: 0,
+  },
   review: {
     sessionId: "session-1",
     potentialDuplicates: 0,
@@ -133,6 +142,7 @@ describe("POST /api/imports/parse", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
 
@@ -238,6 +248,44 @@ describe("POST /api/imports/parse", () => {
       },
     });
     expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the Jev outcome counts and logs them in one line without row content", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+
+    const response = await POST(
+      jsonRequest({
+        accountId: "account-1",
+        csvContent: CSV_CONTENT,
+        columnMapping: CSV_MAPPING,
+      }),
+    );
+
+    const body = await response.json();
+    expect(body.jevOutcomes).toEqual({
+      ok: 0,
+      uncategorized: 0,
+      below_floor: 0,
+      disabled: 0,
+      key_missing: 1,
+      timeout: 0,
+      provider_error: 0,
+    });
+    expect(info.mock.calls).toEqual([
+      [
+        "Import Jev categorization outcomes",
+        {
+          sessionId: "session-1",
+          ok: 0,
+          uncategorized: 0,
+          below_floor: 0,
+          disabled: 0,
+          key_missing: 1,
+          timeout: 0,
+          provider_error: 0,
+        },
+      ],
+    ]);
   });
 
   it("stages straight away with the account's saved mapping when the headers match", async () => {
