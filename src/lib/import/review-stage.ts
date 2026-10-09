@@ -2,15 +2,16 @@ import { type PaymentType, SuggestionSource } from "@prisma/client";
 import type { Fetch } from "@typesafe-ai/sdk";
 import {
   categorizeRowsWithJev,
+  emptyJevOutcomeSummary,
   type JevCategorizeRow,
   type JevCategoryOption,
+  type JevOutcomeSummary,
 } from "../categorization/jev-categorize";
 import {
   buildRuleBasedSuggestions,
   type CategoryRuleCandidate,
   type RuleMatchTransaction,
 } from "../categorization/rule-engine";
-import { classifyJevConfidence } from "../jev/confidence-tier";
 import type {
   CsvParserResult,
   CsvValidationError,
@@ -50,6 +51,7 @@ export type ReviewStageRow = {
 export type StageParsedImportResult = {
   summary: ReviewStageSummary;
   errors: CsvValidationError[];
+  jevOutcomes: JevOutcomeSummary;
   review: {
     sessionId: string | null;
     potentialDuplicates: number;
@@ -422,36 +424,35 @@ async function addJevSuggestions(
   suggestionByRowNumber: Map<number, ImportRowSuggestion>,
   jevApiKey: string | undefined,
   jevFetchImpl: Fetch | undefined,
-): Promise<void> {
+): Promise<JevOutcomeSummary> {
   const unmatchedRows = validRows.filter(
     (row) => !suggestionByRowNumber.has(row.rowNumber),
   );
 
   if (unmatchedRows.length === 0) {
-    return;
+    return emptyJevOutcomeSummary();
   }
 
   const categories: JevCategoryOption[] = await db.category.findMany({
     select: { id: true, name: true, classifierHint: true },
   });
 
-  const jevSuggestions = await categorizeRowsWithJev({
+  const { suggestions, outcomes } = await categorizeRowsWithJev({
     rows: unmatchedRows.map(toJevCategorizeRow),
     categories,
     apiKey: jevApiKey,
     fetchImpl: jevFetchImpl,
   });
 
-  for (const suggestion of jevSuggestions) {
-    if (classifyJevConfidence(suggestion.confidence) === null) {
-      continue; // below the confidence floor: treat as no suggestion
-    }
+  for (const suggestion of suggestions) {
     suggestionByRowNumber.set(suggestion.rowNumber, {
       categoryId: suggestion.categoryId,
       source: SuggestionSource.JEV,
       confidence: suggestion.confidence,
     });
   }
+
+  return outcomes;
 }
 
 function buildPotentialDuplicateRowNumbers(
@@ -519,6 +520,7 @@ export async function stageParsedImportRows(
     return {
       summary: parsed.summary,
       errors: parsed.errors,
+      jevOutcomes: emptyJevOutcomeSummary(),
       review: {
         sessionId: null,
         potentialDuplicates: 0,
@@ -533,6 +535,7 @@ export async function stageParsedImportRows(
     return {
       summary: buildSummary(parsed.summary, 0, invalidRows.length),
       errors: [...parsed.errors, ...invalidRows],
+      jevOutcomes: emptyJevOutcomeSummary(),
       review: {
         sessionId: null,
         potentialDuplicates: 0,
@@ -567,8 +570,9 @@ export async function stageParsedImportRows(
     suggestionByRowNumber = new Map<number, ImportRowSuggestion>();
   }
 
+  let jevOutcomes = emptyJevOutcomeSummary();
   try {
-    await addJevSuggestions(
+    jevOutcomes = await addJevSuggestions(
       db,
       validRows,
       suggestionByRowNumber,
@@ -638,6 +642,7 @@ export async function stageParsedImportRows(
       invalidRows.length,
     ),
     errors: [...parsed.errors, ...invalidRows],
+    jevOutcomes,
     review: {
       sessionId: session.id,
       potentialDuplicates: potentialDuplicateRowNumbers.size,

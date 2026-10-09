@@ -1,6 +1,7 @@
 import type { PaymentType } from "@prisma/client";
 import type { Fetch } from "@typesafe-ai/sdk";
-import { runJevChoice } from "@/lib/jev/client";
+import { type JevUnavailableReason, runJevChoice } from "@/lib/jev/client";
+import { classifyJevConfidence } from "@/lib/jev/confidence-tier";
 
 const UNCATEGORIZED_CHOICE = "uncategorized";
 const INSTRUCTIONS =
@@ -31,6 +32,35 @@ export type JevCategorySuggestion = {
   source: "JEV";
   confidence: number;
 };
+
+export type JevRowOutcome =
+  | "ok"
+  | "uncategorized"
+  | "below_floor"
+  | JevUnavailableReason;
+
+export type JevOutcomeSummary = Record<JevRowOutcome, number>;
+
+export type JevCategorization = {
+  suggestions: JevCategorySuggestion[];
+  outcomes: JevOutcomeSummary;
+};
+
+type JevRowResult =
+  | { outcome: "ok"; suggestion: JevCategorySuggestion }
+  | { outcome: Exclude<JevRowOutcome, "ok"> };
+
+export function emptyJevOutcomeSummary(): JevOutcomeSummary {
+  return {
+    ok: 0,
+    uncategorized: 0,
+    below_floor: 0,
+    disabled: 0,
+    key_missing: 0,
+    timeout: 0,
+    provider_error: 0,
+  };
+}
 
 function buildAlternatives(
   categories: JevCategoryOption[],
@@ -67,7 +97,7 @@ async function categorizeRow(
   alternatives: Record<string, string | null>,
   apiKey: string | undefined,
   fetchImpl: Fetch | undefined,
-): Promise<JevCategorySuggestion | null> {
+): Promise<JevRowResult> {
   const result = await runJevChoice({
     apiKey,
     fetchImpl,
@@ -76,15 +106,24 @@ async function categorizeRow(
     state: toJevState(row),
   });
 
-  if (result.status !== "ok" || result.choice === UNCATEGORIZED_CHOICE) {
-    return null;
+  if (result.status !== "ok") {
+    return { outcome: result.reason };
+  }
+  if (result.choice === UNCATEGORIZED_CHOICE) {
+    return { outcome: "uncategorized" };
+  }
+  if (classifyJevConfidence(result.confidence) === null) {
+    return { outcome: "below_floor" };
   }
 
   return {
-    rowNumber: row.rowNumber,
-    categoryId: result.choice,
-    source: "JEV",
-    confidence: result.confidence,
+    outcome: "ok",
+    suggestion: {
+      rowNumber: row.rowNumber,
+      categoryId: result.choice,
+      source: "JEV",
+      confidence: result.confidence,
+    },
   };
 }
 
@@ -94,11 +133,13 @@ export async function categorizeRowsWithJev(params: {
   concurrency?: number;
   apiKey?: string;
   fetchImpl?: Fetch;
-}): Promise<JevCategorySuggestion[]> {
+}): Promise<JevCategorization> {
   const { rows, categories, apiKey, fetchImpl } = params;
+  const suggestions: JevCategorySuggestion[] = [];
+  const outcomes = emptyJevOutcomeSummary();
 
   if (rows.length === 0 || categories.length === 0) {
-    return [];
+    return { suggestions, outcomes };
   }
 
   const alternatives = buildAlternatives(categories);
@@ -107,7 +148,6 @@ export async function categorizeRowsWithJev(params: {
     Math.min(params.concurrency ?? DEFAULT_CONCURRENCY, rows.length),
   );
 
-  const suggestions: JevCategorySuggestion[] = [];
   let nextIndex = 0;
 
   async function worker() {
@@ -118,19 +158,20 @@ export async function categorizeRowsWithJev(params: {
         return;
       }
 
-      const suggestion = await categorizeRow(
+      const result = await categorizeRow(
         rows[index],
         alternatives,
         apiKey,
         fetchImpl,
       );
-      if (suggestion) {
-        suggestions.push(suggestion);
+      outcomes[result.outcome] += 1;
+      if (result.outcome === "ok") {
+        suggestions.push(result.suggestion);
       }
     }
   }
 
   await Promise.all(Array.from({ length: concurrency }, () => worker()));
 
-  return suggestions;
+  return { suggestions, outcomes };
 }

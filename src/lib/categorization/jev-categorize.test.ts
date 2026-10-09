@@ -1,10 +1,11 @@
 import { PaymentType } from "@prisma/client";
 import type { Fetch } from "@typesafe-ai/sdk";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   categorizeRowsWithJev,
   type JevCategorizeRow,
   type JevCategoryOption,
+  type JevOutcomeSummary,
 } from "./jev-categorize";
 
 function systemOneResponse(choice: string, confidence: number) {
@@ -40,6 +41,19 @@ function buildRow(overrides?: Partial<JevCategorizeRow>): JevCategorizeRow {
   };
 }
 
+function outcomes(counts: Partial<JevOutcomeSummary>): JevOutcomeSummary {
+  return {
+    ok: 0,
+    uncategorized: 0,
+    below_floor: 0,
+    disabled: 0,
+    key_missing: 0,
+    timeout: 0,
+    provider_error: 0,
+    ...counts,
+  };
+}
+
 const categories: JevCategoryOption[] = [
   {
     id: "cat-groceries",
@@ -50,6 +64,10 @@ const categories: JevCategoryOption[] = [
 ];
 
 describe("categorizeRowsWithJev", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("builds alternatives from every category plus the uncategorized sentinel", async () => {
     let capturedBody:
       | { questions: { pick: { criteria: Record<string, string | null> } } }
@@ -85,14 +103,17 @@ describe("categorizeRowsWithJev", () => {
       fetchImpl: fetchImpl as unknown as Fetch,
     });
 
-    expect(result).toEqual([
-      {
-        rowNumber: 7,
-        categoryId: "cat-groceries",
-        source: "JEV",
-        confidence: 0.91,
-      },
-    ]);
+    expect(result).toEqual({
+      suggestions: [
+        {
+          rowNumber: 7,
+          categoryId: "cat-groceries",
+          source: "JEV",
+          confidence: 0.91,
+        },
+      ],
+      outcomes: outcomes({ ok: 1 }),
+    });
   });
 
   it("emits no suggestion when Jev picks uncategorized", async () => {
@@ -107,8 +128,127 @@ describe("categorizeRowsWithJev", () => {
       fetchImpl: fetchImpl as unknown as Fetch,
     });
 
-    expect(result).toEqual([]);
-    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(result).toEqual({
+      suggestions: [],
+      outcomes: outcomes({ uncategorized: 1 }),
+    });
+  });
+
+  it("counts a real category below the confidence floor as below_floor, not a suggestion", async () => {
+    const fetchImpl = vi.fn(async () =>
+      systemOneResponse("cat-groceries", 0.05),
+    );
+
+    const result = await categorizeRowsWithJev({
+      rows: [buildRow()],
+      categories,
+      apiKey: "test-key",
+      fetchImpl: fetchImpl as unknown as Fetch,
+    });
+
+    expect(result).toEqual({
+      suggestions: [],
+      outcomes: outcomes({ below_floor: 1 }),
+    });
+  });
+
+  it("keeps a suggestion exactly at the confidence floor", async () => {
+    const fetchImpl = vi.fn(async () =>
+      systemOneResponse("cat-transport", 0.1),
+    );
+
+    const result = await categorizeRowsWithJev({
+      rows: [buildRow({ rowNumber: 3 })],
+      categories,
+      apiKey: "test-key",
+      fetchImpl: fetchImpl as unknown as Fetch,
+    });
+
+    expect(result).toEqual({
+      suggestions: [
+        {
+          rowNumber: 3,
+          categoryId: "cat-transport",
+          source: "JEV",
+          confidence: 0.1,
+        },
+      ],
+      outcomes: outcomes({ ok: 1 }),
+    });
+  });
+
+  it("counts every row as key_missing when no API key is configured", async () => {
+    vi.stubEnv("TYPESAFE_API_KEY", "");
+    const fetchImpl = vi.fn();
+
+    const result = await categorizeRowsWithJev({
+      rows: [buildRow({ rowNumber: 2 }), buildRow({ rowNumber: 3 })],
+      categories,
+      fetchImpl: fetchImpl as unknown as Fetch,
+    });
+
+    expect(result).toEqual({
+      suggestions: [],
+      outcomes: outcomes({ key_missing: 2 }),
+    });
+  });
+
+  it("tallies one count per row across mixed outcomes", async () => {
+    const responsesByTitle: Record<string, () => Response> = {
+      groceries: () => systemOneResponse("cat-groceries", 0.8),
+      transport: () => systemOneResponse("cat-transport", 0.3),
+      unsure: () => systemOneResponse("cat-transport", 0.02),
+      none: () => systemOneResponse("uncategorized", 0.6),
+      broken: () =>
+        new Response(JSON.stringify({ error: "bad request" }), {
+          status: 400,
+          headers: { "content-type": "application/json" },
+        }),
+    };
+    const fetchImpl = vi.fn(async (_input: unknown, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as {
+        state: { title: string };
+      };
+      return responsesByTitle[body.state.title]();
+    });
+
+    const result = await categorizeRowsWithJev({
+      rows: [
+        buildRow({ rowNumber: 2, title: "groceries" }),
+        buildRow({ rowNumber: 3, title: "transport" }),
+        buildRow({ rowNumber: 4, title: "unsure" }),
+        buildRow({ rowNumber: 5, title: "none" }),
+        buildRow({ rowNumber: 6, title: "broken" }),
+        buildRow({ rowNumber: 7, title: "broken" }),
+      ],
+      categories,
+      concurrency: 1,
+      apiKey: "test-key",
+      fetchImpl: fetchImpl as unknown as Fetch,
+    });
+
+    expect(result).toEqual({
+      suggestions: [
+        {
+          rowNumber: 2,
+          categoryId: "cat-groceries",
+          source: "JEV",
+          confidence: 0.8,
+        },
+        {
+          rowNumber: 3,
+          categoryId: "cat-transport",
+          source: "JEV",
+          confidence: 0.3,
+        },
+      ],
+      outcomes: outcomes({
+        ok: 2,
+        below_floor: 1,
+        uncategorized: 1,
+        provider_error: 2,
+      }),
+    });
   });
 
   it("emits no suggestion and does not throw when the Jev call is unavailable", async () => {
@@ -127,7 +267,10 @@ describe("categorizeRowsWithJev", () => {
       fetchImpl: fetchImpl as unknown as Fetch,
     });
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({
+      suggestions: [],
+      outcomes: outcomes({ provider_error: 1 }),
+    });
   });
 
   it("short-circuits to an empty result without calling fetch for empty rows", async () => {
@@ -139,7 +282,7 @@ describe("categorizeRowsWithJev", () => {
       fetchImpl: fetchImpl as unknown as Fetch,
     });
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({ suggestions: [], outcomes: outcomes({}) });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
@@ -152,7 +295,7 @@ describe("categorizeRowsWithJev", () => {
       fetchImpl: fetchImpl as unknown as Fetch,
     });
 
-    expect(result).toEqual([]);
+    expect(result).toEqual({ suggestions: [], outcomes: outcomes({}) });
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 

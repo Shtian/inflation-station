@@ -109,7 +109,17 @@ const reviewRows = [
   },
 ];
 
-async function stubParse(page: Page) {
+const ANSWERED_OUTCOMES = {
+  ok: 3,
+  uncategorized: 0,
+  below_floor: 1,
+  disabled: 0,
+  key_missing: 0,
+  timeout: 0,
+  provider_error: 0,
+};
+
+async function stubParse(page: Page, jevOutcomes = ANSWERED_OUTCOMES) {
   await page.route("**/api/imports/parse", async (route) => {
     await route.fulfill({
       status: 200,
@@ -122,6 +132,7 @@ async function stubParse(page: Page) {
           invalid: 0,
         },
         errors: [],
+        jevOutcomes,
         review: {
           sessionId: "session-1",
           potentialDuplicates: 0,
@@ -232,4 +243,50 @@ test("hides the certainty bar the instant the row's category is changed away fro
   await expect(rowTwoCategory).toHaveValue("Transport");
 
   await expect(highBar).toHaveCount(0);
+});
+
+async function uploadAndParse(page: Page): Promise<void> {
+  await page.goto("/import");
+  await page.getByRole("button", { name: "Main Account DNB" }).click();
+  await page.getByLabel("Statement file").setInputFiles({
+    name: "transactions.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
+  });
+  await page.getByRole("button", { name: /Parse/ }).click();
+  await expect(page.getByText("Import Preview")).toBeVisible();
+}
+
+test("tells the user why Jev could not categorize rows", async ({ page }) => {
+  await stubAccountsAndCategories(page);
+  await stubParse(page, {
+    ...ANSWERED_OUTCOMES,
+    ok: 0,
+    below_floor: 0,
+    key_missing: 4,
+  });
+
+  await uploadAndParse(page);
+
+  await expect(
+    page.getByText(
+      "Automatic categorization was unavailable for 4 of 5 rows (API key not configured).",
+    ),
+  ).toBeVisible();
+});
+
+test("shows no Jev notice when Jev answered every row, even below the floor", async ({
+  page,
+}) => {
+  await stubAccountsAndCategories(page);
+  await stubParse(page);
+
+  await uploadAndParse(page);
+
+  await expect(
+    page.getByRole("combobox", { name: "Category for row 2" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/Automatic categorization was unavailable/),
+  ).toHaveCount(0);
 });
