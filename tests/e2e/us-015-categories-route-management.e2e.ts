@@ -255,7 +255,7 @@ test("manages categories and category rules from /categories", async ({
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await page
     .getByRole("dialog")
-    .getByLabel("Classifier hint (optional)")
+    .getByLabel("Classifier hint (recommended)")
     .fill("Recurring transport top-ups");
   await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
 
@@ -272,7 +272,7 @@ test("manages categories and category rules from /categories", async ({
     .click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await expect(
-    page.getByRole("dialog").getByLabel("Classifier hint (optional)"),
+    page.getByRole("dialog").getByLabel("Classifier hint (recommended)"),
   ).toHaveValue("Recurring transport top-ups");
   await page
     .getByRole("dialog")

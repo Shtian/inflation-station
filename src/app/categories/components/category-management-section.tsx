@@ -18,7 +18,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -43,6 +48,12 @@ const CATEGORY_KIND_LABELS: Record<CategoryKind, string> = {
   INCOME: "Income",
   TRANSFER: "Transfer",
 };
+
+const CLASSIFIER_HINT_LABEL = "Classifier hint (recommended)";
+const CLASSIFIER_HINT_PLACEHOLDER =
+  "Groceries: Rema 1000, Kiwi, Meny, Coop Extra, Joker, Bunnpris";
+const CLASSIFIER_HINT_DESCRIPTION =
+  "Describe what belongs here in plain words and list typical merchants as they appear on your bank statement.";
 
 type CategoryManagementSectionProps = {
   categories: Category[];
@@ -137,7 +148,7 @@ export function CategoryManagementSection({
         </Field>
         <Field>
           <FieldLabel htmlFor="new-category-classifier-hint">
-            Classifier hint (optional)
+            {CLASSIFIER_HINT_LABEL}
           </FieldLabel>
           <FieldContent>
             <Textarea
@@ -146,9 +157,10 @@ export function CategoryManagementSection({
               onChange={(event) =>
                 onNewCategoryClassifierHintChange(event.target.value)
               }
-              placeholder="Short note to help the AI pick this category for non-obvious transactions."
+              placeholder={CLASSIFIER_HINT_PLACEHOLDER}
               rows={2}
             />
+            <FieldDescription>{CLASSIFIER_HINT_DESCRIPTION}</FieldDescription>
           </FieldContent>
         </Field>
         <Button
@@ -288,7 +300,7 @@ export function CategoryManagementSection({
 
           <Field>
             <FieldLabel htmlFor="edit-category-classifier-hint">
-              Classifier hint (optional)
+              {CLASSIFIER_HINT_LABEL}
             </FieldLabel>
             <FieldContent>
               <Textarea
@@ -297,13 +309,14 @@ export function CategoryManagementSection({
                 onChange={(event) =>
                   onEditCategoryClassifierHintChange(event.target.value)
                 }
-                placeholder="Short note to help the AI pick this category for non-obvious transactions."
+                placeholder={CLASSIFIER_HINT_PLACEHOLDER}
                 rows={2}
                 disabled={
                   editingCategoryId !== null &&
                   busyKey === `rename-category-${editingCategoryId}`
                 }
               />
+              <FieldDescription>{CLASSIFIER_HINT_DESCRIPTION}</FieldDescription>
             </FieldContent>
           </Field>
 
