@@ -24,6 +24,7 @@ enum SuggestionSource {
   RULE
   OPENAI
   JEV
+  HISTORY
 }
 
 enum MonthlyReviewStatus {

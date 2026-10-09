@@ -1,0 +1,1 @@
+-- SQLite stores Prisma enums as TEXT, so adding SuggestionSource.HISTORY needs no DDL.
