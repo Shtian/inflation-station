@@ -103,6 +103,16 @@ OpenAI-based categorization suggestions are optional.
   ```
 - If `OPENAI_API_KEY` is not set (or provider calls fail), imports still complete and rule-based categorization continues without failing the pipeline.
 
+## Optional Jev (TypeSafe) API Key
+
+Jev suggests a category for each imported row and helps guess which CSV columns hold the date, amount, description and payment type.
+
+- Set key to enable Jev:
+  ```bash
+  export TYPESAFE_API_KEY="your_key_here"
+  ```
+- If `TYPESAFE_API_KEY` is not set, imports still complete: rows go to review without Jev's category suggestions, and the column-mapping step uses the built-in guesser alone.
+
 ## Useful Commands
 
 - `pnpm lint`
