@@ -8,7 +8,7 @@ const DOMAIN_SUFFIXES = new Set(["com", "no", "net", "org", "io", "se", "dk"]);
 
 // Payment processors and card labels prefix the real merchant, so keying on
 // them would give every Vipps or PayPal purchase one shared category.
-const INTERMEDIARY_PREFIXES = new Set([
+export const INTERMEDIARY_PREFIXES: ReadonlySet<string> = new Set([
   "vipps",
   "paypal",
   "klarna",
@@ -22,6 +22,14 @@ const INTERMEDIARY_PREFIXES = new Set([
   "bankaxept",
   "iz",
   "sq",
+]);
+
+export const LEGAL_SUFFIXES: ReadonlySet<string> = new Set([
+  "as",
+  "asa",
+  "ab",
+  "ltd",
+  "sa",
 ]);
 
 // Imported merchants are name + title, so they carry store numbers, dates and
