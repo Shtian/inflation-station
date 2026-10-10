@@ -11,6 +11,13 @@ import type {
 } from "./categories-manager.types";
 import { getCategoryMutationErrorMessage } from "./categories-manager.utils";
 import { CategoryManagementSection } from "./components/category-management-section";
+import {
+  type HintDraft,
+  type HintDraftAction,
+  hintDraftPayload,
+  openHintDraft,
+  reduceHintDraft,
+} from "./components/hint-editor/hint-draft";
 import { RulesManagementSection } from "./components/rules-management-section";
 
 export function CategoriesManager() {
@@ -30,8 +37,10 @@ export function CategoriesManager() {
     null,
   );
   const [editCategoryName, setEditCategoryName] = useState("");
-  const [editCategoryClassifierHint, setEditCategoryClassifierHint] =
-    useState("");
+  const [hintDraft, setHintDraft] = useState<HintDraft | null>(null);
+  const dispatchHint = useCallback((action: HintDraftAction) => {
+    setHintDraft((draft) => draft && reduceHintDraft(draft, action));
+  }, []);
 
   const [ruleCategoryId, setRuleCategoryId] = useState("");
   const [ruleMerchantContains, setRuleMerchantContains] = useState("");
@@ -175,14 +184,14 @@ export function CategoriesManager() {
   function startRenameCategory(category: Category) {
     setEditingCategoryId(category.id);
     setEditCategoryName(category.name);
-    setEditCategoryClassifierHint(category.classifierHint ?? "");
+    setHintDraft(openHintDraft(category));
     setError(null);
   }
 
   function cancelRenameCategory() {
     setEditingCategoryId(null);
     setEditCategoryName("");
-    setEditCategoryClassifierHint("");
+    setHintDraft(null);
   }
 
   async function renameCategory(categoryId: string) {
@@ -201,7 +210,7 @@ export function CategoriesManager() {
       },
       body: JSON.stringify({
         name: editCategoryName.trim(),
-        classifierHint: editCategoryClassifierHint.trim() || null,
+        classifierHint: hintDraft ? hintDraftPayload(hintDraft) : undefined,
       }),
     });
     const body = await response.json().catch(() => null);
@@ -339,13 +348,13 @@ export function CategoriesManager() {
             onNewCategoryClassifierHintChange={setNewCategoryClassifierHint}
             editingCategoryId={editingCategoryId}
             editCategoryName={editCategoryName}
-            editCategoryClassifierHint={editCategoryClassifierHint}
+            hintDraft={hintDraft}
+            onHintAction={dispatchHint}
             onCreateCategory={createCategory}
             onDeleteCategory={deleteCategory}
             onStartRenameCategory={startRenameCategory}
             onCancelRenameCategory={cancelRenameCategory}
             onEditCategoryNameChange={setEditCategoryName}
-            onEditCategoryClassifierHintChange={setEditCategoryClassifierHint}
             onRenameCategory={renameCategory}
           />
         </TabsContent>

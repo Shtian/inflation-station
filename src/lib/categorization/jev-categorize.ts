@@ -2,6 +2,7 @@ import type { PaymentType } from "@prisma/client";
 import type { Fetch } from "@typesafe-ai/sdk";
 import { type JevUnavailableReason, runJevChoice } from "@/lib/jev/client";
 import { classifyJevConfidence } from "@/lib/jev/confidence-tier";
+import { formatJevCategoryLine } from "./hint-text";
 
 const UNCATEGORIZED_CHOICE = "uncategorized";
 const INSTRUCTIONS =
@@ -71,9 +72,10 @@ function buildAlternatives(
   };
 
   for (const category of categories) {
-    alternatives[category.id] = category.classifierHint
-      ? `${category.name}: ${category.classifierHint}`
-      : category.name;
+    alternatives[category.id] = formatJevCategoryLine(
+      category.name,
+      category.classifierHint,
+    );
   }
 
   return alternatives;
