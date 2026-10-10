@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { CategoryKind, PrismaClient } from "@prisma/client";
 import { normalizeMerchantKey } from "@/lib/transactions/merchant";
 import {
   INTERMEDIARY_PREFIXES,
@@ -14,6 +14,13 @@ export type HistoryMerchant = {
 
 export type CategoryMerchantHistory = {
   transactionCount: number;
+  merchants: HistoryMerchant[];
+};
+
+export type CategoryProfile = {
+  id: string;
+  name: string;
+  kind: CategoryKind;
   merchants: HistoryMerchant[];
 };
 
@@ -58,6 +65,39 @@ export async function getCategoryMerchantHistory(
     transactionCount: rows.reduce((total, row) => total + row.count, 0),
     merchants: aggregateMerchantFamilies(rows),
   };
+}
+
+export async function getAllCategoryProfiles(
+  db: CategoryMerchantsDb,
+): Promise<CategoryProfile[]> {
+  const categories = await db.category.findMany({
+    select: { id: true, name: true, kind: true },
+    orderBy: { name: "asc" },
+  });
+  const grouped = await db.transaction.groupBy({
+    by: ["categoryId", "normalizedMerchant", "merchant"],
+    where: { categoryId: { not: null } },
+    _count: { _all: true },
+  });
+
+  const rowsByCategory = new Map<string, MerchantUsageRow[]>();
+  for (const group of grouped) {
+    if (group.categoryId === null) {
+      continue;
+    }
+    const rows = rowsByCategory.get(group.categoryId) ?? [];
+    rows.push({
+      normalizedMerchant: group.normalizedMerchant,
+      merchant: group.merchant,
+      count: group._count._all,
+    });
+    rowsByCategory.set(group.categoryId, rows);
+  }
+
+  return categories.map((category) => ({
+    ...category,
+    merchants: aggregateMerchantFamilies(rowsByCategory.get(category.id) ?? []),
+  }));
 }
 
 export function aggregateMerchantFamilies(

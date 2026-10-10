@@ -6,6 +6,7 @@ import {
 } from "../../../tests/support/prisma-test-db";
 import {
   aggregateMerchantFamilies,
+  getAllCategoryProfiles,
   getCategoryMerchantHistory,
   labelForFamily,
 } from "./category-merchants";
@@ -175,5 +176,77 @@ describe("getCategoryMerchantHistory", () => {
     await expect(
       getCategoryMerchantHistory(db.client, category.id),
     ).resolves.toEqual({ transactionCount: 0, merchants: [] });
+  });
+});
+
+describe("getAllCategoryProfiles", () => {
+  let db: TestDatabase;
+
+  beforeEach(async () => {
+    db = await createTestDatabase();
+  });
+
+  afterEach(async () => {
+    await teardownTestDatabase(db);
+  });
+
+  it("aggregates every category's merchant families in one pass", async () => {
+    const account = await db.client.account.create({
+      data: { name: "Checking" },
+    });
+    const groceries = await db.client.category.create({
+      data: { name: "Groceries" },
+    });
+    const salary = await db.client.category.create({
+      data: { name: "Salary", kind: "INCOME" },
+    });
+    const empty = await db.client.category.create({
+      data: { name: "Empty" },
+    });
+    const transactions = [
+      [groceries.id, "kiwi 0445 stovner", "KIWI 0445 STOVNER"],
+      [groceries.id, "kiwi 112 majorstuen", null],
+      [groceries.id, "rema 1000 oslo", "REMA 1000 OSLO"],
+      [salary.id, "norsk arbeidsgiver as", "NORSK ARBEIDSGIVER AS"],
+      [null, "kiwi 9 storo", "KIWI 9 STORO"],
+    ] as const;
+    for (const [categoryId, normalizedMerchant, merchant] of transactions) {
+      await db.client.transaction.create({
+        data: {
+          accountId: account.id,
+          categoryId,
+          bookingDate: new Date("2026-03-01"),
+          amountNok: -100,
+          currency: "NOK",
+          normalizedMerchant,
+          merchant,
+        },
+      });
+    }
+
+    await expect(getAllCategoryProfiles(db.client)).resolves.toEqual([
+      { id: empty.id, name: "Empty", kind: "EXPENSE", merchants: [] },
+      {
+        id: groceries.id,
+        name: "Groceries",
+        kind: "EXPENSE",
+        merchants: [
+          { key: "kiwi", label: "Kiwi", transactionCount: 2 },
+          { key: "rema", label: "Rema", transactionCount: 1 },
+        ],
+      },
+      {
+        id: salary.id,
+        name: "Salary",
+        kind: "INCOME",
+        merchants: [
+          {
+            key: "norsk",
+            label: "Norsk Arbeidsgiver",
+            transactionCount: 1,
+          },
+        ],
+      },
+    ]);
   });
 });
