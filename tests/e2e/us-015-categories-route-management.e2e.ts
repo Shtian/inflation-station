@@ -21,6 +21,27 @@ type CategoryRule = {
   };
 };
 
+type HintGuessBody =
+  | {
+      guess: {
+        description: string | null;
+        merchants: { key: string; label: string }[];
+      };
+    }
+  | { guess: null; reason: string };
+
+const DISABLED_HINT_GUESS: HintGuessBody = { guess: null, reason: "disabled" };
+
+async function stubHintGuess(
+  page: Page,
+  respond: () => HintGuessBody | Promise<HintGuessBody> = () =>
+    DISABLED_HINT_GUESS,
+) {
+  await page.route("**/api/categories/*/hint-guess", async (route) => {
+    await route.fulfill({ json: await respond() });
+  });
+}
+
 test("manages categories and category rules from /categories", async ({
   page,
 }) => {
@@ -44,6 +65,7 @@ test("manages categories and category rules from /categories", async ({
   ];
   let rules: CategoryRule[] = [];
 
+  await stubHintGuess(page);
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
       status: 200,
@@ -354,6 +376,7 @@ test("flags categories without a classifier hint on /categories", async ({
     },
   ];
 
+  await stubHintGuess(page);
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({
       status: 200,
@@ -474,10 +497,12 @@ async function stubHintEditorRoutes(
   page: Page,
   initialCategories: Category[],
   merchants: (categoryId: string) => MerchantHistory | null,
+  hintGuess?: () => HintGuessBody | Promise<HintGuessBody>,
 ) {
   let categories = initialCategories;
   const patches: { name: string; classifierHint: string | null }[] = [];
 
+  await stubHintGuess(page, hintGuess);
   await page.route("**/api/accounts", async (route) => {
     await route.fulfill({ json: { accounts: [] } });
   });
@@ -552,11 +577,15 @@ test("prefills an empty classifier hint from the category's merchant history", a
   );
 
   await page.goto("/categories");
+  const guessResponse = page.waitForResponse("**/api/categories/*/hint-guess");
   const dialog = await openEditDialog(page, "Groceries");
   const hint = dialog.getByLabel("Classifier hint (recommended)");
+  await guessResponse;
 
   await expect(hint).toHaveValue("Rema, Kiwi, Meny");
   await expect(dialog.getByText("Suggested · not saved")).toBeVisible();
+  await expect(dialog.getByText("Start with")).toHaveCount(0);
+  await expect(dialog.getByText("Not in your history")).toHaveCount(0);
   await expect(
     dialog.getByText("Jev reads Groceries: Rema, Kiwi, Meny"),
   ).toBeVisible();
@@ -678,4 +707,96 @@ test("keeps today's plain hint field when merchant history fails to load", async
       classifierHint: "Restaurants and takeaway: Foodora, Wolt",
     },
   ]);
+});
+
+const groceriesCategory: Category = {
+  id: "cat-groceries",
+  name: "Groceries",
+  kind: "EXPENSE",
+  accountId: null,
+  classifierHint: null,
+};
+
+const groceriesHistory: MerchantHistory = {
+  transactionCount: 64,
+  merchants: [
+    { key: "rema", label: "Rema", transactionCount: 41 },
+    { key: "kiwi", label: "Kiwi", transactionCount: 23 },
+  ],
+};
+
+const groceriesGuess: HintGuessBody = {
+  guess: {
+    description: "Groceries and food shopping",
+    merchants: [{ key: "bunnpris", label: "Bunnpris" }],
+  },
+};
+
+test("leads the hint with a guessed description and offers merchants not in history", async ({
+  page,
+}) => {
+  const patches = await stubHintEditorRoutes(
+    page,
+    [groceriesCategory],
+    () => groceriesHistory,
+    () => groceriesGuess,
+  );
+
+  await page.goto("/categories");
+  const dialog = await openEditDialog(page, "Groceries");
+  const hint = dialog.getByLabel("Classifier hint (recommended)");
+  const description = dialog.getByRole("checkbox", {
+    name: "Start with “Groceries and food shopping”",
+  });
+
+  await expect(hint).toHaveValue("Groceries and food shopping. Rema, Kiwi");
+  await expect(dialog.getByText("Suggested · not saved")).toBeVisible();
+  await expect(description).toBeChecked();
+
+  await description.click();
+  await expect(hint).toHaveValue("Rema, Kiwi");
+  await expect(description).not.toBeChecked();
+
+  const bunnpris = dialog.getByRole("button", { name: "Bunnpris" });
+  await expect(bunnpris).toHaveAttribute("aria-pressed", "false");
+  await bunnpris.click();
+  await expect(hint).toHaveValue("Rema, Kiwi, Bunnpris");
+  await expect(bunnpris).toHaveAttribute("aria-pressed", "true");
+
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+  ).toBeVisible();
+  expect(patches).toEqual([
+    { name: "Groceries", classifierHint: "Rema, Kiwi, Bunnpris" },
+  ]);
+});
+
+test("keeps text typed while the guess is still loading", async ({ page }) => {
+  await stubHintEditorRoutes(
+    page,
+    [groceriesCategory],
+    () => groceriesHistory,
+    async () => {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      return groceriesGuess;
+    },
+  );
+
+  await page.goto("/categories");
+  const dialog = await openEditDialog(page, "Groceries");
+  const hint = dialog.getByLabel("Classifier hint (recommended)");
+
+  await expect(hint).toHaveValue("Rema, Kiwi");
+  await expect(dialog.getByText("Finding similar merchants…")).toBeVisible();
+  await hint.fill("Coop, Joker");
+
+  await expect(dialog.getByText("Not in your history")).toBeVisible();
+  await expect(dialog.getByText("Finding similar merchants…")).toHaveCount(0);
+  await expect(hint).toHaveValue("Coop, Joker");
+  await expect(
+    dialog.getByRole("checkbox", {
+      name: "Start with “Groceries and food shopping”",
+    }),
+  ).not.toBeChecked();
 });
