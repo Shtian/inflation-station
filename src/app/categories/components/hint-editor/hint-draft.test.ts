@@ -84,7 +84,7 @@ describe("hint draft", () => {
         hiddenCount: 0,
       },
       guesses: [],
-      guessPending: true,
+      ai: { kind: "suggest" },
       note: null,
     });
     expect(hintDraftPayload(draft)).toBe("Rema, Kiwi, Meny");
@@ -140,7 +140,7 @@ describe("hint draft", () => {
         hiddenCount: 0,
       },
       guesses: [],
-      guessPending: true,
+      ai: { kind: "suggest" },
       note: null,
     });
   });
@@ -215,25 +215,43 @@ describe("hint draft", () => {
     ).toBe(draft);
   });
 
-  it("behaves like a plain textarea when history is unavailable or empty", () => {
+  it("behaves like a plain textarea when history is unavailable", () => {
     const failed = run(openHintDraft({ id: "cat-1", classifierHint: null }), {
       type: "history-unavailable",
       categoryId: "cat-1",
     });
-    const empty = loaded(null, { transactionCount: 0, merchants: [] });
 
     expect(failed.history).toEqual({ status: "failed" });
+    expect(failed.text).toBe("");
+    expect(viewHintDraft(failed, "Groceries").suggestions).toEqual({
+      kind: "hidden",
+    });
+  });
+
+  it("offers only the AI button for a category with no history", () => {
+    const empty = loaded(null, { transactionCount: 0, merchants: [] });
+
     expect(empty.history).toEqual({
       status: "loaded",
       history: { transactionCount: 0, merchants: [] },
       verdict: { kind: "empty" },
     });
-    for (const draft of [failed, empty]) {
-      expect(draft.text).toBe("");
-      expect(viewHintDraft(draft, "Groceries").suggestions).toEqual({
-        kind: "hidden",
-      });
-    }
+    expect(empty.text).toBe("");
+    expect(viewHintDraft(empty, "Groceries")).toEqual({
+      badge: null,
+      mismatch: null,
+      jevLine: "Groceries",
+      length: 9,
+      overBudget: false,
+      suggestions: {
+        kind: "expanded",
+        description: null,
+        history: null,
+        guesses: [],
+        ai: { kind: "suggest" },
+        note: null,
+      },
+    });
   });
 
   it("flags the Jev line over budget past 200 characters", () => {
@@ -306,10 +324,17 @@ describe("hint draft with a guess", () => {
     categoryId: "g",
     history: emptyHistory,
   };
+  const R: HintDraftAction = { type: "guess-requested", categoryId: "g" };
   const G: HintDraftAction = { type: "guess-loaded", categoryId: "g", guess };
   const noGuess: HintDraftAction = {
     type: "guess-unavailable",
     categoryId: "g",
+    reason: "disabled",
+  };
+  const failedGuess: HintDraftAction = {
+    type: "guess-unavailable",
+    categoryId: "g",
+    reason: "failed",
   };
   const typed = (text: string): HintDraftAction => ({
     type: "text-edited",
@@ -335,7 +360,7 @@ describe("hint draft with a guess", () => {
     });
 
     it("adds the description to an untouched prefill when the guess arrives", () => {
-      const draft = run(open(), H, G);
+      const draft = run(open(), H, R, G);
 
       expect(draft.text).toBe(suggested);
       expect(viewHintDraft(draft, "Groceries").badge).toBe("suggested");
@@ -345,12 +370,12 @@ describe("hint draft with a guess", () => {
           { merchant: bunnpris, presence: "off" },
           { merchant: joker, presence: "off" },
         ],
-        guessPending: false,
+        ai: null,
       });
     });
 
     it("waits for history before writing anything", () => {
-      const draft = run(open(), G);
+      const draft = run(open(), R, G);
 
       expect(draft.text).toBe("");
       expect(viewHintDraft(draft, "Groceries").suggestions).toEqual({
@@ -359,11 +384,11 @@ describe("hint draft with a guess", () => {
     });
 
     it("ends in the same draft whichever slot arrives first", () => {
-      expect(run(open(), G, H)).toEqual(run(open(), H, G));
+      expect(run(open(), R, G, H)).toEqual(run(open(), H, R, G));
     });
 
     it("never overwrites typed text", () => {
-      const draft = run(open(), H, typed("Rema, Kiwi, Meny, Coop"), G);
+      const draft = run(open(), H, R, typed("Rema, Kiwi, Meny, Coop"), G);
 
       expect(draft.text).toBe("Rema, Kiwi, Meny, Coop");
       expect(expanded(draft).description).toEqual({ text: d, checked: false });
@@ -378,6 +403,7 @@ describe("hint draft with a guess", () => {
           type: "chip-clicked",
           merchant: groceriesHistory.merchants[1],
         },
+        R,
         G,
       );
 
@@ -385,11 +411,11 @@ describe("hint draft with a guess", () => {
     });
 
     it("keeps a cleared box cleared", () => {
-      expect(run(open(), H, typed(""), G).text).toBe("");
+      expect(run(open(), H, typed(""), R, G).text).toBe("");
     });
 
     it("removes and restores the description with the checkbox", () => {
-      const unchecked = run(open(), H, G, {
+      const unchecked = run(open(), H, R, G, {
         type: "description-set",
         on: false,
       });
@@ -406,7 +432,7 @@ describe("hint draft with a guess", () => {
     });
 
     it("replaces a mismatched hint with the description-led suggestion", () => {
-      const draft = run(open("Coop Extra"), H, G);
+      const draft = run(open("Coop Extra"), H, R, G);
 
       expect(draft.text).toBe("Coop Extra");
       expect(viewHintDraft(draft, "Groceries").mismatch).toEqual({
@@ -420,7 +446,8 @@ describe("hint draft with a guess", () => {
 
     it("upgrades an untouched replacement when the guess arrives", () => {
       expect(
-        run(open("Coop Extra"), H, { type: "replace-with-suggestion" }, G).text,
+        run(open("Coop Extra"), H, { type: "replace-with-suggestion" }, R, G)
+          .text,
       ).toBe(suggested);
     });
 
@@ -431,13 +458,14 @@ describe("hint draft with a guess", () => {
           H,
           { type: "replace-with-suggestion" },
           typed("Rema"),
+          R,
           G,
         ).text,
       ).toBe("Rema");
     });
 
     it("never writes after the saved hint is kept", () => {
-      const draft = run(open("Coop Extra"), H, { type: "keep-saved" }, G);
+      const draft = run(open("Coop Extra"), H, { type: "keep-saved" }, R, G);
 
       expect(draft.text).toBe("Coop Extra");
       expect(viewHintDraft(draft, "Groceries").suggestions).toEqual({
@@ -447,7 +475,7 @@ describe("hint draft with a guess", () => {
     });
 
     it("keeps a good saved hint collapsed and unchecked", () => {
-      const draft = run(open("Rema"), H, G);
+      const draft = run(open("Rema"), H, R, G);
 
       expect(draft.text).toBe("Rema");
       expect(viewHintDraft(draft, "Groceries").suggestions).toEqual({
@@ -470,15 +498,86 @@ describe("hint draft with a guess", () => {
           guess,
         }),
       ).toBe(draft);
-      const withGuess = run(draft, G);
+      expect(reduceHintDraft(draft, G)).toBe(draft);
+      const requested = run(draft, R);
+      expect(
+        reduceHintDraft(requested, {
+          type: "guess-loaded",
+          categoryId: "other",
+          guess,
+        }),
+      ).toBe(requested);
+      const withGuess = run(requested, G);
       expect(reduceHintDraft(withGuess, G)).toBe(withGuess);
       expect(reduceHintDraft(withGuess, noGuess)).toBe(withGuess);
+      expect(reduceHintDraft(withGuess, R)).toBe(withGuess);
+    });
+  });
+
+  describe("on request", () => {
+    it("writes nothing from a guess nobody asked for", () => {
+      const draft = run(open(), H);
+
+      expect(draft.guess).toEqual({ status: "idle" });
+      expect(reduceHintDraft(draft, G)).toBe(draft);
+      expect(reduceHintDraft(draft, noGuess)).toBe(draft);
+      expect(draft.text).toBe("Rema, Kiwi, Meny");
+      expect(expanded(draft).ai).toEqual({ kind: "suggest" });
+    });
+
+    it("starts loading on the first request and ignores repeats", () => {
+      const draft = run(open(), H);
+      const requested = run(draft, R);
+
+      expect(requested.guess).toEqual({ status: "loading" });
+      expect(expanded(requested).ai).toEqual({ kind: "pending" });
+      expect(reduceHintDraft(requested, R)).toBe(requested);
+      expect(
+        reduceHintDraft(draft, {
+          type: "guess-requested",
+          categoryId: "other",
+        }),
+      ).toBe(draft);
+    });
+
+    it("allows a retry after a failed guess", () => {
+      const failed = run(open(), H, R, failedGuess);
+
+      expect(failed.guess).toEqual({ status: "unavailable", reason: "failed" });
+      expect(expanded(failed).ai).toEqual({
+        kind: "unavailable",
+        reason: "failed",
+      });
+
+      const retried = run(failed, R);
+      expect(retried.guess).toEqual({ status: "loading" });
+      expect(run(retried, G).text).toBe(suggested);
+    });
+
+    it("does not retry when AI suggestions are off or unconfigured", () => {
+      const disabled = run(open(), H, R, noGuess);
+      const keyMissing = run(open(), H, R, {
+        type: "guess-unavailable",
+        categoryId: "g",
+        reason: "key_missing",
+      });
+
+      expect(expanded(disabled).ai).toEqual({
+        kind: "unavailable",
+        reason: "disabled",
+      });
+      expect(expanded(keyMissing).ai).toEqual({
+        kind: "unavailable",
+        reason: "key_missing",
+      });
+      expect(reduceHintDraft(disabled, R)).toBe(disabled);
+      expect(reduceHintDraft(keyMissing, R)).toBe(keyMissing);
     });
   });
 
   describe("degrades to PR 1", () => {
     it("shows the history panel alone when no guess is available", () => {
-      const draft = run(open(), H, noGuess);
+      const draft = run(open(), H, R, noGuess);
 
       expect(draft.text).toBe("Rema, Kiwi, Meny");
       expect(viewHintDraft(draft, "Groceries")).toEqual({
@@ -499,7 +598,7 @@ describe("hint draft with a guess", () => {
             hiddenCount: 0,
           },
           guesses: [],
-          guessPending: false,
+          ai: { kind: "unavailable", reason: "disabled" },
           note: null,
         },
       });
@@ -509,6 +608,7 @@ describe("hint draft with a guess", () => {
       const draft = run(
         open(),
         { type: "history-unavailable", categoryId: "g" },
+        R,
         G,
       );
 
@@ -519,10 +619,11 @@ describe("hint draft with a guess", () => {
     });
 
     it("ignores the checkbox until a description has loaded", () => {
-      const loading = run(open(), H);
+      const idle = run(open(), H);
+      const loading = run(idle, R);
       const unavailable = run(loading, noGuess);
 
-      for (const draft of [loading, unavailable]) {
+      for (const draft of [idle, loading, unavailable]) {
         expect(
           reduceHintDraft(draft, { type: "description-set", on: true }),
         ).toBe(draft);
@@ -532,7 +633,7 @@ describe("hint draft with a guess", () => {
 
   describe("empty history", () => {
     it("prefills the description alone and shows the guesses", () => {
-      const draft = run(open(), H0, G);
+      const draft = run(open(), H0, R, G);
 
       expect(draft.text).toBe("Groceries and food shopping.");
       expect(viewHintDraft(draft, "Groceries").badge).toBe("suggested");
@@ -544,13 +645,13 @@ describe("hint draft with a guess", () => {
           { merchant: bunnpris, presence: "off" },
           { merchant: joker, presence: "off" },
         ],
-        guessPending: false,
+        ai: null,
         note: null,
       });
     });
 
     it("appends a guessed merchant after the description", () => {
-      const draft = run(open(), H0, G, {
+      const draft = run(open(), H0, R, G, {
         type: "chip-clicked",
         merchant: joker,
       });
@@ -562,17 +663,22 @@ describe("hint draft with a guess", () => {
       ]);
     });
 
-    it("stays hidden without a guess", () => {
-      const draft = run(open(), H0, noGuess);
+    it("explains why there is no guess", () => {
+      const draft = run(open(), H0, R, noGuess);
 
       expect(draft.text).toBe("");
-      expect(viewHintDraft(draft, "Groceries").suggestions).toEqual({
-        kind: "hidden",
+      expect(expanded(draft)).toEqual({
+        kind: "expanded",
+        description: null,
+        history: null,
+        guesses: [],
+        ai: { kind: "unavailable", reason: "disabled" },
+        note: null,
       });
     });
 
     it("does not judge a saved hint against zero transactions", () => {
-      const draft = run(open("Taxi rides"), H0, G);
+      const draft = run(open("Taxi rides"), H0, R, G);
 
       expect(draft.history).toMatchObject({ verdict: { kind: "unjudged" } });
       expect(draft.text).toBe("Taxi rides");

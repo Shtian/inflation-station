@@ -1,6 +1,13 @@
 "use client";
 
-import { Check, History, Plus, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  History,
+  Loader2,
+  Plus,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react";
 import { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +25,10 @@ import {
   type MerchantPresence,
 } from "@/lib/categorization/hint-text";
 import { cn } from "@/lib/utils";
-import { fetchHintGuess } from "./fetch-hint-guess";
+import {
+  fetchHintGuess,
+  type HintGuessUnavailableReason,
+} from "./fetch-hint-guess";
 import { fetchMerchantHistory } from "./fetch-merchant-history";
 import {
   type HintDraft,
@@ -73,14 +83,14 @@ export function ClassifierHintEditor({
       return;
     }
     const controller = new AbortController();
-    void fetchHintGuess(categoryId, controller.signal).then((guess) => {
+    void fetchHintGuess(categoryId, controller.signal).then((result) => {
       if (controller.signal.aborted) {
         return;
       }
       dispatch(
-        guess
-          ? { type: "guess-loaded", categoryId, guess }
-          : { type: "guess-unavailable", categoryId },
+        result.kind === "loaded"
+          ? { type: "guess-loaded", categoryId, guess: result.guess }
+          : { type: "guess-unavailable", categoryId, reason: result.reason },
       );
     });
     return () => controller.abort();
@@ -252,9 +262,46 @@ export function ClassifierHintEditor({
                 </div>
               </div>
             ) : null}
-            {suggestions.guessPending ? (
-              <p className="text-muted-foreground text-xs">
+            {suggestions.ai?.kind === "suggest" ? (
+              <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground text-xs">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() =>
+                    dispatch({ type: "guess-requested", categoryId })
+                  }
+                  disabled={disabled}
+                >
+                  <Sparkles aria-hidden="true" />
+                  Suggest with AI
+                </Button>
+                <span>· description and similar merchants</span>
+              </div>
+            ) : null}
+            {suggestions.ai?.kind === "pending" ? (
+              <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+                <Loader2 className="size-3 animate-spin" aria-hidden="true" />
                 Finding similar merchants…
+              </p>
+            ) : null}
+            {suggestions.ai?.kind === "unavailable" ? (
+              <p className="flex flex-wrap items-center gap-1 text-muted-foreground text-xs">
+                {AI_UNAVAILABLE_MESSAGES[suggestions.ai.reason]}
+                {suggestions.ai.reason === "failed" ? (
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="xs"
+                    className="h-auto px-0"
+                    onClick={() =>
+                      dispatch({ type: "guess-requested", categoryId })
+                    }
+                    disabled={disabled}
+                  >
+                    Try again
+                  </Button>
+                ) : null}
               </p>
             ) : null}
             {suggestions.note ? (
@@ -268,6 +315,12 @@ export function ClassifierHintEditor({
     </Field>
   );
 }
+
+const AI_UNAVAILABLE_MESSAGES: Record<HintGuessUnavailableReason, string> = {
+  disabled: "AI suggestions are turned off.",
+  key_missing: "AI suggestions unavailable: OPENAI_API_KEY is missing.",
+  failed: "Couldn't get AI suggestions.",
+};
 
 function MerchantChip({
   merchant,

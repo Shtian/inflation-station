@@ -15,6 +15,7 @@ import {
   setLeadingDescription,
   suggestHintText,
 } from "@/lib/categorization/hint-text";
+import type { HintGuessUnavailableReason } from "./fetch-hint-guess";
 
 const VISIBLE_CHIP_COUNT = 6;
 
@@ -36,8 +37,9 @@ export type HistorySlot =
     };
 
 export type GuessSlot =
+  | { status: "idle" }
   | { status: "loading" }
-  | { status: "unavailable" }
+  | { status: "unavailable"; reason: HintGuessUnavailableReason }
   | { status: "loaded"; guess: HintGuess };
 
 export type HintDraft = {
@@ -62,8 +64,13 @@ export type HintDraftAction =
       history: CategoryMerchantHistory;
     }
   | { type: "history-unavailable"; categoryId: string }
+  | { type: "guess-requested"; categoryId: string }
   | { type: "guess-loaded"; categoryId: string; guess: HintGuess }
-  | { type: "guess-unavailable"; categoryId: string }
+  | {
+      type: "guess-unavailable";
+      categoryId: string;
+      reason: HintGuessUnavailableReason;
+    }
   | { type: "text-edited"; text: string }
   | { type: "chip-clicked"; merchant: HintMerchant }
   | { type: "description-set"; on: boolean }
@@ -91,7 +98,13 @@ export type HintDraftView = {
         description: { text: string; checked: boolean } | null;
         history: { chips: HintChip[]; hiddenCount: number } | null;
         guesses: HintChip<HintMerchant>[];
-        guessPending: boolean;
+        // null once the guess has loaded: its description row and guess
+        // group take the place of the AI row.
+        ai:
+          | { kind: "suggest" }
+          | { kind: "pending" }
+          | { kind: "unavailable"; reason: HintGuessUnavailableReason }
+          | null;
         note: string | null;
       };
 };
@@ -107,7 +120,7 @@ export function openHintDraft(category: {
     text: saved,
     autoText: saved.trim() === "" ? saved : null,
     history: { status: "loading" },
-    guess: { status: "loading" },
+    guess: { status: "idle" },
     showAllMerchants: false,
     panelOpen: false,
     note: null,
@@ -145,6 +158,15 @@ export function reduceHintDraft(
         draft.history.status !== "loading"
         ? draft
         : { ...draft, history: { status: "failed" } };
+    case "guess-requested": {
+      const { guess } = draft;
+      const requestable =
+        guess.status === "idle" ||
+        (guess.status === "unavailable" && guess.reason === "failed");
+      return action.categoryId !== draft.categoryId || !requestable
+        ? draft
+        : { ...draft, guess: { status: "loading" } };
+    }
     case "guess-loaded":
       return action.categoryId !== draft.categoryId ||
         draft.guess.status !== "loading"
@@ -157,7 +179,10 @@ export function reduceHintDraft(
       return action.categoryId !== draft.categoryId ||
         draft.guess.status !== "loading"
         ? draft
-        : { ...draft, guess: { status: "unavailable" } };
+        : {
+            ...draft,
+            guess: { status: "unavailable", reason: action.reason },
+          };
     case "text-edited":
       return { ...draft, text: action.text, note: null };
     case "chip-clicked": {
@@ -257,12 +282,7 @@ export function viewHintDraft(
 
   const { history } = draft;
   const guess = draft.guess.status === "loaded" ? draft.guess.guess : null;
-  const merchants =
-    history.status === "loaded" ? history.history.merchants : [];
-  const hasGuess =
-    guess !== null &&
-    (guess.description !== null || guess.merchants.length > 0);
-  if (history.status !== "loaded" || (merchants.length === 0 && !hasGuess)) {
+  if (history.status !== "loaded") {
     return {
       ...view,
       badge: null,
@@ -271,6 +291,7 @@ export function viewHintDraft(
     };
   }
 
+  const { merchants } = history.history;
   const { verdict } = history;
   const { transactionCount } = history.history;
   const pending =
@@ -314,8 +335,23 @@ export function viewHintDraft(
                 }
               : null,
           guesses: guess?.merchants.map(chip) ?? [],
-          guessPending: draft.guess.status === "loading",
+          ai: aiRow(draft.guess),
           note: draft.note,
         },
   };
+}
+
+function aiRow(
+  guess: GuessSlot,
+): Extract<HintDraftView["suggestions"], { kind: "expanded" }>["ai"] {
+  switch (guess.status) {
+    case "idle":
+      return { kind: "suggest" };
+    case "loading":
+      return { kind: "pending" };
+    case "unavailable":
+      return { kind: "unavailable", reason: guess.reason };
+    case "loaded":
+      return null;
+  }
 }

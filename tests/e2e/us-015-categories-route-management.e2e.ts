@@ -42,6 +42,16 @@ async function stubHintGuess(
   });
 }
 
+function recordHintGuessRequests(page: Page) {
+  const urls: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/hint-guess")) {
+      urls.push(request.url());
+    }
+  });
+  return urls;
+}
+
 test("manages categories and category rules from /categories", async ({
   page,
 }) => {
@@ -576,13 +586,16 @@ test("prefills an empty classifier hint from the category's merchant history", a
     }),
   );
 
+  const guessRequests = recordHintGuessRequests(page);
   await page.goto("/categories");
-  const guessResponse = page.waitForResponse("**/api/categories/*/hint-guess");
   const dialog = await openEditDialog(page, "Groceries");
   const hint = dialog.getByLabel("Classifier hint (recommended)");
-  await guessResponse;
 
   await expect(hint).toHaveValue("Rema, Kiwi, Meny");
+  await expect(
+    dialog.getByRole("button", { name: "Suggest with AI" }),
+  ).toBeVisible();
+  expect(guessRequests).toEqual([]);
   await expect(dialog.getByText("Suggested · not saved")).toBeVisible();
   await expect(dialog.getByText("Start with")).toHaveCount(0);
   await expect(dialog.getByText("Not in your history")).toHaveCount(0);
@@ -742,6 +755,7 @@ test("leads the hint with a guessed description and offers merchants not in hist
     () => groceriesGuess,
   );
 
+  const guessRequests = recordHintGuessRequests(page);
   await page.goto("/categories");
   const dialog = await openEditDialog(page, "Groceries");
   const hint = dialog.getByLabel("Classifier hint (recommended)");
@@ -749,7 +763,19 @@ test("leads the hint with a guessed description and offers merchants not in hist
     name: "Start with “Groceries and food shopping”",
   });
 
+  await expect(hint).toHaveValue("Rema, Kiwi");
+  await expect(description).toHaveCount(0);
+  expect(guessRequests).toEqual([]);
+
+  await dialog.getByRole("button", { name: "Suggest with AI" }).click();
+
   await expect(hint).toHaveValue("Groceries and food shopping. Rema, Kiwi");
+  expect(guessRequests).toEqual([
+    expect.stringContaining("/api/categories/cat-groceries/hint-guess"),
+  ]);
+  await expect(
+    dialog.getByRole("button", { name: "Suggest with AI" }),
+  ).toHaveCount(0);
   await expect(dialog.getByText("Suggested · not saved")).toBeVisible();
   await expect(description).toBeChecked();
 
@@ -788,6 +814,8 @@ test("keeps text typed while the guess is still loading", async ({ page }) => {
   const hint = dialog.getByLabel("Classifier hint (recommended)");
 
   await expect(hint).toHaveValue("Rema, Kiwi");
+  await expect(dialog.getByText("Finding similar merchants…")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Suggest with AI" }).click();
   await expect(dialog.getByText("Finding similar merchants…")).toBeVisible();
   await hint.fill("Coop, Joker");
 
@@ -799,4 +827,59 @@ test("keeps text typed while the guess is still loading", async ({ page }) => {
       name: "Start with “Groceries and food shopping”",
     }),
   ).not.toBeChecked();
+});
+
+test("says so when AI suggestions are turned off", async ({ page }) => {
+  await stubHintEditorRoutes(page, [groceriesCategory], () => groceriesHistory);
+
+  const guessRequests = recordHintGuessRequests(page);
+  await page.goto("/categories");
+  const dialog = await openEditDialog(page, "Groceries");
+  const hint = dialog.getByLabel("Classifier hint (recommended)");
+
+  await expect(hint).toHaveValue("Rema, Kiwi");
+  await dialog.getByRole("button", { name: "Suggest with AI" }).click();
+
+  await expect(
+    dialog.getByText("AI suggestions are turned off."),
+  ).toBeVisible();
+  expect(guessRequests).toHaveLength(1);
+  await expect(
+    dialog.getByRole("button", { name: "Suggest with AI" }),
+  ).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Try again" })).toHaveCount(
+    0,
+  );
+  await expect(dialog.getByText("Start with")).toHaveCount(0);
+  await expect(dialog.getByText("Not in your history")).toHaveCount(0);
+  await expect(hint).toHaveValue("Rema, Kiwi");
+});
+
+test("offers a retry when the AI suggestion fails", async ({ page }) => {
+  const responses: HintGuessBody[] = [
+    { guess: null, reason: "provider_error" },
+    groceriesGuess,
+  ];
+  await stubHintEditorRoutes(
+    page,
+    [groceriesCategory],
+    () => groceriesHistory,
+    () => responses.shift() ?? DISABLED_HINT_GUESS,
+  );
+
+  const guessRequests = recordHintGuessRequests(page);
+  await page.goto("/categories");
+  const dialog = await openEditDialog(page, "Groceries");
+  const hint = dialog.getByLabel("Classifier hint (recommended)");
+
+  await expect(hint).toHaveValue("Rema, Kiwi");
+  await dialog.getByRole("button", { name: "Suggest with AI" }).click();
+
+  await expect(dialog.getByText("Couldn't get AI suggestions.")).toBeVisible();
+  await expect(hint).toHaveValue("Rema, Kiwi");
+  await dialog.getByRole("button", { name: "Try again" }).click();
+
+  await expect(hint).toHaveValue("Groceries and food shopping. Rema, Kiwi");
+  await expect(dialog.getByText("Couldn't get AI suggestions.")).toHaveCount(0);
+  expect(guessRequests).toHaveLength(2);
 });
