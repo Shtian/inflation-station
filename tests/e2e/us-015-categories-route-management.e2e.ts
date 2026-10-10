@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 type Category = {
   id: string;
@@ -463,4 +463,219 @@ test("flags categories without a classifier hint on /categories", async ({
     "1 category has no hint. Hints improve automatic categorization.",
   );
   await expect(foodRow.getByText("No hint", { exact: true })).toBeVisible();
+});
+
+type MerchantHistory = {
+  transactionCount: number;
+  merchants: { key: string; label: string; transactionCount: number }[];
+};
+
+async function stubHintEditorRoutes(
+  page: Page,
+  initialCategories: Category[],
+  merchants: (categoryId: string) => MerchantHistory | null,
+) {
+  let categories = initialCategories;
+  const patches: { name: string; classifierHint: string | null }[] = [];
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({ json: { accounts: [] } });
+  });
+  await page.route("**/api/category-rules", async (route) => {
+    await route.fulfill({ json: { rules: [] } });
+  });
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({ json: { categories } });
+  });
+  await page.route("**/api/categories/*", async (route, request) => {
+    if (request.method() !== "PATCH") {
+      await route.fallback();
+      return;
+    }
+    const categoryId = request.url().split("/").at(-1) ?? "";
+    const payload = request.postDataJSON() as {
+      name: string;
+      classifierHint: string | null;
+    };
+    patches.push(payload);
+    categories = categories.map((category) =>
+      category.id === categoryId ? { ...category, ...payload } : category,
+    );
+    await route.fulfill({
+      json: { category: categories.find((c) => c.id === categoryId) },
+    });
+  });
+  await page.route("**/api/categories/*/merchants", async (route, request) => {
+    const categoryId = request.url().split("/").at(-2) ?? "";
+    const history = merchants(categoryId);
+    await route.fulfill(
+      history
+        ? { json: { history } }
+        : { status: 500, json: { error: "INTERNAL" } },
+    );
+  });
+
+  return patches;
+}
+
+async function openEditDialog(page: Page, categoryName: string) {
+  await page
+    .getByRole("row", { name: new RegExp(categoryName) })
+    .getByRole("button", { name: `Actions for category ${categoryName}` })
+    .click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  return page.getByRole("dialog");
+}
+
+test("prefills an empty classifier hint from the category's merchant history", async ({
+  page,
+}) => {
+  const patches = await stubHintEditorRoutes(
+    page,
+    [
+      {
+        id: "cat-groceries",
+        name: "Groceries",
+        kind: "EXPENSE",
+        accountId: null,
+        classifierHint: null,
+      },
+    ],
+    () => ({
+      transactionCount: 73,
+      merchants: [
+        { key: "rema", label: "Rema", transactionCount: 41 },
+        { key: "kiwi", label: "Kiwi", transactionCount: 23 },
+        { key: "meny", label: "Meny", transactionCount: 9 },
+      ],
+    }),
+  );
+
+  await page.goto("/categories");
+  const dialog = await openEditDialog(page, "Groceries");
+  const hint = dialog.getByLabel("Classifier hint (recommended)");
+
+  await expect(hint).toHaveValue("Rema, Kiwi, Meny");
+  await expect(dialog.getByText("Suggested · not saved")).toBeVisible();
+  await expect(
+    dialog.getByText("Jev reads Groceries: Rema, Kiwi, Meny"),
+  ).toBeVisible();
+
+  const kiwi = dialog.getByRole("button", { name: "Kiwi 23" });
+  await expect(kiwi).toHaveAttribute("aria-pressed", "true");
+  await kiwi.click();
+
+  await expect(hint).toHaveValue("Rema, Meny");
+  await expect(kiwi).toHaveAttribute("aria-pressed", "false");
+  await expect(dialog.getByText("Suggested · not saved")).toHaveCount(0);
+
+  await dialog.getByRole("button", { name: "Save" }).click();
+
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+  ).toBeVisible();
+  expect(patches).toEqual([
+    { name: "Groceries", classifierHint: "Rema, Meny" },
+  ]);
+});
+
+test("asks before replacing a saved hint that names none of the category's merchants", async ({
+  page,
+}) => {
+  const patches = await stubHintEditorRoutes(
+    page,
+    [
+      {
+        id: "cat-subscriptions",
+        name: "Abonnementer",
+        kind: "EXPENSE",
+        accountId: null,
+        classifierHint: "Rema 1000, Meny, Kiwi",
+      },
+    ],
+    () => ({
+      transactionCount: 28,
+      merchants: [
+        { key: "netflix", label: "Netflix", transactionCount: 12 },
+        { key: "spotify", label: "Spotify", transactionCount: 12 },
+        { key: "viaplay", label: "Viaplay", transactionCount: 4 },
+      ],
+    }),
+  );
+  const mismatch =
+    "Your saved hint names Rema 1000, Meny, Kiwi. None of them appear in the 28 transactions filed here.";
+
+  await page.goto("/categories");
+  let dialog = await openEditDialog(page, "Abonnementer");
+  let hint = dialog.getByLabel("Classifier hint (recommended)");
+
+  await expect(dialog.getByText(mismatch)).toBeVisible();
+  await dialog.getByRole("button", { name: "Keep mine" }).click();
+
+  await expect(dialog.getByText(mismatch)).toHaveCount(0);
+  await expect(hint).toHaveValue("Rema 1000, Meny, Kiwi");
+  await expect(
+    dialog.getByRole("button", { name: "Suggestions from 28 transactions" }),
+  ).toBeVisible();
+
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+  ).toBeVisible();
+  expect(patches).toEqual([
+    { name: "Abonnementer", classifierHint: "Rema 1000, Meny, Kiwi" },
+  ]);
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
+    timeout: 15_000,
+  });
+
+  dialog = await openEditDialog(page, "Abonnementer");
+  hint = dialog.getByLabel("Classifier hint (recommended)");
+  await dialog.getByRole("button", { name: "Replace with suggestion" }).click();
+
+  await expect(hint).toHaveValue("Netflix, Spotify, Viaplay");
+  await expect(dialog.getByText(mismatch)).toHaveCount(0);
+});
+
+test("keeps today's plain hint field when merchant history fails to load", async ({
+  page,
+}) => {
+  const patches = await stubHintEditorRoutes(
+    page,
+    [
+      {
+        id: "cat-food",
+        name: "Food",
+        kind: "EXPENSE",
+        accountId: null,
+        classifierHint: null,
+      },
+    ],
+    () => null,
+  );
+
+  await page.goto("/categories");
+  const merchantsResponse = page.waitForResponse(
+    "**/api/categories/*/merchants",
+  );
+  const dialog = await openEditDialog(page, "Food");
+  expect((await merchantsResponse).status()).toBe(500);
+  const hint = dialog.getByLabel("Classifier hint (recommended)");
+
+  await expect(hint).toHaveValue("");
+  await expect(dialog.getByText("Suggested · not saved")).toHaveCount(0);
+  await expect(dialog.getByText("From your history")).toHaveCount(0);
+
+  await hint.fill("Restaurants and takeaway: Foodora, Wolt");
+  await dialog.getByRole("button", { name: "Save" }).click();
+
+  await expect(
+    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+  ).toBeVisible();
+  expect(patches).toEqual([
+    {
+      name: "Food",
+      classifierHint: "Restaurants and takeaway: Foodora, Wolt",
+    },
+  ]);
 });

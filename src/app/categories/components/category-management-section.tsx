@@ -44,6 +44,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Category } from "../categories-manager.types";
 import { hasClassifierHint } from "../categories-manager.utils";
+import { ClassifierHintEditor } from "./hint-editor/classifier-hint-editor";
+import type { HintDraft, HintDraftAction } from "./hint-editor/hint-draft";
 
 const CATEGORY_KIND_LABELS: Record<CategoryKind, string> = {
   EXPENSE: "Expense",
@@ -69,13 +71,13 @@ type CategoryManagementSectionProps = {
   onNewCategoryClassifierHintChange: (value: string) => void;
   editingCategoryId: string | null;
   editCategoryName: string;
-  editCategoryClassifierHint: string;
+  hintDraft: HintDraft | null;
+  onHintAction: (action: HintDraftAction) => void;
   onCreateCategory: () => void;
   onDeleteCategory: (categoryId: string) => void;
   onStartRenameCategory: (category: Category) => void;
   onCancelRenameCategory: () => void;
   onEditCategoryNameChange: (value: string) => void;
-  onEditCategoryClassifierHintChange: (value: string) => void;
   onRenameCategory: (categoryId: string) => void;
 };
 
@@ -91,13 +93,13 @@ export function CategoryManagementSection({
   onNewCategoryClassifierHintChange,
   editingCategoryId,
   editCategoryName,
-  editCategoryClassifierHint,
+  hintDraft,
+  onHintAction,
   onCreateCategory,
   onDeleteCategory,
   onStartRenameCategory,
   onCancelRenameCategory,
   onEditCategoryNameChange,
-  onEditCategoryClassifierHintChange,
   onRenameCategory,
 }: CategoryManagementSectionProps) {
   const missingHintCount = categories.filter(
@@ -318,27 +320,17 @@ export function CategoryManagementSection({
             </FieldContent>
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor="edit-category-classifier-hint">
-              {CLASSIFIER_HINT_LABEL}
-            </FieldLabel>
-            <FieldContent>
-              <Textarea
-                id="edit-category-classifier-hint"
-                value={editCategoryClassifierHint}
-                onChange={(event) =>
-                  onEditCategoryClassifierHintChange(event.target.value)
-                }
-                placeholder={CLASSIFIER_HINT_PLACEHOLDER}
-                rows={2}
-                disabled={
-                  editingCategoryId !== null &&
-                  busyKey === `rename-category-${editingCategoryId}`
-                }
-              />
-              <FieldDescription>{CLASSIFIER_HINT_DESCRIPTION}</FieldDescription>
-            </FieldContent>
-          </Field>
+          {hintDraft ? (
+            <ClassifierHintEditor
+              id="edit-category-classifier-hint"
+              label={CLASSIFIER_HINT_LABEL}
+              description={CLASSIFIER_HINT_DESCRIPTION}
+              placeholder={CLASSIFIER_HINT_PLACEHOLDER}
+              categoryName={editCategoryName}
+              value={{ draft: hintDraft, dispatch: onHintAction }}
+              disabled={busyKey === `rename-category-${hintDraft.categoryId}`}
+            />
+          ) : null}
 
           <DialogFooter>
             <Button
