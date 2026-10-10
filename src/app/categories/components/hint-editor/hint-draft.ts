@@ -112,7 +112,7 @@ export function reduceHintDraft(
         return { ...draft, history: { status: "unavailable" } };
       }
       const verdict = judgeSavedHint(draft.saved, merchants);
-      const suggestedText = suggestHintText(merchants);
+      const suggestedText = suggestHintText(merchants, null);
       const prefill = verdict.kind === "empty" && draft.text === draft.saved;
       return {
         ...draft,

@@ -167,11 +167,54 @@ export function namesAnyMerchant(
   );
 }
 
-export function suggestHintText(merchants: readonly HintMerchant[]): string {
-  return merchants
+export function hasLeadingDescription(
+  text: string,
+  description: string,
+): boolean {
+  const rest = text.trimStart();
+  if (!rest.startsWith(description)) {
+    return false;
+  }
+  const next = rest[description.length];
+  const afterPeriod = rest[description.length + 1];
+  return (
+    next === undefined ||
+    (next === "." && (afterPeriod === undefined || /\s/.test(afterPeriod)))
+  );
+}
+
+// The description is a leading sentence closed by ".", so appendMerchant and
+// removeSegment treat it as a terminator and chips never merge into it.
+export function setLeadingDescription(
+  text: string,
+  description: string,
+  on: boolean,
+): string {
+  const has = hasLeadingDescription(text, description);
+  if (on) {
+    if (has) {
+      return text;
+    }
+    return text.trim() === "" ? `${description}.` : `${description}. ${text}`;
+  }
+  if (!has) {
+    return text;
+  }
+  const rest = text.trimStart();
+  const leadingWhitespace = text.slice(0, text.length - rest.length);
+  const after = rest.slice(description.length).replace(/^\./, "");
+  return leadingWhitespace + after.replace(/^\s/, "");
+}
+
+export function suggestHintText(
+  merchants: readonly HintMerchant[],
+  description: string | null,
+): string {
+  const list = merchants
     .slice(0, SUGGESTED_MERCHANT_COUNT)
     .map((merchant) => merchant.label)
     .join(", ");
+  return description ? setLeadingDescription(list, description, true) : list;
 }
 
 export function formatJevCategoryLine(
