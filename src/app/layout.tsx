@@ -3,9 +3,11 @@ import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { AppNavigation } from "@/components/app-navigation";
 import { BuildInfoFooter } from "@/components/build-info-footer";
+import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ModeToggle } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/sonner";
+import { resolveFeedbackDisabledReason } from "@/lib/feedback/agent";
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
@@ -56,6 +58,9 @@ export default function RootLayout({
             </header>
             {children}
             <Toaster richColors />
+            {resolveFeedbackDisabledReason() === null ? (
+              <FeedbackWidget />
+            ) : null}
             <BuildInfoFooter />
           </div>
         </ThemeProvider>
