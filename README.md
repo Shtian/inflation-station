@@ -74,6 +74,8 @@ bash update.sh
 
 The script installs dependencies, backs up the database (to `<database dir>/backups`), runs migrations, rebuilds, and restarts pm2 automatically. The currently running build is displayed in the app footer.
 
+The footer also has an Update button that does the same from the browser. It runs `git pull --ff-only` and then `update.sh`, and skips the rebuild and restart when the pull brings nothing new. Output goes to `.update/update.log`. The button only appears in the standalone production build that `update.sh` produces.
+
 To take a backup manually, run `scripts/backup-db.sh [output-dir]`. It is safe to run while the app is running.
 
 ### Running Multiple Instances

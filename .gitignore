@@ -54,3 +54,6 @@ next-env.d.ts
 
 # impeccable design-skill run artifacts (critique snapshots, live sessions)
 /.impeccable/
+
+# self-update run state (lock, log, exit code)
+/.update/
