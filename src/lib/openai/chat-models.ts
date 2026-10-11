@@ -25,7 +25,7 @@ const openAIModelsResponseSchema = z.object({
     z.object({
       id: z.string(),
       created: z.number(),
-      shutdown_date: z.string().nullable(),
+      shutdown_date: z.string().nullish(),
     }),
   ),
 });
@@ -55,7 +55,7 @@ export function selectChatModelIds(
         CHAT_MODEL_FAMILY.test(model.id) &&
         !EXCLUDED_ID_TOKENS.some((token) => model.id.includes(token)) &&
         !SNAPSHOT_SUFFIX.test(model.id) &&
-        (model.shutdown_date === null || model.shutdown_date > todayIsoDate),
+        (!model.shutdown_date || model.shutdown_date > todayIsoDate),
     )
     .sort(
       (left, right) =>
