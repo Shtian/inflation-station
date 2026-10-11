@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   applyMerchantChip,
   formatJevCategoryLine,
+  hasLeadingDescription,
   merchantPresence,
   namesAnyMerchant,
+  setLeadingDescription,
   splitHint,
   suggestHintText,
 } from "./hint-text";
@@ -113,7 +115,97 @@ describe("namesAnyMerchant", () => {
   });
 });
 
+const description = "Groceries and food shopping";
+const on = (text: string) => setLeadingDescription(text, description, true);
+const off = (text: string) => setLeadingDescription(text, description, false);
+
+describe("hasLeadingDescription", () => {
+  it.each([
+    ["Groceries and food shopping. Rema", true],
+    ["Groceries and food shopping", true],
+    ["  Groceries and food shopping.", true],
+    ["Groceries and food shopping.Rema", false],
+    ["Rema. Groceries and food shopping.", false],
+    ["groceries and food shopping. Rema", false],
+  ] as const)("%j is %s", (text, expected) => {
+    expect(hasLeadingDescription(text, description)).toBe(expected);
+  });
+});
+
+describe("setLeadingDescription", () => {
+  it("adds the description as a leading sentence and removes it again", () => {
+    expect(on("Rema 1000, Kiwi")).toBe(
+      "Groceries and food shopping. Rema 1000, Kiwi",
+    );
+    expect(off("Groceries and food shopping. Rema 1000, Kiwi")).toBe(
+      "Rema 1000, Kiwi",
+    );
+  });
+
+  it("closes a description-only text with a period", () => {
+    expect(on("")).toBe("Groceries and food shopping.");
+    expect(on("  ")).toBe("Groceries and food shopping.");
+    expect(off("Groceries and food shopping.")).toBe("");
+    expect(off("Groceries and food shopping")).toBe("");
+  });
+
+  it("removes one whitespace character after the period and restores it on add", () => {
+    const original = "Groceries and food shopping.  Rema,  kiwi ";
+    expect(off(original)).toBe(" Rema,  kiwi ");
+    expect(on(" Rema,  kiwi ")).toBe(original);
+  });
+
+  it("keeps every byte of the user's wording", () => {
+    expect(on("Bolt (not Bolt Food),  taxi")).toBe(
+      "Groceries and food shopping. Bolt (not Bolt Food),  taxi",
+    );
+  });
+
+  it("treats a reworded description as the user's own text", () => {
+    expect(on("groceries and food shopping. Rema")).toBe(
+      "Groceries and food shopping. groceries and food shopping. Rema",
+    );
+  });
+
+  it("is idempotent", () => {
+    expect(on("Groceries and food shopping. Rema")).toBe(
+      "Groceries and food shopping. Rema",
+    );
+    expect(off("Rema, Kiwi")).toBe("Rema, Kiwi");
+  });
+
+  it.each([
+    "Rema",
+    "Bolt (not Bolt Food),  taxi",
+    "x: y; z",
+    "  Kiwi",
+  ])("round-trips %j", (text) => {
+    expect(off(on(text))).toBe(text);
+  });
+
+  it("lets merchant chips append after the description and remove back to it", () => {
+    expect(applyMerchantChip("Groceries and food shopping.", kiwi)).toEqual({
+      kind: "text",
+      text: "Groceries and food shopping. Kiwi",
+    });
+    expect(
+      applyMerchantChip("Groceries and food shopping. Kiwi", kiwi),
+    ).toEqual({ kind: "text", text: "Groceries and food shopping." });
+  });
+});
+
 describe("suggestHintText", () => {
+  it("leads with the description when there is one", () => {
+    expect(suggestHintText([rema, kiwi], description)).toBe(
+      "Groceries and food shopping. Rema, Kiwi",
+    );
+    expect(suggestHintText([rema, kiwi], null)).toBe("Rema, Kiwi");
+    expect(suggestHintText([], description)).toBe(
+      "Groceries and food shopping.",
+    );
+    expect(suggestHintText([], null)).toBe("");
+  });
+
   it("joins the six most used labels", () => {
     const labels = [
       "Kiwi",
@@ -125,7 +217,10 @@ describe("suggestHintText", () => {
       "Spar",
     ];
     expect(
-      suggestHintText(labels.map((label) => ({ key: label, label }))),
+      suggestHintText(
+        labels.map((label) => ({ key: label, label })),
+        null,
+      ),
     ).toBe("Kiwi, Rema, Meny, Coop, Joker, Bunnpris");
   });
 });
