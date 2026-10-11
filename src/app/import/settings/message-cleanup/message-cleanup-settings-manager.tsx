@@ -15,7 +15,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -29,10 +34,9 @@ import {
   DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT,
 } from "@/lib/import/message-cleanup-settings";
 import {
-  type ChatModelEntry,
-  getModelById,
-} from "@/lib/monthly-review/chat-model-registry";
-import { promptSettingsResponseSchema } from "@/lib/monthly-review/prompt-settings-response-schema";
+  type PromptSettingsResponse,
+  promptSettingsResponseSchema,
+} from "@/lib/monthly-review/prompt-settings-response-schema";
 import {
   getReasoningEffortById,
   type ReasoningEffort,
@@ -60,7 +64,9 @@ export function MessageCleanupSettingsManager() {
     DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
   );
   const [usesDefaultModel, setUsesDefaultModel] = useState(false);
-  const [availableModels, setAvailableModels] = useState<ChatModelEntry[]>([]);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [availableModelsSource, setAvailableModelsSource] =
+    useState<PromptSettingsResponse["availableModelsSource"]>("openai");
   const [selectedReasoningEffort, setSelectedReasoningEffort] =
     useState<ReasoningEffort>(DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT);
   const [resolvedReasoningEffortState, setResolvedReasoningEffortState] =
@@ -103,10 +109,11 @@ export function MessageCleanupSettingsManager() {
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);
     setUsesDefaultPrompt(body.usesDefaultPrompt);
-    setSelectedModelId(getModelById(body.modelId ?? body.resolvedModelId).id);
+    setSelectedModelId(body.modelId ?? body.resolvedModelId);
     setResolvedModelId(body.resolvedModelId);
     setUsesDefaultModel(body.usesDefaultModel);
     setAvailableModels(body.availableModels);
+    setAvailableModelsSource(body.availableModelsSource);
     setSelectedReasoningEffort(
       getReasoningEffortById(
         body.reasoningEffort ?? body.resolvedReasoningEffort,
@@ -159,10 +166,11 @@ export function MessageCleanupSettingsManager() {
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);
     setUsesDefaultPrompt(body.usesDefaultPrompt);
-    setSelectedModelId(getModelById(body.modelId ?? body.resolvedModelId).id);
+    setSelectedModelId(body.modelId ?? body.resolvedModelId);
     setResolvedModelId(body.resolvedModelId);
     setUsesDefaultModel(body.usesDefaultModel);
     setAvailableModels(body.availableModels);
+    setAvailableModelsSource(body.availableModelsSource);
     setSelectedReasoningEffort(
       getReasoningEffortById(
         body.reasoningEffort ?? body.resolvedReasoningEffort,
@@ -255,23 +263,17 @@ export function MessageCleanupSettingsManager() {
                 </FieldLabel>
                 <FieldContent>
                   <Select
-                    items={availableModels.map((model) => ({
-                      value: model.id,
-                      label: model.label,
+                    items={availableModels.map((modelId) => ({
+                      value: modelId,
+                      label: modelId,
                     }))}
                     value={selectedModelId}
                     onValueChange={(value) => {
-                      if (value === null) return;
-                      const nextModel = getModelById(value);
-                      if (
-                        !availableModels.some(
-                          (model) => model.id === nextModel.id,
-                        )
-                      ) {
+                      if (value === null || !availableModels.includes(value)) {
                         return;
                       }
 
-                      void handleModelChange(nextModel.id);
+                      void handleModelChange(value);
                     }}
                     disabled={saving}
                   >
@@ -279,13 +281,19 @@ export function MessageCleanupSettingsManager() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableModels.map((model) => (
-                        <SelectItem key={model.id} value={model.id}>
-                          {model.label}
+                      {availableModels.map((modelId) => (
+                        <SelectItem key={modelId} value={modelId}>
+                          {modelId}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {availableModelsSource === "unavailable" ? (
+                    <FieldDescription className="text-xs">
+                      Couldn't load models from OpenAI. Showing the saved model
+                      only.
+                    </FieldDescription>
+                  ) : null}
                 </FieldContent>
               </Field>
 
