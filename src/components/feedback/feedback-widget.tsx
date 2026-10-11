@@ -60,7 +60,7 @@ function describeChatError(error: Error): string {
 }
 
 function elementLabel(element: PickedElement): string {
-  return element.label ?? element.selector;
+  return element.label ?? (element.text || element.selector);
 }
 
 function ElementChip({
