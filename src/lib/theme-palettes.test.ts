@@ -6,7 +6,7 @@ import { parsePaletteId, THEME_PALETTES } from "./theme-palettes";
 describe("parsePaletteId", () => {
   it("keeps known palette ids", () => {
     expect(parsePaletteId("ocean")).toBe("ocean");
-    expect(parsePaletteId("forest")).toBe("forest");
+    expect(parsePaletteId("botanical")).toBe("botanical");
     expect(parsePaletteId("plum")).toBe("plum");
     expect(parsePaletteId("default")).toBe("default");
   });

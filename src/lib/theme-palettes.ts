@@ -1,7 +1,7 @@
 export const THEME_PALETTES = [
   { id: "default", label: "Ember" },
   { id: "ocean", label: "Ocean" },
-  { id: "forest", label: "Forest" },
+  { id: "botanical", label: "Botanical" },
   { id: "plum", label: "Plum" },
 ] as const;
 

@@ -42,7 +42,7 @@ test("switches mode and palette and keeps both across reloads", async ({
   for (const mode of ["Light", "Dark", "System"]) {
     await expect(page.getByRole("radio", { name: mode })).toBeVisible();
   }
-  for (const palette of ["Ember", "Ocean", "Forest", "Plum"]) {
+  for (const palette of ["Ember", "Ocean", "Botanical", "Plum"]) {
     await expect(page.getByRole("radio", { name: palette })).toBeVisible();
   }
   await expect(page.getByRole("radio", { name: "Ember" })).toBeChecked();
