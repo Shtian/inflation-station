@@ -1,3 +1,5 @@
+import { SelfUpdateButton } from "@/components/self-update-button";
+
 export function BuildInfoFooter() {
   const sha = process.env.NEXT_PUBLIC_BUILD_SHA ?? "unknown";
   const buildTime = process.env.NEXT_PUBLIC_BUILD_TIME;
@@ -18,6 +20,9 @@ export function BuildInfoFooter() {
           <span className="mx-1.5 text-border">·</span>
           <span>{formattedTime}</span>
         </p>
+        {process.env.SELF_UPDATE_ROOT ? (
+          <SelfUpdateButton pageSha={sha} />
+        ) : null}
       </div>
     </footer>
   );
