@@ -5,9 +5,10 @@ import { AppNavigation } from "@/components/app-navigation";
 import { BuildInfoFooter } from "@/components/build-info-footer";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ModeToggle } from "@/components/theme-toggle";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Toaster } from "@/components/ui/sonner";
 import { resolveFeedbackDisabledReason } from "@/lib/feedback/agent";
+import { PALETTE_BOOT_SCRIPT } from "@/lib/theme-palettes";
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
@@ -33,6 +34,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: static script built from the palette registry, no user input
+          dangerouslySetInnerHTML={{ __html: PALETTE_BOOT_SCRIPT }}
+        />
+      </head>
       <body
         className={`${jakartaSans.variable} ${geistMono.variable} font-sans antialiased`}
       >
@@ -53,7 +60,7 @@ export default function RootLayout({
                   Inflation Station
                 </Link>
                 <AppNavigation />
-                <ModeToggle />
+                <ThemeSwitcher />
               </div>
             </header>
             {children}
