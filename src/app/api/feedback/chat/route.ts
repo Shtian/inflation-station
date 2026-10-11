@@ -77,15 +77,19 @@ export async function POST(request: Request) {
     tools,
     stopWhen: stepCountIs(5),
     maxRetries: 0,
-    providerOptions: { openai: { reasoningEffort: "low" } },
+    // Chat Completions rejects function tools combined with reasoning for this model.
+    providerOptions: { openai: { reasoningEffort: "none" } },
   });
 
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
     // The SDK masks every error by default; gh failures are safe and actionable.
-    onError: (error) =>
-      error instanceof GithubIssueError
-        ? error.message
-        : "The feedback assistant ran into a problem.",
+    onError: (error) => {
+      if (error instanceof GithubIssueError) {
+        return error.message;
+      }
+      console.error("Feedback chat failed", error);
+      return "The feedback assistant ran into a problem.";
+    },
   });
 }
