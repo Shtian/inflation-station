@@ -79,7 +79,7 @@ export function ThemeSwitcher() {
         }
       />
       <PopoverContent align="end" className="w-80 gap-4 p-3">
-        <fieldset className="flex flex-col gap-2">
+        <fieldset>
           <legend className="mb-2 font-medium text-muted-foreground text-xs">
             Mode
           </legend>
@@ -103,7 +103,7 @@ export function ThemeSwitcher() {
             ))}
           </div>
         </fieldset>
-        <fieldset className="flex flex-col gap-2">
+        <fieldset>
           <legend className="mb-2 font-medium text-muted-foreground text-xs">
             Palette
           </legend>

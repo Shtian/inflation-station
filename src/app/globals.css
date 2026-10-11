@@ -157,7 +157,7 @@
   --border: oklch(0.9 0.018 240);
   --input: oklch(0.88 0.02 240);
   --ring: oklch(0.6 0.13 235);
-  --brand: oklch(0.54 0.14 235);
+  --brand: oklch(0.51 0.14 238);
   --brand-foreground: oklch(0.985 0.01 235);
   --chart-1: oklch(0.8 0.1 200);
   --chart-2: oklch(0.7 0.13 220);
@@ -228,7 +228,7 @@
   --border: oklch(0.9 0.018 145);
   --input: oklch(0.88 0.02 145);
   --ring: oklch(0.62 0.11 128);
-  --brand: oklch(0.55 0.11 128);
+  --brand: oklch(0.51 0.11 130);
   --brand-foreground: oklch(0.985 0.01 128);
   --chart-1: oklch(0.82 0.1 125);
   --chart-2: oklch(0.72 0.12 140);
