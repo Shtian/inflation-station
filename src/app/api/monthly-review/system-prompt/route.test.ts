@@ -2,45 +2,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, PUT } from "./route";
 
 const {
-  chatModelsMock,
-  defaultChatModelMock,
-  getModelByIdMock,
+  listChatModelsMock,
   getMonthlyReviewSystemPromptSettingsMock,
   updateMonthlyReviewSystemPromptSettingsMock,
   prismaMock,
 } = vi.hoisted(() => ({
-  chatModelsMock: [
-    {
-      id: "gpt-4o-mini",
-      label: "GPT-4o Mini",
-      description: "Balanced speed and quality for routine monthly reviews.",
-      tier: "cheap",
-    },
-    {
-      id: "gpt-5.2",
-      label: "GPT-5.2",
-      description: "Best default quality/cost tradeoff for monthly analysis.",
-      tier: "balanced",
-    },
-    {
-      id: "gpt-5.2-pro",
-      label: "GPT-5.2 Pro",
-      description:
-        "Highest quality for deeper, more nuanced spending insights.",
-      tier: "premium",
-    },
-  ],
-  defaultChatModelMock: "gpt-5.2",
-  getModelByIdMock: vi.fn(),
+  listChatModelsMock: vi.fn(),
   getMonthlyReviewSystemPromptSettingsMock: vi.fn(),
   updateMonthlyReviewSystemPromptSettingsMock: vi.fn(),
   prismaMock: { _tag: "prisma-mock" },
 }));
 
-vi.mock("@/lib/monthly-review/chat-model-registry", () => ({
-  CHAT_MODELS: chatModelsMock,
-  DEFAULT_CHAT_MODEL: defaultChatModelMock,
-  getModelById: getModelByIdMock,
+vi.mock("@/lib/openai/chat-models", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/openai/chat-models")>()),
+  listChatModels: listChatModelsMock,
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -48,6 +23,7 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/monthly-review/system-prompt", () => ({
+  DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL: "gpt-5.4",
   getMonthlyReviewSystemPromptSettings:
     getMonthlyReviewSystemPromptSettingsMock,
   updateMonthlyReviewSystemPromptSettings:
@@ -56,15 +32,12 @@ vi.mock("@/lib/monthly-review/system-prompt", () => ({
 
 describe("/api/monthly-review/system-prompt", () => {
   beforeEach(() => {
-    getModelByIdMock.mockReset();
     getMonthlyReviewSystemPromptSettingsMock.mockReset();
     updateMonthlyReviewSystemPromptSettingsMock.mockReset();
 
-    getModelByIdMock.mockImplementation((id: string) => {
-      return (
-        chatModelsMock.find((model) => model.id === id) ??
-        chatModelsMock.find((model) => model.id === defaultChatModelMock)
-      );
+    listChatModelsMock.mockResolvedValue({
+      source: "openai",
+      ids: ["gpt-6-sol", "gpt-5-mini", "gpt-5.4"],
     });
 
     getMonthlyReviewSystemPromptSettingsMock.mockResolvedValue({
@@ -80,8 +53,8 @@ describe("/api/monthly-review/system-prompt", () => {
       storedPromptText: null,
       resolvedPrompt: "Default prompt",
       isDefault: true,
-      storedModelId: defaultChatModelMock,
-      resolvedModelId: defaultChatModelMock,
+      storedModelId: "gpt-5.4",
+      resolvedModelId: "gpt-5.4",
       isDefaultModel: true,
     });
   });
@@ -100,8 +73,19 @@ describe("/api/monthly-review/system-prompt", () => {
       modelId: "gpt-5-mini",
       resolvedModelId: "gpt-5-mini",
       usesDefaultModel: false,
-      availableModels: chatModelsMock,
+      availableModels: ["gpt-6-sol", "gpt-5-mini", "gpt-5.4"],
+      availableModelsSource: "openai",
     });
+  });
+
+  it("offers the saved and default models when OpenAI models are unavailable", async () => {
+    listChatModelsMock.mockResolvedValue({ source: "unavailable" });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.availableModels).toEqual(["gpt-5-mini", "gpt-5.4"]);
+    expect(body.availableModelsSource).toBe("unavailable");
   });
 
   it("maps fetch failures to stable server error", async () => {
@@ -157,18 +141,45 @@ describe("/api/monthly-review/system-prompt", () => {
       prismaMock,
       {
         promptText: "  ",
-        modelId: defaultChatModelMock,
+        modelId: "gpt-5.4",
       },
     );
     await expect(response.json()).resolves.toEqual({
       promptText: "",
       resolvedPrompt: "Default prompt",
       usesDefaultPrompt: true,
-      modelId: defaultChatModelMock,
-      resolvedModelId: defaultChatModelMock,
+      modelId: "gpt-5.4",
+      resolvedModelId: "gpt-5.4",
       usesDefaultModel: true,
-      availableModels: chatModelsMock,
+      availableModels: ["gpt-6-sol", "gpt-5-mini", "gpt-5.4"],
+      availableModelsSource: "openai",
     });
+  });
+
+  it("saves any modelId when OpenAI models are unavailable", async () => {
+    listChatModelsMock.mockResolvedValue({ source: "unavailable" });
+
+    const response = await PUT(
+      new Request("http://localhost/api/monthly-review/system-prompt", {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          promptText: "Keep it concise.",
+          modelId: "gpt-6-sol",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMonthlyReviewSystemPromptSettingsMock).toHaveBeenCalledWith(
+      prismaMock,
+      {
+        promptText: "Keep it concise.",
+        modelId: "gpt-6-sol",
+      },
+    );
   });
 
   it("returns 400 for unsupported modelId", async () => {
