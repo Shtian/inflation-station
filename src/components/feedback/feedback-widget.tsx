@@ -52,6 +52,9 @@ import {
 } from "@/lib/feedback/contract";
 import { cn } from "@/lib/utils";
 
+const DRAFT_DECLINED_REASON =
+  "The user clicked Not yet. Nothing failed; they want to change the draft.";
+
 type WidgetView = "closed" | "chat" | "picking";
 
 type IssueToolPart = Extract<
@@ -321,7 +324,11 @@ export function FeedbackWidget() {
   }
 
   function respondToDraft(approvalId: string, approved: boolean) {
-    void addToolApprovalResponse({ id: approvalId, approved });
+    void addToolApprovalResponse({
+      id: approvalId,
+      approved,
+      reason: approved ? undefined : DRAFT_DECLINED_REASON,
+    });
   }
 
   function onPick(element: PickedElement) {
