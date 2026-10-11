@@ -6,25 +6,45 @@ import {
   lastAssistantMessageIsCompleteWithApprovalResponses,
 } from "ai";
 import {
-  ArrowUp,
   MessageSquarePlus,
   RotateCcw,
-  Square,
   SquareDashedMousePointer,
   SquarePen,
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  Confirmation,
+  ConfirmationAccepted,
+  ConfirmationAction,
+  ConfirmationActions,
+  ConfirmationRejected,
+  ConfirmationRequest,
+} from "@/components/ai-elements/confirmation";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import {
+  PromptInput,
+  PromptInputButton,
+  PromptInputFooter,
+  PromptInputHeader,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputTools,
+} from "@/components/ai-elements/prompt-input";
 import { ElementPickerOverlay } from "@/components/feedback/element-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupTextarea,
-} from "@/components/ui/input-group";
 import {
   FEEDBACK_CHAT_ENDPOINT,
   type FeedbackUIMessage,
@@ -66,14 +86,19 @@ function elementLabel(element: PickedElement): string {
 function ElementChip({
   element,
   onRemove,
+  className,
 }: {
   element: PickedElement;
   onRemove?: () => void;
+  className?: string;
 }) {
   return (
     <span
       title={element.selector}
-      className="inline-flex max-w-full items-center gap-1 rounded-md bg-brand/10 px-1.5 py-0.5 font-mono text-[11px] text-brand"
+      className={cn(
+        "inline-flex max-w-full items-center gap-1 rounded-md bg-brand/10 px-1.5 py-0.5 font-mono text-[11px] text-brand",
+        className,
+      )}
     >
       <SquareDashedMousePointer className="size-3 shrink-0" />
       <span className="truncate">
@@ -107,46 +132,53 @@ function IssueDraftPart({
     case "input-available":
       return <p className="text-muted-foreground text-xs">Drafting issue…</p>;
     case "approval-requested":
+    case "approval-responded":
+    case "output-denied":
       // A reply typed instead of a button press supersedes the draft (the
       // server sends it to the model as denied).
-      if (!isLatest) {
+      if (part.state === "approval-requested" && !isLatest) {
         return <p className="text-muted-foreground text-xs">Draft dismissed</p>;
       }
       return (
-        <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-3">
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={part.input.kind === "bug" ? "destructive" : "secondary"}
-            >
-              {part.input.kind === "bug" ? "Bug" : "Feature"}
-            </Badge>
-            <span className="font-medium text-sm">{part.input.title}</span>
-          </div>
-          <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-md bg-muted/50 p-2 text-xs">
-            {part.input.body}
-          </div>
-          <p className="text-muted-foreground text-xs">
-            Page context and selected elements will be attached.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button
-              size="sm"
+        <Confirmation approval={part.approval} state={part.state}>
+          <ConfirmationRequest>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={
+                  part.input.kind === "bug" ? "destructive" : "secondary"
+                }
+              >
+                {part.input.kind === "bug" ? "Bug" : "Feature"}
+              </Badge>
+              <span className="font-medium text-sm">{part.input.title}</span>
+            </div>
+            <div className="max-h-48 overflow-y-auto rounded-md bg-muted/50 p-2 text-xs [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs">
+              <MessageResponse>{part.input.body}</MessageResponse>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Page context and selected elements will be attached.
+            </p>
+          </ConfirmationRequest>
+          <ConfirmationAccepted>
+            <p className="text-muted-foreground text-xs">Creating issue…</p>
+          </ConfirmationAccepted>
+          <ConfirmationRejected>
+            <p className="text-muted-foreground text-xs">Draft dismissed</p>
+          </ConfirmationRejected>
+          <ConfirmationActions>
+            <ConfirmationAction
               variant="outline"
               onClick={() => onRespond(part.approval.id, false)}
             >
               Not yet
-            </Button>
-            <Button size="sm" onClick={() => onRespond(part.approval.id, true)}>
+            </ConfirmationAction>
+            <ConfirmationAction
+              onClick={() => onRespond(part.approval.id, true)}
+            >
               Create issue
-            </Button>
-          </div>
-        </div>
-      );
-    case "approval-responded":
-      return (
-        <p className="text-muted-foreground text-xs">
-          {part.approval.approved ? "Creating issue…" : "Draft dismissed"}
-        </p>
+            </ConfirmationAction>
+          </ConfirmationActions>
+        </Confirmation>
       );
     case "output-available":
       return (
@@ -162,48 +194,46 @@ function IssueDraftPart({
           </a>
         </p>
       );
-    case "output-denied":
-      return <p className="text-muted-foreground text-xs">Draft dismissed</p>;
     case "output-error":
       return <p className="text-destructive text-xs">{part.errorText}</p>;
   }
 }
 
-function MessageBubble({
+function FeedbackMessage({
   message,
   isLatest,
+  isStreaming,
   onRespond,
 }: {
   message: FeedbackUIMessage;
   isLatest: boolean;
+  isStreaming: boolean;
   onRespond: (approvalId: string, approved: boolean) => void;
 }) {
   const isUser = message.role === "user";
   const element = message.metadata?.element;
   return (
-    <div
-      className={cn(
-        "flex max-w-[85%] flex-col gap-1.5",
-        isUser ? "items-end self-end" : "items-start self-start",
-      )}
-    >
-      {isUser && element ? <ElementChip element={element} /> : null}
+    <Message from={message.role}>
+      {isUser && element ? (
+        <ElementChip element={element} className="self-end" />
+      ) : null}
       {message.parts.map((part, index) => {
         const key = `${message.id}-${index}`;
         if (part.type === "text") {
-          return part.text ? (
-            <div
-              key={key}
-              className={cn(
-                "whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm",
-                isUser
-                  ? "rounded-br-sm bg-brand text-brand-foreground"
-                  : "rounded-bl-sm bg-muted text-foreground",
+          if (!part.text) {
+            return null;
+          }
+          return (
+            <MessageContent key={key}>
+              {isUser ? (
+                <p className="whitespace-pre-wrap">{part.text}</p>
+              ) : (
+                <MessageResponse isAnimating={isLatest && isStreaming}>
+                  {part.text}
+                </MessageResponse>
               )}
-            >
-              {part.text}
-            </div>
-          ) : null;
+            </MessageContent>
+          );
         }
         if (part.type === "tool-createGithubIssue") {
           return (
@@ -217,7 +247,7 @@ function MessageBubble({
         }
         return null;
       })}
-    </div>
+    </Message>
   );
 }
 
@@ -228,7 +258,6 @@ export function FeedbackWidget() {
     null,
   );
   const announcedIssues = useRef(new Set<string>());
-  const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const {
@@ -266,16 +295,8 @@ export function FeedbackWidget() {
     }
   }, [view]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-runs on every message or status change so streamed text stays in view.
-  useEffect(() => {
-    const container = scrollRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
-  }, [messages, status]);
-
-  function send() {
-    const text = input.trim();
+  function send(rawText: string) {
+    const text = rawText.trim();
     if (!text || busy) {
       return;
     }
@@ -359,82 +380,80 @@ export function FeedbackWidget() {
             </Button>
           </header>
 
-          <div
-            ref={scrollRef}
-            className="flex flex-1 flex-col gap-3 overflow-y-auto px-3 py-3"
-          >
-            {messages.length === 0 ? (
-              <div className="flex flex-1 flex-col justify-center gap-3">
-                <p className="text-muted-foreground text-sm">
-                  Found a bug or have an idea? Describe it and I'll turn it into
-                  an issue for the developer.
-                </p>
-                <div className="flex flex-col items-start gap-1.5">
-                  {EXAMPLE_PROMPTS.map((prompt) => (
-                    <Button
-                      key={prompt}
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setInput(prompt);
-                        textareaRef.current?.focus();
-                      }}
-                    >
-                      {prompt}
-                    </Button>
-                  ))}
+          <Conversation className="min-h-0">
+            <ConversationContent className="min-h-full gap-4 p-3">
+              {messages.length === 0 ? (
+                <ConversationEmptyState className="flex-1 items-start gap-3 p-0 text-left">
+                  <p className="text-muted-foreground text-sm">
+                    Found a bug or have an idea? Describe it and I'll turn it
+                    into an issue for the developer.
+                  </p>
+                  <div className="flex flex-col items-start gap-1.5">
+                    {EXAMPLE_PROMPTS.map((prompt) => (
+                      <Button
+                        key={prompt}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setInput(prompt);
+                          textareaRef.current?.focus();
+                        }}
+                      >
+                        {prompt}
+                      </Button>
+                    ))}
+                  </div>
+                </ConversationEmptyState>
+              ) : (
+                messages.map((message, index) => (
+                  <FeedbackMessage
+                    key={message.id}
+                    message={message}
+                    isLatest={index === messages.length - 1}
+                    isStreaming={status === "streaming"}
+                    onRespond={respondToDraft}
+                  />
+                ))
+              )}
+              {status === "submitted" ? (
+                <p className="text-muted-foreground text-xs">Thinking…</p>
+              ) : null}
+              {error ? (
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive text-xs">
+                  <span className="flex-1">{describeChatError(error)}</span>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    onClick={() => void regenerate()}
+                  >
+                    <RotateCcw />
+                    Retry
+                  </Button>
                 </div>
-              </div>
-            ) : (
-              messages.map((message, index) => (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  isLatest={index === messages.length - 1}
-                  onRespond={respondToDraft}
-                />
-              ))
-            )}
-            {status === "submitted" ? (
-              <p className="text-muted-foreground text-xs">Thinking…</p>
-            ) : null}
-            {error ? (
-              <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive text-xs">
-                <span className="flex-1">{describeChatError(error)}</span>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  onClick={() => void regenerate()}
-                >
-                  <RotateCcw />
-                  Retry
-                </Button>
-              </div>
-            ) : null}
-          </div>
+              ) : null}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
 
           <div className="border-border border-t p-3">
-            <InputGroup>
+            <PromptInput onSubmit={(message) => send(message.text)}>
               {pendingElement ? (
-                <InputGroupAddon align="block-start">
+                <PromptInputHeader>
                   <ElementChip
                     element={pendingElement}
                     onRemove={() => setPendingElement(null)}
                   />
-                </InputGroupAddon>
+                </PromptInputHeader>
               ) : null}
-              <InputGroupTextarea
+              <PromptInputTextarea
                 ref={textareaRef}
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
                 onKeyDown={(event) => {
-                  if (
-                    event.key === "Enter" &&
-                    !event.shiftKey &&
-                    !event.nativeEvent.isComposing
-                  ) {
+                  // PromptInput resets the form on every submit; skip it while
+                  // a reply is in flight so the draft text survives.
+                  if (event.key === "Enter" && !event.shiftKey && busy) {
                     event.preventDefault();
-                    send();
                   }
                 }}
                 placeholder="Describe the bug or idea…"
@@ -442,37 +461,27 @@ export function FeedbackWidget() {
                 rows={2}
                 className="max-h-32 min-h-12"
               />
-              <InputGroupAddon align="block-end" className="justify-between">
-                <InputGroupButton
-                  size="xs"
-                  aria-label="Pick an element on the page"
-                  onClick={() => setView("picking")}
-                >
-                  <SquareDashedMousePointer />
-                  Pick element
-                </InputGroupButton>
-                {busy ? (
-                  <InputGroupButton
-                    size="icon-xs"
-                    variant="outline"
-                    aria-label="Stop response"
-                    onClick={() => void stop()}
+              <PromptInputFooter>
+                <PromptInputTools>
+                  <PromptInputButton
+                    size="xs"
+                    aria-label="Pick an element on the page"
+                    onClick={() => setView("picking")}
                   >
-                    <Square />
-                  </InputGroupButton>
-                ) : (
-                  <InputGroupButton
-                    size="icon-xs"
-                    variant="default"
-                    aria-label="Send feedback"
-                    disabled={!input.trim()}
-                    onClick={send}
-                  >
-                    <ArrowUp />
-                  </InputGroupButton>
-                )}
-              </InputGroupAddon>
-            </InputGroup>
+                    <SquareDashedMousePointer />
+                    Pick element
+                  </PromptInputButton>
+                </PromptInputTools>
+                <PromptInputSubmit
+                  // "error" would swap the send arrow for an X; the error
+                  // row below already offers Retry.
+                  status={busy ? status : undefined}
+                  onStop={() => void stop()}
+                  aria-label={busy ? "Stop response" : "Send feedback"}
+                  disabled={!busy && !input.trim()}
+                />
+              </PromptInputFooter>
+            </PromptInput>
           </div>
         </section>
       ) : null}
