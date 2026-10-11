@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { updateMessageCleanupSettingsAction } from "./update-message-cleanup-settings";
 
-const { updateMessageCleanupSettingsMock, revalidatePathMock } = vi.hoisted(
-  () => ({
-    updateMessageCleanupSettingsMock: vi.fn(),
-    revalidatePathMock: vi.fn(),
-  }),
-);
+const {
+  updateMessageCleanupSettingsMock,
+  revalidatePathMock,
+  listChatModelsMock,
+} = vi.hoisted(() => ({
+  updateMessageCleanupSettingsMock: vi.fn(),
+  revalidatePathMock: vi.fn(),
+  listChatModelsMock: vi.fn(),
+}));
 
 vi.mock("@/lib/prisma", () => ({
   prisma: { _tag: "prisma-mock" },
@@ -14,6 +17,11 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("next/cache", () => ({
   revalidatePath: revalidatePathMock,
+}));
+
+vi.mock("@/lib/openai/chat-models", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/openai/chat-models")>()),
+  listChatModels: listChatModelsMock,
 }));
 
 vi.mock("@/lib/import/message-cleanup-settings", () => ({
@@ -39,6 +47,10 @@ describe("updateMessageCleanupSettingsAction", () => {
     updateMessageCleanupSettingsMock.mockReset();
     revalidatePathMock.mockReset();
     updateMessageCleanupSettingsMock.mockResolvedValue(settingsViewResult);
+    listChatModelsMock.mockResolvedValue({
+      source: "openai",
+      ids: ["gpt-6-luna", "gpt-5.4-nano"],
+    });
   });
 
   it("returns INVALID_MESSAGE_CLEANUP_SETTINGS_PAYLOAD when the input fails shape validation", async () => {
@@ -65,6 +77,25 @@ describe("updateMessageCleanupSettingsAction", () => {
       message: "Expected modelId to be one of the available OpenAI models.",
     });
     expect(updateMessageCleanupSettingsMock).not.toHaveBeenCalled();
+  });
+
+  it("saves any modelId when OpenAI models are unavailable", async () => {
+    listChatModelsMock.mockResolvedValue({ source: "unavailable" });
+
+    const result = await updateMessageCleanupSettingsAction({
+      promptText: "Keep merchant names compact.",
+      modelId: "gpt-6-luna",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(updateMessageCleanupSettingsMock).toHaveBeenCalledWith(
+      { _tag: "prisma-mock" },
+      {
+        promptText: "Keep merchant names compact.",
+        modelId: "gpt-6-luna",
+        reasoningEffort: "low",
+      },
+    );
   });
 
   it("returns INVALID_MESSAGE_CLEANUP_REASONING_EFFORT without persisting when reasoningEffort is not a known option", async () => {
@@ -109,7 +140,8 @@ describe("updateMessageCleanupSettingsAction", () => {
       modelId: "gpt-5.4-nano",
       resolvedModelId: "gpt-5.4-nano",
       usesDefaultModel: true,
-      availableModels: expect.any(Array),
+      availableModels: ["gpt-6-luna", "gpt-5.4-nano"],
+      availableModelsSource: "openai",
       reasoningEffort: "medium",
       resolvedReasoningEffort: "medium",
       usesDefaultReasoningEffort: false,

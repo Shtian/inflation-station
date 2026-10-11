@@ -1,5 +1,4 @@
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
-import { getModelById } from "../monthly-review/chat-model-registry";
 import {
   DEFAULT_REASONING_EFFORT,
   getReasoningEffortById,
@@ -120,11 +119,9 @@ function resolveModel(modelId: string | null): {
     };
   }
 
-  const resolvedModel = getModelById(modelId);
-
   return {
-    modelId: resolvedModel.id,
-    isDefaultModel: resolvedModel.id === DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
+    modelId,
+    isDefaultModel: modelId === DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
   };
 }
 

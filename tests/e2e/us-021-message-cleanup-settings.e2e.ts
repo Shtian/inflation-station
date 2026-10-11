@@ -5,20 +5,7 @@ test("submits message cleanup settings through a server action", async ({
 }) => {
   let serverActionRequestCount = 0;
 
-  const availableModels = [
-    {
-      id: "gpt-4o-mini",
-      label: "GPT-4o Mini",
-      description: "Low-cost baseline model.",
-      tier: "cheap",
-    },
-    {
-      id: "gpt-5.2",
-      label: "GPT-5.2",
-      description: "Balanced quality and cost.",
-      tier: "balanced",
-    },
-  ];
+  const availableModels = ["gpt-4o-mini", "gpt-5.2"];
 
   const availableReasoningEfforts = [
     {
@@ -62,6 +49,7 @@ test("submits message cleanup settings through a server action", async ({
         resolvedModelId: "gpt-5.2",
         usesDefaultModel: false,
         availableModels,
+        availableModelsSource: "openai",
         reasoningEffort: "low",
         resolvedReasoningEffort: "low",
         usesDefaultReasoningEffort: true,
@@ -138,14 +126,8 @@ test("shows stable save failure feedback when message cleanup action fails", asy
         modelId: "gpt-5.2",
         resolvedModelId: "gpt-5.2",
         usesDefaultModel: false,
-        availableModels: [
-          {
-            id: "gpt-5.2",
-            label: "GPT-5.2",
-            description: "Balanced quality and cost.",
-            tier: "balanced",
-          },
-        ],
+        availableModels: ["gpt-5.2"],
+        availableModelsSource: "openai",
         reasoningEffort: "low",
         resolvedReasoningEffort: "low",
         usesDefaultReasoningEffort: true,
@@ -216,4 +198,43 @@ test("shows stable save failure feedback when message cleanup action fails", asy
     ),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Save prompt" })).toBeEnabled();
+});
+
+test("explains when OpenAI models could not be loaded", async ({ page }) => {
+  await page.route("**/api/imports/message-cleanup-settings", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        promptText: "",
+        resolvedPrompt: "Default prompt.",
+        usesDefaultPrompt: true,
+        modelId: "gpt-6-luna",
+        resolvedModelId: "gpt-6-luna",
+        usesDefaultModel: false,
+        availableModels: ["gpt-6-luna", "gpt-5.6-luna"],
+        availableModelsSource: "unavailable",
+        reasoningEffort: null,
+        resolvedReasoningEffort: "low",
+        usesDefaultReasoningEffort: true,
+        availableReasoningEfforts: [
+          { id: "low", label: "Low", description: "Default." },
+        ],
+      }),
+    });
+  });
+
+  await page.goto("/import/settings/message-cleanup");
+
+  const modelCombobox = page.getByRole("combobox", {
+    name: "Message cleanup OpenAI model",
+  });
+  await expect(modelCombobox.locator("[data-slot=select-value]")).toHaveText(
+    "gpt-6-luna",
+  );
+  await expect(
+    page.getByText(
+      "Couldn't load models from OpenAI. Showing the saved model only.",
+    ),
+  ).toBeVisible();
 });

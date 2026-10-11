@@ -13,7 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldContent, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -23,22 +28,25 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  type ChatModelEntry,
-  DEFAULT_CHAT_MODEL,
-  getModelById,
-} from "@/lib/monthly-review/chat-model-registry";
-import { promptSettingsResponseSchema } from "@/lib/monthly-review/prompt-settings-response-schema";
+  type PromptSettingsResponse,
+  promptSettingsResponseSchema,
+} from "@/lib/monthly-review/prompt-settings-response-schema";
+import { DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL } from "@/lib/monthly-review/system-prompt";
 
 export function MonthlyReviewSettingsManager() {
   const [promptText, setPromptText] = useState("");
   const [resolvedPrompt, setResolvedPrompt] = useState("");
   const [usesDefaultPrompt, setUsesDefaultPrompt] = useState(false);
-  const [selectedModelId, setSelectedModelId] =
-    useState<OpenAIChatModelId>(DEFAULT_CHAT_MODEL);
-  const [resolvedModelId, setResolvedModelId] =
-    useState<OpenAIChatModelId>(DEFAULT_CHAT_MODEL);
+  const [selectedModelId, setSelectedModelId] = useState<OpenAIChatModelId>(
+    DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
+  );
+  const [resolvedModelId, setResolvedModelId] = useState<OpenAIChatModelId>(
+    DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
+  );
   const [usesDefaultModel, setUsesDefaultModel] = useState(false);
-  const [availableModels, setAvailableModels] = useState<ChatModelEntry[]>([]);
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [availableModelsSource, setAvailableModelsSource] =
+    useState<PromptSettingsResponse["availableModelsSource"]>("openai");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,8 +63,8 @@ export function MonthlyReviewSettingsManager() {
       setPromptText("");
       setResolvedPrompt("");
       setUsesDefaultPrompt(true);
-      setSelectedModelId(DEFAULT_CHAT_MODEL);
-      setResolvedModelId(DEFAULT_CHAT_MODEL);
+      setSelectedModelId(DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL);
+      setResolvedModelId(DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL);
       setUsesDefaultModel(true);
       setAvailableModels([]);
       setError("Could not load monthly review system prompt.");
@@ -68,10 +76,11 @@ export function MonthlyReviewSettingsManager() {
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);
     setUsesDefaultPrompt(body.usesDefaultPrompt);
-    setSelectedModelId(getModelById(body.modelId ?? body.resolvedModelId).id);
+    setSelectedModelId(body.modelId ?? body.resolvedModelId);
     setResolvedModelId(body.resolvedModelId);
     setUsesDefaultModel(body.usesDefaultModel);
     setAvailableModels(body.availableModels);
+    setAvailableModelsSource(body.availableModelsSource);
     setLoading(false);
   }, []);
 
@@ -115,10 +124,11 @@ export function MonthlyReviewSettingsManager() {
     setPromptText(body.promptText);
     setResolvedPrompt(body.resolvedPrompt);
     setUsesDefaultPrompt(body.usesDefaultPrompt);
-    setSelectedModelId(getModelById(body.modelId ?? body.resolvedModelId).id);
+    setSelectedModelId(body.modelId ?? body.resolvedModelId);
     setResolvedModelId(body.resolvedModelId);
     setUsesDefaultModel(body.usesDefaultModel);
     setAvailableModels(body.availableModels);
+    setAvailableModelsSource(body.availableModelsSource);
     setSaving(false);
     toast.success(params.successMessage);
     return true;
@@ -186,23 +196,17 @@ export function MonthlyReviewSettingsManager() {
                 </FieldLabel>
                 <FieldContent>
                   <Select
-                    items={availableModels.map((model) => ({
-                      value: model.id,
-                      label: model.label,
+                    items={availableModels.map((modelId) => ({
+                      value: modelId,
+                      label: modelId,
                     }))}
                     value={selectedModelId}
                     onValueChange={(value) => {
-                      if (value === null) return;
-                      const nextModel = getModelById(value);
-                      if (
-                        !availableModels.some(
-                          (model) => model.id === nextModel.id,
-                        )
-                      ) {
+                      if (value === null || !availableModels.includes(value)) {
                         return;
                       }
 
-                      void handleModelChange(nextModel.id);
+                      void handleModelChange(value);
                     }}
                     disabled={saving}
                   >
@@ -210,13 +214,19 @@ export function MonthlyReviewSettingsManager() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableModels.map((model) => (
-                        <SelectItem key={model.id} value={model.id}>
-                          {model.label}
+                      {availableModels.map((modelId) => (
+                        <SelectItem key={modelId} value={modelId}>
+                          {modelId}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {availableModelsSource === "unavailable" ? (
+                    <FieldDescription className="text-xs">
+                      Couldn't load models from OpenAI. Showing the saved model
+                      only.
+                    </FieldDescription>
+                  ) : null}
                 </FieldContent>
               </Field>
 

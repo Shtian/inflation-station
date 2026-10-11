@@ -1,9 +1,8 @@
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
-import { DEFAULT_CHAT_MODEL, getModelById } from "./chat-model-registry";
 
 const MONTHLY_REVIEW_SYSTEM_PROMPT_ID = "monthly-review-system-prompt";
 
-export const DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL = DEFAULT_CHAT_MODEL;
+export const DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL: OpenAIChatModelId = "gpt-5.4";
 
 export const DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT = `You are a financial review assistant.
 - Analyze one calendar month of transactions and summarize key spending patterns.
@@ -107,11 +106,9 @@ function resolveModel(modelId: string | null): {
     };
   }
 
-  const resolvedModel = getModelById(modelId);
-
   return {
-    modelId: resolvedModel.id,
-    isDefaultModel: resolvedModel.id === DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
+    modelId,
+    isDefaultModel: modelId === DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
   };
 }
 

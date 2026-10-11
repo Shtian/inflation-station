@@ -10,14 +10,17 @@ import {
   updateMessageCleanupSettings,
 } from "@/lib/import/message-cleanup-settings";
 import {
-  CHAT_MODELS,
-  getModelById,
-} from "@/lib/monthly-review/chat-model-registry";
-import {
   getReasoningEffortById,
   REASONING_EFFORTS,
   type ReasoningEffort,
 } from "@/lib/monthly-review/reasoning-effort-registry";
+import {
+  acceptsChatModel,
+  type ChatModelList,
+  listChatModels,
+  type SelectableChatModels,
+  toSelectableChatModels,
+} from "@/lib/openai/chat-models";
 import { prisma } from "@/lib/prisma";
 import {
   executeServerMutation,
@@ -38,12 +41,8 @@ type MessageCleanupSettingsResponse = {
   modelId: string | null;
   resolvedModelId: OpenAIChatModelId;
   usesDefaultModel: boolean;
-  availableModels: Array<{
-    id: string;
-    label: string;
-    description: string;
-    tier: "cheap" | "balanced" | "premium";
-  }>;
+  availableModels: string[];
+  availableModelsSource: SelectableChatModels["availableModelsSource"];
   reasoningEffort: string | null;
   resolvedReasoningEffort: ReasoningEffort;
   usesDefaultReasoningEffort: boolean;
@@ -62,6 +61,7 @@ type UpdateMessageCleanupSettingsErrorCode =
 
 function toResponse(
   result: MessageCleanupSettingsViewResult,
+  chatModels: ChatModelList,
 ): MessageCleanupSettingsResponse {
   return {
     promptText: result.storedPromptText ?? "",
@@ -70,7 +70,10 @@ function toResponse(
     modelId: result.storedModelId,
     resolvedModelId: result.resolvedModelId,
     usesDefaultModel: result.isDefaultModel,
-    availableModels: [...CHAT_MODELS],
+    ...toSelectableChatModels(chatModels, {
+      resolvedModelId: result.resolvedModelId,
+      defaultModelId: DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
+    }),
     reasoningEffort: result.storedReasoningEffort,
     resolvedReasoningEffort: result.resolvedReasoningEffort,
     usesDefaultReasoningEffort: result.isDefaultReasoningEffort,
@@ -96,14 +99,14 @@ export async function updateMessageCleanupSettingsAction(
     );
   }
 
-  const resolvedModel = getModelById(
-    parsedInput.data.modelId ?? DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
-  );
+  const chatModels = await listChatModels();
+  const modelId =
+    parsedInput.data.modelId ?? DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL;
 
   if (
     parsedInput.data.modelId !== null &&
     parsedInput.data.modelId !== undefined &&
-    resolvedModel.id !== parsedInput.data.modelId
+    !acceptsChatModel(chatModels, parsedInput.data.modelId)
   ) {
     return {
       ok: false,
@@ -137,12 +140,12 @@ export async function updateMessageCleanupSettingsAction(
     execute: async () => {
       const result = await updateMessageCleanupSettings(prisma, {
         promptText: parsedInput.data.promptText,
-        modelId: resolvedModel.id,
+        modelId,
         reasoningEffort: resolvedReasoningEffort.id,
       });
 
       revalidatePath("/import/settings/message-cleanup");
-      return toResponse(result);
+      return toResponse(result, chatModels);
     },
     fallbackError: {
       code: "MESSAGE_CLEANUP_SETTINGS_UPDATE_FAILED",

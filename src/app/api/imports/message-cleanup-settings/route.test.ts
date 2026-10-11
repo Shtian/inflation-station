@@ -2,31 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "./route";
 
 const {
-  chatModelsMock,
+  listChatModelsMock,
   reasoningEffortsMock,
   getMessageCleanupSettingsViewMock,
   prismaMock,
 } = vi.hoisted(() => ({
-  chatModelsMock: [
-    {
-      id: "gpt-4o-mini",
-      label: "GPT-4o Mini",
-      description: "Balanced speed and quality for routine monthly reviews.",
-      tier: "cheap",
-    },
-    {
-      id: "gpt-5-mini",
-      label: "GPT-5 Mini",
-      description: "Good quality with controlled cost for regular use.",
-      tier: "balanced",
-    },
-    {
-      id: "gpt-5.2",
-      label: "GPT-5.2",
-      description: "Best default quality/cost tradeoff for monthly analysis.",
-      tier: "balanced",
-    },
-  ],
+  listChatModelsMock: vi.fn(),
   reasoningEffortsMock: [
     {
       id: "low",
@@ -39,13 +20,13 @@ const {
       description: "Balances thoroughness and speed.",
     },
   ],
-  getModelByIdMock: vi.fn(),
   getMessageCleanupSettingsViewMock: vi.fn(),
   prismaMock: { _tag: "prisma-mock" },
 }));
 
-vi.mock("@/lib/monthly-review/chat-model-registry", () => ({
-  CHAT_MODELS: chatModelsMock,
+vi.mock("@/lib/openai/chat-models", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/openai/chat-models")>()),
+  listChatModels: listChatModelsMock,
 }));
 
 vi.mock("@/lib/monthly-review/reasoning-effort-registry", () => ({
@@ -57,12 +38,17 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/import/message-cleanup-settings", () => ({
+  DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL: "gpt-5.6-luna",
   getMessageCleanupSettingsView: getMessageCleanupSettingsViewMock,
 }));
 
 describe("/api/imports/message-cleanup-settings", () => {
   beforeEach(() => {
     getMessageCleanupSettingsViewMock.mockReset();
+    listChatModelsMock.mockResolvedValue({
+      source: "openai",
+      ids: ["gpt-6-luna", "gpt-5-mini", "gpt-5.6-luna"],
+    });
 
     getMessageCleanupSettingsViewMock.mockResolvedValue({
       storedPromptText: "Keep merchant names compact.",
@@ -89,12 +75,23 @@ describe("/api/imports/message-cleanup-settings", () => {
       modelId: "gpt-5-mini",
       resolvedModelId: "gpt-5-mini",
       usesDefaultModel: true,
-      availableModels: chatModelsMock,
+      availableModels: ["gpt-6-luna", "gpt-5-mini", "gpt-5.6-luna"],
+      availableModelsSource: "openai",
       reasoningEffort: "medium",
       resolvedReasoningEffort: "medium",
       usesDefaultReasoningEffort: false,
       availableReasoningEfforts: reasoningEffortsMock,
     });
+  });
+
+  it("offers the saved and default models when OpenAI models are unavailable", async () => {
+    listChatModelsMock.mockResolvedValue({ source: "unavailable" });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.availableModels).toEqual(["gpt-5-mini", "gpt-5.6-luna"]);
+    expect(body.availableModelsSource).toBe("unavailable");
   });
 
   it("maps fetch failures to stable server error", async () => {

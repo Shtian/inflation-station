@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import {
-  CHAT_MODELS,
-  DEFAULT_CHAT_MODEL,
-  getModelById,
-} from "@/lib/monthly-review/chat-model-registry";
-import {
+  DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
   getMonthlyReviewSystemPromptSettings,
   updateMonthlyReviewSystemPromptSettings,
 } from "@/lib/monthly-review/system-prompt";
+import {
+  acceptsChatModel,
+  type ChatModelList,
+  listChatModels,
+  type SelectableChatModels,
+  toSelectableChatModels,
+} from "@/lib/openai/chat-models";
 import { prisma } from "@/lib/prisma";
 
 type MonthlyReviewSystemPromptPayload = {
@@ -22,16 +25,13 @@ type MonthlyReviewSystemPromptResponse = {
   modelId: string | null;
   resolvedModelId: string;
   usesDefaultModel: boolean;
-  availableModels: Array<{
-    id: string;
-    label: string;
-    description: string;
-    tier: "cheap" | "balanced" | "premium";
-  }>;
+  availableModels: string[];
+  availableModelsSource: SelectableChatModels["availableModelsSource"];
 };
 
 function toResponse(
   result: Awaited<ReturnType<typeof getMonthlyReviewSystemPromptSettings>>,
+  chatModels: ChatModelList,
 ): MonthlyReviewSystemPromptResponse {
   return {
     promptText: result.storedPromptText ?? "",
@@ -40,7 +40,10 @@ function toResponse(
     modelId: result.storedModelId,
     resolvedModelId: result.resolvedModelId,
     usesDefaultModel: result.isDefaultModel,
-    availableModels: [...CHAT_MODELS],
+    ...toSelectableChatModels(chatModels, {
+      resolvedModelId: result.resolvedModelId,
+      defaultModelId: DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
+    }),
   };
 }
 
@@ -79,8 +82,11 @@ function parsePayload(
 
 export async function GET() {
   try {
-    const result = await getMonthlyReviewSystemPromptSettings(prisma);
-    return NextResponse.json(toResponse(result));
+    const [result, chatModels] = await Promise.all([
+      getMonthlyReviewSystemPromptSettings(prisma),
+      listChatModels(),
+    ]);
+    return NextResponse.json(toResponse(result, chatModels));
   } catch (_error) {
     return NextResponse.json(
       {
@@ -106,8 +112,11 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const resolvedModel = getModelById(payload.modelId ?? DEFAULT_CHAT_MODEL);
-    if (payload.modelId !== null && resolvedModel.id !== payload.modelId) {
+    const chatModels = await listChatModels();
+    if (
+      payload.modelId !== null &&
+      !acceptsChatModel(chatModels, payload.modelId)
+    ) {
       return NextResponse.json(
         {
           error: "INVALID_MONTHLY_REVIEW_MODEL_ID",
@@ -119,10 +128,10 @@ export async function PUT(request: Request) {
 
     const result = await updateMonthlyReviewSystemPromptSettings(prisma, {
       promptText: payload.promptText,
-      modelId: resolvedModel.id,
+      modelId: payload.modelId ?? DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
     });
 
-    return NextResponse.json(toResponse(result));
+    return NextResponse.json(toResponse(result, chatModels));
   } catch (_error) {
     return NextResponse.json(
       {

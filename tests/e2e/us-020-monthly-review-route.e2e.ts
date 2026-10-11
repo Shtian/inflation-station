@@ -224,14 +224,7 @@ test("opens monthly review settings from header configuration and monthly review
   page,
 }) => {
   const promptUpdateRequests: Array<{ promptText?: string }> = [];
-  const availableModels = [
-    {
-      id: "gpt-5.4-mini",
-      label: "GPT-5.4 Mini",
-      description: "Best default quality/cost tradeoff for monthly analysis.",
-      tier: "balanced",
-    },
-  ];
+  const availableModels = ["gpt-5.4-mini"];
   let systemPromptResponse = {
     promptText: "Start with top deltas and concentration signals.",
     resolvedPrompt: "Start with top deltas and concentration signals.",
@@ -240,6 +233,7 @@ test("opens monthly review settings from header configuration and monthly review
     resolvedModelId: "gpt-5.4-mini",
     usesDefaultModel: false,
     availableModels,
+    availableModelsSource: "openai",
   };
 
   await page.route("**/api/monthly-review/system-prompt", async (route) => {
@@ -270,6 +264,7 @@ test("opens monthly review settings from header configuration and monthly review
         resolvedModelId: "gpt-5.4-mini",
         usesDefaultModel: false,
         availableModels,
+        availableModelsSource: "openai",
       };
 
       await route.fulfill({

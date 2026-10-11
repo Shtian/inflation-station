@@ -195,4 +195,18 @@ describe("message cleanup settings", () => {
       select: { promptText: true, modelId: true, reasoningEffort: true },
     });
   });
+
+  it("uses any stored model id as-is for cleanup", async () => {
+    const db = createMessageCleanupSettingsDbMock();
+    await updateMessageCleanupSettings(db, {
+      promptText: "",
+      modelId: "gpt-6-luna",
+      reasoningEffort: null,
+    });
+
+    const result = await getMessageCleanupSettings(db);
+
+    expect(result.modelId).toBe("gpt-6-luna");
+    expect(result.isDefaultModel).toBe(false);
+  });
 });

@@ -3,14 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
-  CHAT_MODELS,
-  DEFAULT_CHAT_MODEL,
-  getModelById,
-} from "@/lib/monthly-review/chat-model-registry";
-import {
+  DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
   type MonthlyReviewSystemPromptSettingsResult,
   updateMonthlyReviewSystemPromptSettings,
 } from "@/lib/monthly-review/system-prompt";
+import {
+  acceptsChatModel,
+  type ChatModelList,
+  listChatModels,
+  type SelectableChatModels,
+  toSelectableChatModels,
+} from "@/lib/openai/chat-models";
 import { prisma } from "@/lib/prisma";
 import {
   executeServerMutation,
@@ -30,12 +33,8 @@ type MonthlyReviewSystemPromptResponse = {
   modelId: string | null;
   resolvedModelId: string;
   usesDefaultModel: boolean;
-  availableModels: Array<{
-    id: string;
-    label: string;
-    description: string;
-    tier: "cheap" | "balanced" | "premium";
-  }>;
+  availableModels: string[];
+  availableModelsSource: SelectableChatModels["availableModelsSource"];
 };
 
 type UpdateMonthlyReviewSystemPromptErrorCode =
@@ -45,6 +44,7 @@ type UpdateMonthlyReviewSystemPromptErrorCode =
 
 function toResponse(
   result: MonthlyReviewSystemPromptSettingsResult,
+  chatModels: ChatModelList,
 ): MonthlyReviewSystemPromptResponse {
   return {
     promptText: result.storedPromptText ?? "",
@@ -53,7 +53,10 @@ function toResponse(
     modelId: result.storedModelId,
     resolvedModelId: result.resolvedModelId,
     usesDefaultModel: result.isDefaultModel,
-    availableModels: [...CHAT_MODELS],
+    ...toSelectableChatModels(chatModels, {
+      resolvedModelId: result.resolvedModelId,
+      defaultModelId: DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL,
+    }),
   };
 }
 
@@ -76,14 +79,14 @@ export async function updateMonthlyReviewSystemPromptAction(
     );
   }
 
-  const resolvedModel = getModelById(
-    parsedInput.data.modelId ?? DEFAULT_CHAT_MODEL,
-  );
+  const chatModels = await listChatModels();
+  const modelId =
+    parsedInput.data.modelId ?? DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL;
 
   if (
     parsedInput.data.modelId !== null &&
     parsedInput.data.modelId !== undefined &&
-    resolvedModel.id !== parsedInput.data.modelId
+    !acceptsChatModel(chatModels, parsedInput.data.modelId)
   ) {
     return {
       ok: false,
@@ -98,11 +101,11 @@ export async function updateMonthlyReviewSystemPromptAction(
     execute: async () => {
       const result = await updateMonthlyReviewSystemPromptSettings(prisma, {
         promptText: parsedInput.data.promptText,
-        modelId: resolvedModel.id,
+        modelId,
       });
 
       revalidatePath("/monthly-review/settings");
-      return toResponse(result);
+      return toResponse(result, chatModels);
     },
     fallbackError: {
       code: "MONTHLY_REVIEW_SYSTEM_PROMPT_UPDATE_FAILED",

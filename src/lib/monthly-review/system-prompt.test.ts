@@ -147,4 +147,21 @@ describe("monthly review system prompt", () => {
       isDefaultModel: false,
     });
   });
+
+  it("uses any stored model id as-is for generation", async () => {
+    const db = createSystemPromptDbMock("Existing prompt.");
+    await updateMonthlyReviewSystemPromptSettings(db, {
+      promptText: "Existing prompt.",
+      modelId: "gpt-6-sol",
+    });
+
+    const result = await getMonthlyReviewSystemPrompt(db);
+
+    expect(result).toEqual({
+      prompt: "Existing prompt.",
+      isDefault: false,
+      modelId: "gpt-6-sol",
+      isDefaultModel: false,
+    });
+  });
 });
