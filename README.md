@@ -98,7 +98,7 @@ The app has no login. Anyone who can reach an instance's address can see its dat
 
 ### Feedback Widget
 
-Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) alongside `OPENAI_API_KEY` to show a floating Feedback button on every page. It chats with the user about a bug or idea and, once they approve the draft, files a GitHub issue with the `gh` CLI, so run `gh auth login` on the host as the user that runs the app. The `bug`, `enhancement`, and `needs-triage` labels must exist in the target repo.
+Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) alongside `OPENAI_API_KEY` to show a floating Feedback button on every page. It chats with the user about a bug or idea and, once they approve the draft, files a GitHub issue with the `gh` CLI, so run `gh auth login` on the host as the user that runs the app. The `bug`, `enhancement`, and `needs-triage` labels must exist in the target repo. Pages are prerendered, so the button appears or disappears on the next build (`bash update.sh`).
 
 ## Prisma Migration and Seed Workflow
 
