@@ -89,7 +89,7 @@ function toMonthStartKey(date: Date): string {
   return `${year}-${month}-01`;
 }
 
-function toReviewState(
+export function toReviewState(
   status: MonthlyReviewStatus | null,
 ): MonthlyTimelineReviewState {
   if (status === MonthlyReviewStatus.GENERATING) {
