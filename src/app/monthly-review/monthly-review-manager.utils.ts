@@ -1,5 +1,4 @@
 import { formatNok, formatSignedNok } from "@/lib/format-nok";
-import type { MonthlyReviewTimelineRow } from "./monthly-review-manager.types";
 
 export { formatNok, formatSignedNok };
 
@@ -35,22 +34,4 @@ export function formatGeneratedAt(value: string | null): string {
   }
 
   return dateTimeFormatter.format(date);
-}
-
-export function getReviewStateLabel(
-  reviewState: MonthlyReviewTimelineRow["reviewState"],
-): string {
-  if (reviewState === "GENERATING") {
-    return "Generating";
-  }
-
-  if (reviewState === "GENERATED") {
-    return "Generated";
-  }
-
-  if (reviewState === "FAILED") {
-    return "Failed";
-  }
-
-  return "Not generated";
 }

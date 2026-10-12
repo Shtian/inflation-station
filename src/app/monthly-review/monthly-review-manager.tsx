@@ -1,20 +1,10 @@
 "use client";
 
-import { Calendar, Settings, Sparkles } from "lucide-react";
+import { ArrowRight, Calendar, Settings } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
@@ -22,7 +12,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CategorySpendBar } from "./components/category-spend-bar";
 import type { MonthlyReviewTimelineRow } from "./monthly-review-manager.types";
 import {
@@ -34,13 +23,6 @@ import {
 const timelineResponseSchema = z.object({
   rows: z.array(z.unknown()),
 });
-
-type GenerateMode = "generate" | "regenerate";
-
-type GenerateDialogState = {
-  monthStart: string;
-  mode: GenerateMode;
-};
 
 function getReviewStateTone(
   reviewState: MonthlyReviewTimelineRow["reviewState"],
@@ -93,14 +75,6 @@ export function MonthlyReviewManager() {
   const [rows, setRows] = useState<MonthlyReviewTimelineRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [generateDialogState, setGenerateDialogState] =
-    useState<GenerateDialogState | null>(null);
-  const [generateSavingMonthStart, setGenerateSavingMonthStart] = useState<
-    string | null
-  >(null);
-  const [pendingGenerationMonthStart, setPendingGenerationMonthStart] =
-    useState<string | null>(null);
-  const [generateError, setGenerateError] = useState<string | null>(null);
 
   const loadTimeline = useCallback(async () => {
     setLoading(true);
@@ -129,14 +103,6 @@ export function MonthlyReviewManager() {
     void loadTimeline();
   }, [loadTimeline]);
 
-  const selectedMonthLabel = useMemo(() => {
-    if (!generateDialogState) {
-      return null;
-    }
-
-    return formatMonthStartLabel(generateDialogState.monthStart);
-  }, [generateDialogState]);
-
   const averageSpendNok = useMemo(() => {
     if (rows.length === 0) {
       return 0;
@@ -162,74 +128,6 @@ export function MonthlyReviewManager() {
     (row) => row.reviewState === "GENERATED",
   ).length;
 
-  async function handleConfirmGenerate() {
-    if (!generateDialogState || generateSavingMonthStart) {
-      return;
-    }
-
-    const monthStart = generateDialogState.monthStart;
-    setGenerateError(null);
-    setGenerateSavingMonthStart(monthStart);
-    setPendingGenerationMonthStart(monthStart);
-    setGenerateDialogState(null);
-    setRows((currentRows) =>
-      currentRows.map((row) =>
-        row.monthStart === monthStart
-          ? {
-              ...row,
-              reviewState: "GENERATING",
-              errorMessage: null,
-              reviewText: null,
-            }
-          : row,
-      ),
-    );
-
-    const response = await fetch("/api/monthly-review/generate", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ monthStart }),
-    });
-
-    if (!response.ok) {
-      setGenerateSavingMonthStart(null);
-      setPendingGenerationMonthStart(null);
-      setGenerateError(
-        "Could not start monthly review generation. Please try again.",
-      );
-      await loadTimeline();
-      return;
-    }
-
-    setGenerateSavingMonthStart(null);
-    await loadTimeline();
-    setPendingGenerationMonthStart(null);
-  }
-
-  function openGenerateDialog(monthStart: string, mode: GenerateMode) {
-    setGenerateError(null);
-    setGenerateDialogState({ monthStart, mode });
-  }
-
-  function closeGenerateDialog() {
-    if (generateSavingMonthStart) {
-      return;
-    }
-
-    setGenerateDialogState(null);
-    setGenerateError(null);
-  }
-
-  function handleGenerateDialogOpenChange(nextOpen: boolean) {
-    if (nextOpen) {
-      return;
-    }
-
-    closeGenerateDialog();
-  }
-
   const hasRows = rows.length > 0;
 
   return (
@@ -240,8 +138,7 @@ export function MonthlyReviewManager() {
             Financial Timeline
           </h1>
           <p className="text-muted-foreground text-sm">
-            Monthly spending overview with deterministic insights and optional
-            AI reviews.
+            Monthly spending overview. Open a month for its month in review.
           </p>
         </div>
         <Link
@@ -304,15 +201,6 @@ export function MonthlyReviewManager() {
         </p>
       ) : null}
 
-      {!error && generateError ? (
-        <p
-          role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-        >
-          {generateError}
-        </p>
-      ) : null}
-
       {!loading && !error && !hasRows ? (
         <p className="text-muted-foreground text-sm">
           No monthly data is available yet.
@@ -327,9 +215,6 @@ export function MonthlyReviewManager() {
         {rows.map((row) => {
           const stateTone = getReviewStateTone(row.reviewState);
           const deltaPercent = formatDeltaPercent(row);
-          const isReviewGenerating =
-            row.reviewState === "GENERATING" ||
-            pendingGenerationMonthStart === row.monthStart;
 
           return (
             <article key={row.monthStart} className="relative md:pl-14">
@@ -347,6 +232,11 @@ export function MonthlyReviewManager() {
                       <h2 className="font-semibold text-foreground text-xl">
                         {formatMonthStartLabel(row.monthStart)}
                       </h2>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs ${stateTone.dotClassName}`}
+                      >
+                        AI review: {stateTone.label.toLowerCase()}
+                      </span>
                     </div>
                     <p className="text-muted-foreground text-sm">
                       {row.transactionCount} spending transaction
@@ -401,150 +291,19 @@ export function MonthlyReviewManager() {
                     />
                   </div>
 
-                  {row.reviewState === "NOT_GENERATED" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() =>
-                        openGenerateDialog(row.monthStart, "generate")
-                      }
-                      disabled={generateSavingMonthStart !== null}
-                    >
-                      <Sparkles className="size-4" aria-hidden />
-                      Get AI review
-                    </Button>
-                  ) : null}
-
-                  {isReviewGenerating ? (
-                    <div className="space-y-2 rounded-md border border-warning/30 bg-warning/10 p-3">
-                      <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                        AI insight
-                      </p>
-                      <p className="text-muted-foreground text-sm">
-                        AI insight is generating...
-                      </p>
-                      <div className="space-y-2 pt-1">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-11/12" />
-                        <Skeleton className="h-4 w-10/12" />
-                        <Skeleton className="mb-4 h-4 w-3/4" />
-
-                        <Skeleton className="h-4 w-11/12" />
-                        <Skeleton className="h-4 w-10/12" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="mb-4 h-4 w-3/4" />
-
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-11/12" />
-                        <Skeleton className="h-4 w-10/12" />
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {row.reviewState === "FAILED" ? (
-                    <div className="space-y-3">
-                      <p
-                        role="alert"
-                        className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-                      >
-                        {row.errorMessage
-                          ? `Generation failed: ${row.errorMessage}`
-                          : "Generation failed. Try regenerate review to retry."}
-                      </p>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={() =>
-                          openGenerateDialog(row.monthStart, "regenerate")
-                        }
-                        disabled={generateSavingMonthStart !== null}
-                      >
-                        Regenerate review
-                      </Button>
-                    </div>
-                  ) : null}
-
-                  {row.reviewState === "GENERATED" && row.reviewText ? (
-                    <div className="space-y-2 rounded-md border border-success/30 bg-success/10 p-3">
-                      <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                        AI insight
-                      </p>
-                      <p className="whitespace-pre-wrap text-foreground text-sm">
-                        {row.reviewText}
-                      </p>
-
-                      <div className="flex flex-wrap pt-1">
-                        <Button
-                          type="button"
-                          size="xs"
-                          variant="link"
-                          className="h-auto p-0 text-muted-foreground"
-                          onClick={() =>
-                            openGenerateDialog(row.monthStart, "regenerate")
-                          }
-                          disabled={generateSavingMonthStart !== null}
-                        >
-                          Regenerate insight
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
+                  <Link
+                    href={`/monthly-review/${row.monthStart}`}
+                    className={buttonVariants({ size: "lg" })}
+                  >
+                    Open {formatMonthStartLabel(row.monthStart)} in review
+                    <ArrowRight aria-hidden />
+                  </Link>
                 </div>
               </div>
             </article>
           );
         })}
       </div>
-
-      <AlertDialog
-        open={generateDialogState !== null}
-        onOpenChange={handleGenerateDialogOpenChange}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {generateDialogState?.mode === "regenerate"
-                ? "Regenerate monthly review?"
-                : "Generate monthly review?"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {generateDialogState?.mode === "regenerate"
-                ? `This will replace the existing review text for ${selectedMonthLabel}.`
-                : `This will generate a monthly AI review for ${selectedMonthLabel}.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          {generateError ? (
-            <p
-              role="alert"
-              className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-            >
-              {generateError}
-            </p>
-          ) : null}
-
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={closeGenerateDialog}
-              disabled={generateSavingMonthStart !== null}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmGenerate}
-              disabled={generateSavingMonthStart !== null}
-            >
-              {generateSavingMonthStart !== null
-                ? "Sending..."
-                : generateDialogState?.mode === "regenerate"
-                  ? "Regenerate now"
-                  : "Generate now"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
