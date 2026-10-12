@@ -59,6 +59,7 @@ type Category = {
 const SUGGESTION_SOURCE_LABEL: Record<SuggestionSource, string | null> = {
   RULE: "From rule",
   HISTORY: "From history",
+  TRANSFER_MATCH: "Matched transfer",
   OPENAI: null,
   JEV: null,
 };

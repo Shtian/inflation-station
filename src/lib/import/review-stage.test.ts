@@ -61,6 +61,7 @@ function createDbMock(options?: {
     id: string;
     name: string;
     classifierHint: string | null;
+    kind?: "EXPENSE" | "INCOME" | "TRANSFER";
   }>;
   stagedRows?: Array<{
     id: string;
@@ -84,6 +85,11 @@ function createDbMock(options?: {
     normalizedMerchant: string;
     paymentType: PaymentType;
     categoryId?: string | null;
+  }>;
+  otherAccountTransactions?: Array<{
+    bookingDate: Date;
+    amountNok: number;
+    categoryId: string | null;
   }>;
 }) {
   const importReviewSession = {
@@ -113,7 +119,18 @@ function createDbMock(options?: {
 
   const db = {
     category: {
-      findMany: vi.fn(async () => options?.categories ?? []),
+      findMany: vi.fn(async (args: { where?: { kind: "TRANSFER" } }) =>
+        (options?.categories ?? [])
+          .filter(
+            (category) =>
+              args.where === undefined || category.kind === args.where.kind,
+          )
+          .map(({ id, name, classifierHint }) => ({
+            id,
+            name,
+            classifierHint,
+          })),
+      ),
     },
     categoryRule: {
       findMany: vi.fn(async () => {
@@ -126,11 +143,18 @@ function createDbMock(options?: {
     importReviewSession,
     importReviewRow,
     transaction: {
-      findMany: vi.fn(async () =>
-        (options?.existingTransactions ?? []).map((transaction) => ({
-          ...transaction,
-          categoryId: transaction.categoryId ?? null,
-        })),
+      findMany: vi.fn(
+        async (args: { where: { accountId: string | { not: string } } }) =>
+          typeof args.where.accountId === "string"
+            ? (options?.existingTransactions ?? []).map((transaction) => ({
+                ...transaction,
+                categoryId: transaction.categoryId ?? null,
+              }))
+            : (options?.otherAccountTransactions ?? []).map((transaction) => ({
+                ...transaction,
+                normalizedMerchant: "transfer",
+                paymentType: PaymentType.TRANSFER,
+              })),
       ),
     },
     $transaction: runTransaction,
@@ -1203,6 +1227,82 @@ describe("stageParsedImportRows", () => {
     });
   });
 
+  describe("transfer match stage", () => {
+    it("lets a rule win, then suggests the transfer category for a row mirrored in another account", async () => {
+      const db = createDbMock({
+        categories: [
+          {
+            id: "cat-household",
+            name: "Household",
+            classifierHint: null,
+            kind: "EXPENSE",
+          },
+          {
+            id: "cat-transfer",
+            name: "Overføringer",
+            classifierHint: null,
+            kind: "TRANSFER",
+          },
+        ],
+        categoryRules: [
+          {
+            id: "rule-1",
+            categoryId: "cat-household",
+            merchantContains: "kiwi",
+            paymentType: null,
+            priority: 10,
+          },
+        ],
+        otherAccountTransactions: [
+          {
+            bookingDate: new Date("2026-01-01T00:00:00.000Z"),
+            amountNok: -500,
+            categoryId: null,
+          },
+          {
+            bookingDate: new Date("2026-01-03T00:00:00.000Z"),
+            amountNok: -500,
+            categoryId: null,
+          },
+        ],
+      });
+
+      await stageParsedImportRows(db, {
+        accountId: "account-1",
+        parsed: buildParsedResult([
+          buildParsedRow({
+            name: "KIWI",
+            title: "Majorstuen",
+            bookingDate: "02.01.2026",
+            amountNok: 500,
+          }),
+          buildParsedRow({
+            name: "Overføring",
+            title: "Fra brukskonto",
+            bookingDate: "02.01.2026",
+            amountNok: 500,
+          }),
+        ]),
+      });
+
+      expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            rowNumber: 2,
+            categoryId: "cat-household",
+            suggestionSource: "RULE",
+          }),
+          expect.objectContaining({
+            rowNumber: 3,
+            categoryId: "cat-transfer",
+            suggestionSource: "TRANSFER_MATCH",
+            suggestionConfidence: 0.9,
+          }),
+        ],
+      });
+    });
+  });
+
   describe("history stage", () => {
     const kiwiRow = buildParsedRow({
       name: "",
@@ -1268,7 +1368,11 @@ describe("stageParsedImportRows", () => {
         jevFetchImpl: jevFetchImpl as unknown as Fetch,
       });
 
-      expect(db.transaction.findMany).toHaveBeenCalledTimes(1);
+      expect(
+        db.transaction.findMany.mock.calls.filter(
+          ([args]) => args.where.accountId === "account-1",
+        ),
+      ).toHaveLength(1);
       expect(db.importReviewRow.createMany).toHaveBeenCalledWith({
         data: [
           expect.objectContaining({

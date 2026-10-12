@@ -1,0 +1,1 @@
+-- SQLite stores Prisma enums as TEXT, so adding SuggestionSource.TRANSFER_MATCH needs no DDL.

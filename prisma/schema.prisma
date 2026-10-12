@@ -25,6 +25,7 @@ enum SuggestionSource {
   OPENAI
   JEV
   HISTORY
+  TRANSFER_MATCH
 }
 
 enum MonthlyReviewStatus {
