@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { resolveCurrentStep, type SetupSnapshot } from "./progress";
+import {
+  ONBOARDING_STEPS,
+  resolveCurrentStep,
+  resolveStepStatus,
+  type SetupSnapshot,
+} from "./progress";
 
 const dnb = { name: "Brukskonto", institution: "DNB" };
 const groceries = {
@@ -52,5 +57,36 @@ describe("resolveCurrentStep", () => {
     expect(resolveCurrentStep(snapshot([dnb], [groceries, transfers]))).toBe(
       "done",
     );
+  });
+});
+
+describe("ONBOARDING_STEPS", () => {
+  it("lists what each step already has and its status", () => {
+    const setup = snapshot(
+      [dnb, { name: "Kontanter", institution: null }],
+      [groceries, salary],
+    );
+
+    expect(
+      ONBOARDING_STEPS.map((step) => ({
+        id: step.id,
+        status: resolveStepStatus(step, setup),
+        items: step.presentItems(setup),
+      })),
+    ).toEqual([
+      {
+        id: "accounts",
+        status: "done",
+        items: ["Brukskonto (DNB)", "Kontanter"],
+      },
+      { id: "categories", status: "done", items: ["Dagligvarer", "Lønn"] },
+      { id: "transfer", status: "current", items: [] },
+    ]);
+  });
+
+  it("marks steps after the current one as upcoming", () => {
+    expect(
+      ONBOARDING_STEPS.map((step) => resolveStepStatus(step, snapshot([], []))),
+    ).toEqual(["current", "upcoming", "upcoming"]);
   });
 });

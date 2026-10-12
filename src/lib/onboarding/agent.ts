@@ -14,6 +14,7 @@ import {
 import {
   ONBOARDING_STEPS,
   resolveCurrentStep,
+  resolveStepStatus,
   type SetupSnapshot,
 } from "./progress";
 import { createAccounts, createCategories } from "./setup-store";
@@ -52,14 +53,10 @@ function describeCategories(snapshot: SetupSnapshot): string {
 
 export function buildOnboardingSystemPrompt(snapshot: SetupSnapshot): string {
   const currentStep = resolveCurrentStep(snapshot);
-  const steps = ONBOARDING_STEPS.map((step, index) => {
-    const status = step.isComplete(snapshot)
-      ? "done"
-      : step.id === currentStep
-        ? "current"
-        : "not started";
-    return `${index + 1}. ${step.title} (${status}): ${step.agentGuidance}`;
-  }).join("\n");
+  const steps = ONBOARDING_STEPS.map(
+    (step, index) =>
+      `${index + 1}. ${step.title} (${resolveStepStatus(step, snapshot)}): ${step.agentGuidance}`,
+  ).join("\n");
   const current =
     currentStep === "done"
       ? "All steps are done. Congratulate the user briefly and suggest importing a bank statement on the Import page next. Help with further accounts or categories if they ask."

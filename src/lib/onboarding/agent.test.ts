@@ -58,7 +58,7 @@ describe("buildOnboardingSystemPrompt", () => {
     });
 
     expect(prompt).toContain("1. Add your accounts (current):");
-    expect(prompt).toContain("2. Create categories (not started):");
+    expect(prompt).toContain("2. Create categories (upcoming):");
     expect(prompt).toContain(
       "Existing accounts:\n- none yet\n\nExisting categories:\n- none yet",
     );
