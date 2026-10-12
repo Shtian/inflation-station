@@ -1,3 +1,5 @@
+import { isTransfer } from "@/lib/transactions/transfer";
+
 type DecimalLike = { toString(): string } | number;
 
 type DashboardTransactionRecord = {
@@ -166,7 +168,6 @@ export async function getDashboardAnalytics(
   const accountNames = new Map<string, string>();
 
   for (const transaction of transactions) {
-    const isTransfer = transaction.category?.kind === "TRANSFER";
     const dateKey = toDateKey(transaction.bookingDate);
     const amount = toNumber(transaction.amountNok);
 
@@ -177,7 +178,7 @@ export async function getDashboardAnalytics(
     accountSeries.set(dateKey, (accountSeries.get(dateKey) ?? 0) + amount);
     trendByAccount.set(transaction.account.id, accountSeries);
 
-    if (isTransfer) {
+    if (isTransfer(transaction)) {
       continue;
     }
 

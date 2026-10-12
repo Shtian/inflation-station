@@ -1,3 +1,5 @@
+import { isTransfer } from "@/lib/transactions/transfer";
+
 type DecimalLike = { toString(): string } | number;
 
 type MonthlyOverviewTransactionRecord = {
@@ -81,7 +83,6 @@ type MutableMonthTotals = {
 
 const UNCATEGORIZED_KEY = "__uncategorized__";
 const UNCATEGORIZED_NAME = "Uncategorized";
-const TRANSFER_CATEGORY_KIND = "TRANSFER";
 
 function toNumber(value: DecimalLike): number {
   return Number.parseFloat(value.toString());
@@ -193,7 +194,7 @@ export async function getMonthlyOverview(
     allMonthKeys.add(monthKey);
 
     const amount = toNumber(transaction.amountNok);
-    if (transaction.category?.kind === TRANSFER_CATEGORY_KIND) {
+    if (isTransfer(transaction)) {
       continue;
     }
 

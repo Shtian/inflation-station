@@ -3,7 +3,7 @@
 Load this when working in `src/lib/transactions`.
 
 - Keep transaction query/mutation logic in this folder; API handlers should stay thin.
-- Module layout: `row.ts` owns what a transaction row is, `write.ts` owns what a manual create/update means, `list.ts` owns filtering and pagination, `delete.ts` owns removal, `merchant.ts` owns the merchant key (`normalizeMerchantKey`, `MerchantColumns`, `toMerchantColumns`), `note.ts` is the note-limit constant leaf.
+- Module layout: `row.ts` owns what a transaction row is, `write.ts` owns what a manual create/update means, `list.ts` owns filtering and pagination, `delete.ts` owns removal, `merchant.ts` owns the merchant key (`normalizeMerchantKey`, `MerchantColumns`, `toMerchantColumns`), `note.ts` is the note-limit constant leaf, `transfer.ts` owns `isTransfer`, the one predicate for excluding transfers from income and spend totals.
 - `row.ts` is the single Prisma `select` (`TRANSACTION_ROW_SELECT`) and the single record-to-row projection (`toTransactionRow`). Only `list.ts` builds `TransactionRow`s; never inline a second select or projection for that shape.
 - `TransactionRowRecord` is derived from the select via `Prisma.TransactionGetPayload`, so a select change cannot silently outrun the record type. The public `TransactionRow` stays hand-written; it is the contract the `GET` list route and the browser read.
 - `write.ts` does not join `account`/`category` or return a `TransactionRow`. `createTransaction`/`updateTransaction` select and return only `{ id }`, since nothing consumes the full relational row from a create or update response; the browser refetches the list instead. If a caller ever needs more than the id back, extend the minimal select rather than reaching for `TRANSACTION_ROW_SELECT`.

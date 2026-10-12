@@ -16,6 +16,10 @@ import {
   type CategoryRuleCandidate,
   type RuleMatchTransaction,
 } from "../categorization/rule-engine";
+import {
+  suggestTransferCategories,
+  TRANSFER_MATCH_MAX_DAYS_APART,
+} from "../categorization/transfer-suggestions";
 import type {
   CsvParserResult,
   CsvValidationError,
@@ -77,10 +81,25 @@ type StagedImportRow = {
   categoryId: string | null;
 };
 
+const CATEGORY_OPTION_SELECT = {
+  id: true,
+  name: true,
+  classifierHint: true,
+} as const;
+
+const TRANSACTION_LOOKUP_SELECT = {
+  bookingDate: true,
+  amountNok: true,
+  normalizedMerchant: true,
+  paymentType: true,
+  categoryId: true,
+} as const;
+
 type ImportReviewStageDbClient = {
   category: {
     findMany(args: {
-      select: { id: true; name: true; classifierHint: true };
+      where?: { kind: "TRANSFER" };
+      select: typeof CATEGORY_OPTION_SELECT;
     }): Promise<
       Array<{ id: string; name: string; classifierHint: string | null }>
     >;
@@ -111,14 +130,13 @@ type ImportReviewStageDbClient = {
   importReviewRow: ImportReviewStageRowClient;
   transaction: {
     findMany(args: {
-      where: { accountId: string };
-      select: {
-        bookingDate: true;
-        amountNok: true;
-        normalizedMerchant: true;
-        paymentType: true;
-        categoryId: true;
-      };
+      where:
+        | { accountId: string }
+        | {
+            accountId: { not: string };
+            bookingDate: { gte: Date; lte: Date };
+          };
+      select: typeof TRANSACTION_LOOKUP_SELECT;
     }): Promise<
       Array<{
         bookingDate: Date;
@@ -410,6 +428,59 @@ async function buildRuleSuggestionMap(
   }, new Map<number, ImportRowSuggestion>());
 }
 
+async function addTransferSuggestions(
+  db: ImportReviewStageDbClient,
+  accountId: string,
+  validRows: ValidatedStageRow[],
+  suggestionByRowNumber: Map<number, ImportRowSuggestion>,
+): Promise<void> {
+  const unmatchedRows = validRows
+    .filter((row) => !suggestionByRowNumber.has(row.rowNumber))
+    .map((row) => ({
+      rowNumber: row.rowNumber,
+      amountNok: row.amountNok,
+      bookingDate: new Date(`${row.bookingDate}T00:00:00.000Z`),
+    }));
+  if (unmatchedRows.length === 0) {
+    return;
+  }
+
+  const bookingTimes = unmatchedRows.map((row) => row.bookingDate.getTime());
+  const windowMs = TRANSFER_MATCH_MAX_DAYS_APART * 24 * 60 * 60 * 1000;
+  const [otherAccountTransactions, transferCategories] = await Promise.all([
+    db.transaction.findMany({
+      where: {
+        accountId: { not: accountId },
+        bookingDate: {
+          gte: new Date(Math.min(...bookingTimes) - windowMs),
+          lte: new Date(Math.max(...bookingTimes) + windowMs),
+        },
+      },
+      select: TRANSACTION_LOOKUP_SELECT,
+    }),
+    db.category.findMany({
+      where: { kind: "TRANSFER" },
+      select: CATEGORY_OPTION_SELECT,
+    }),
+  ]);
+
+  for (const suggestion of suggestTransferCategories(
+    unmatchedRows,
+    otherAccountTransactions.map((transaction) => ({
+      bookingDate: transaction.bookingDate,
+      amountNok: Number.parseFloat(transaction.amountNok.toString()),
+      categoryId: transaction.categoryId,
+    })),
+    transferCategories.map((category) => category.id),
+  )) {
+    suggestionByRowNumber.set(suggestion.rowNumber, {
+      categoryId: suggestion.categoryId,
+      source: SuggestionSource.TRANSFER_MATCH,
+      confidence: suggestion.confidence,
+    });
+  }
+}
+
 function addHistorySuggestions(
   validRows: ValidatedStageRow[],
   accountTransactions: Array<{
@@ -477,7 +548,7 @@ async function addJevSuggestions(
   }
 
   const categories: JevCategoryOption[] = await db.category.findMany({
-    select: { id: true, name: true, classifierHint: true },
+    select: CATEGORY_OPTION_SELECT,
   });
 
   const { suggestions, outcomes } = await categorizeRowsWithJev({
@@ -589,13 +660,7 @@ export async function stageParsedImportRows(
 
   const accountTransactions = await db.transaction.findMany({
     where: { accountId: params.accountId },
-    select: {
-      bookingDate: true,
-      amountNok: true,
-      normalizedMerchant: true,
-      paymentType: true,
-      categoryId: true,
-    },
+    select: TRANSACTION_LOOKUP_SELECT,
   });
   const potentialDuplicateRowNumbers = buildPotentialDuplicateRowNumbers(
     params.accountId,
@@ -614,6 +679,17 @@ export async function stageParsedImportRows(
     suggestionByRowNumber = new Map<number, ImportRowSuggestion>();
   }
 
+  try {
+    await addTransferSuggestions(
+      db,
+      params.accountId,
+      validRows,
+      suggestionByRowNumber,
+    );
+  } catch {
+    // Transfer matching is best-effort; staging continues without it.
+  }
+
   addHistorySuggestions(validRows, accountTransactions, suggestionByRowNumber);
 
   let jevOutcomes = emptyJevOutcomeSummary();
@@ -626,7 +702,7 @@ export async function stageParsedImportRows(
       params.jevFetchImpl,
     );
   } catch {
-    // JEV categorization is best-effort; rule and history suggestions stand.
+    // JEV categorization is best-effort; earlier suggestions stand.
   }
 
   const finalInvalidCount = parsed.summary.invalid + invalidRows.length;
