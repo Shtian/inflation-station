@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("shows theme options and applies persisted theme in the app shell", async ({
+test("switches mode and palette and keeps both across reloads", async ({
   page,
 }) => {
   await page.route("**/api/accounts", async (route) => {
@@ -39,13 +39,25 @@ test("shows theme options and applies persisted theme in the app shell", async (
   await expect(themeToggle).toBeVisible();
 
   await themeToggle.click();
-  await expect(page.getByRole("menuitem", { name: "Light" })).toBeVisible();
-  await expect(page.getByRole("menuitem", { name: "Dark" })).toBeVisible();
-  await expect(page.getByRole("menuitem", { name: "System" })).toBeVisible();
+  for (const mode of ["Light", "Dark", "System"]) {
+    await expect(page.getByRole("radio", { name: mode })).toBeVisible();
+  }
+  for (const palette of ["Ember", "Ocean", "Botanical", "Plum"]) {
+    await expect(page.getByRole("radio", { name: palette })).toBeVisible();
+  }
+  await expect(page.getByRole("radio", { name: "Ember" })).toBeChecked();
+
+  await page.locator("label", { hasText: "Ocean" }).click();
+  await expect(html).toHaveAttribute("data-palette", "ocean");
+  await expect(page.getByRole("radio", { name: "Ocean" })).toBeChecked();
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(html).toHaveAttribute("data-palette", "ocean");
 
   await page.evaluate(() => {
-    window.localStorage.setItem("theme", "dark");
+    window.localStorage.setItem("inflation-station-theme", "light");
   });
   await page.reload({ waitUntil: "domcontentloaded" });
-  await expect(html).toHaveClass(/\bdark\b/);
+  await expect(html).not.toHaveClass(/\bdark\b/);
+  await expect(html).toHaveAttribute("data-palette", "ocean");
 });
