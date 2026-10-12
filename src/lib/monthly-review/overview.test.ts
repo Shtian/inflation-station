@@ -83,6 +83,7 @@ describe("monthly overview", () => {
           },
         ],
         monthOverMonthSpendDeltaNok: -400,
+        transferNetNok: 0,
       },
       {
         monthStart: "2026-02-01",
@@ -103,6 +104,7 @@ describe("monthly overview", () => {
           },
         ],
         monthOverMonthSpendDeltaNok: 200,
+        transferNetNok: 0,
       },
       {
         monthStart: "2026-01-01",
@@ -123,6 +125,7 @@ describe("monthly overview", () => {
           },
         ],
         monthOverMonthSpendDeltaNok: null,
+        transferNetNok: 0,
       },
     ]);
   });
@@ -145,6 +148,7 @@ describe("monthly overview", () => {
         topCategory: null,
         categorySpendBreakdown: [],
         monthOverMonthSpendDeltaNok: null,
+        transferNetNok: 0,
       },
     ]);
   });
@@ -199,6 +203,7 @@ describe("monthly overview", () => {
           },
         ],
         monthOverMonthSpendDeltaNok: -200,
+        transferNetNok: -300,
       },
       {
         monthStart: "2026-01-01",
@@ -219,7 +224,69 @@ describe("monthly overview", () => {
           },
         ],
         monthOverMonthSpendDeltaNok: null,
+        transferNetNok: -900,
       },
+    ]);
+  });
+
+  it("nets transfer amounts per month so a missing side shows as a non-zero sum", async () => {
+    const db = createMonthlyOverviewDbMock([
+      {
+        id: "tx-jan-expense",
+        bookingDate: new Date("2026-01-10T10:00:00.000Z"),
+        amountNok: -250,
+        category: { id: "cat-food", name: "Food", kind: "EXPENSE" },
+      },
+      {
+        id: "tx-feb-transfer-out",
+        bookingDate: new Date("2026-02-03T10:00:00.000Z"),
+        amountNok: -500,
+        category: { id: "cat-transfer", name: "Move", kind: "TRANSFER" },
+      },
+      {
+        id: "tx-mar-transfer-out",
+        bookingDate: new Date("2026-03-03T10:00:00.000Z"),
+        amountNok: -500,
+        category: { id: "cat-transfer", name: "Move", kind: "TRANSFER" },
+      },
+      {
+        id: "tx-mar-transfer-in",
+        bookingDate: new Date("2026-03-04T10:00:00.000Z"),
+        amountNok: 500,
+        category: { id: "cat-transfer", name: "Move", kind: "TRANSFER" },
+      },
+      {
+        id: "tx-apr-transfer-a",
+        bookingDate: new Date("2026-04-02T10:00:00.000Z"),
+        amountNok: 0.1,
+        category: { id: "cat-transfer", name: "Move", kind: "TRANSFER" },
+      },
+      {
+        id: "tx-apr-transfer-b",
+        bookingDate: new Date("2026-04-02T10:00:00.000Z"),
+        amountNok: 0.2,
+        category: { id: "cat-transfer", name: "Move", kind: "TRANSFER" },
+      },
+      {
+        id: "tx-apr-transfer-c",
+        bookingDate: new Date("2026-04-03T10:00:00.000Z"),
+        amountNok: -0.3,
+        category: { id: "cat-transfer", name: "Move", kind: "TRANSFER" },
+      },
+    ]);
+
+    const result = await getMonthlyOverview(db);
+
+    expect(
+      result.map(({ monthStart, transferNetNok }) => ({
+        monthStart,
+        transferNetNok,
+      })),
+    ).toEqual([
+      { monthStart: "2026-04-01", transferNetNok: 0 },
+      { monthStart: "2026-03-01", transferNetNok: 0 },
+      { monthStart: "2026-02-01", transferNetNok: -500 },
+      { monthStart: "2026-01-01", transferNetNok: 0 },
     ]);
   });
 

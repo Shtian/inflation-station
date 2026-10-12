@@ -15,6 +15,7 @@ export type MonthlyReviewTimelineRow = {
     spendNok: number;
   }>;
   monthOverMonthSpendDeltaNok: number | null;
+  transferNetNok: number;
   reviewState: "NOT_GENERATED" | "GENERATING" | "GENERATED" | "FAILED";
   generatedAt: string | null;
   errorMessage: string | null;

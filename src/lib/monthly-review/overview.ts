@@ -66,6 +66,7 @@ export type MonthlyOverviewRow = {
   topCategory: MonthlyOverviewTopCategory | null;
   categorySpendBreakdown: MonthlyOverviewCategorySpend[];
   monthOverMonthSpendDeltaNok: number | null;
+  transferNetNok: number;
 };
 
 type MutableCategoryTotal = {
@@ -183,6 +184,7 @@ export async function getMonthlyOverview(
   ]);
 
   const totalsByMonth = new Map<string, MutableMonthTotals>();
+  const transferNetByMonth = new Map<string, number>();
   const allMonthKeys = new Set<string>();
 
   for (const review of reviews) {
@@ -195,6 +197,10 @@ export async function getMonthlyOverview(
 
     const amount = toNumber(transaction.amountNok);
     if (isTransfer(transaction)) {
+      transferNetByMonth.set(
+        monthKey,
+        (transferNetByMonth.get(monthKey) ?? 0) + amount,
+      );
       continue;
     }
 
@@ -255,6 +261,8 @@ export async function getMonthlyOverview(
       monthOverMonthSpendDeltaNok: previousMonthTotals
         ? totalSpendNok - previousMonthTotals.totalSpendNok
         : null,
+      transferNetNok:
+        Math.round((transferNetByMonth.get(monthStart) ?? 0) * 100) / 100,
     };
   });
 }
