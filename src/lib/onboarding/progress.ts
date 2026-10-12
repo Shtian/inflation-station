@@ -21,8 +21,6 @@ export type OnboardingStep = {
   isComplete: (snapshot: SetupSnapshot) => boolean;
 };
 
-// A step is complete exactly when something it lists is present, so the
-// stepper's item list and its status cannot disagree.
 function defineStep(step: Omit<OnboardingStep, "isComplete">): OnboardingStep {
   return {
     ...step,

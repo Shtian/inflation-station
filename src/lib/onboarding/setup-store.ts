@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import type { CategoryKindName, SetupSnapshot } from "./progress";
 
 export type AccountInput = { name: string; institution?: string | null };
@@ -10,10 +10,6 @@ export type CategoryInput = {
 };
 
 export type BatchResult = { created: string[]; existing: string[] };
-
-type TransactionClient = Parameters<
-  Parameters<PrismaClient["$transaction"]>[0]
->[0];
 
 export async function loadSetupSnapshot(
   db: PrismaClient,
@@ -40,14 +36,17 @@ function optionalText(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
-// Names are unique case-sensitively in the schema, but "dnb" and "DNB" are the
-// same account to the user, so matching happens here. Reading and writing in
-// one transaction keeps a retried tool call from slipping a duplicate in.
+// The schema's unique index is case-sensitive, but "dnb" and "DNB" are the same
+// account to the user. One transaction keeps a retried call from adding both.
 async function createMissing<T extends { name: string }>(
   db: PrismaClient,
   items: T[],
-  readNames: (tx: TransactionClient) => Promise<string[]>,
-  create: (tx: TransactionClient, name: string, item: T) => Promise<unknown>,
+  readNames: (tx: Prisma.TransactionClient) => Promise<string[]>,
+  create: (
+    tx: Prisma.TransactionClient,
+    name: string,
+    item: T,
+  ) => Promise<unknown>,
 ): Promise<BatchResult> {
   return db.$transaction(async (tx) => {
     const known = new Map(

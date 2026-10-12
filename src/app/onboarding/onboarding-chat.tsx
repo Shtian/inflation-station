@@ -79,7 +79,7 @@ function describeChatError(error: Error): string {
   return "Couldn't reach the setup guide.";
 }
 
-export function describeBatchResult({ created, existing }: BatchResult) {
+function describeBatchResult({ created, existing }: BatchResult) {
   const sentences = [];
   if (created.length > 0) {
     sentences.push(`Added ${created.join(", ")}.`);
@@ -130,8 +130,6 @@ function ProposalCard({
     case "approval-requested":
     case "approval-responded":
     case "output-denied":
-      // A reply typed instead of a button press supersedes the proposal (the
-      // server sends it to the model as denied).
       if (part.state === "approval-requested" && !isLatest) {
         return (
           <p className="text-muted-foreground text-xs">Proposal dismissed</p>
@@ -386,8 +384,6 @@ export function OnboardingChat({
             value={input}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={(event) => {
-              // PromptInput resets the form on every submit; skip it while a
-              // reply is in flight so the draft text survives.
               if (event.key === "Enter" && !event.shiftKey && busy) {
                 event.preventDefault();
               }
@@ -400,8 +396,6 @@ export function OnboardingChat({
           <PromptInputFooter>
             <PromptInputTools />
             <PromptInputSubmit
-              // "error" would swap the send arrow for an X; the error row
-              // above already offers Retry.
               status={busy ? status : undefined}
               onStop={() => void stop()}
               aria-label={busy ? "Stop response" : "Send message"}
