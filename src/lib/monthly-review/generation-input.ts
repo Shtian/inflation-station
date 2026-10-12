@@ -3,6 +3,7 @@ import type { PaymentType } from "@prisma/client";
 import {
   buildMonthInReview,
   type MonthInReview,
+  toLocalIsoDate,
   toMonthWindow,
 } from "./month-in-review";
 import { getMonthlyReviewSystemPrompt } from "./system-prompt";
@@ -83,10 +84,6 @@ function toNumber(value: DecimalLike): number {
   return Number.parseFloat(value.toString());
 }
 
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
 export async function buildMonthlyReviewGenerationInput(
   db: MonthlyReviewGenerationDbClient,
   params: {
@@ -163,7 +160,7 @@ export async function buildMonthlyReviewGenerationInput(
       previousMonthTransactions,
     }),
     transactions: monthTransactions.map((transaction) => ({
-      bookingDate: toIsoDate(transaction.bookingDate),
+      bookingDate: toLocalIsoDate(transaction.bookingDate),
       amountNok: toNumber(transaction.amountNok),
       normalizedMerchant: transaction.normalizedMerchant,
       paymentType: transaction.paymentType,

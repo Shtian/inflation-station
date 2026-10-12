@@ -129,6 +129,7 @@ export type MonthWindow = {
   monthStartDate: Date;
   nextMonthStartDate: Date;
   previousMonthStartDate: Date;
+  reviewMonthStartDate: Date;
 };
 
 const MONTH_KEY_PATTERN = /^\d{4}-\d{2}-01$/;
@@ -142,14 +143,16 @@ function toNumber(value: DecimalLike): number {
   return Number.parseFloat(value.toString());
 }
 
-function toMonthStartKey(date: Date): string {
-  const year = date.getUTCFullYear();
-  const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
-  return `${year}-${month}-01`;
+function pad2(value: number): string {
+  return `${value}`.padStart(2, "0");
 }
 
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
+function toMonthStartKey(date: Date): string {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-01`;
+}
+
+export function toLocalIsoDate(date: Date): string {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 }
 
 function toMerchantName(normalizedMerchant: string): string {
@@ -180,13 +183,16 @@ export function toMonthWindow(monthStart: string): MonthWindow {
     throw new Error("MONTH_START_INVALID");
   }
 
-  const monthStartDate = new Date(Date.UTC(year, month - 1, 1));
+  const monthStartDate = new Date(year, month - 1, 1);
 
+  // Transactions are bucketed by local calendar month, like overview.ts, while
+  // MonthlyReview rows are keyed by UTC midnight in generation.ts.
   return {
     monthStart: toMonthStartKey(monthStartDate),
     monthStartDate,
-    nextMonthStartDate: new Date(Date.UTC(year, month, 1)),
-    previousMonthStartDate: new Date(Date.UTC(year, month - 2, 1)),
+    nextMonthStartDate: new Date(year, month, 1),
+    previousMonthStartDate: new Date(year, month - 2, 1),
+    reviewMonthStartDate: new Date(Date.UTC(year, month - 1, 1)),
   };
 }
 
@@ -344,7 +350,7 @@ function buildBiggestPurchase(
   }
 
   return {
-    bookingDate: toIsoDate(biggest.bookingDate),
+    bookingDate: toLocalIsoDate(biggest.bookingDate),
     merchant: toMerchantName(biggest.normalizedMerchant),
     amountNok: Math.abs(toNumber(biggest.amountNok)),
     categoryName: biggest.category?.name ?? null,
@@ -360,7 +366,7 @@ function buildBusiestDay(
   >();
 
   for (const transaction of spend) {
-    const bookingDate = toIsoDate(transaction.bookingDate);
+    const bookingDate = toLocalIsoDate(transaction.bookingDate);
     const day = days.get(bookingDate) ?? { spendNok: 0, transactionCount: 0 };
     day.spendNok += Math.abs(toNumber(transaction.amountNok));
     day.transactionCount += 1;
@@ -474,7 +480,7 @@ export async function getMonthInReviewWithReview(
   const [facts, review] = await Promise.all([
     getMonthInReview(db, { monthStart: window.monthStart }),
     db.monthlyReview.findUnique({
-      where: { monthStart: window.monthStartDate },
+      where: { monthStart: window.reviewMonthStartDate },
       select: {
         status: true,
         generatedAt: true,

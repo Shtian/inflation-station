@@ -20,7 +20,7 @@ function createGenerationDbMock() {
     transaction: {
       findMany: vi.fn(
         async ({ where }: { where: { bookingDate: { gte: Date } } }) => {
-          const month = where.bookingDate.gte.getUTCMonth();
+          const month = where.bookingDate.gte.getMonth();
 
           if (month === 0) {
             return [];

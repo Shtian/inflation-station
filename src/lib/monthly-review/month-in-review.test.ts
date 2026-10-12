@@ -7,6 +7,10 @@ import {
   type MonthInReviewTransactionRecord,
 } from "./month-in-review";
 
+// Transactions are stored as local midnight; pin a non-UTC zone so month and
+// day bucketing is exercised the same way on every machine.
+process.env.TZ = "Europe/Oslo";
+
 const FOOD = { id: "cat-food", name: "Food", kind: "EXPENSE" };
 const TRAVEL = { id: "cat-travel", name: "Travel", kind: "EXPENSE" };
 const ELECTRONICS = {
@@ -224,10 +228,10 @@ describe("buildMonthInReview", () => {
 });
 
 describe("getMonthInReview", () => {
-  it("queries the month and the prior month using UTC bounds", async () => {
+  it("queries the month and the prior month using local calendar bounds", async () => {
     const findMany = vi.fn(
       async ({ where }: { where: { bookingDate: { gte: Date } } }) =>
-        where.bookingDate.gte.getUTCMonth() === 0
+        where.bookingDate.gte.getMonth() === 0
           ? januaryTransactions
           : februaryTransactions,
     );
@@ -240,12 +244,12 @@ describe("getMonthInReview", () => {
     expect(findMany.mock.calls.map(([args]) => args.where.bookingDate)).toEqual(
       [
         {
-          gte: new Date("2026-02-01T00:00:00.000Z"),
-          lt: new Date("2026-03-01T00:00:00.000Z"),
+          gte: new Date("2026-01-31T23:00:00.000Z"),
+          lt: new Date("2026-02-28T23:00:00.000Z"),
         },
         {
-          gte: new Date("2026-01-01T00:00:00.000Z"),
-          lt: new Date("2026-02-01T00:00:00.000Z"),
+          gte: new Date("2025-12-31T23:00:00.000Z"),
+          lt: new Date("2026-01-31T23:00:00.000Z"),
         },
       ],
     );
@@ -309,6 +313,51 @@ describe("getMonthInReviewWithReview", () => {
       generatedAt: null,
       errorMessage: null,
       reviewText: null,
+    });
+  });
+});
+
+describe("local calendar months", () => {
+  it("counts a row booked at local midnight on the 1st in that month and day", async () => {
+    const localFirstOfSeptember = new Date(2026, 8, 1);
+    expect(localFirstOfSeptember.toISOString()).toBe(
+      "2026-08-31T22:00:00.000Z",
+    );
+    const rows: MonthInReviewTransactionRecord[] = [
+      {
+        id: "sep-rent",
+        bookingDate: localFirstOfSeptember,
+        amountNok: -20377,
+        normalizedMerchant: "LANDLORD",
+        category: { id: "cat-rent", name: "Rent", kind: "EXPENSE" },
+      },
+    ];
+    const findMany = vi.fn(
+      async ({ where }: { where: { bookingDate: { gte: Date; lt: Date } } }) =>
+        rows.filter(
+          (row) =>
+            row.bookingDate >= where.bookingDate.gte &&
+            row.bookingDate < where.bookingDate.lt,
+        ),
+    );
+
+    const result = await getMonthInReview(
+      { transaction: { findMany } },
+      { monthStart: "2026-09-01" },
+    );
+
+    expect(result.cashflow.spendNok).toBe(20377);
+    expect(result.previousMonth).toBeNull();
+    expect(result.biggestPurchase).toEqual({
+      bookingDate: "2026-09-01",
+      merchant: "LANDLORD",
+      amountNok: 20377,
+      categoryName: "Rent",
+    });
+    expect(result.busiestDay).toEqual({
+      bookingDate: "2026-09-01",
+      spendNok: 20377,
+      transactionCount: 1,
     });
   });
 });

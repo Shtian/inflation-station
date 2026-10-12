@@ -36,7 +36,7 @@ describe("GET /api/monthly-review/[monthStart]", () => {
   it("returns month in review facts with the persisted review state", async () => {
     findManyMock.mockImplementation(
       async ({ where }: { where: { bookingDate: { gte: Date } } }) =>
-        where.bookingDate.gte.getUTCMonth() === 2
+        where.bookingDate.gte.getMonth() === 2
           ? [
               {
                 id: "tx-salary",
