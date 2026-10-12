@@ -1,5 +1,6 @@
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import type { PaymentType } from "@prisma/client";
+import { isTransfer } from "@/lib/transactions/transfer";
 import { getMonthlyReviewSystemPrompt } from "./system-prompt";
 
 type DecimalLike = { toString(): string } | number;
@@ -125,7 +126,6 @@ type MutableMerchantTotal = {
 const MONTH_KEY_PATTERN = /^\d{4}-\d{2}-01$/;
 const UNCATEGORIZED_NAME = "Uncategorized";
 const UNKNOWN_MERCHANT_NAME = "Unknown merchant";
-const TRANSFER_CATEGORY_KIND = "TRANSFER";
 
 function toNumber(value: DecimalLike): number {
   return Number.parseFloat(value.toString());
@@ -173,8 +173,7 @@ function toSpendTransactions(
 ) {
   return transactions.filter(
     (transaction) =>
-      toNumber(transaction.amountNok) < 0 &&
-      transaction.category?.kind !== TRANSFER_CATEGORY_KIND,
+      toNumber(transaction.amountNok) < 0 && !isTransfer(transaction),
   );
 }
 
