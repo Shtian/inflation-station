@@ -90,7 +90,7 @@ const STALE_PROPOSAL_REASON =
 
 // A proposal left in approval-requested means the user typed a reply instead
 // of using the buttons. Sending it as denied keeps the proposal in the model's
-// context; an unanswered tool call would otherwise be rejected by the provider.
+// context instead of letting ignoreIncompleteToolCalls drop it.
 function withStaleProposalsDenied(
   message: OnboardingUIMessage,
 ): OnboardingUIMessage {
