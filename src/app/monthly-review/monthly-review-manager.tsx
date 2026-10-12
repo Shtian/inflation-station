@@ -390,14 +390,6 @@ export function MonthlyReviewManager() {
                   </div>
                 </div>
 
-                {Math.abs(row.transferNetNok) >= 1 ? (
-                  <p className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-muted-foreground text-sm">
-                    Transfers are off by{" "}
-                    {formatNok(Math.abs(row.transferNetNok))}. One side may be
-                    missing, or a purchase may be categorized as a transfer.
-                  </p>
-                ) : null}
-
                 <div className="space-y-4 text-sm">
                   <div className="space-y-2 rounded-md border border-border/70 bg-muted/20 p-3">
                     <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">

@@ -30,7 +30,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
               },
             ],
             monthOverMonthSpendDeltaNok: 100,
-            transferNetNok: 0,
             reviewState: "GENERATING",
             generatedAt: null,
             errorMessage: null,
@@ -55,7 +54,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
               },
             ],
             monthOverMonthSpendDeltaNok: -125,
-            transferNetNok: -500,
             reviewState: "FAILED",
             generatedAt: "2026-03-28T14:00:00.000Z",
             errorMessage: "provider_error",
@@ -80,7 +78,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
               },
             ],
             monthOverMonthSpendDeltaNok: null,
-            transferNetNok: 0,
             reviewState: "NOT_GENERATED",
             generatedAt: null,
             errorMessage: null,
@@ -105,7 +102,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
               },
             ],
             monthOverMonthSpendDeltaNok: 200,
-            transferNetNok: 0,
             reviewState: "GENERATED",
             generatedAt: "2026-02-15T10:00:00.000Z",
             errorMessage: null,
@@ -162,17 +158,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await expect(
     page.getByText("Generation failed: provider_error"),
   ).toBeVisible();
-
-  const transferWarning = /Transfers are off by/;
-  await expect(
-    page
-      .locator("article")
-      .filter({ has: page.getByRole("heading", { name: "March 2026" }) })
-      .getByText(transferWarning),
-  ).toHaveText(
-    /Transfers are off by 500,00\s?kr\. One side may be missing, or a purchase may be categorized as a transfer\./,
-  );
-  await expect(page.getByText(transferWarning)).toHaveCount(1);
 
   const generatedMonthCard = page
     .locator("article")
