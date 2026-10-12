@@ -213,8 +213,16 @@ function NetSlide({ review }: SlideContext) {
   );
 }
 
+const VISIBLE_CATEGORY_LIMIT = 6;
+
 function CategoriesSlide({ review }: SlideContext) {
   const [top] = review.categories;
+  const visible = review.categories.slice(0, VISIBLE_CATEGORY_LIMIT);
+  const rest = review.categories.slice(VISIBLE_CATEGORY_LIMIT);
+  const restSpendNok = rest.reduce(
+    (sum, category) => sum + category.spendNok,
+    0,
+  );
 
   return (
     <div className="space-y-8">
@@ -226,7 +234,7 @@ function CategoriesSlide({ review }: SlideContext) {
       </div>
 
       <ul className="space-y-4">
-        {review.categories.map((category) => {
+        {visible.map((category) => {
           const color = getCategoryColor(category.categoryName);
 
           return (
@@ -267,6 +275,12 @@ function CategoriesSlide({ review }: SlideContext) {
           );
         })}
       </ul>
+      {rest.length > 0 ? (
+        <p className="text-muted-foreground text-sm">
+          {rest.length} more {rest.length === 1 ? "category" : "categories"}{" "}
+          shared the remaining {formatNok(restSpendNok)}.
+        </p>
+      ) : null}
     </div>
   );
 }
