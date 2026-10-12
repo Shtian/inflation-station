@@ -34,6 +34,7 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
+import { Suggestion } from "@/components/ai-elements/suggestion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -334,15 +335,12 @@ export function OnboardingChat({
               </p>
               <div className="flex flex-col items-start gap-1.5">
                 {SUGGESTIONS.map((suggestion) => (
-                  <Button
+                  <Suggestion
                     key={suggestion}
-                    size="sm"
-                    variant="outline"
-                    className="h-auto whitespace-normal py-1 text-left"
-                    onClick={() => send(suggestion)}
-                  >
-                    {suggestion}
-                  </Button>
+                    suggestion={suggestion}
+                    onClick={send}
+                    className="h-auto whitespace-normal py-1.5 text-left"
+                  />
                 ))}
               </div>
             </ConversationEmptyState>
