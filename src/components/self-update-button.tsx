@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import type { UpdateAvailability } from "@/lib/self-update/availability";
 import {
   initialSelfUpdateDialogState,
   isPolling,
@@ -23,6 +24,8 @@ import {
 
 const POLL_INTERVAL_MS = 2000;
 const RELOAD_DELAY_MS = 1500;
+const AVAILABILITY_INTERVAL_MS = 15 * 60 * 1000;
+const NOTIFIED_STORAGE_KEY = "inflation-station:update-notified";
 
 async function fetchStatusEvent(
   pageSha: string,
@@ -40,9 +43,38 @@ async function fetchStatusEvent(
   }
 }
 
-function describe(state: SelfUpdateDialogState) {
+async function fetchAvailability(): Promise<UpdateAvailability> {
+  try {
+    const response = await fetch("/api/self-update/availability", {
+      cache: "no-store",
+    });
+    return response.ok ? await response.json() : { kind: "unknown" };
+  } catch {
+    return { kind: "unknown" };
+  }
+}
+
+// Returns true the first time this browser sees remoteSha, so each new version
+// toasts once rather than on every page load.
+function claimNotification(remoteSha: string) {
+  try {
+    if (localStorage.getItem(NOTIFIED_STORAGE_KEY) === remoteSha) {
+      return false;
+    }
+    localStorage.setItem(NOTIFIED_STORAGE_KEY, remoteSha);
+  } catch {}
+  return true;
+}
+
+function describe(
+  state: SelfUpdateDialogState,
+  availability: UpdateAvailability,
+) {
   switch (state.kind) {
     case "idle":
+      if (availability.kind === "available") {
+        return `Version ${availability.remoteSha} is available. Pulling it rebuilds the site, which is offline for a few minutes.`;
+      }
       return "Pull the latest changes and rebuild. If there is anything new, the site is offline for a few minutes while it rebuilds.";
     case "starting":
       return "Starting the update.";
@@ -86,6 +118,37 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
   // A tab opened before an update over SSH renders a stale sha, so a run
   // started here compares against the sha the server reports at start.
   const baselineSha = useRef(pageSha);
+  const [availability, setAvailability] = useState<UpdateAvailability>({
+    kind: "unknown",
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function check() {
+      const next = await fetchAvailability();
+      if (!cancelled) {
+        setAvailability(next);
+      }
+    }
+    check();
+    const interval = setInterval(check, AVAILABILITY_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const availableSha =
+    availability.kind === "available" ? availability.remoteSha : null;
+
+  useEffect(() => {
+    if (availableSha === null || !claimNotification(availableSha)) {
+      return;
+    }
+    toast(`New version ${availableSha} is available`, {
+      action: { label: "Update", onClick: () => setOpen(true) },
+    });
+  }, [availableSha]);
 
   useEffect(() => {
     if (!open) {
@@ -155,16 +218,23 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
           <Button
             variant="ghost"
             size="xs"
-            className="font-mono text-muted-foreground"
+            className={
+              availableSha === null
+                ? "font-mono text-muted-foreground"
+                : "font-mono text-brand"
+            }
           />
         }
       >
-        Update
+        {availableSha === null ? null : (
+          <span aria-hidden className="size-1.5 rounded-full bg-brand" />
+        )}
+        {availableSha === null ? "Update" : "Update available"}
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Update Inflation Station</DialogTitle>
-          <DialogDescription>{describe(state)}</DialogDescription>
+          <DialogDescription>{describe(state, availability)}</DialogDescription>
         </DialogHeader>
         {"log" in state && (polling || state.log !== "") ? (
           <UpdateLog log={state.log} />
