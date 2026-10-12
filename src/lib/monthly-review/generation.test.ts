@@ -39,6 +39,18 @@ function createGenerationDbMock() {
                 kind: "EXPENSE",
               },
             },
+            {
+              id: "tx-2",
+              bookingDate: new Date("2026-02-15T12:00:00.000Z"),
+              amountNok: 1000,
+              normalizedMerchant: "EMPLOYER",
+              paymentType: PaymentType.TRANSFER,
+              category: {
+                id: "cat-salary",
+                name: "Salary",
+                kind: "INCOME",
+              },
+            },
           ];
         },
       ),
@@ -106,43 +118,56 @@ describe("generateMonthlyReview", () => {
   it("persists generated review output for the month", async () => {
     const { db, getMonthlyReviewRow } = createGenerationDbMock();
 
+    const fetchImpl = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(
+          JSON.stringify({
+            id: "chatcmpl-test",
+            object: "chat.completion",
+            created: 1_738_780_800,
+            model: "gpt-4o-mini",
+            choices: [
+              {
+                index: 0,
+                message: {
+                  role: "assistant",
+                  content: JSON.stringify({
+                    reviewText: "## February\nSpend increased mainly in food.",
+                  }),
+                },
+                finish_reason: "stop",
+              },
+            ],
+            usage: {
+              prompt_tokens: 123,
+              completion_tokens: 45,
+              total_tokens: 168,
+            },
+          }),
+          { status: 200 },
+        ),
+    );
+
     const result = await generateMonthlyReview(
       db,
       { monthStart: "2026-02-01" },
-      {
-        openAiApiKey: "test-key",
-        fetchImpl: vi.fn(
-          async () =>
-            new Response(
-              JSON.stringify({
-                id: "chatcmpl-test",
-                object: "chat.completion",
-                created: 1_738_780_800,
-                model: "gpt-4o-mini",
-                choices: [
-                  {
-                    index: 0,
-                    message: {
-                      role: "assistant",
-                      content: JSON.stringify({
-                        reviewText:
-                          "## February\nSpend increased mainly in food.",
-                      }),
-                    },
-                    finish_reason: "stop",
-                  },
-                ],
-                usage: {
-                  prompt_tokens: 123,
-                  completion_tokens: 45,
-                  total_tokens: 168,
-                },
-              }),
-              { status: 200 },
-            ),
-        ),
-      },
+      { openAiApiKey: "test-key", fetchImpl },
     );
+
+    const requestBody = JSON.parse(
+      String(fetchImpl.mock.calls[0]?.[1]?.body),
+    ) as { messages: Array<{ role: string; content: string }> };
+    const userPrompt = JSON.parse(
+      requestBody.messages.find((message) => message.role === "user")
+        ?.content ?? "{}",
+    );
+    expect(userPrompt.facts.cashflow).toEqual({
+      incomeNok: 1000,
+      spendNok: 420,
+      netNok: 580,
+      savingsRate: 0.58,
+    });
+    expect(userPrompt.facts.previousMonth).toBeNull();
 
     expect(result.status).toBe(MonthlyReviewStatus.GENERATED);
     expect(result.unavailableReason).toBeNull();

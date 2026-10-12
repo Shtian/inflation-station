@@ -56,7 +56,7 @@ function createGenerationInputDbMock(params?: {
 }
 
 describe("buildMonthlyReviewGenerationInput", () => {
-  it("builds prompt, transactions payload, and precomputed metrics for a month", async () => {
+  it("builds prompt, transactions payload, and month-in-review facts for a month", async () => {
     const db = createGenerationInputDbMock({
       promptText: "Focus on major spending shifts.",
       monthTransactions: [
@@ -115,51 +115,64 @@ describe("buildMonthlyReviewGenerationInput", () => {
       usesDefaultPrompt: false,
       modelId: "gpt-5.4",
       usesDefaultModel: true,
-      metrics: {
-        monthlyTotals: {
-          totalSpendNok: 1500,
-          spendTransactionCount: 3,
+      facts: {
+        monthStart: "2026-02-01",
+        cashflow: {
+          incomeNok: 34000,
+          spendNok: 1500,
+          netNok: 32500,
+          savingsRate: 32500 / 34000,
         },
-        categoryTotals: [
+        previousMonth: {
+          monthStart: "2026-01-01",
+          incomeNok: 0,
+          spendNok: 1000,
+          netNok: -1000,
+        },
+        spendTransactionCount: 3,
+        categories: [
           {
             categoryId: "cat-food",
             categoryName: "Food",
             spendNok: 1000,
-            spendShare: 1000 / 1500,
+            share: 1000 / 1500,
             transactionCount: 2,
+            deltaNok: 0,
           },
           {
             categoryId: "cat-travel",
             categoryName: "Travel",
             spendNok: 500,
-            spendShare: 500 / 1500,
+            share: 500 / 1500,
+            transactionCount: 1,
+            deltaNok: 500,
+          },
+        ],
+        topMerchants: [
+          {
+            merchant: "REMA 1000",
+            spendNok: 1000,
+            share: 1000 / 1500,
+            transactionCount: 2,
+          },
+          {
+            merchant: "VY",
+            spendNok: 500,
+            share: 500 / 1500,
             transactionCount: 1,
           },
         ],
-        merchantConcentration: {
-          topMerchants: [
-            {
-              normalizedMerchant: "REMA 1000",
-              spendNok: 1000,
-              spendShare: 1000 / 1500,
-              transactionCount: 2,
-            },
-            {
-              normalizedMerchant: "VY",
-              spendNok: 500,
-              spendShare: 500 / 1500,
-              transactionCount: 1,
-            },
-          ],
-          top3SpendShare: 1,
-          top5SpendShare: 1,
-          uniqueMerchantCount: 2,
+        incomeSources: [{ source: "EMPLOYER", amountNok: 34000 }],
+        biggestPurchase: {
+          bookingDate: "2026-02-02",
+          merchant: "REMA 1000",
+          amountNok: 700,
+          categoryName: "Food",
         },
-        monthOverMonth: {
-          previousMonthStart: "2026-01-01",
-          previousMonthTotalSpendNok: 1000,
-          spendDeltaNok: 500,
-          spendDeltaPercent: 0.5,
+        busiestDay: {
+          bookingDate: "2026-02-02",
+          spendNok: 700,
+          transactionCount: 1,
         },
       },
       transactions: [
@@ -195,7 +208,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
     });
   });
 
-  it("uses default system prompt and omits month-over-month metrics when prior month has no rows", async () => {
+  it("uses default system prompt and omits previous-month facts when prior month has no rows", async () => {
     const db = createGenerationInputDbMock({
       monthTransactions: [
         {
@@ -218,21 +231,22 @@ describe("buildMonthlyReviewGenerationInput", () => {
     expect(result.usesDefaultPrompt).toBe(true);
     expect(result.modelId).toBe("gpt-5.4");
     expect(result.usesDefaultModel).toBe(true);
-    expect(result.metrics.monthOverMonth).toBeNull();
-    expect(result.metrics.categoryTotals).toEqual([
+    expect(result.facts.previousMonth).toBeNull();
+    expect(result.facts.categories).toEqual([
       {
         categoryId: null,
         categoryName: "Uncategorized",
         spendNok: 200,
-        spendShare: 1,
+        share: 1,
         transactionCount: 1,
+        deltaNok: null,
       },
     ]);
-    expect(result.metrics.merchantConcentration.topMerchants).toEqual([
+    expect(result.facts.topMerchants).toEqual([
       {
-        normalizedMerchant: "Unknown merchant",
+        merchant: "Unknown merchant",
         spendNok: 200,
-        spendShare: 1,
+        share: 1,
         transactionCount: 1,
       },
     ]);
@@ -248,7 +262,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
     ).rejects.toThrow("MONTH_START_INVALID");
   });
 
-  it("excludes transfer-category spend from metrics while keeping non-transfer and uncategorized spend", async () => {
+  it("excludes transfer-category spend from facts while keeping non-transfer and uncategorized spend", async () => {
     const db = createGenerationInputDbMock({
       monthTransactions: [
         {
@@ -300,45 +314,50 @@ describe("buildMonthlyReviewGenerationInput", () => {
       monthStart: "2026-02-01",
     });
 
-    expect(result.metrics.monthlyTotals).toEqual({
-      totalSpendNok: 500,
-      spendTransactionCount: 2,
+    expect(result.facts.cashflow).toEqual({
+      incomeNok: 0,
+      spendNok: 500,
+      netNok: -500,
+      savingsRate: null,
     });
-    expect(result.metrics.categoryTotals).toEqual([
+    expect(result.facts.spendTransactionCount).toBe(2);
+    expect(result.facts.categories).toEqual([
       {
         categoryId: "cat-food",
         categoryName: "Food",
         spendNok: 300,
-        spendShare: 0.6,
+        share: 0.6,
         transactionCount: 1,
+        deltaNok: -100,
       },
       {
         categoryId: null,
         categoryName: "Uncategorized",
         spendNok: 200,
-        spendShare: 0.4,
+        share: 0.4,
         transactionCount: 1,
+        deltaNok: 200,
       },
     ]);
-    expect(result.metrics.merchantConcentration.topMerchants).toEqual([
+    expect(result.facts.topMerchants).toEqual([
       {
-        normalizedMerchant: "REMA 1000",
+        merchant: "REMA 1000",
         spendNok: 300,
-        spendShare: 0.6,
+        share: 0.6,
         transactionCount: 1,
       },
       {
-        normalizedMerchant: "UNKNOWN",
+        merchant: "UNKNOWN",
         spendNok: 200,
-        spendShare: 0.4,
+        share: 0.4,
         transactionCount: 1,
       },
     ]);
-    expect(result.metrics.monthOverMonth).toEqual({
-      previousMonthStart: "2026-01-01",
-      previousMonthTotalSpendNok: 400,
-      spendDeltaNok: 100,
-      spendDeltaPercent: 0.25,
+    expect(result.facts.previousMonth).toEqual({
+      monthStart: "2026-01-01",
+      incomeNok: 0,
+      spendNok: 400,
+      netNok: -400,
     });
   });
 });

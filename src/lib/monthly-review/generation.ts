@@ -247,16 +247,18 @@ async function buildReviewText(params: {
   const userPrompt = JSON.stringify(
     {
       instructions: [
-        "Write a concise monthly spending review in markdown.",
-        "Use only the provided data and avoid inventing facts.",
-        "Call out notable category, merchant, and month-over-month signals.",
-        "Keep practical suggestions concrete and short.",
+        "Write a short, warm month-in-review recap in plain text.",
+        "Open with the net result: income in versus spend out, and whether the month ended in plus or minus.",
+        "Then say where the money went, using the largest categories and merchants.",
+        "Mention notable movers versus last month when previousMonth is present.",
+        "Close with one concrete, practical suggestion.",
+        "Use only the provided facts and transactions; never invent numbers.",
       ],
       monthStart: params.input.monthStart,
-      metrics: params.input.metrics,
+      facts: params.input.facts,
       transactions: params.input.transactions,
       outputFormat: {
-        reviewText: "markdown summary",
+        reviewText: "plain-text recap",
       },
     },
     null,
