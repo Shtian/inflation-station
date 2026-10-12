@@ -19,6 +19,11 @@ const primaryLinks = [
 
 const configurationLinks = [
   {
+    href: "/onboarding",
+    label: "Setup guide",
+    description: "Chat with a guide to add accounts and categories.",
+  },
+  {
     href: "/import/settings/message-cleanup",
     label: "Message Cleanup Settings",
     description: "Configure OpenAI model and prompt for import cleanup.",
