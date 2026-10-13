@@ -79,7 +79,7 @@ const ENGLISH_WORDS = new Set(
   status pending ready success warning out last first will when what which how why there here than
   then only also can cannot must should would use used using it its we our no yes copy copied reset
   clear manage enter type choose drop or keep left right start end previous today yesterday week year
-  something went wrong unable invalid required optional missing found balance accounts chat ask`
+  something went wrong unable invalid required optional missing found balance accounts ask`
     .split(/\s+/)
     .filter(Boolean),
 );
