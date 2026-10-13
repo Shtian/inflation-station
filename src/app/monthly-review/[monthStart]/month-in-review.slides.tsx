@@ -524,7 +524,7 @@ function MomentsSlide({ review }: SlideContext) {
         </div>
         {busiestDay ? (
           <figcaption className="text-pretty font-semibold text-lg md:text-xl">
-            Busiest day: {formatDayLong(busiestDay.bookingDate)},{" "}
+            Most purchases: {formatDayLong(busiestDay.bookingDate)},{" "}
             {plural(busiestDay.transactionCount, "purchase")} for{" "}
             {whole(busiestDay.spendNok)}.
           </figcaption>

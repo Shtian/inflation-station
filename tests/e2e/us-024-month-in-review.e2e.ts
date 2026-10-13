@@ -216,7 +216,7 @@ test("steps through every slide by buttons and keyboard, keeping the slide in th
   ).toBeVisible();
   await expect(
     activeSlide(page).getByText(
-      /^Busiest day: Saturday 14\sMarch, 3\spurchases for 1\s800\skr\.$/,
+      /^Most purchases: Saturday 14\sMarch, 3\spurchases for 1\s800\skr\.$/,
     ),
   ).toBeVisible();
 
