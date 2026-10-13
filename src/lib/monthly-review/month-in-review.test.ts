@@ -46,10 +46,12 @@ function tx(
   };
 }
 
-function februaryDailySpend(spendByDate: Record<string, number>) {
+function februaryDailySpend(
+  byDate: Record<string, { spendNok: number; transactionCount: number }>,
+) {
   return Array.from({ length: 28 }, (_, index) => {
     const date = `2026-02-${`${index + 1}`.padStart(2, "0")}`;
-    return { date, spendNok: spendByDate[date] ?? 0 };
+    return { date, ...(byDate[date] ?? { spendNok: 0, transactionCount: 0 }) };
   });
 }
 
@@ -216,11 +218,11 @@ describe("buildMonthInReview", () => {
           transactionCount: 3,
         },
         dailySpend: februaryDailySpend({
-          "2026-02-02": 700,
-          "2026-02-04": 900,
-          "2026-02-14": 2400,
-          "2026-02-20": 200,
-          "2026-02-25": 50,
+          "2026-02-02": { spendNok: 700, transactionCount: 1 },
+          "2026-02-04": { spendNok: 900, transactionCount: 3 },
+          "2026-02-14": { spendNok: 2400, transactionCount: 1 },
+          "2026-02-20": { spendNok: 200, transactionCount: 1 },
+          "2026-02-25": { spendNok: 50, transactionCount: 1 },
         }),
       },
     });
@@ -421,6 +423,7 @@ describe("local calendar months", () => {
     expect(result.everyday.dailySpend[0]).toEqual({
       date: "2026-09-01",
       spendNok: 20377,
+      transactionCount: 1,
     });
     expect(result.everyday.dailySpend).toHaveLength(30);
     expect(result.everyday.biggestPurchase).toEqual({

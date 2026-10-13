@@ -126,6 +126,7 @@ export type MonthInReviewBill = {
 export type MonthInReviewDay = {
   date: string;
   spendNok: number;
+  transactionCount: number;
 };
 
 export type MonthInReview = {
@@ -388,13 +389,13 @@ function buildDailySpend(
   spend: MonthInReviewTransactionRecord[],
   window: MonthWindow,
 ): MonthInReviewDay[] {
-  const spendByDate = new Map<string, number>();
+  const byDate = new Map<string, Omit<MonthInReviewDay, "date">>();
   for (const transaction of spend) {
     const date = toLocalIsoDate(transaction.bookingDate);
-    spendByDate.set(
-      date,
-      (spendByDate.get(date) ?? 0) + Math.abs(toNumber(transaction.amountNok)),
-    );
+    const day = byDate.get(date) ?? { spendNok: 0, transactionCount: 0 };
+    day.spendNok += Math.abs(toNumber(transaction.amountNok));
+    day.transactionCount += 1;
+    byDate.set(date, day);
   }
 
   const days: MonthInReviewDay[] = [];
@@ -404,7 +405,10 @@ function buildDailySpend(
     day.setDate(day.getDate() + 1)
   ) {
     const date = toLocalIsoDate(day);
-    days.push({ date, spendNok: spendByDate.get(date) ?? 0 });
+    days.push({
+      date,
+      ...(byDate.get(date) ?? { spendNok: 0, transactionCount: 0 }),
+    });
   }
 
   return days;

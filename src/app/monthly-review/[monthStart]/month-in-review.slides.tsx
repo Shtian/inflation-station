@@ -475,7 +475,10 @@ function MerchantsSlide({ review }: SlideContext) {
 
 function MomentsSlide({ review }: SlideContext) {
   const { biggestPurchase, busiestDay, dailySpend } = review.everyday;
-  const maxDayNok = Math.max(...dailySpend.map((day) => day.spendNok), 1);
+  const maxDayCount = Math.max(
+    ...dailySpend.map((day) => day.transactionCount),
+    1,
+  );
   const [firstDay] = dailySpend;
   const lastDay = dailySpend.at(-1);
 
@@ -497,14 +500,25 @@ function MomentsSlide({ review }: SlideContext) {
         </div>
       ) : null}
 
-      <figure className="space-y-3">
+      <figure className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-3">
+        <p className="col-start-2 text-[var(--mir-muted)] text-sm">
+          Everyday purchases per day
+        </p>
+        <div
+          className="flex h-36 flex-col justify-between text-right text-[var(--mir-muted)] text-sm tabular-nums leading-none md:h-44"
+          aria-hidden="true"
+        >
+          <span>{maxDayCount}</span>
+          <span>0</span>
+        </div>
         <div
           className="mir-sweep flex h-36 items-end gap-[3px] md:h-44 md:gap-1"
           role="img"
-          aria-label={`Everyday spending per day${busiestDay ? `, busiest on ${formatDayLong(busiestDay.bookingDate)}` : ""}`}
+          aria-label={`Everyday purchases per day${busiestDay ? `, most on ${formatDayLong(busiestDay.bookingDate)}` : ""}`}
         >
           {dailySpend.map((day) => {
-            const isBusiest = day.date === busiestDay?.bookingDate;
+            const isBusiest =
+              day.transactionCount === busiestDay?.transactionCount;
             return (
               <div
                 key={day.date}
@@ -513,17 +527,19 @@ function MomentsSlide({ review }: SlideContext) {
                     ? "bg-[var(--mir-accent)]"
                     : "bg-[color-mix(in_oklab,var(--mir-accent)_32%,transparent)]"
                 }`}
-                style={{ height: `${(day.spendNok / maxDayNok) * 100}%` }}
+                style={{
+                  height: `${(day.transactionCount / maxDayCount) * 100}%`,
+                }}
               />
             );
           })}
         </div>
-        <div className="flex justify-between text-[var(--mir-muted)] text-sm">
+        <div className="col-start-2 flex justify-between text-[var(--mir-muted)] text-sm">
           <span>{firstDay ? Number(firstDay.date.slice(8)) : null}</span>
           <span>{lastDay ? Number(lastDay.date.slice(8)) : null}</span>
         </div>
         {busiestDay ? (
-          <figcaption className="text-pretty font-semibold text-lg md:text-xl">
+          <figcaption className="col-span-2 text-pretty font-semibold text-lg md:text-xl">
             Most purchases: {formatDayLong(busiestDay.bookingDate)},{" "}
             {plural(busiestDay.transactionCount, "purchase")} for{" "}
             {whole(busiestDay.spendNok)}.

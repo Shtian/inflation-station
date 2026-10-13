@@ -55,10 +55,12 @@ function createGenerationInputDbMock(params?: {
   };
 }
 
-function februaryDailySpend(spendByDate: Record<string, number>) {
+function februaryDailySpend(
+  byDate: Record<string, { spendNok: number; transactionCount: number }>,
+) {
   return Array.from({ length: 28 }, (_, index) => {
     const date = `2026-02-${`${index + 1}`.padStart(2, "0")}`;
-    return { date, spendNok: spendByDate[date] ?? 0 };
+    return { date, ...(byDate[date] ?? { spendNok: 0, transactionCount: 0 }) };
   });
 }
 
@@ -186,9 +188,9 @@ describe("buildMonthlyReviewGenerationInput", () => {
             transactionCount: 1,
           },
           dailySpend: februaryDailySpend({
-            "2026-02-02": 700,
-            "2026-02-04": 300,
-            "2026-02-08": 500,
+            "2026-02-02": { spendNok: 700, transactionCount: 1 },
+            "2026-02-04": { spendNok: 300, transactionCount: 1 },
+            "2026-02-08": { spendNok: 500, transactionCount: 1 },
           }),
         },
       },
