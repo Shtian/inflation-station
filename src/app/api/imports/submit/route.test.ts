@@ -79,7 +79,7 @@ describe("POST /api/imports/submit", () => {
     expect(submitImportReviewMock).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_IMPORT_REVIEW_SUBMIT_PAYLOAD",
-      message: `Expected sessionId and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. ${MAX_TRANSACTION_NOTE_LENGTH_MESSAGE}`,
+      message: `Forventet sessionId og en liste med radvalg [{ rowId, categoryId, selectedMessage, note? }] i forespørselen. ${MAX_TRANSACTION_NOTE_LENGTH_MESSAGE}`,
     });
   });
 
@@ -221,7 +221,8 @@ describe("POST /api/imports/submit", () => {
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
       error: "IMPORT_REVIEW_SESSION_NOT_FOUND",
-      message: "Import review session was not found or already submitted.",
+      message:
+        "Fant ikke importgjennomgangen, eller den er allerede sendt inn.",
     });
   });
 
@@ -250,7 +251,7 @@ describe("POST /api/imports/submit", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_IMPORT_REVIEW_CATEGORY",
-      message: "One or more selected categories do not exist.",
+      message: "Én eller flere av de valgte kategoriene finnes ikke.",
       categoryIds: ["cat-missing"],
     });
   });
@@ -283,7 +284,7 @@ describe("POST /api/imports/submit", () => {
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_IMPORT_REVIEW_DECISIONS",
       message:
-        "One or more submitted row decisions are invalid: duplicate or unknown row IDs.",
+        "Ett eller flere av de innsendte radvalgene er ugyldige: dupliserte eller ukjente rad-ID-er.",
       duplicateRowIds: ["row-1"],
       unknownRowIds: ["row-ghost"],
     });

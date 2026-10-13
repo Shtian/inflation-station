@@ -118,8 +118,8 @@ export function parseMappedCsv(
         rowNumber,
         code: "INVALID_BOOKING_DATE",
         message: dateFormat
-          ? `Row ${rowNumber} has booking date "${bookingDateRaw}" that does not match the format ${dateFormat}.`
-          : `Row ${rowNumber} has booking date "${bookingDateRaw}", which is not a recognized date.`,
+          ? `Rad ${rowNumber} har bokføringsdato "${bookingDateRaw}", som ikke samsvarer med formatet ${dateFormat}.`
+          : `Rad ${rowNumber} har bokføringsdato "${bookingDateRaw}", som ikke er en gyldig dato.`,
       });
       continue;
     }
@@ -129,7 +129,7 @@ export function parseMappedCsv(
       errors.push({
         rowNumber,
         code: "INVALID_AMOUNT",
-        message: `Row ${rowNumber} has invalid amount "${amount.raw}". Expected a number using "${decimalSeparator}" as the decimal separator.`,
+        message: `Rad ${rowNumber} har ugyldig beløp "${amount.raw}". Forventet et tall med "${decimalSeparator}" som desimaltegn.`,
       });
       continue;
     }

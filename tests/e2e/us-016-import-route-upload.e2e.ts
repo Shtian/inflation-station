@@ -40,7 +40,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
             rowNumber: 4,
             code: "INVALID_AMOUNT",
             message:
-              'Row 4 has invalid amount "abc". Expected Norwegian decimal format like 123,45.',
+              'Rad 4 har ugyldig beløp "abc". Forventet norsk desimalformat som 123,45.',
           },
         ],
         review: {
@@ -145,27 +145,27 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Main Account DNB" }).click();
 
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;123,45", "utf8"),
   });
 
-  await page.getByRole("button", { name: /Parse/ }).click();
+  await page.getByRole("button", { name: /Les inn/ }).click();
 
-  await expect(page.getByText("Import Preview")).toBeVisible();
-  await expect(page.getByText("Validation errors")).toBeVisible();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
+  await expect(page.getByText("Valideringsfeil")).toBeVisible();
   await expect(
     page.getByText(
-      'Row 4: Row 4 has invalid amount "abc". Expected Norwegian decimal format like 123,45.',
+      'Rad 4: Rad 4 har ugyldig beløp "abc". Forventet norsk desimalformat som 123,45.',
     ),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Import 2 / 2" }),
+    page.getByRole("button", { name: "Importer 2 / 2" }),
   ).toBeVisible();
   await expect(
     page.getByText(
-      "1 potential duplicate detected. Default message selection uses AI-cleaned text when available.",
+      "1 mulig duplikat funnet. Meldingen bruker AI-ryddet tekst som standard når den finnes.",
     ),
   ).toBeVisible();
   // Before the cleanup chunk resolves: original messages, no toggle yet.
@@ -174,12 +174,12 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   ).toBeVisible();
   await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();
   const toggleRow1 = page.getByRole("button", {
-    name: "Toggle message source for row 2",
+    name: "Bytt meldingskilde for rad 2",
   });
   await expect(toggleRow1).not.toBeVisible();
   // Both rows show a pulsing icon while their chunk is in flight.
-  const pendingSkeletonRow1 = page.getByLabel("Cleaning message for row 2");
-  const pendingSkeletonRow2 = page.getByLabel("Cleaning message for row 3");
+  const pendingSkeletonRow1 = page.getByLabel("Rydder melding for rad 2");
+  const pendingSkeletonRow2 = page.getByLabel("Rydder melding for rad 3");
   await expect(pendingSkeletonRow1).toBeVisible();
   await expect(pendingSkeletonRow2).toBeVisible();
 
@@ -195,12 +195,12 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   // keeps showing the original message with no toggle.
   await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Toggle message source for row 3" }),
+    page.getByRole("button", { name: "Bytt meldingskilde for rad 3" }),
   ).not.toBeVisible();
   // Exactly one cleanup chunk request fires for the whole session.
   expect(cleanupRequestCount).toBe(1);
   // Potential duplicate indicator shown for row 1
-  await expect(page.getByLabel("Potential duplicate")).toBeVisible();
+  await expect(page.getByLabel("Mulig duplikat")).toBeVisible();
   // Switch row 1 to use original message
   await toggleRow1.click();
   await expect(
@@ -208,7 +208,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   ).toBeVisible();
 
   const rowThreeCategory = page.getByRole("combobox", {
-    name: "Category for row 3",
+    name: "Kategori for rad 3",
   });
   await expect(rowThreeCategory).toHaveValue("Transport");
   await rowThreeCategory.click();
@@ -223,12 +223,12 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
   await expect(rowThreeCategory).toHaveValue("Food");
 
   const rowOneNote = page.getByRole("textbox", {
-    name: "Note for row 2",
+    name: "Notat for rad 2",
   });
   await rowOneNote.fill("x".repeat(501));
-  await page.getByRole("button", { name: "Import 2 / 2" }).click();
+  await page.getByRole("button", { name: "Importer 2 / 2" }).click();
   await expect(
-    page.getByText("Fix note validation errors before confirming import."),
+    page.getByText("Rett feilene i notatene før du bekrefter importen."),
   ).toBeVisible();
   await expect(
     page.getByText("Note must be 500 characters or fewer."),
@@ -238,20 +238,20 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
 
   // Deselect row 2 (rowNumber 3) so only row 1's finalized decisions should
   // be submitted for the selected subset.
-  await page.getByRole("checkbox", { name: "Select row 3" }).click();
+  await page.getByRole("checkbox", { name: "Velg rad 3" }).click();
   await expect(
-    page.getByRole("button", { name: "Import 1 / 2" }),
+    page.getByRole("button", { name: "Importer 1 / 2" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Import 1 / 2" }).click();
+  await page.getByRole("button", { name: "Importer 1 / 2" }).click();
 
   await expect(
     page.locator("[data-sonner-toast]", {
-      hasText: "Import complete. Imported 2, invalid 1.",
+      hasText: "Import fullført. Importert: 2, ugyldige: 1.",
     }),
   ).toBeVisible();
-  await expect(page.getByText("Import Preview")).toHaveCount(0);
-  await expect(page.getByLabel("Statement file")).toHaveValue("");
+  await expect(page.getByText("Forhåndsvisning av import")).toHaveCount(0);
+  await expect(page.getByLabel("Kontoutskrift")).toHaveValue("");
   expect(submitRequestCount).toBe(1);
   expect(submitRequestBody).toEqual({
     sessionId: "session-1",
@@ -421,7 +421,7 @@ test("maps a CSV's columns before review, previews the parse and sends the confi
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "dnb.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
@@ -429,39 +429,41 @@ test("maps a CSV's columns before review, previews the parse and sends the confi
       "utf8",
     ),
   });
-  await page.getByRole("button", { name: /Parse/ }).click();
+  await page.getByRole("button", { name: /Les inn/ }).click();
 
   await expect(
-    page.getByRole("heading", { name: "Map Columns" }),
+    page.getByRole("heading", { name: "Koble kolonner" }),
   ).toBeVisible();
-  const mappingRows = page.getByRole("list", { name: "Column mapping" });
+  const mappingRows = page.getByRole("list", { name: "Kolonnekobling" });
   const fieldRow = (label: string) =>
     mappingRows.getByRole("button", { name: new RegExp(`^${label}`) });
-  await expect(fieldRow("Date")).toContainText("Dato");
-  await expect(fieldRow("Amount")).toContainText(
-    "Inn på konto (in) / Ut fra konto (out)",
+  await expect(fieldRow("Dato")).toContainText(/Dato.*Dato/);
+  await expect(fieldRow("Beløp")).toContainText(
+    "Inn på konto (inn) / Ut fra konto (ut)",
   );
-  await expect(fieldRow("Description")).toContainText("Forklaring");
-  await expect(fieldRow("Description")).toContainText("Suggested by Jev");
-  await expect(fieldRow("Payment type")).toContainText("Not used");
-  await expect(fieldRow("Payment type")).toContainText("Not found");
+  await expect(fieldRow("Beskrivelse")).toContainText("Forklaring");
+  await expect(fieldRow("Beskrivelse")).toContainText("Foreslått av Jev");
+  await expect(fieldRow("Betalingstype")).toContainText("Ikke brukt");
+  await expect(fieldRow("Betalingstype")).toContainText("Ikke funnet");
 
-  await fieldRow("Amount").click();
+  await fieldRow("Beløp").click();
   await expect(
-    page.getByRole("radio", { name: "Separate in and out columns" }),
+    page.getByRole("radio", { name: "Egne kolonner for inn og ut" }),
   ).toBeChecked();
   await expect(
     page
-      .getByRole("group", { name: "Money in column" })
+      .getByRole("group", { name: "Kolonne for penger inn" })
       .getByRole("radio", { name: "Inn på konto" }),
   ).toBeChecked();
   await expect(
     page
-      .getByRole("group", { name: "Money out column" })
+      .getByRole("group", { name: "Kolonne for penger ut" })
       .getByRole("radio", { name: "Ut fra konto" }),
   ).toBeChecked();
 
-  const preview = page.getByRole("table", { name: "Column mapping preview" });
+  const preview = page.getByRole("table", {
+    name: "Forhåndsvisning av kolonnekobling",
+  });
   await expect(preview.getByRole("row")).toHaveCount(3);
   await expect(preview.getByRole("row").nth(1)).toContainText("2026-01-02");
   await expect(preview.getByRole("row").nth(1)).toContainText("249,90");
@@ -469,16 +471,16 @@ test("maps a CSV's columns before review, previews the parse and sends the confi
     "Kiwi Majorstuen",
   );
   await expect(preview.getByRole("row").nth(2)).toContainText("35 000,00");
-  await expect(page.getByText("1 reserved row will be skipped.")).toBeVisible();
+  await expect(page.getByText("1 reservert rad hoppes over.")).toBeVisible();
   await expect(
-    page.getByRole("list", { name: "Preview parse errors" }),
+    page.getByRole("list", { name: "Feil i forhåndsvisningen" }),
   ).toHaveText(
-    'Row 5 has invalid amount "tolv". Expected a number using "," as the decimal separator.',
+    'Rad 5 har ugyldig beløp "tolv". Forventet et tall med "," som desimaltegn.',
   );
 
-  await fieldRow("Description").click();
+  await fieldRow("Beskrivelse").click();
   const descriptionColumns = page.getByRole("group", {
-    name: "Description columns",
+    name: "Beskrivelseskolonner",
   });
   await expect(
     descriptionColumns.getByRole("checkbox", { name: "Forklaring" }),
@@ -487,11 +489,11 @@ test("maps a CSV's columns before review, previews the parse and sends the confi
   await expect(preview.getByRole("row").nth(1)).toContainText(
     "Kiwi Majorstuen 02.01.2026",
   );
-  await expect(fieldRow("Description")).toContainText("Chosen by you");
+  await expect(fieldRow("Beskrivelse")).toContainText("Valgt av deg");
 
-  await page.getByRole("button", { name: "Confirm mapping" }).click();
+  await page.getByRole("button", { name: "Bekreft kobling" }).click();
 
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
   await expect(
     page.getByText(
       "Dato · Inn på konto / Ut fra konto · Forklaring + Rentedato",
@@ -503,19 +505,19 @@ test("maps a CSV's columns before review, previews the parse and sends the confi
   )?.[1];
   expect(JSON.parse(sentMapping ?? "null")).toEqual(confirmedMapping);
 
-  await page.getByRole("button", { name: "Edit column mapping" }).click();
+  await page.getByRole("button", { name: "Rediger kolonnekobling" }).click();
   await expect(
-    page.getByRole("heading", { name: "Map Columns" }),
+    page.getByRole("heading", { name: "Koble kolonner" }),
   ).toBeVisible();
-  await fieldRow("Description").click();
+  await fieldRow("Beskrivelse").click();
   await expect(
     page
-      .getByRole("group", { name: "Description columns" })
+      .getByRole("group", { name: "Beskrivelseskolonner" })
       .getByRole("checkbox", { name: "Rentedato" }),
   ).toBeChecked();
-  await expect(fieldRow("Date")).toContainText("Saved");
-  await page.getByRole("button", { name: "Back", exact: true }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await expect(fieldRow("Dato")).toContainText("Lagret");
+  await page.getByRole("button", { name: "Tilbake", exact: true }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
 });
 
 test("keeps review state visible when a blocking submit failure occurs", async ({
@@ -607,46 +609,49 @@ test("keeps review state visible when a blocking submit failure occurs", async (
       contentType: "application/json",
       body: JSON.stringify({
         error: "IMPORT_REVIEW_SESSION_NOT_FOUND",
-        message: "Import review session was not found or already submitted.",
+        message:
+          "Fant ikke importgjennomgangen, eller den er allerede sendt inn.",
       }),
     });
   });
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;123,45", "utf8"),
   });
-  await page.getByRole("button", { name: /Parse/ }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await page.getByRole("button", { name: /Les inn/ }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
 
   // Deselect row 2 (rowNumber 3) before the failing submit, to confirm the
   // selection is still intact afterward.
-  await page.getByRole("checkbox", { name: "Select row 3" }).click();
+  await page.getByRole("checkbox", { name: "Velg rad 3" }).click();
   await expect(
-    page.getByRole("button", { name: "Import 1 / 2" }),
+    page.getByRole("button", { name: "Importer 1 / 2" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Import 1 / 2" }).click();
+  await page.getByRole("button", { name: "Importer 1 / 2" }).click();
 
   await expect(
-    page.getByText("Import review session was not found or already submitted."),
+    page.getByText(
+      "Fant ikke importgjennomgangen, eller den er allerede sendt inn.",
+    ),
   ).toBeVisible();
   expect(submitRequestCount).toBe(1);
 
   // Review state remains available: the table, its rows, and the selection
   // made before the failed submit are all still present.
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Import 1 / 2" }),
+    page.getByRole("button", { name: "Importer 1 / 2" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("checkbox", { name: "Select row 2" }),
+    page.getByRole("checkbox", { name: "Velg rad 2" }),
   ).toBeChecked();
   await expect(
-    page.getByRole("checkbox", { name: "Select row 3" }),
+    page.getByRole("checkbox", { name: "Velg rad 3" }),
   ).not.toBeChecked();
 });
 
@@ -759,18 +764,18 @@ test("applies a fast later-dispatched cleanup chunk without waiting on a slower 
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;123,45", "utf8"),
   });
-  await page.getByRole("button", { name: /Parse/ }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await page.getByRole("button", { name: /Les inn/ }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
 
-  const pendingRow27 = page.getByLabel("Cleaning message for row 27", {
+  const pendingRow27 = page.getByLabel("Rydder melding for rad 27", {
     exact: true,
   });
-  const pendingRow2 = page.getByLabel("Cleaning message for row 2", {
+  const pendingRow2 = page.getByLabel("Rydder melding for rad 2", {
     exact: true,
   });
 
@@ -784,7 +789,7 @@ test("applies a fast later-dispatched cleanup chunk without waiting on a slower 
   ).toBeVisible();
   await expect(
     page.getByRole("button", {
-      name: "Toggle message source for row 27",
+      name: "Bytt meldingskilde for rad 27",
       exact: true,
     }),
   ).toBeVisible();
@@ -796,7 +801,7 @@ test("applies a fast later-dispatched cleanup chunk without waiting on a slower 
   ).toBeVisible();
   await expect(
     page.getByRole("button", {
-      name: "Toggle message source for row 2",
+      name: "Bytt meldingskilde for rad 2",
       exact: true,
     }),
   ).toBeVisible();
@@ -960,39 +965,39 @@ test("isolates one chunk's failure from the others and clears it on retry", asyn
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
   });
-  await page.getByRole("button", { name: /Parse/ }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await page.getByRole("button", { name: /Les inn/ }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
 
   // Chunk 0 succeeds: row 1 gets its cleaned text and a toggle.
   await expect(page.getByText("Joker Oslo", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Toggle message source for row 2" }),
+    page.getByRole("button", { name: "Bytt meldingskilde for rad 2" }),
   ).toBeVisible();
 
   // Chunk 1 reports a 200 {status:"failed", reason:"timeout"}: row 2 keeps
   // its original message, with no toggle and no sparkle.
   await expect(page.getByText("RUTER BILLETT", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Toggle message source for row 3" }),
+    page.getByRole("button", { name: "Bytt meldingskilde for rad 3" }),
   ).not.toBeVisible();
-  await expect(page.getByLabel("Cleaning message for row 3")).not.toBeVisible();
+  await expect(page.getByLabel("Rydder melding for rad 3")).not.toBeVisible();
 
   // Chunk 2's request is aborted at the network level: row 3 keeps its
   // original message too, with no toggle and no sparkle.
   await expect(page.getByText("KIWI TRONDHEIM", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Toggle message source for row 4" }),
+    page.getByRole("button", { name: "Bytt meldingskilde for rad 4" }),
   ).not.toBeVisible();
-  await expect(page.getByLabel("Cleaning message for row 4")).not.toBeVisible();
+  await expect(page.getByLabel("Rydder melding for rad 4")).not.toBeVisible();
 
   // The status line reports both failures, and Retry is offered.
-  await expect(page.getByText("2 could not be cleaned.")).toBeVisible();
-  const retryButton = page.getByRole("button", { name: "Retry" });
+  await expect(page.getByText("2 kunne ikke ryddes.")).toBeVisible();
+  const retryButton = page.getByRole("button", { name: "Prøv igjen" });
   await expect(retryButton).toBeVisible();
 
   // Retrying re-posts exactly the two failed chunk indices, and clears them.
@@ -1000,13 +1005,13 @@ test("isolates one chunk's failure from the others and clears it on retry", asyn
 
   await expect(page.getByText("Ruter Billett", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Toggle message source for row 3" }),
+    page.getByRole("button", { name: "Bytt meldingskilde for rad 3" }),
   ).toBeVisible();
   await expect(page.getByText("Kiwi Trondheim", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Toggle message source for row 4" }),
+    page.getByRole("button", { name: "Bytt meldingskilde for rad 4" }),
   ).toBeVisible();
-  await expect(page.getByText("could not be cleaned.")).toHaveCount(0);
+  await expect(page.getByText("kunne ikke ryddes.")).toHaveCount(0);
   await expect(retryButton).not.toBeVisible();
 
   // Chunk 0 (already succeeded) was never re-posted by the retry.
@@ -1117,25 +1122,25 @@ test("aborts the in-flight cleanup chunk on submit and persists what the table s
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
   });
-  await page.getByRole("button", { name: /Parse/ }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await page.getByRole("button", { name: /Les inn/ }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
 
   // The chunk is still pending: the row shows its original message, no toggle yet.
   await expect(page.getByText("JOKER OSLO", { exact: true })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Toggle message source for row 2" }),
+    page.getByRole("button", { name: "Bytt meldingskilde for rad 2" }),
   ).not.toBeVisible();
 
   const abortedCleanupRequest = page.waitForEvent("requestfailed", (request) =>
     request.url().includes("/api/imports/cleanup"),
   );
 
-  const confirmButton = page.getByRole("button", { name: "Import 1 / 1" });
+  const confirmButton = page.getByRole("button", { name: "Importer 1 / 1" });
   await expect(confirmButton).toBeEnabled();
   await confirmButton.click();
 
@@ -1144,7 +1149,7 @@ test("aborts the in-flight cleanup chunk on submit and persists what the table s
 
   await expect(
     page.locator("[data-sonner-toast]", {
-      hasText: "Import complete. Imported 1, invalid 0.",
+      hasText: "Import fullført. Importert: 1, ugyldige: 0.",
     }),
   ).toBeVisible();
   expect(submitRequestBody).toEqual({
@@ -1266,20 +1271,20 @@ test("re-parsing mid-stream cancels the first run and drops a late response for 
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
   });
-  await page.getByRole("button", { name: /Parse/ }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await page.getByRole("button", { name: /Les inn/ }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
   await expect(page.getByText("JOKER OSLO", { exact: true })).toBeVisible();
 
   // Re-parse before session 1's chunk resolves. "Start over" keeps the
   // already-selected file, so Parse fires session 2 immediately.
-  await page.getByRole("button", { name: "Start over" }).click();
-  await page.getByRole("button", { name: /Parse/ }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await page.getByRole("button", { name: "Begynn på nytt" }).click();
+  await page.getByRole("button", { name: /Les inn/ }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
   await expect(
     page.getByText("Fresh Ruter Oslo", { exact: true }),
   ).toBeVisible();

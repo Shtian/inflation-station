@@ -160,16 +160,16 @@ test("colors the certainty bar by Jev confidence tier and hides it for suppresse
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
   });
-  await page.getByRole("button", { name: /Parse/ }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await page.getByRole("button", { name: /Les inn/ }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
 
   const highBar = page.getByRole("img", {
-    name: /AI suggestion confidence for row 2: high/i,
+    name: /Sikkerhet for AI-forslag på rad 2: høy/i,
   });
   await expect(highBar).toBeVisible();
   await expect(highBar.locator("span")).toHaveClass(/bg-success/);
@@ -179,7 +179,7 @@ test("colors the certainty bar by Jev confidence tier and hides it for suppresse
   );
 
   const mediumBar = page.getByRole("img", {
-    name: /AI suggestion confidence for row 3: medium/i,
+    name: /Sikkerhet for AI-forslag på rad 3: middels/i,
   });
   await expect(mediumBar).toBeVisible();
   await expect(mediumBar.locator("span")).toHaveClass(/bg-warning/);
@@ -189,7 +189,7 @@ test("colors the certainty bar by Jev confidence tier and hides it for suppresse
   );
 
   const lowBar = page.getByRole("img", {
-    name: /AI suggestion confidence for row 4: low/i,
+    name: /Sikkerhet for AI-forslag på rad 4: lav/i,
   });
   await expect(lowBar).toBeVisible();
   await expect(lowBar.locator("span")).toHaveClass(/bg-destructive/);
@@ -199,10 +199,10 @@ test("colors the certainty bar by Jev confidence tier and hides it for suppresse
   );
 
   await expect(
-    page.getByRole("img", { name: /confidence for row 5/i }),
+    page.getByRole("img", { name: /AI-forslag på rad 5/i }),
   ).toHaveCount(0);
   const subFloorCategory = page.getByRole("combobox", {
-    name: "Category for row 5",
+    name: "Kategori for rad 5",
   });
   await expect(subFloorCategory).toHaveValue("");
   await expect(subFloorCategory).toHaveAttribute(
@@ -211,10 +211,10 @@ test("colors the certainty bar by Jev confidence tier and hides it for suppresse
   );
 
   await expect(
-    page.getByRole("img", { name: /confidence for row 6/i }),
+    page.getByRole("img", { name: /AI-forslag på rad 6/i }),
   ).toHaveCount(0);
   await expect(
-    page.getByRole("combobox", { name: "Category for row 6" }),
+    page.getByRole("combobox", { name: "Kategori for rad 6" }),
   ).toHaveValue("Groceries");
 });
 
@@ -226,21 +226,21 @@ test("hides the certainty bar the instant the row's category is changed away fro
 
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
   });
-  await page.getByRole("button", { name: /Parse/ }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await page.getByRole("button", { name: /Les inn/ }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
 
   const highBar = page.getByRole("img", {
-    name: /AI suggestion confidence for row 2: high/i,
+    name: /Sikkerhet for AI-forslag på rad 2: høy/i,
   });
   await expect(highBar).toBeVisible();
 
   const rowTwoCategory = page.getByRole("combobox", {
-    name: "Category for row 2",
+    name: "Kategori for rad 2",
   });
   await rowTwoCategory.click();
   await page.getByRole("option", { name: "Transport", exact: true }).click();
@@ -252,13 +252,13 @@ test("hides the certainty bar the instant the row's category is changed away fro
 async function uploadAndParse(page: Page): Promise<void> {
   await page.goto("/import");
   await page.getByRole("button", { name: "Main Account DNB" }).click();
-  await page.getByLabel("Statement file").setInputFiles({
+  await page.getByLabel("Kontoutskrift").setInputFiles({
     name: "transactions.csv",
     mimeType: "text/csv",
     buffer: Buffer.from("Bokføringsdato;Beløp\n01.01.2026;100,00", "utf8"),
   });
-  await page.getByRole("button", { name: /Parse/ }).click();
-  await expect(page.getByText("Import Preview")).toBeVisible();
+  await page.getByRole("button", { name: /Les inn/ }).click();
+  await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
 }
 
 test("tells the user why Jev could not categorize rows", async ({ page }) => {
@@ -274,7 +274,7 @@ test("tells the user why Jev could not categorize rows", async ({ page }) => {
 
   await expect(
     page.getByText(
-      "Automatic categorization was unavailable for 4 of 5 rows (API key not configured).",
+      "Automatisk kategorisering var utilgjengelig for 4 av 5 rader (API-nøkkel er ikke konfigurert).",
     ),
   ).toBeVisible();
 });
@@ -288,10 +288,10 @@ test("shows no Jev notice when Jev answered every row, even below the floor", as
   await uploadAndParse(page);
 
   await expect(
-    page.getByRole("combobox", { name: "Category for row 2" }),
+    page.getByRole("combobox", { name: "Kategori for rad 2" }),
   ).toBeVisible();
   await expect(
-    page.getByText(/Automatic categorization was unavailable/),
+    page.getByText(/Automatisk kategorisering var utilgjengelig/),
   ).toHaveCount(0);
 });
 
@@ -322,26 +322,26 @@ test("labels rule and history suggestions with their source instead of a certain
   const ruleRow = rows.filter({ hasText: "RULE MATCHED MERCHANT" });
   const historyRow = rows.filter({ hasText: "KIWI 0312 MAJORSTUEN" });
   const historyCategory = page.getByRole("combobox", {
-    name: "Category for row 7",
+    name: "Kategori for rad 7",
   });
 
-  await expect(ruleRow.getByText("From rule", { exact: true })).toBeVisible();
+  await expect(ruleRow.getByText("Fra regel", { exact: true })).toBeVisible();
   await expect(
-    historyRow.getByText("From history", { exact: true }),
+    historyRow.getByText("Fra historikk", { exact: true }),
   ).toBeVisible();
   await expect(historyCategory).toHaveValue("Groceries");
   await expect(
-    page.getByRole("img", { name: /confidence for row 7/i }),
+    page.getByRole("img", { name: /AI-forslag på rad 7/i }),
   ).toHaveCount(0);
-  await expect(jevRow.getByText(/^From /)).toHaveCount(0);
+  await expect(jevRow.getByText(/^Fra /)).toHaveCount(0);
   await expect(
     page.getByRole("img", {
-      name: /AI suggestion confidence for row 2: high/i,
+      name: /Sikkerhet for AI-forslag på rad 2: høy/i,
     }),
   ).toBeVisible();
 
   await historyCategory.click();
   await page.getByRole("option", { name: "Transport", exact: true }).click();
   await expect(historyCategory).toHaveValue("Transport");
-  await expect(historyRow.getByText("From history")).toHaveCount(0);
+  await expect(historyRow.getByText("Fra historikk")).toHaveCount(0);
 });

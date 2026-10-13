@@ -45,11 +45,11 @@ function describeColumnMapping(proposal: ColumnMappingProposal): string {
 
 function getCleanupUnavailableMessage(reason: CleanupDisabledReason | null) {
   if (reason === "disabled") {
-    return "Message cleanup is disabled by configuration.";
+    return "Meldingsrydding er slått av i konfigurasjonen.";
   }
 
   if (reason === "key_missing") {
-    return "Message cleanup unavailable: OPENAI_API_KEY is missing.";
+    return "Meldingsrydding er utilgjengelig: OPENAI_API_KEY mangler.";
   }
 
   return null;
@@ -142,14 +142,14 @@ export function ImportReviewPhase({
               aria-hidden="true"
             />
             <h2 className="font-semibold text-foreground text-xl tracking-tight">
-              Import Preview
+              Forhåndsvisning av import
             </h2>
           </div>
         </div>
 
         <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-muted-foreground text-sm">
           <div>
-            <span>Importing to: </span>
+            <span>Importerer til: </span>
             <span className="font-semibold text-foreground">
               {activeAccounts.find(
                 (account) => account.id === selectedAccountId,
@@ -160,7 +160,7 @@ export function ImportReviewPhase({
 
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs">
-            Preparing parsed rows for review.
+            Gjør klar innleste rader for gjennomgang.
           </p>
           <ReviewTableSkeleton />
         </div>
@@ -181,7 +181,7 @@ export function ImportReviewPhase({
             aria-hidden="true"
           />
           <h2 className="font-semibold text-foreground text-xl tracking-tight">
-            Import Preview
+            Forhåndsvisning av import
           </h2>
         </div>
         <div className="flex items-center gap-2">
@@ -193,7 +193,7 @@ export function ImportReviewPhase({
             className="gap-1.5"
           >
             <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-            Start over
+            Begynn på nytt
           </Button>
           {parseResult.review ? (
             <Button
@@ -210,7 +210,7 @@ export function ImportReviewPhase({
               ) : (
                 <DownloadCloud className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              Import {selectedRowIds.size} / {reviewRows.length}
+              Importer {selectedRowIds.size} / {reviewRows.length}
             </Button>
           ) : null}
         </div>
@@ -219,7 +219,7 @@ export function ImportReviewPhase({
       <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-muted-foreground text-sm">
         {parseResult.detection ? (
           <div>
-            <span>Detected provider: </span>
+            <span>Gjenkjent utsteder: </span>
             <span className="font-semibold text-foreground">
               {parseResult.detection.providerName}
             </span>
@@ -227,7 +227,7 @@ export function ImportReviewPhase({
         ) : null}
         {parseResult.columnMapping ? (
           <div className="flex flex-wrap items-center gap-1">
-            <span>Columns: </span>
+            <span>Kolonner: </span>
             <span className="font-semibold text-foreground">
               {describeColumnMapping(parseResult.columnMapping)}
             </span>
@@ -240,12 +240,12 @@ export function ImportReviewPhase({
               disabled={submitLoading}
             >
               <Pencil className="h-3 w-3" aria-hidden="true" />
-              Edit column mapping
+              Rediger kolonnekobling
             </Button>
           </div>
         ) : null}
         <div>
-          <span>Importing to: </span>
+          <span>Importerer til: </span>
           <span className="font-semibold text-foreground">
             {activeAccounts.find((account) => account.id === selectedAccountId)
               ?.name ?? selectedAccountId}
@@ -256,13 +256,13 @@ export function ImportReviewPhase({
       {parseResult.review ? (
         <div className="grid grid-cols-3 divide-x overflow-hidden rounded-lg border">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-muted-foreground text-sm">Total Rows</span>
+            <span className="text-muted-foreground text-sm">Rader totalt</span>
             <span className="font-bold font-mono text-sm">
               {reviewRows.length}
             </span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-muted-foreground text-sm">Credits</span>
+            <span className="text-muted-foreground text-sm">Inn</span>
             <span className="font-bold font-mono text-sm text-success">
               +
               {formatNok(
@@ -274,7 +274,7 @@ export function ImportReviewPhase({
             </span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-muted-foreground text-sm">Debits</span>
+            <span className="text-muted-foreground text-sm">Ut</span>
             <span className="font-bold font-mono text-destructive text-sm">
               {formatNok(
                 reviewRows.reduce(
@@ -315,12 +315,12 @@ export function ImportReviewPhase({
       {parseResult.errors.length > 0 ? (
         <div className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2">
           <p className="mb-1 font-semibold text-warning text-xs uppercase tracking-wide">
-            Validation errors
+            Valideringsfeil
           </p>
           <ul className="space-y-1 text-sm text-warning">
             {parseResult.errors.map((error) => (
               <li key={`${error.rowNumber}-${error.code}`}>
-                Row {error.rowNumber}: {error.message}
+                Rad {error.rowNumber}: {error.message}
               </li>
             ))}
           </ul>
@@ -346,29 +346,31 @@ export function ImportReviewPhase({
               role="alert"
               className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning"
             >
-              No rows selected — nothing will be imported. Select at least one
-              row to continue.
+              Ingen rader valgt — ingenting blir importert. Velg minst én rad
+              for å fortsette.
             </p>
           ) : null}
           {parseResult.review.potentialDuplicates > 0 ? (
             <p className="text-muted-foreground text-xs">
-              {parseResult.review.potentialDuplicates} potential duplicate
-              {parseResult.review.potentialDuplicates !== 1 ? "s" : ""}{" "}
-              detected. Default message selection uses AI-cleaned text when
-              available.
+              {parseResult.review.potentialDuplicates}{" "}
+              {parseResult.review.potentialDuplicates !== 1
+                ? "mulige duplikater"
+                : "mulig duplikat"}{" "}
+              funnet. Meldingen bruker AI-ryddet tekst som standard når den
+              finnes.
             </p>
           ) : (
             <p className="text-muted-foreground text-xs">
-              Default message selection uses AI-cleaned text when available.
-              Rows without a suggestion keep the original message.
+              Meldingen bruker AI-ryddet tekst som standard når den finnes.
+              Rader uten forslag beholder den opprinnelige meldingen.
             </p>
           )}
           <p className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
             <span>
-              AI cleanup: {cleanupStatus.cleaned} of {cleanupStatus.total} rows.{" "}
-              {cleanupStatus.pending} still running.
+              AI-rydding: {cleanupStatus.cleaned} av {cleanupStatus.total}{" "}
+              rader. {cleanupStatus.pending} kjører fortsatt.
               {cleanupStatus.failed > 0
-                ? ` ${cleanupStatus.failed} could not be cleaned.`
+                ? ` ${cleanupStatus.failed} kunne ikke ryddes.`
                 : ""}
             </span>
             {cleanupStatus.failed > 0 ? (
@@ -380,7 +382,7 @@ export function ImportReviewPhase({
                 onClick={retryFailed}
               >
                 <RefreshCw className="h-3 w-3" aria-hidden="true" />
-                Retry
+                Prøv igjen
               </Button>
             ) : null}
           </p>

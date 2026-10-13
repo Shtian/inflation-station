@@ -1,8 +1,8 @@
 const STEPS = [
-  "Select Account",
-  "Upload File",
-  "Map Columns",
-  "Review & Import",
+  "Velg konto",
+  "Last opp fil",
+  "Koble kolonner",
+  "Gjennomgå og importer",
 ] as const;
 
 export type ImportStep = 1 | 2 | 3 | 4;

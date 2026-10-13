@@ -22,8 +22,8 @@ export function ImportReviewNoteCell({
       <Input
         value={value}
         onChange={(event) => onNoteChange(rowId, event.target.value)}
-        aria-label={`Note for row ${rowNumber}`}
-        placeholder="Optional note"
+        aria-label={`Notat for rad ${rowNumber}`}
+        placeholder="Valgfritt notat"
         aria-invalid={isInvalid}
         className="h-8 text-xs"
       />
