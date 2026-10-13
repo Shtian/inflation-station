@@ -19,15 +19,6 @@ colors:
   caution-ochre: "oklch(0.75 0.14 72)"
   overspend-red: "oklch(0.704 0.191 22.216)"
   uncategorized-grey: "oklch(72% 0 0)"
-  deck-ink: "#0E0B1F"
-  deck-cream: "#FFF6E5"
-  deck-volt: "#D7FF3A"
-  deck-lime: "#C6F432"
-  deck-signal-red: "#FF4D3D"
-  deck-violet: "#4C2EE6"
-  deck-steel: "#BFD4FF"
-  deck-coral: "#FF7A59"
-  deck-amber: "#FFC93C"
 typography:
   headline:
     fontFamily: "Plus Jakarta Sans, ui-sans-serif, system-ui, sans-serif"
@@ -142,8 +133,8 @@ components:
     textColor: "{colors.ember}"
     typography: "{typography.body}"
   deck-control-primary:
-    backgroundColor: "{colors.deck-volt}"
-    textColor: "{colors.deck-ink}"
+    backgroundColor: "{colors.ember}"
+    textColor: "{colors.graphite-bg}"
     rounded: "{rounded.pill}"
     padding: "0 20px"
     height: "48px"
@@ -159,14 +150,14 @@ Inflation Station is a tool you sit down at once a month, at a desk, with a stac
 
 The workbench is dark-first. Dark is the default theme, and the light theme is a full equal, not an afterthought. Users pick from four palettes (Ember, Ocean, Botanical, Plum). Each palette re-tints every neutral and the accent toward its hue. Status colours (green for success, ochre for warning, red for destructive) never change, so a red amount means the same thing in every palette.
 
-There is exactly one sanctioned exception: the **Month in Review deck**. When the month is told back to the user, the workbench gives way to a loud, full-bleed poster. It uses flat saturated grounds, ink and cream, Archivo at weight 900 with condensed numerals, and wipe-up motion. That register lives only inside the deck and never leaks back into the tool.
+There is exactly one sanctioned exception: the **Month in Review deck**. When the month is told back to the user, the workbench gives way to a full-bleed, slide-based recap with a louder voice. The deck uses Archivo at weight 900 with condensed numerals and wipe-up motion. Its colours do not break away from the app: each slide is a gentle tint of the active palette, so the deck follows whichever palette and mode the user has chosen. The loudness lives in type and motion, not colour, and it stays inside the deck.
 
 **Key Characteristics:**
 - Compact, desktop-first density: 32px controls, 14px body, 12px labels.
 - Graphite neutrals with a single warm ember accent; palettes re-tint the neutrals and accent but leave status colours alone.
 - Flat surfaces separated by 1px rings at 10% foreground; shadows only on floating overlays.
 - Gently rounded (10px base radius); pills only for badges.
-- A single loud register, scoped strictly to the Month in Review deck.
+- A single louder register (type and motion, not colour), scoped strictly to the Month in Review deck.
 
 ## Colors
 
@@ -194,14 +185,20 @@ Achromatic graphite and bone carry almost the entire screen, with one warm ember
 Each category gets a deterministic hue from its name (`getDeterministicColorFromText`, "muted" profile: chroma 0.14, lightness 64%). Text colour is chosen for at least 7:1 contrast. The one fixed exception is **Uncategorized Grey**, a neutral fallback with its own light and dark text colours. Category colours belong to data, not chrome.
 
 ### Month in Review deck worlds
-The deck has its own closed palette in `month-in-review.worlds.ts`. Each "world" is a flat background, a foreground, an accent and a muted colour, built from **Deck Ink** and **Deck Cream** plus one saturated ground: Volt on Ink, Lime, Signal Red, Violet, Steel, Coral or Amber. Slides switch worlds with a 450ms colour transition.
+The deck has no colours of its own. Each "world" in `month-in-review.worlds.ts` is derived from the active palette's tokens with `color-mix`:
+- **Background:** the page background, tinted 0–15% toward a source token. `base` is untinted. `brandSoft` (7%) and `brand` (15%) tint toward ember. `neutral` (6%) and `neutralDeep` (11%) tint toward primary. `positive` (12%) and `negative` (11%) tint toward success and destructive, and the net-result slide picks one by sign.
+- **Foreground:** the palette foreground.
+- **Accent:** the source token mixed 78% with the foreground, so it stays readable on its own tint.
+- **Muted:** the foreground mixed 70% into the world background.
+
+Slides switch worlds with a 450ms colour transition. The deck therefore re-tints with all four palettes and with light and dark mode.
 
 ### Named Rules
 **The Status Is Sacred Rule.** Palettes never override `success`, `warning` or `destructive`. A palette's light and dark blocks declare the same custom properties (`theme-palettes.test.ts` enforces this).
 
 **The Bone Button Rule.** The primary button is bone-on-graphite (inverted to ink-on-paper in light mode), not ember. Ember is reserved for brand and focus; it does not mean "click here".
 
-**The Closed Deck Palette Rule.** Deck world colours appear only inside `.mir-deck`. App chrome never uses Volt, Lime, Signal Red or any other deck ground.
+**The Tinted Deck Rule.** Deck worlds are tints of palette tokens, never fixed colours. A new slide world is a new `tintWorld(source, percent, accentSource)` entry with a low tint (15% at most), not a new hex value.
 
 ## Typography
 
@@ -209,7 +206,7 @@ The deck has its own closed palette in `month-in-review.worlds.ts`. Each "world"
 **Mono Font:** Geist Mono (with ui-monospace)
 **Deck Font:** Archivo, variable width (Month in Review only)
 
-**Character:** Plus Jakarta Sans gives the workbench a friendly but precise geometric voice at small sizes. Geist Mono marks machine-ish values: build info, raw imported strings, IDs. Archivo at weight 900 and condensed width is the deck's shouting voice.
+**Character:** Plus Jakarta Sans gives the workbench a friendly but precise geometric voice at small sizes. Geist Mono marks machine-ish values: build info, raw imported strings, IDs. Archivo at weight 900 and condensed width is the deck's louder voice.
 
 ### Hierarchy
 - **Headline** (600, 1.5rem, tight tracking): page `h1`, one per route. Grows to 1.875rem on wide screens only where a page has room.
@@ -295,7 +292,8 @@ A full-bleed slide deck scoped under `.mir-deck`. Each slide picks a deck world,
 
 ### Don't:
 - **Don't** use ember as a primary-button fill or generic highlight; it is brand and focus only.
-- **Don't** bring deck colours, Archivo, weight-900 type or wipe animations into the workbench.
+- **Don't** bring Archivo, weight-900 type or wipe animations into the workbench.
+- **Don't** give the deck fixed or saturated colours; its worlds must stay tints of the active palette.
 - **Don't** put shadows on cards, rows or anything that scrolls with the page.
 - **Don't** override `success`, `warning` or `destructive` inside a palette.
 - **Don't** fill destructive buttons with solid red.
