@@ -1,0 +1,2 @@
+# English strings the user never sees, such as LLM prompt text and developer invariants.
+# One finding per line, exactly as the scanner prints it with the line number removed: <file>\t<text>
