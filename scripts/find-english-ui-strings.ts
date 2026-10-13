@@ -201,21 +201,25 @@ function loadAllowlist(): Set<string> {
   return new Set(
     readFileSync(ALLOWLIST_PATH, "utf8")
       .split("\n")
-      .filter((line) => line.trim() && !line.startsWith("#"))
-      .map((line) => {
-        const [file, text] = line.split("\t");
-        return `${file}\t${text}`;
-      }),
+      .filter((line) => line.trim() && !line.startsWith("#")),
   );
 }
 
 const allowlist = loadAllowlist();
-const findings = listSourceFiles(SRC)
-  .flatMap(scanFile)
-  .filter((finding) => !allowlist.has(`${finding.file}\t${finding.text}`));
+const allFindings = listSourceFiles(SRC).flatMap(scanFile);
+const findingKeys = new Set(allFindings.map((f) => `${f.file}\t${f.text}`));
+const findings = allFindings.filter(
+  (finding) => !allowlist.has(`${finding.file}\t${finding.text}`),
+);
+const staleEntries = [...allowlist].filter((entry) => !findingKeys.has(entry));
 
 for (const finding of findings) {
   console.log(`${finding.file}:${finding.line}\t${finding.text}`);
 }
-console.log(`\n${findings.length} English UI strings`);
-process.exitCode = findings.length > 0 ? 1 : 0;
+for (const entry of staleEntries) {
+  console.log(`stale allowlist entry\t${entry}`);
+}
+console.log(
+  `\n${findings.length} English UI strings, ${staleEntries.length} stale allowlist entries`,
+);
+process.exitCode = findings.length + staleEntries.length > 0 ? 1 : 0;
