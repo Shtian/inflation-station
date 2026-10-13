@@ -244,7 +244,8 @@ async function buildReviewText(params: {
       instructions: [
         "Write a short, warm month-in-review recap in plain text.",
         "Open with the net result: income in versus spend out, and whether the month ended in plus or minus.",
-        "Then say where the money went, using the largest categories and merchants.",
+        "Treat facts.bills as fixed costs: state their total once and do not analyse them.",
+        "Spend your words on facts.everyday: where the everyday money went, its top merchants, biggest purchase and busiest day.",
         "Mention notable movers versus last month when previousMonth is present.",
         "Close with one concrete, practical suggestion.",
         "Use only the provided facts and transactions; never invent numbers.",

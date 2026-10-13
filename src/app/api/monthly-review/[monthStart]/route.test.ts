@@ -1,19 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { GET } from "./route";
 
-const { findManyMock, findUniqueMock, prismaMock } = vi.hoisted(() => {
-  const findMany = vi.fn();
-  const findUnique = vi.fn();
+const { findManyMock, findFirstMock, findUniqueMock, prismaMock } = vi.hoisted(
+  () => {
+    const findMany = vi.fn();
+    const findFirst = vi.fn();
+    const findUnique = vi.fn();
 
-  return {
-    findManyMock: findMany,
-    findUniqueMock: findUnique,
-    prismaMock: {
-      transaction: { findMany },
-      monthlyReview: { findUnique },
-    },
-  };
-});
+    return {
+      findManyMock: findMany,
+      findFirstMock: findFirst,
+      findUniqueMock: findUnique,
+      prismaMock: {
+        transaction: { findMany, findFirst },
+        monthlyReview: { findUnique },
+      },
+    };
+  },
+);
 
 vi.mock("@/lib/prisma", () => ({
   prisma: prismaMock,
@@ -28,8 +32,10 @@ function get(monthStart: string) {
 describe("GET /api/monthly-review/[monthStart]", () => {
   beforeEach(() => {
     findManyMock.mockReset();
+    findFirstMock.mockReset();
     findUniqueMock.mockReset();
     findManyMock.mockResolvedValue([]);
+    findFirstMock.mockResolvedValue(null);
     findUniqueMock.mockResolvedValue(null);
   });
 
@@ -43,6 +49,7 @@ describe("GET /api/monthly-review/[monthStart]", () => {
                 bookingDate: new Date("2026-03-01T08:00:00.000Z"),
                 amountNok: 25000,
                 normalizedMerchant: "EMPLOYER",
+                paymentType: "TRANSFER",
                 category: { id: "cat-salary", name: "Salary", kind: "INCOME" },
               },
               {
@@ -50,10 +57,17 @@ describe("GET /api/monthly-review/[monthStart]", () => {
                 bookingDate: new Date("2026-03-02T08:00:00.000Z"),
                 amountNok: -12000,
                 normalizedMerchant: "LANDLORD",
+                paymentType: "EFT",
                 category: { id: "cat-rent", name: "Rent", kind: "EXPENSE" },
               },
             ]
           : [],
+    );
+    findFirstMock.mockImplementation(
+      async ({ orderBy }: { orderBy: { bookingDate: "asc" | "desc" } }) =>
+        orderBy.bookingDate === "desc"
+          ? { bookingDate: new Date(2026, 0, 20) }
+          : null,
     );
     findUniqueMock.mockResolvedValue({
       status: "FAILED",
@@ -75,6 +89,15 @@ describe("GET /api/monthly-review/[monthStart]", () => {
         savingsRate: 0.52,
       },
       previousMonth: null,
+      bills: {
+        totalNok: 12000,
+        count: 1,
+        items: [
+          { merchant: "LANDLORD", categoryName: "Rent", amountNok: 12000 },
+        ],
+      },
+      everyday: { totalNok: 0, count: 0, topMerchants: [] },
+      adjacentMonths: { previous: "2026-01-01", next: null },
       reviewState: "FAILED",
       generatedAt: null,
       errorMessage: "provider_error",

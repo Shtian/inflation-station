@@ -1,5 +1,10 @@
-import { MonthlyReviewStatus } from "@prisma/client";
-import { describe, expect, it, vi } from "vitest";
+import { MonthlyReviewStatus, type PaymentType } from "@prisma/client";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  createTestDatabase,
+  type TestDatabase,
+  teardownTestDatabase,
+} from "../../../tests/support/prisma-test-db";
 import {
   buildMonthInReview,
   getMonthInReview,
@@ -18,6 +23,8 @@ const ELECTRONICS = {
   name: "Electronics",
   kind: "EXPENSE",
 };
+const HOUSING = { id: "cat-housing", name: "Housing", kind: "EXPENSE" };
+const UTILITIES = { id: "cat-utilities", name: "Utilities", kind: "EXPENSE" };
 const SALARY = { id: "cat-salary", name: "Salary", kind: "INCOME" };
 const TRANSFER = { id: "cat-transfer", name: "Transfer", kind: "TRANSFER" };
 
@@ -27,15 +34,26 @@ function tx(
   amountNok: number,
   normalizedMerchant: string,
   category: MonthInReviewTransactionRecord["category"],
+  paymentType: PaymentType = "CARD",
 ): MonthInReviewTransactionRecord {
   return {
     id,
     bookingDate: new Date(`${isoDate}T10:00:00.000Z`),
     amountNok,
     normalizedMerchant,
+    paymentType,
     category,
   };
 }
+
+function februaryDailySpend(spendByDate: Record<string, number>) {
+  return Array.from({ length: 28 }, (_, index) => {
+    const date = `2026-02-${`${index + 1}`.padStart(2, "0")}`;
+    return { date, spendNok: spendByDate[date] ?? 0 };
+  });
+}
+
+const NO_ADJACENT_BOOKING = { findFirst: vi.fn(async () => null) };
 
 const februaryTransactions = [
   tx("feb-salary", "2026-02-01", 30000, "EMPLOYER", SALARY),
@@ -52,6 +70,9 @@ const februaryTransactions = [
   tx("feb-elkjop", "2026-02-14", -2400, "ELKJOP", ELECTRONICS),
   tx("feb-kiwi", "2026-02-20", -200, "KIWI", FOOD),
   tx("feb-narvesen", "2026-02-25", -50, "NARVESEN", FOOD),
+  tx("feb-mortgage", "2026-02-20", -20000, "BOLIGLAN", HOUSING, "EFT"),
+  tx("feb-power", "2026-02-20", -800, "TIBBER", UTILITIES, "EFT"),
+  tx("feb-insurance", "2026-02-20", -450, "GJENSIDIGE", null, "EFT"),
 ];
 
 const januaryTransactions = [
@@ -62,7 +83,7 @@ const januaryTransactions = [
 ];
 
 describe("buildMonthInReview", () => {
-  it("builds cashflow, category movers, merchants, income sources, and moments for a month", () => {
+  it("builds cashflow and category movers over all spend, and merchants and moments over everyday spend", () => {
     const result = buildMonthInReview({
       monthStart: "2026-02-01",
       monthTransactions: februaryTransactions,
@@ -73,9 +94,9 @@ describe("buildMonthInReview", () => {
       monthStart: "2026-02-01",
       cashflow: {
         incomeNok: 34000,
-        spendNok: 4250,
-        netNok: 29750,
-        savingsRate: 29750 / 34000,
+        spendNok: 25500,
+        netNok: 8500,
+        savingsRate: 0.25,
       },
       previousMonth: {
         monthStart: "2026-01-01",
@@ -83,13 +104,21 @@ describe("buildMonthInReview", () => {
         spendNok: 1700,
         netNok: 28300,
       },
-      spendTransactionCount: 7,
+      spendTransactionCount: 10,
       categories: [
+        {
+          categoryId: "cat-housing",
+          categoryName: "Housing",
+          spendNok: 20000,
+          share: 20000 / 25500,
+          transactionCount: 1,
+          deltaNok: 20000,
+        },
         {
           categoryId: "cat-electronics",
           categoryName: "Electronics",
           spendNok: 2400,
-          share: 2400 / 4250,
+          share: 2400 / 25500,
           transactionCount: 1,
           deltaNok: 2400,
         },
@@ -97,57 +126,33 @@ describe("buildMonthInReview", () => {
           categoryId: "cat-food",
           categoryName: "Food",
           spendNok: 1250,
-          share: 1250 / 4250,
+          share: 1250 / 25500,
           transactionCount: 4,
           deltaNok: -250,
+        },
+        {
+          categoryId: "cat-utilities",
+          categoryName: "Utilities",
+          spendNok: 800,
+          share: 800 / 25500,
+          transactionCount: 1,
+          deltaNok: 800,
+        },
+        {
+          categoryId: null,
+          categoryName: "Uncategorized",
+          spendNok: 550,
+          share: 550 / 25500,
+          transactionCount: 2,
+          deltaNok: 550,
         },
         {
           categoryId: "cat-travel",
           categoryName: "Travel",
           spendNok: 500,
-          share: 500 / 4250,
+          share: 500 / 25500,
           transactionCount: 1,
           deltaNok: 300,
-        },
-        {
-          categoryId: null,
-          categoryName: "Uncategorized",
-          spendNok: 100,
-          share: 100 / 4250,
-          transactionCount: 1,
-          deltaNok: 100,
-        },
-      ],
-      topMerchants: [
-        {
-          merchant: "ELKJOP",
-          spendNok: 2400,
-          share: 2400 / 4250,
-          transactionCount: 1,
-        },
-        {
-          merchant: "REMA 1000",
-          spendNok: 1000,
-          share: 1000 / 4250,
-          transactionCount: 2,
-        },
-        {
-          merchant: "VY",
-          spendNok: 500,
-          share: 500 / 4250,
-          transactionCount: 1,
-        },
-        {
-          merchant: "KIWI",
-          spendNok: 200,
-          share: 200 / 4250,
-          transactionCount: 1,
-        },
-        {
-          merchant: "Unknown merchant",
-          spendNok: 100,
-          share: 100 / 4250,
-          transactionCount: 1,
         },
       ],
       incomeSources: [
@@ -155,16 +160,68 @@ describe("buildMonthInReview", () => {
         { source: "NAV", amountNok: 1500 },
         { source: "SKATTEETATEN", amountNok: 400 },
       ],
-      biggestPurchase: {
-        bookingDate: "2026-02-14",
-        merchant: "ELKJOP",
-        amountNok: 2400,
-        categoryName: "Electronics",
+      bills: {
+        totalNok: 21250,
+        count: 3,
+        items: [
+          { merchant: "BOLIGLAN", categoryName: "Housing", amountNok: 20000 },
+          { merchant: "TIBBER", categoryName: "Utilities", amountNok: 800 },
+          { merchant: "GJENSIDIGE", categoryName: null, amountNok: 450 },
+        ],
       },
-      busiestDay: {
-        bookingDate: "2026-02-04",
-        spendNok: 900,
-        transactionCount: 3,
+      everyday: {
+        totalNok: 4250,
+        count: 7,
+        topMerchants: [
+          {
+            merchant: "ELKJOP",
+            spendNok: 2400,
+            share: 2400 / 4250,
+            transactionCount: 1,
+          },
+          {
+            merchant: "REMA 1000",
+            spendNok: 1000,
+            share: 1000 / 4250,
+            transactionCount: 2,
+          },
+          {
+            merchant: "VY",
+            spendNok: 500,
+            share: 500 / 4250,
+            transactionCount: 1,
+          },
+          {
+            merchant: "KIWI",
+            spendNok: 200,
+            share: 200 / 4250,
+            transactionCount: 1,
+          },
+          {
+            merchant: "Unknown merchant",
+            spendNok: 100,
+            share: 100 / 4250,
+            transactionCount: 1,
+          },
+        ],
+        biggestPurchase: {
+          bookingDate: "2026-02-14",
+          merchant: "ELKJOP",
+          amountNok: 2400,
+          categoryName: "Electronics",
+        },
+        busiestDay: {
+          bookingDate: "2026-02-04",
+          spendNok: 900,
+          transactionCount: 3,
+        },
+        dailySpend: februaryDailySpend({
+          "2026-02-02": 700,
+          "2026-02-04": 900,
+          "2026-02-14": 2400,
+          "2026-02-20": 200,
+          "2026-02-25": 50,
+        }),
       },
     });
   });
@@ -191,13 +248,13 @@ describe("buildMonthInReview", () => {
       null,
     ]);
     expect(result.incomeSources).toEqual([]);
-    expect(result.biggestPurchase).toEqual({
+    expect(result.everyday.biggestPurchase).toEqual({
       bookingDate: "2026-02-09",
       merchant: "VY",
       amountNok: 450,
       categoryName: "Travel",
     });
-    expect(result.busiestDay).toEqual({
+    expect(result.everyday.busiestDay).toEqual({
       bookingDate: "2026-02-09",
       spendNok: 450,
       transactionCount: 1,
@@ -219,10 +276,16 @@ describe("buildMonthInReview", () => {
       previousMonth: null,
       spendTransactionCount: 0,
       categories: [],
-      topMerchants: [],
       incomeSources: [],
-      biggestPurchase: null,
-      busiestDay: null,
+      bills: { totalNok: 0, count: 0, items: [] },
+      everyday: {
+        totalNok: 0,
+        count: 0,
+        topMerchants: [],
+        biggestPurchase: null,
+        busiestDay: null,
+        dailySpend: februaryDailySpend({}),
+      },
     });
   });
 });
@@ -253,7 +316,7 @@ describe("getMonthInReview", () => {
         },
       ],
     );
-    expect(result.cashflow.netNok).toBe(29750);
+    expect(result.cashflow.netNok).toBe(8500);
     expect(result.previousMonth?.spendNok).toBe(1700);
   });
 
@@ -274,7 +337,10 @@ describe("getMonthInReviewWithReview", () => {
   it("attaches the persisted review state and text", async () => {
     const result = await getMonthInReviewWithReview(
       {
-        transaction: { findMany: vi.fn(async () => []) },
+        transaction: {
+          findMany: vi.fn(async () => []),
+          ...NO_ADJACENT_BOOKING,
+        },
         monthlyReview: {
           findUnique: vi.fn(async () => ({
             status: MonthlyReviewStatus.GENERATED,
@@ -297,7 +363,10 @@ describe("getMonthInReviewWithReview", () => {
 
     const result = await getMonthInReviewWithReview(
       {
-        transaction: { findMany: vi.fn(async () => []) },
+        transaction: {
+          findMany: vi.fn(async () => []),
+          ...NO_ADJACENT_BOOKING,
+        },
         monthlyReview: { findUnique },
       },
       { monthStart: "2026-02-01" },
@@ -329,6 +398,7 @@ describe("local calendar months", () => {
         bookingDate: localFirstOfSeptember,
         amountNok: -20377,
         normalizedMerchant: "LANDLORD",
+        paymentType: "CARD",
         category: { id: "cat-rent", name: "Rent", kind: "EXPENSE" },
       },
     ];
@@ -348,16 +418,72 @@ describe("local calendar months", () => {
 
     expect(result.cashflow.spendNok).toBe(20377);
     expect(result.previousMonth).toBeNull();
-    expect(result.biggestPurchase).toEqual({
+    expect(result.everyday.dailySpend[0]).toEqual({
+      date: "2026-09-01",
+      spendNok: 20377,
+    });
+    expect(result.everyday.dailySpend).toHaveLength(30);
+    expect(result.everyday.biggestPurchase).toEqual({
       bookingDate: "2026-09-01",
       merchant: "LANDLORD",
       amountNok: 20377,
       categoryName: "Rent",
     });
-    expect(result.busiestDay).toEqual({
+    expect(result.everyday.busiestDay).toEqual({
       bookingDate: "2026-09-01",
       spendNok: 20377,
       transactionCount: 1,
     });
+  });
+});
+
+describe("adjacent months", () => {
+  let db: TestDatabase;
+
+  beforeAll(async () => {
+    db = await createTestDatabase();
+  });
+
+  afterAll(async () => {
+    await teardownTestDatabase(db);
+  });
+
+  it("points at the nearest months with non-transfer bookings, skipping transfer-only months", async () => {
+    const account = await db.client.account.create({
+      data: { name: "Brukskonto" },
+    });
+    const transfer = await db.client.category.create({
+      data: { name: "Overføring", kind: "TRANSFER" },
+    });
+    const booking = (bookingDate: Date, categoryId: string | null) => ({
+      accountId: account.id,
+      bookingDate,
+      amountNok: -100,
+      currency: "NOK",
+      normalizedMerchant: "MERCHANT",
+      categoryId,
+    });
+    await db.client.transaction.createMany({
+      data: [
+        booking(new Date(2026, 6, 15), null),
+        booking(new Date(2026, 7, 10), transfer.id),
+        booking(new Date(2026, 8, 5), null),
+        booking(new Date(2026, 9, 3), transfer.id),
+        booking(new Date(2026, 10, 1), null),
+      ],
+    });
+
+    const september = await getMonthInReviewWithReview(db.client, {
+      monthStart: "2026-09-01",
+    });
+    const july = await getMonthInReviewWithReview(db.client, {
+      monthStart: "2026-07-01",
+    });
+
+    expect(september.adjacentMonths).toEqual({
+      previous: "2026-07-01",
+      next: "2026-11-01",
+    });
+    expect(july.adjacentMonths).toEqual({ previous: null, next: "2026-09-01" });
   });
 });

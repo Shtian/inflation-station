@@ -286,7 +286,7 @@ function CategoriesSlide({ review }: SlideContext) {
 }
 
 function MerchantsSlide({ review }: SlideContext) {
-  const [top] = review.topMerchants;
+  const [top] = review.everyday.topMerchants;
 
   return (
     <div className="space-y-8">
@@ -296,7 +296,7 @@ function MerchantsSlide({ review }: SlideContext) {
       </div>
 
       <ol className="space-y-3">
-        {review.topMerchants.map((merchant, index) => (
+        {review.everyday.topMerchants.map((merchant, index) => (
           <li
             key={merchant.merchant}
             className="flex items-center gap-4 border-border/60 border-b pb-3 last:border-b-0"
@@ -328,7 +328,7 @@ function MerchantsSlide({ review }: SlideContext) {
 }
 
 function MomentsSlide({ review }: SlideContext) {
-  const { biggestPurchase, busiestDay } = review;
+  const { biggestPurchase, busiestDay } = review.everyday;
 
   return (
     <div className="space-y-8">
@@ -470,7 +470,7 @@ function AiRecapSlide({
 function SummarySlide({ review, monthLabel }: SlideContext) {
   const { cashflow } = review;
   const [topCategory] = review.categories;
-  const [topMerchant] = review.topMerchants;
+  const [topMerchant] = review.everyday.topMerchants;
 
   return (
     <div className="space-y-6">
@@ -509,16 +509,16 @@ function SummarySlide({ review, monthLabel }: SlideContext) {
         {topMerchant ? (
           <Stat label="Top merchant" value={topMerchant.merchant} />
         ) : null}
-        {review.biggestPurchase ? (
+        {review.everyday.biggestPurchase ? (
           <Stat
             label="Biggest purchase"
-            value={formatNok(review.biggestPurchase.amountNok)}
+            value={formatNok(review.everyday.biggestPurchase.amountNok)}
           />
         ) : null}
-        {review.busiestDay ? (
+        {review.everyday.busiestDay ? (
           <Stat
             label="Busiest day"
-            value={formatBookingDate(review.busiestDay.bookingDate)}
+            value={formatBookingDate(review.everyday.busiestDay.bookingDate)}
           />
         ) : null}
       </div>
@@ -553,7 +553,7 @@ export const MONTH_IN_REVIEW_SLIDES: SlideDefinition[] = [
     id: "merchants",
     title: "Top merchants",
     toneClassName: "bg-chart-2/10",
-    isAvailable: (review) => review.topMerchants.length > 0,
+    isAvailable: (review) => review.everyday.topMerchants.length > 0,
     render: (context) => <MerchantsSlide {...context} />,
   },
   {
@@ -561,7 +561,8 @@ export const MONTH_IN_REVIEW_SLIDES: SlideDefinition[] = [
     title: "Moments",
     toneClassName: "bg-chart-3/10",
     isAvailable: (review) =>
-      review.biggestPurchase !== null || review.busiestDay !== null,
+      review.everyday.biggestPurchase !== null ||
+      review.everyday.busiestDay !== null,
     render: (context) => <MomentsSlide {...context} />,
   },
   {

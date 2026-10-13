@@ -1,4 +1,4 @@
-import type { MonthlyReviewStatus } from "@prisma/client";
+import type { MonthlyReviewStatus, PaymentType } from "@prisma/client";
 import { isTransfer } from "@/lib/transactions/transfer";
 import { toReviewMonthStartDate } from "./review-month-key";
 import { type MonthlyTimelineReviewState, toReviewState } from "./timeline";
@@ -10,6 +10,7 @@ export type MonthInReviewTransactionRecord = {
   bookingDate: Date;
   amountNok: DecimalLike;
   normalizedMerchant: string;
+  paymentType: PaymentType;
   category: {
     id: string;
     name: string;
@@ -29,6 +30,7 @@ type MonthInReviewTransactionFindManyArgs = {
     bookingDate: true;
     amountNok: true;
     normalizedMerchant: true;
+    paymentType: true;
     category: {
       select: {
         id: true;
@@ -48,7 +50,20 @@ type MonthInReviewDbClient = {
   };
 };
 
-type MonthInReviewWithReviewDbClient = MonthInReviewDbClient & {
+type NonTransferBookingFilter = {
+  OR: [{ categoryId: null }, { category: { kind: { not: "TRANSFER" } } }];
+};
+
+type MonthInReviewWithReviewDbClient = {
+  transaction: MonthInReviewDbClient["transaction"] & {
+    findFirst(args: {
+      where: NonTransferBookingFilter & {
+        bookingDate: { lt: Date } | { gte: Date };
+      };
+      select: { bookingDate: true };
+      orderBy: { bookingDate: "asc" | "desc" };
+    }): Promise<{ bookingDate: Date } | null>;
+  };
   monthlyReview: {
     findUnique(args: {
       where: {
@@ -92,6 +107,27 @@ export type MonthInReviewMerchant = {
   transactionCount: number;
 };
 
+// EFT is direct debit or eFaktura in this data: mortgage, loans, power,
+// insurance. The deck and the AI treat those as fixed and talk about the rest.
+export type SpendKind = "bill" | "everyday";
+
+export function toSpendKind(transaction: {
+  paymentType: PaymentType;
+}): SpendKind {
+  return transaction.paymentType === "EFT" ? "bill" : "everyday";
+}
+
+export type MonthInReviewBill = {
+  merchant: string;
+  categoryName: string | null;
+  amountNok: number;
+};
+
+export type MonthInReviewDay = {
+  date: string;
+  spendNok: number;
+};
+
 export type MonthInReview = {
   monthStart: string;
   cashflow: MonthInReviewCashflow;
@@ -103,22 +139,33 @@ export type MonthInReview = {
   } | null;
   spendTransactionCount: number;
   categories: MonthInReviewCategory[];
-  topMerchants: MonthInReviewMerchant[];
   incomeSources: Array<{ source: string; amountNok: number }>;
-  biggestPurchase: {
-    bookingDate: string;
-    merchant: string;
-    amountNok: number;
-    categoryName: string | null;
-  } | null;
-  busiestDay: {
-    bookingDate: string;
-    spendNok: number;
-    transactionCount: number;
-  } | null;
+  bills: {
+    totalNok: number;
+    count: number;
+    items: MonthInReviewBill[];
+  };
+  everyday: {
+    totalNok: number;
+    count: number;
+    topMerchants: MonthInReviewMerchant[];
+    biggestPurchase: {
+      bookingDate: string;
+      merchant: string;
+      amountNok: number;
+      categoryName: string | null;
+    } | null;
+    busiestDay: {
+      bookingDate: string;
+      spendNok: number;
+      transactionCount: number;
+    } | null;
+    dailySpend: MonthInReviewDay[];
+  };
 };
 
 export type MonthInReviewWithReview = MonthInReview & {
+  adjacentMonths: { previous: string | null; next: string | null };
   reviewState: MonthlyTimelineReviewState;
   generatedAt: string | null;
   errorMessage: string | null;
@@ -200,6 +247,7 @@ type CashflowSplit = {
   spendNok: number;
   income: MonthInReviewTransactionRecord[];
   spend: MonthInReviewTransactionRecord[];
+  spendByKind: Record<SpendKind, MonthInReviewTransactionRecord[]>;
 };
 
 function splitCashflow(
@@ -210,6 +258,7 @@ function splitCashflow(
     spendNok: 0,
     income: [],
     spend: [],
+    spendByKind: { bill: [], everyday: [] },
   };
 
   for (const transaction of transactions) {
@@ -224,6 +273,7 @@ function splitCashflow(
     } else if (amount < 0) {
       split.spendNok += Math.abs(amount);
       split.spend.push(transaction);
+      split.spendByKind[toSpendKind(transaction)].push(transaction);
     }
   }
 
@@ -308,6 +358,74 @@ function buildTopMerchants(
     .slice(0, TOP_MERCHANT_LIMIT);
 }
 
+function sumSpend(spend: MonthInReviewTransactionRecord[]): number {
+  return spend.reduce(
+    (total, transaction) => total + Math.abs(toNumber(transaction.amountNok)),
+    0,
+  );
+}
+
+function buildBills(
+  bills: MonthInReviewTransactionRecord[],
+): MonthInReview["bills"] {
+  return {
+    totalNok: sumSpend(bills),
+    count: bills.length,
+    items: bills
+      .map((transaction) => ({
+        merchant: toMerchantName(transaction.normalizedMerchant),
+        categoryName: transaction.category?.name ?? null,
+        amountNok: Math.abs(toNumber(transaction.amountNok)),
+      }))
+      .sort(
+        (a, b) =>
+          b.amountNok - a.amountNok || a.merchant.localeCompare(b.merchant),
+      ),
+  };
+}
+
+function buildDailySpend(
+  spend: MonthInReviewTransactionRecord[],
+  window: MonthWindow,
+): MonthInReviewDay[] {
+  const spendByDate = new Map<string, number>();
+  for (const transaction of spend) {
+    const date = toLocalIsoDate(transaction.bookingDate);
+    spendByDate.set(
+      date,
+      (spendByDate.get(date) ?? 0) + Math.abs(toNumber(transaction.amountNok)),
+    );
+  }
+
+  const days: MonthInReviewDay[] = [];
+  for (
+    const day = new Date(window.monthStartDate);
+    day < window.nextMonthStartDate;
+    day.setDate(day.getDate() + 1)
+  ) {
+    const date = toLocalIsoDate(day);
+    days.push({ date, spendNok: spendByDate.get(date) ?? 0 });
+  }
+
+  return days;
+}
+
+function buildEveryday(
+  everyday: MonthInReviewTransactionRecord[],
+  window: MonthWindow,
+): MonthInReview["everyday"] {
+  const totalNok = sumSpend(everyday);
+
+  return {
+    totalNok,
+    count: everyday.length,
+    topMerchants: buildTopMerchants(everyday, totalNok),
+    biggestPurchase: buildBiggestPurchase(everyday),
+    busiestDay: buildBusiestDay(everyday),
+    dailySpend: buildDailySpend(everyday, window),
+  };
+}
+
 function buildIncomeSources(
   income: MonthInReviewTransactionRecord[],
 ): MonthInReview["incomeSources"] {
@@ -331,7 +449,7 @@ function buildIncomeSources(
 
 function buildBiggestPurchase(
   spend: MonthInReviewTransactionRecord[],
-): MonthInReview["biggestPurchase"] {
+): MonthInReview["everyday"]["biggestPurchase"] {
   let biggest: MonthInReviewTransactionRecord | null = null;
 
   for (const transaction of spend) {
@@ -358,7 +476,7 @@ function buildBiggestPurchase(
 
 function buildBusiestDay(
   spend: MonthInReviewTransactionRecord[],
-): MonthInReview["busiestDay"] {
+): MonthInReview["everyday"]["busiestDay"] {
   const days = new Map<
     string,
     { spendNok: number; transactionCount: number }
@@ -419,10 +537,9 @@ export function buildMonthInReview(params: {
       current.spendNok,
       previous?.spend ?? null,
     ),
-    topMerchants: buildTopMerchants(current.spend, current.spendNok),
     incomeSources: buildIncomeSources(current.income),
-    biggestPurchase: buildBiggestPurchase(current.spend),
-    busiestDay: buildBusiestDay(current.spend),
+    bills: buildBills(current.spendByKind.bill),
+    everyday: buildEveryday(current.spendByKind.everyday, window),
   };
 }
 
@@ -438,6 +555,7 @@ function findMonthTransactions(
       bookingDate: true,
       amountNok: true,
       normalizedMerchant: true,
+      paymentType: true,
       category: {
         select: {
           id: true,
@@ -471,13 +589,47 @@ export async function getMonthInReview(
   });
 }
 
+const NON_TRANSFER_BOOKING: NonTransferBookingFilter = {
+  OR: [{ categoryId: null }, { category: { kind: { not: "TRANSFER" } } }],
+};
+
+async function findAdjacentMonths(
+  db: MonthInReviewWithReviewDbClient,
+  window: MonthWindow,
+): Promise<MonthInReviewWithReview["adjacentMonths"]> {
+  const [previous, next] = await Promise.all([
+    db.transaction.findFirst({
+      where: {
+        ...NON_TRANSFER_BOOKING,
+        bookingDate: { lt: window.monthStartDate },
+      },
+      select: { bookingDate: true },
+      orderBy: { bookingDate: "desc" },
+    }),
+    db.transaction.findFirst({
+      where: {
+        ...NON_TRANSFER_BOOKING,
+        bookingDate: { gte: window.nextMonthStartDate },
+      },
+      select: { bookingDate: true },
+      orderBy: { bookingDate: "asc" },
+    }),
+  ]);
+
+  return {
+    previous: previous ? toMonthStartKey(previous.bookingDate) : null,
+    next: next ? toMonthStartKey(next.bookingDate) : null,
+  };
+}
+
 export async function getMonthInReviewWithReview(
   db: MonthInReviewWithReviewDbClient,
   params: { monthStart: string },
 ): Promise<MonthInReviewWithReview> {
   const window = toMonthWindow(params.monthStart);
-  const [facts, review] = await Promise.all([
+  const [facts, adjacentMonths, review] = await Promise.all([
     getMonthInReview(db, { monthStart: window.monthStart }),
+    findAdjacentMonths(db, window),
     db.monthlyReview.findUnique({
       where: { monthStart: window.reviewMonthStartDate },
       select: {
@@ -491,6 +643,7 @@ export async function getMonthInReviewWithReview(
 
   return {
     ...facts,
+    adjacentMonths,
     reviewState: toReviewState(review?.status ?? null),
     generatedAt: review?.generatedAt?.toISOString() ?? null,
     errorMessage: review?.errorMessage ?? null,

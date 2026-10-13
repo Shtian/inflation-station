@@ -1,6 +1,23 @@
 import { expect, type Page, test } from "@playwright/test";
+import type { MonthInReviewWithReview } from "@/lib/monthly-review/month-in-review";
 
-const MARCH_REVIEW = {
+function marchDailySpend(spendByDate: Record<string, number>) {
+  return Array.from({ length: 31 }, (_, index) => {
+    const date = `2026-03-${`${index + 1}`.padStart(2, "0")}`;
+    return { date, spendNok: spendByDate[date] ?? 0 };
+  });
+}
+
+const EMPTY_EVERYDAY: MonthInReviewWithReview["everyday"] = {
+  totalNok: 0,
+  count: 0,
+  topMerchants: [],
+  biggestPurchase: null,
+  busiestDay: null,
+  dailySpend: marchDailySpend({}),
+};
+
+const MARCH_REVIEW: MonthInReviewWithReview = {
   monthStart: "2026-03-01",
   cashflow: {
     incomeNok: 25000,
@@ -41,31 +58,63 @@ const MARCH_REVIEW = {
       deltaNok: 1500,
     },
   ],
-  topMerchants: [
-    { merchant: "LANDLORD", spendNok: 8000, share: 0.64, transactionCount: 1 },
-    { merchant: "REMA 1000", spendNok: 2000, share: 0.16, transactionCount: 4 },
-    { merchant: "VY", spendNok: 1500, share: 0.12, transactionCount: 2 },
-    { merchant: "KIWI", spendNok: 1000, share: 0.08, transactionCount: 2 },
-  ],
   incomeSources: [{ source: "EMPLOYER", amountNok: 25000 }],
-  biggestPurchase: {
-    bookingDate: "2026-03-01",
-    merchant: "LANDLORD",
-    amountNok: 8000,
-    categoryName: "Rent",
+  bills: {
+    totalNok: 8000,
+    count: 1,
+    items: [{ merchant: "LANDLORD", categoryName: "Rent", amountNok: 8000 }],
   },
-  busiestDay: {
-    bookingDate: "2026-03-14",
-    spendNok: 1800,
-    transactionCount: 3,
+  everyday: {
+    totalNok: 4500,
+    count: 8,
+    topMerchants: [
+      {
+        merchant: "REMA 1000",
+        spendNok: 2000,
+        share: 2000 / 4500,
+        transactionCount: 4,
+      },
+      {
+        merchant: "VY",
+        spendNok: 1500,
+        share: 1500 / 4500,
+        transactionCount: 2,
+      },
+      {
+        merchant: "KIWI",
+        spendNok: 1000,
+        share: 1000 / 4500,
+        transactionCount: 2,
+      },
+    ],
+    biggestPurchase: {
+      bookingDate: "2026-03-08",
+      merchant: "VY",
+      amountNok: 900,
+      categoryName: "Travel",
+    },
+    busiestDay: {
+      bookingDate: "2026-03-14",
+      spendNok: 1800,
+      transactionCount: 3,
+    },
+    dailySpend: marchDailySpend({
+      "2026-03-02": 400,
+      "2026-03-05": 300,
+      "2026-03-08": 900,
+      "2026-03-14": 1800,
+      "2026-03-20": 600,
+      "2026-03-27": 500,
+    }),
   },
+  adjacentMonths: { previous: "2026-02-01", next: null },
   reviewState: "NOT_GENERATED",
   generatedAt: null,
   errorMessage: null,
   reviewText: null,
 };
 
-async function stubReview(page: Page, review: () => object) {
+async function stubReview(page: Page, review: () => MonthInReviewWithReview) {
   await page.route("**/api/monthly-review/2026-03-01", async (route) => {
     await route.fulfill({
       status: 200,
@@ -158,10 +207,9 @@ test("drops slides that have no data", async ({ page }) => {
     previousMonth: null,
     spendTransactionCount: 0,
     categories: [],
-    topMerchants: [],
     incomeSources: [],
-    biggestPurchase: null,
-    busiestDay: null,
+    bills: { totalNok: 0, count: 0, items: [] },
+    everyday: EMPTY_EVERYDAY,
   }));
 
   await page.goto("/monthly-review/2026-03-01");
@@ -183,7 +231,7 @@ test("generates the AI recap after confirmation", async ({ page }) => {
   const generationReleased = new Promise<void>((resolve) => {
     releaseGeneration = resolve;
   });
-  let review: object = MARCH_REVIEW;
+  let review = MARCH_REVIEW;
 
   await stubReview(page, () => review);
   await page.route("**/api/monthly-review/generate", async (route) => {

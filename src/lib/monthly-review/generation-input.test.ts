@@ -55,6 +55,13 @@ function createGenerationInputDbMock(params?: {
   };
 }
 
+function februaryDailySpend(spendByDate: Record<string, number>) {
+  return Array.from({ length: 28 }, (_, index) => {
+    const date = `2026-02-${`${index + 1}`.padStart(2, "0")}`;
+    return { date, spendNok: spendByDate[date] ?? 0 };
+  });
+}
+
 describe("buildMonthlyReviewGenerationInput", () => {
   it("builds prompt, transactions payload, and month-in-review facts for a month", async () => {
     const db = createGenerationInputDbMock({
@@ -148,31 +155,41 @@ describe("buildMonthlyReviewGenerationInput", () => {
             deltaNok: 500,
           },
         ],
-        topMerchants: [
-          {
+        incomeSources: [{ source: "EMPLOYER", amountNok: 34000 }],
+        bills: { totalNok: 0, count: 0, items: [] },
+        everyday: {
+          totalNok: 1500,
+          count: 3,
+          topMerchants: [
+            {
+              merchant: "REMA 1000",
+              spendNok: 1000,
+              share: 1000 / 1500,
+              transactionCount: 2,
+            },
+            {
+              merchant: "VY",
+              spendNok: 500,
+              share: 500 / 1500,
+              transactionCount: 1,
+            },
+          ],
+          biggestPurchase: {
+            bookingDate: "2026-02-02",
             merchant: "REMA 1000",
-            spendNok: 1000,
-            share: 1000 / 1500,
-            transactionCount: 2,
+            amountNok: 700,
+            categoryName: "Food",
           },
-          {
-            merchant: "VY",
-            spendNok: 500,
-            share: 500 / 1500,
+          busiestDay: {
+            bookingDate: "2026-02-02",
+            spendNok: 700,
             transactionCount: 1,
           },
-        ],
-        incomeSources: [{ source: "EMPLOYER", amountNok: 34000 }],
-        biggestPurchase: {
-          bookingDate: "2026-02-02",
-          merchant: "REMA 1000",
-          amountNok: 700,
-          categoryName: "Food",
-        },
-        busiestDay: {
-          bookingDate: "2026-02-02",
-          spendNok: 700,
-          transactionCount: 1,
+          dailySpend: februaryDailySpend({
+            "2026-02-02": 700,
+            "2026-02-04": 300,
+            "2026-02-08": 500,
+          }),
         },
       },
       transactions: [
@@ -242,7 +259,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
         deltaNok: null,
       },
     ]);
-    expect(result.facts.topMerchants).toEqual([
+    expect(result.facts.everyday.topMerchants).toEqual([
       {
         merchant: "Unknown merchant",
         spendNok: 200,
@@ -339,7 +356,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
         deltaNok: 200,
       },
     ]);
-    expect(result.facts.topMerchants).toEqual([
+    expect(result.facts.everyday.topMerchants).toEqual([
       {
         merchant: "REMA 1000",
         spendNok: 300,
