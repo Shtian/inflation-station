@@ -1,10 +1,12 @@
 import { expect, type Page, test } from "@playwright/test";
 import type { MonthInReviewWithReview } from "@/lib/monthly-review/month-in-review";
 
-function marchDailySpend(spendByDate: Record<string, number>) {
+function marchDailySpend(
+  byDate: Record<string, { spendNok: number; transactionCount: number }>,
+) {
   return Array.from({ length: 31 }, (_, index) => {
     const date = `2026-03-${`${index + 1}`.padStart(2, "0")}`;
-    return { date, spendNok: spendByDate[date] ?? 0 };
+    return { date, ...(byDate[date] ?? { spendNok: 0, transactionCount: 0 }) };
   });
 }
 
@@ -99,12 +101,12 @@ const MARCH_REVIEW: MonthInReviewWithReview = {
       transactionCount: 3,
     },
     dailySpend: marchDailySpend({
-      "2026-03-02": 400,
-      "2026-03-05": 300,
-      "2026-03-08": 900,
-      "2026-03-14": 1800,
-      "2026-03-20": 600,
-      "2026-03-27": 500,
+      "2026-03-02": { spendNok: 400, transactionCount: 1 },
+      "2026-03-05": { spendNok: 300, transactionCount: 1 },
+      "2026-03-08": { spendNok: 900, transactionCount: 1 },
+      "2026-03-14": { spendNok: 1800, transactionCount: 3 },
+      "2026-03-20": { spendNok: 600, transactionCount: 1 },
+      "2026-03-27": { spendNok: 500, transactionCount: 1 },
     }),
   },
   adjacentMonths: { previous: "2026-02-01", next: null },
