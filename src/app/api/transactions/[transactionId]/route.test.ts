@@ -41,7 +41,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_TRANSACTION_ID",
-      message: "Invalid transaction id.",
+      message: "Ugyldig transaksjons-ID.",
     });
     expect(updateTransactionMock).not.toHaveBeenCalled();
   });
@@ -71,7 +71,8 @@ describe("PATCH /api/transactions/[transactionId]", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_TRANSACTION_UPDATE_PAYLOAD",
-      message: "Invalid transaction update payload. paymentType: Required",
+      message:
+        "Ugyldige data for oppdatering av transaksjon. paymentType: Required",
       details: { formErrors: [], fieldErrors: { paymentType: ["Required"] } },
     });
     expect(updateTransactionMock).not.toHaveBeenCalled();
@@ -116,8 +117,8 @@ describe("PATCH /api/transactions/[transactionId]", () => {
   });
 
   it.each([
-    ["P2025", 404, "TRANSACTION_NOT_FOUND", "Transaction was not found."],
-    ["P2003", 404, "CATEGORY_NOT_FOUND", "Selected category was not found."],
+    ["P2025", 404, "TRANSACTION_NOT_FOUND", "Fant ikke transaksjonen."],
+    ["P2003", 404, "CATEGORY_NOT_FOUND", "Fant ikke den valgte kategorien."],
   ])("maps a rejected update with code %s to %i %s", async (code, status, error, message) => {
     parseTransactionUpdatePayloadMock.mockReturnValue({
       success: true,
@@ -198,7 +199,7 @@ describe("DELETE /api/transactions/[transactionId]", () => {
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
       error: "TRANSACTION_NOT_FOUND",
-      message: "Transaction was not found.",
+      message: "Fant ikke transaksjonen.",
     });
   });
 

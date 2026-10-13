@@ -23,7 +23,7 @@ function getTransactionsErrorMessage(body: unknown) {
     }
   }
 
-  return "Could not load transactions.";
+  return "Kunne ikke laste inn transaksjoner.";
 }
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {

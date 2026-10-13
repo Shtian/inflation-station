@@ -1,2 +1,4 @@
 # English strings the user never sees, such as LLM prompt text and developer invariants.
 # One finding per line, exactly as the scanner prints it with the line number removed: <file>\t<text>
+src/app/api/transactions/route.ts	sorting må ha formatet <felt>:<retning> med feltene bookingDate, amountNok, merchant eller category.
+src/lib/transactions/delete.ts	ids must be a non-empty array

@@ -69,7 +69,7 @@ describe("validateTransactionFields", () => {
     });
     expect(result).toEqual({
       valid: false,
-      error: "Date and merchant are required.",
+      error: "Dato og brukersted må fylles ut.",
     });
   });
 
@@ -77,7 +77,7 @@ describe("validateTransactionFields", () => {
     const result = validateTransactionFields({ ...baseFields(), merchant: "" });
     expect(result).toEqual({
       valid: false,
-      error: "Date and merchant are required.",
+      error: "Dato og brukersted må fylles ut.",
     });
   });
 
@@ -88,7 +88,7 @@ describe("validateTransactionFields", () => {
     });
     expect(result).toEqual({
       valid: false,
-      error: "Amount must be a valid number.",
+      error: "Beløpet må være et gyldig tall.",
     });
   });
 
@@ -99,7 +99,7 @@ describe("validateTransactionFields", () => {
     });
     expect(result).toEqual({
       valid: false,
-      error: "Amount must be a valid number.",
+      error: "Beløpet må være et gyldig tall.",
     });
   });
 
@@ -111,7 +111,7 @@ describe("validateTransactionFields", () => {
     });
     expect(result).toEqual({
       valid: false,
-      error: "Date and merchant are required.",
+      error: "Dato og brukersted må fylles ut.",
     });
   });
 
@@ -122,7 +122,7 @@ describe("validateTransactionFields", () => {
     });
     expect(result).toEqual({
       valid: false,
-      error: "Note must be 500 characters or fewer.",
+      error: "Notatet kan ikke være lengre enn 500 tegn.",
     });
   });
 
@@ -170,12 +170,12 @@ describe("validateAddForm", () => {
 
   it("rejects empty accountId", () => {
     const result = validateAddForm({ ...baseFields(), accountId: "" });
-    expect(result).toEqual({ valid: false, error: "Account is required." });
+    expect(result).toEqual({ valid: false, error: "Konto må fylles ut." });
   });
 
   it("rejects whitespace-only accountId", () => {
     const result = validateAddForm({ ...baseFields(), accountId: "   " });
-    expect(result).toEqual({ valid: false, error: "Account is required." });
+    expect(result).toEqual({ valid: false, error: "Konto må fylles ut." });
   });
 
   it("trims whitespace from accountId", () => {

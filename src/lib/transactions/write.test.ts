@@ -70,7 +70,7 @@ describe("parseTransactionCreatePayload", () => {
           bookingDate,
         }),
       ).messages,
-    ).toContain("Expected bookingDate in YYYY-MM-DD format.");
+    ).toContain("bookingDate må ha formatet ÅÅÅÅ-MM-DD.");
   });
 
   it("turns a calendar date into midnight UTC", () => {
@@ -169,7 +169,7 @@ describe("parseTransactionUpdatePayload", () => {
 
   it("rejects an update that changes nothing", () => {
     expect(rejection(parseTransactionUpdatePayload({})).messages).toContain(
-      "At least one mutable field must be provided.",
+      "Minst ett felt som kan endres, må oppgis.",
     );
   });
 

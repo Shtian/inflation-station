@@ -1,7 +1,7 @@
 export const MAX_TRANSACTION_NOTE_LENGTH = 500;
 
 export const MAX_TRANSACTION_NOTE_LENGTH_MESSAGE =
-  "Note must be 500 characters or fewer.";
+  "Notatet kan ikke være lengre enn 500 tegn.";
 
 export type NoteField = {
   value: string | null;

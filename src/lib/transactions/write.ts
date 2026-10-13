@@ -44,7 +44,7 @@ const bookingDateSchema = z
   .string()
   .trim()
   .refine((value) => parseIsoDate(value) !== null, {
-    message: "Expected bookingDate in YYYY-MM-DD format.",
+    message: "bookingDate må ha formatet ÅÅÅÅ-MM-DD.",
   })
   .transform((value) => parseIsoDate(value) as Date);
 
@@ -96,7 +96,7 @@ const transactionUpdateSchema = z
   .refine(
     (value) => MUTABLE_FIELD_KEYS.some((key) => value[key] !== undefined),
     {
-      message: "At least one mutable field must be provided.",
+      message: "Minst ett felt som kan endres, må oppgis.",
     },
   );
 

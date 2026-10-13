@@ -56,12 +56,12 @@ export function validateTransactionFields(
   const bookingDate = form.bookingDate.trim();
   const merchant = form.merchant.trim();
   if (!bookingDate || !merchant) {
-    return { valid: false, error: "Date and merchant are required." };
+    return { valid: false, error: "Dato og brukersted må fylles ut." };
   }
 
   const amountNok = Number.parseFloat(form.amountNok.replace(",", "."));
   if (!Number.isFinite(amountNok)) {
-    return { valid: false, error: "Amount must be a valid number." };
+    return { valid: false, error: "Beløpet må være et gyldig tall." };
   }
 
   const note = readNoteField(form.note);
@@ -75,7 +75,7 @@ export function validateTransactionFields(
 export function validateAddForm(form: AddFormState): AddFormValidationResult {
   const accountId = form.accountId.trim();
   if (!accountId) {
-    return { valid: false, error: "Account is required." };
+    return { valid: false, error: "Konto må fylles ut." };
   }
 
   const fields = validateTransactionFields(form);

@@ -76,16 +76,16 @@ export function AddTransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent ref={dialogContentRef}>
         <DialogHeader>
-          <DialogTitle>Add transaction</DialogTitle>
+          <DialogTitle>Legg til transaksjon</DialogTitle>
           <DialogDescription>
-            Manually record a new transaction to your account.
+            Registrer en ny transaksjon manuelt på kontoen din.
           </DialogDescription>
         </DialogHeader>
 
         {addForm ? (
           <form className="space-y-4" onSubmit={onSubmit}>
             <Field>
-              <FieldLabel htmlFor="add-account-id">Account</FieldLabel>
+              <FieldLabel htmlFor="add-account-id">Konto</FieldLabel>
               <FieldContent>
                 <Select
                   items={accounts.map((account) => ({
@@ -100,7 +100,7 @@ export function AddTransactionDialog({
                   disabled={addSaving}
                 >
                   <SelectTrigger id="add-account-id">
-                    <SelectValue placeholder="Select account" />
+                    <SelectValue placeholder="Velg konto" />
                   </SelectTrigger>
                   <SelectContent>
                     {accounts.map((account) => (
@@ -114,7 +114,7 @@ export function AddTransactionDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="add-booking-date">Date</FieldLabel>
+              <FieldLabel htmlFor="add-booking-date">Dato</FieldLabel>
               <FieldContent>
                 <Input
                   id="add-booking-date"
@@ -125,14 +125,14 @@ export function AddTransactionDialog({
                 />
                 {isFutureDate(addForm.bookingDate) ? (
                   <p className="text-warning text-xs">
-                    This date is in the future.
+                    Denne datoen er frem i tid.
                   </p>
                 ) : null}
               </FieldContent>
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="add-merchant">Merchant</FieldLabel>
+              <FieldLabel htmlFor="add-merchant">Brukersted</FieldLabel>
               <FieldContent>
                 <Input
                   id="add-merchant"
@@ -144,7 +144,7 @@ export function AddTransactionDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="add-amount-nok">Amount (NOK)</FieldLabel>
+              <FieldLabel htmlFor="add-amount-nok">Beløp (NOK)</FieldLabel>
               <FieldContent>
                 <Input
                   id="add-amount-nok"
@@ -157,7 +157,7 @@ export function AddTransactionDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="add-payment-type">Payment type</FieldLabel>
+              <FieldLabel htmlFor="add-payment-type">Betalingstype</FieldLabel>
               <FieldContent>
                 <Select
                   value={addForm.paymentType}
@@ -183,9 +183,9 @@ export function AddTransactionDialog({
 
             <Field>
               <FieldLabel htmlFor="add-category-id">
-                Category{" "}
+                Kategori{" "}
                 <span className="font-normal text-muted-foreground">
-                  (optional)
+                  (valgfritt)
                 </span>
               </FieldLabel>
               <FieldContent>
@@ -200,8 +200,8 @@ export function AddTransactionDialog({
                     onCategoryChange(value || UNCATEGORIZED_VALUE)
                   }
                   id="add-category-id"
-                  placeholder="Uncategorized"
-                  emptyLabel="No matching categories."
+                  placeholder="Ukategorisert"
+                  emptyLabel="Ingen samsvarende kategorier."
                   disabled={addSaving}
                   showClear
                   container={dialogContentRef}
@@ -211,9 +211,9 @@ export function AddTransactionDialog({
 
             <Field>
               <FieldLabel htmlFor="add-note">
-                Note{" "}
+                Notat{" "}
                 <span className="font-normal text-muted-foreground">
-                  (optional)
+                  (valgfritt)
                 </span>
               </FieldLabel>
               <FieldContent>
@@ -228,7 +228,7 @@ export function AddTransactionDialog({
                   className={`text-xs ${note.error ? "text-destructive" : "text-muted-foreground"}`}
                 >
                   {note.error ??
-                    `${note.length}/${MAX_TRANSACTION_NOTE_LENGTH} characters`}
+                    `${note.length}/${MAX_TRANSACTION_NOTE_LENGTH} tegn`}
                 </p>
               </FieldContent>
             </Field>
@@ -249,10 +249,10 @@ export function AddTransactionDialog({
                 onClick={onCancel}
                 disabled={addSaving}
               >
-                Cancel
+                Avbryt
               </Button>
               <Button type="submit" disabled={addSaving}>
-                {addSaving ? "Saving..." : "Add transaction"}
+                {addSaving ? "Lagrer…" : "Legg til transaksjon"}
               </Button>
             </DialogFooter>
           </form>
