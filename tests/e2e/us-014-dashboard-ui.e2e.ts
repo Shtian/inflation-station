@@ -144,6 +144,9 @@ test("updates dashboard charts when account and date filters change", async ({
     page.getByRole("heading", { name: "Kontoutvikling" }),
   ).toBeVisible();
   await expect(page.locator("[data-slot='chart']")).toHaveCount(3);
+  const flowLegend = page.locator(".recharts-default-legend").first();
+  await expect(flowLegend.getByText("Inn", { exact: true })).toBeVisible();
+  await expect(flowLegend.getByText("Ut", { exact: true })).toBeVisible();
   await expect(page.getByText(/200,00/).first()).toBeVisible();
   await page.getByRole("tab", { name: "Kategori", exact: true }).click();
   await expect(

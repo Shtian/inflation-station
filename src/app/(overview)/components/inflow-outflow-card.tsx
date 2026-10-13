@@ -74,11 +74,13 @@ export function InflowOutflowCard({
               <Legend />
               <Bar
                 dataKey="inflowNok"
+                name="Inn"
                 fill="var(--color-inflowNok)"
                 radius={[4, 4, 0, 0]}
               />
               <Bar
                 dataKey="outflowNok"
+                name="Ut"
                 fill="var(--color-outflowNok)"
                 radius={[4, 4, 0, 0]}
               />

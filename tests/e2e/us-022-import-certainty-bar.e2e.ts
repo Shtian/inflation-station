@@ -207,7 +207,7 @@ test("colors the certainty bar by Jev confidence tier and hides it for suppresse
   await expect(subFloorCategory).toHaveValue("");
   await expect(subFloorCategory).toHaveAttribute(
     "placeholder",
-    "Uncategorized",
+    "Ukategorisert",
   );
 
   await expect(

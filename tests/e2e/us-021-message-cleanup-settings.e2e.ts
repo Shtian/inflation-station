@@ -192,7 +192,7 @@ test("shows stable save failure feedback when message cleanup action fails", asy
   await page.goto("/import/settings/message-cleanup");
 
   await page
-    .getByLabel("Message cleanup system prompt")
+    .getByLabel("Systemprompt for meldingsrydding")
     .fill("Keep merchant + location only.");
   await page.getByRole("button", { name: "Lagre prompt" }).click();
 
