@@ -4,9 +4,9 @@ import { type ReactNode, useEffect, useState } from "react";
 import { formatNok, formatSignedNok } from "@/lib/format-nok";
 import { toDeltaDirection } from "@/lib/monthly-review/delta";
 import type { MonthInReviewWithReview } from "@/lib/monthly-review/month-in-review";
+import type { MonthlyRecap } from "@/lib/monthly-review/recap";
 import { formatMonthStartLabel } from "../monthly-review-manager.utils";
 import {
-  firstSentence,
   formatDayLong,
   formatMonthName,
   formatPercent,
@@ -56,10 +56,8 @@ function hasActivity(review: MonthInReviewWithReview): boolean {
   return review.cashflow.incomeNok > 0 || review.cashflow.spendNok > 0;
 }
 
-function recapText(review: MonthInReviewWithReview): string | null {
-  return review.reviewState === "GENERATED" && review.reviewText?.trim()
-    ? review.reviewText.trim()
-    : null;
+function recap(review: MonthInReviewWithReview): MonthlyRecap | null {
+  return review.reviewState === "GENERATED" ? review.recap : null;
 }
 
 function prefersReducedMotion(): boolean {
@@ -126,9 +124,9 @@ function Muted({
 }
 
 function introLine(review: MonthInReviewWithReview): string {
-  const recap = recapText(review);
-  if (recap) {
-    return keepAmountsTogether(firstSentence(recap));
+  const generated = recap(review);
+  if (generated) {
+    return keepAmountsTogether(generated.headline);
   }
 
   const { cashflow } = review;
@@ -574,7 +572,7 @@ function RecapVoice({
   generateFailed,
   onRequestGenerate,
 }: SlideContext) {
-  const recap = recapText(review);
+  const generated = recap(review);
 
   if (isGenerating || review.reviewState === "GENERATING") {
     return (
@@ -595,12 +593,17 @@ function RecapVoice({
     );
   }
 
-  if (recap) {
+  if (generated) {
     return (
-      <div className="space-y-3">
-        <p className="max-w-[60ch] whitespace-pre-line text-pretty text-lg leading-relaxed md:text-xl">
-          {keepAmountsTogether(recap)}
+      <div className="max-w-[60ch] space-y-3">
+        <p className="text-pretty font-semibold text-xl md:text-2xl">
+          {keepAmountsTogether(generated.headline)}
         </p>
+        <ul className="space-y-2 text-pretty text-lg leading-relaxed">
+          {generated.points.map((point) => (
+            <li key={point}>{keepAmountsTogether(point)}</li>
+          ))}
+        </ul>
         <TextButton onClick={() => onRequestGenerate("regenerate")}>
           Rewrite the recap
         </TextButton>

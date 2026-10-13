@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  firstSentence,
   formatDayLong,
   formatMonthName,
   keepAmountsTogether,
@@ -26,18 +25,6 @@ describe("month in review formatting", () => {
       dateFrom: "2026-12-01",
       dateTo: "2026-12-31",
     });
-  });
-
-  it("takes the recap's first sentence, ignoring decimals and line breaks", () => {
-    expect(
-      firstSentence(
-        "september 2026 var en typisk måned.\nFaste kostnader dominerte.",
-      ),
-    ).toBe("september 2026 var en typisk måned.");
-    expect(firstSentence("Du brukte 2.5 prosent mer! Resten var likt.")).toBe(
-      "Du brukte 2.5 prosent mer!",
-    );
-    expect(firstSentence("No full stop here")).toBe("No full stop here");
   });
 
   it("keeps amounts in a recap from wrapping mid-number", () => {

@@ -113,7 +113,7 @@ const MARCH_REVIEW: MonthInReviewWithReview = {
   reviewState: "NOT_GENERATED",
   generatedAt: null,
   errorMessage: null,
-  reviewText: null,
+  recap: null,
 };
 
 async function stubReview(page: Page, review: () => MonthInReviewWithReview) {
@@ -377,7 +377,14 @@ test("writes the recap after confirmation and opens with it next time", async ({
       ...MARCH_REVIEW,
       reviewState: "GENERATED",
       generatedAt: "2026-04-02T09:30:00.000Z",
-      reviewText: "Mars endte med et overskudd på 12 500 kr. Mat gikk ned.",
+      recap: {
+        headline: "Mars endte med et overskudd på 12 500 kr.",
+        points: [
+          "Regningene utgjorde 8 400 kr i faste kostnader.",
+          "Mat gikk ned med 1 200 kr fra februar.",
+          "Sett av overskuddet til sparing tidlig i april.",
+        ],
+      },
     };
     await route.fulfill({
       status: 200,
@@ -387,7 +394,7 @@ test("writes the recap after confirmation and opens with it next time", async ({
         status: "GENERATED",
         generatedAt: "2026-04-02T09:30:00.000Z",
         errorMessage: null,
-        reviewText: review.reviewText,
+        recap: review.recap,
         unavailableReason: null,
       }),
     });
@@ -416,11 +423,15 @@ test("writes the recap after confirmation and opens with it next time", async ({
 
   releaseGeneration();
 
+  const finale = activeSlide(page);
   await expect(
-    activeSlide(page).getByText(
-      /^Mars endte med et overskudd på 12\s500\skr\. Mat gikk ned\.$/,
-    ),
+    finale.getByText(/^Mars endte med et overskudd på 12\s500\skr\.$/),
   ).toBeVisible();
+  await expect(finale.getByRole("listitem")).toContainText([
+    /^Regningene utgjorde 8\s400\skr i faste kostnader\.$/,
+    /^Mat gikk ned med 1\s200\skr fra februar\.$/,
+    "Sett av overskuddet til sparing tidlig i april.",
+  ]);
   await expect(
     page.getByRole("button", { name: "Rewrite the recap" }),
   ).toBeVisible();

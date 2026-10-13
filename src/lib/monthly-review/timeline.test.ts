@@ -9,14 +9,12 @@ function createTimelineDbMock() {
       status: MonthlyReviewStatus.FAILED,
       generatedAt: null,
       errorMessage: "Provider timeout",
-      reviewText: null,
     },
     {
       monthStart: new Date("2026-02-01T00:00:00.000Z"),
       status: MonthlyReviewStatus.GENERATED,
       generatedAt: new Date("2026-02-15T10:00:00.000Z"),
       errorMessage: null,
-      reviewText: "Spend was elevated due to travel.",
     },
   ];
 
@@ -84,7 +82,6 @@ describe("getMonthlyTimeline", () => {
         reviewState: MONTHLY_TIMELINE_REVIEW_STATE.NOT_GENERATED,
         generatedAt: null,
         errorMessage: null,
-        reviewText: null,
       },
       {
         monthStart: "2026-02-01",
@@ -108,7 +105,6 @@ describe("getMonthlyTimeline", () => {
         reviewState: MONTHLY_TIMELINE_REVIEW_STATE.GENERATED,
         generatedAt: "2026-02-15T10:00:00.000Z",
         errorMessage: null,
-        reviewText: "Spend was elevated due to travel.",
       },
       {
         monthStart: "2026-01-01",
@@ -122,7 +118,6 @@ describe("getMonthlyTimeline", () => {
         reviewState: MONTHLY_TIMELINE_REVIEW_STATE.FAILED,
         generatedAt: null,
         errorMessage: "Provider timeout",
-        reviewText: null,
       },
     ]);
   });

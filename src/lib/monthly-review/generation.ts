@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
-import { MonthlyReviewStatus, type PaymentType } from "@prisma/client";
-import { generateText } from "ai";
+import { MonthlyReviewStatus, type PaymentType, Prisma } from "@prisma/client";
+import { generateObject } from "ai";
 import {
   buildProviderErrorDetail,
   isAbortError,
@@ -10,6 +10,7 @@ import {
   buildMonthlyReviewGenerationInput,
   type MonthlyReviewGenerationInput,
 } from "./generation-input";
+import { type MonthlyRecap, monthlyRecapSchema, toMonthlyRecap } from "./recap";
 import { toReviewMonthKey, toReviewMonthStartDate } from "./review-month-key";
 import { DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL } from "./system-prompt";
 
@@ -28,7 +29,7 @@ export type MonthlyReviewGenerationResult = {
   status: MonthlyReviewStatus;
   generatedAt: string | null;
   errorMessage: string | null;
-  reviewText: string | null;
+  recap: MonthlyRecap | null;
   unavailableReason: MonthlyReviewGenerationUnavailableReason | null;
 };
 
@@ -44,7 +45,7 @@ type MonthlyReviewRecord = {
   status: MonthlyReviewStatus;
   generatedAt: Date | null;
   errorMessage: string | null;
-  reviewText: string | null;
+  recap: Prisma.JsonValue | null;
 };
 
 type MonthlyReviewGenerationDbClient = {
@@ -107,13 +108,13 @@ type MonthlyReviewGenerationDbClient = {
         status: MonthlyReviewStatus;
         generatedAt: null;
         errorMessage: null;
-        reviewText: null;
+        recap: typeof Prisma.DbNull;
       };
       update: {
         status: MonthlyReviewStatus;
         generatedAt: null;
         errorMessage: null;
-        reviewText: null;
+        recap: typeof Prisma.DbNull;
       };
     }) => Promise<unknown>;
     update: (args: {
@@ -124,21 +125,17 @@ type MonthlyReviewGenerationDbClient = {
         status: MonthlyReviewStatus;
         generatedAt: Date | null;
         errorMessage: string | null;
-        reviewText: string | null;
+        recap: MonthlyRecap | typeof Prisma.DbNull;
       };
       select: {
         monthStart: true;
         status: true;
         generatedAt: true;
         errorMessage: true;
-        reviewText: true;
+        recap: true;
       };
     }) => Promise<MonthlyReviewRecord>;
   };
-};
-
-type MonthlyReviewProviderPayload = {
-  reviewText?: string;
 };
 
 class MonthlyReviewProviderError extends Error {
@@ -192,45 +189,18 @@ function toResult(
     status: row.status,
     generatedAt: row.generatedAt?.toISOString() ?? null,
     errorMessage: row.errorMessage,
-    reviewText: row.reviewText,
+    recap: toMonthlyRecap(row.recap),
     unavailableReason,
   };
 }
 
-function parseReviewText(content: string): string {
-  const trimmedContent = content.trim();
-  if (!trimmedContent) {
-    throw new MonthlyReviewProviderError("provider_error", {
-      detail: "Provider returned an empty response body.",
-    });
-  }
-
-  try {
-    const parsed = JSON.parse(trimmedContent) as MonthlyReviewProviderPayload;
-    const reviewText = parsed.reviewText?.trim();
-    if (!reviewText) {
-      throw new MonthlyReviewProviderError("provider_error", {
-        detail: "Provider JSON response is missing reviewText.",
-      });
-    }
-
-    return reviewText;
-  } catch (error) {
-    if (error instanceof MonthlyReviewProviderError) {
-      throw error;
-    }
-
-    return trimmedContent;
-  }
-}
-
-async function buildReviewText(params: {
+async function buildRecap(params: {
   apiKey: string;
   input: MonthlyReviewGenerationInput;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
   model?: OpenAIChatModelId;
-}): Promise<string> {
+}): Promise<MonthlyRecap> {
   const fetchImpl = params.fetchImpl ?? fetch;
   const timeoutMs = Math.max(
     1,
@@ -242,20 +212,17 @@ async function buildReviewText(params: {
   const userPrompt = JSON.stringify(
     {
       instructions: [
-        "Write a short, warm month-in-review recap in plain text.",
-        "Open with the net result: income in versus spend out, and whether the month ended in plus or minus.",
-        "Treat facts.bills as fixed costs: state their total once and do not analyse them.",
-        "Spend your words on facts.everyday: where the everyday money went, its top merchants, biggest purchase and busiest day.",
-        "Mention notable movers versus last month when previousMonth is present.",
-        "Close with one concrete, practical suggestion.",
+        "headline: the net result in one sentence: income in versus spend out, and whether the month ended in plus or minus.",
+        "points: three to four short one-sentence points.",
+        "One point treats facts.bills as fixed costs: state their total once and do not analyse them.",
+        "Spend the other points on facts.everyday: where the everyday money went, its top merchants, biggest purchase and busiest day.",
+        "Mention notable movers versus last month when facts.previousMonth is present.",
+        "The last point is one concrete, practical suggestion.",
         "Use only the provided facts and transactions; never invent numbers.",
       ],
       monthStart: params.input.monthStart,
       facts: params.input.facts,
       transactions: params.input.transactions,
-      outputFormat: {
-        reviewText: "plain-text recap",
-      },
     },
     null,
     2,
@@ -267,21 +234,26 @@ async function buildReviewText(params: {
       fetch: fetchImpl,
     });
 
-    const result = await generateText({
+    const result = await generateObject({
       model: openai.chat(params.model ?? DEFAULT_OPENAI_MODEL),
+      schema: monthlyRecapSchema,
       maxRetries: 0,
       system: params.input.systemPrompt,
       prompt: userPrompt,
       abortSignal: controller.signal,
+      providerOptions: {
+        openai: { strictJsonSchema: true },
+      },
     });
 
-    if (!result.text) {
+    const recap = toMonthlyRecap(result.object);
+    if (!recap) {
       throw new MonthlyReviewProviderError("provider_error", {
-        detail: "Provider completed without returning text output.",
+        detail: "Provider returned a recap without a headline.",
       });
     }
 
-    return parseReviewText(result.text);
+    return recap;
   } catch (error) {
     if (error instanceof MonthlyReviewProviderError) {
       throw error;
@@ -323,14 +295,14 @@ async function persistFailedResult(
       status: MonthlyReviewStatus.FAILED,
       generatedAt: null,
       errorMessage,
-      reviewText: null,
+      recap: Prisma.DbNull,
     },
     select: {
       monthStart: true,
       status: true,
       generatedAt: true,
       errorMessage: true,
-      reviewText: true,
+      recap: true,
     },
   });
 
@@ -359,13 +331,13 @@ export async function generateMonthlyReview(
       status: MonthlyReviewStatus.GENERATING,
       generatedAt: null,
       errorMessage: null,
-      reviewText: null,
+      recap: Prisma.DbNull,
     },
     update: {
       status: MonthlyReviewStatus.GENERATING,
       generatedAt: null,
       errorMessage: null,
-      reviewText: null,
+      recap: Prisma.DbNull,
     },
   });
 
@@ -389,7 +361,7 @@ export async function generateMonthlyReview(
   });
 
   try {
-    const reviewText = await buildReviewText({
+    const recap = await buildRecap({
       apiKey,
       input,
       fetchImpl: options?.fetchImpl,
@@ -403,14 +375,14 @@ export async function generateMonthlyReview(
         status: MonthlyReviewStatus.GENERATED,
         generatedAt: new Date(),
         errorMessage: null,
-        reviewText,
+        recap,
       },
       select: {
         monthStart: true,
         status: true,
         generatedAt: true,
         errorMessage: true,
-        reviewText: true,
+        recap: true,
       },
     });
 

@@ -52,12 +52,6 @@ export function toMonthDateRange(monthStart: string): {
   };
 }
 
-export function firstSentence(text: string): string {
-  const trimmed = text.trim();
-  const match = /^[\s\S]+?[.!?](?=\s|$)/.exec(trimmed);
-  return (match?.[0] ?? trimmed).replace(/\s+/g, " ");
-}
-
 // Recaps are model-written with ordinary spaces, so "2 800 kr" can wrap
 // mid-number. Glue digit groups and the currency to each other.
 export function keepAmountsTogether(text: string): string {

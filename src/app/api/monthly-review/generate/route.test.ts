@@ -40,7 +40,10 @@ describe("POST /api/monthly-review/generate", () => {
       status: MonthlyReviewStatus.GENERATED,
       generatedAt: "2026-02-20T10:00:00.000Z",
       errorMessage: null,
-      reviewText: "Spend remained stable.",
+      recap: {
+        headline: "Februar endte i pluss med 4 000 kr.",
+        points: ["Utgiftene holdt seg stabile."],
+      },
       unavailableReason: null,
     });
   });
@@ -88,7 +91,10 @@ describe("POST /api/monthly-review/generate", () => {
       status: MonthlyReviewStatus.GENERATED,
       generatedAt: "2026-02-20T10:00:00.000Z",
       errorMessage: null,
-      reviewText: "Spend remained stable.",
+      recap: {
+        headline: "Februar endte i pluss med 4 000 kr.",
+        points: ["Utgiftene holdt seg stabile."],
+      },
       unavailableReason: null,
     });
   });

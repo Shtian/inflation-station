@@ -73,7 +73,7 @@ describe("GET /api/monthly-review/[monthStart]", () => {
       status: "FAILED",
       generatedAt: null,
       errorMessage: "provider_error",
-      reviewText: null,
+      recap: null,
     });
 
     const response = await get("2026-03-01");
@@ -101,7 +101,7 @@ describe("GET /api/monthly-review/[monthStart]", () => {
       reviewState: "FAILED",
       generatedAt: null,
       errorMessage: "provider_error",
-      reviewText: null,
+      recap: null,
     });
   });
 

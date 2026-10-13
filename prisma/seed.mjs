@@ -319,19 +319,39 @@ async function main() {
     return null;
   }
 
-  function getMonthlyReviewText(monthStart, totals) {
+  function getMonthlyRecap(monthStart, totals) {
     const m = monthStart.toLocaleString("nb-NO", {
       month: "long",
       year: "numeric",
     });
     const month = monthStart.getMonth();
     if (month === 11) {
-      return `${m} var preget av julehandel og høyere forbruk enn vanlig. Gaver, julepynt, ekstra dagligvarer og restaurantbesøk dyttet utgiftene godt over normalen. Faste lånekostnader på 24 500 kr gikk som planlagt, men kredittkortfakturaen endte på ${formatKroner(totals.creditCard)}. Tog til julebesøk la seg også til budsjettet.`;
+      return {
+        headline: `${m} var preget av julehandel og høyere forbruk enn vanlig.`,
+        points: [
+          "Gaver, julepynt, ekstra dagligvarer og restaurantbesøk dyttet utgiftene godt over normalen.",
+          `Faste lånekostnader på 24 500 kr gikk som planlagt, men kredittkortfakturaen endte på ${formatKroner(totals.creditCard)}.`,
+          "Tog til julebesøk la seg også til budsjettet.",
+        ],
+      };
     }
     if (month === 0) {
-      return `${m} var en rolig måned etter julens høye forbruk. Restaurant og shopping dro ned, men et nytt SATS-abonnement og noen januarsalg bidro litt ekstra. Faste lånekostnader på 24 500 kr gikk som normalt, og sparingsoverføringen på 5 000 kr ble gjennomført som planlagt.`;
+      return {
+        headline: `${m} var en rolig måned etter julens høye forbruk.`,
+        points: [
+          "Restaurant og shopping dro ned, men et nytt SATS-abonnement og noen januarsalg bidro litt ekstra.",
+          "Faste lånekostnader på 24 500 kr gikk som normalt, og sparingsoverføringen på 5 000 kr ble gjennomført som planlagt.",
+        ],
+      };
     }
-    return `${m} var en typisk måned. Faste kostnader dominerte som vanlig — boliglånet på 20 000 kr og billånet på 4 500 kr utgjorde over halvparten av lønnen. Dagligvarer endte på ca. ${formatKroner(totals.groceries)}, og elbil-lading kom til ${formatKroner(totals.charging)}. En overføring på 5 000 kr til sparekontoen holder sparemålet på rett kurs.`;
+    return {
+      headline: `${m} var en typisk måned.`,
+      points: [
+        "Faste kostnader dominerte som vanlig — boliglånet på 20 000 kr og billånet på 4 500 kr utgjorde over halvparten av lønnen.",
+        `Dagligvarer endte på ca. ${formatKroner(totals.groceries)}, og elbil-lading kom til ${formatKroner(totals.charging)}.`,
+        "En overføring på 5 000 kr til sparekontoen holder sparemålet på rett kurs.",
+      ],
+    };
   }
 
   for (let mi = 0; mi < months.length; mi++) {
@@ -788,7 +808,7 @@ async function main() {
       data: {
         monthStart: new Date(Date.UTC(y, mo - 1, 1)),
         status: "GENERATED",
-        reviewText: getMonthlyReviewText(monthStart, totals),
+        recap: getMonthlyRecap(monthStart, totals),
         generatedAt: lastDayOfMonth(monthStart),
       },
     });

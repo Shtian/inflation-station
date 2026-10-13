@@ -46,7 +46,7 @@ describe.each([
       data: {
         monthStart: new Date("2026-09-01T00:00:00.000Z"),
         status: MonthlyReviewStatus.GENERATED,
-        reviewText: "September recap.",
+        recap: { headline: "September recap.", points: [] },
       },
     });
 

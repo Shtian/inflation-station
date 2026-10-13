@@ -16,7 +16,6 @@ export type MonthlyTimelineRow = MonthlyOverviewRow & {
   reviewState: MonthlyTimelineReviewState;
   generatedAt: string | null;
   errorMessage: string | null;
-  reviewText: string | null;
 };
 
 type MonthlyTimelineReviewRecord = {
@@ -24,7 +23,6 @@ type MonthlyTimelineReviewRecord = {
   status: MonthlyReviewStatus;
   generatedAt: Date | null;
   errorMessage: string | null;
-  reviewText: string | null;
 };
 
 type MonthlyReviewMonthOnlyFindManyArgs = {
@@ -40,7 +38,6 @@ type MonthlyReviewTimelineFindManyArgs = {
     status: true;
     generatedAt: true;
     errorMessage: true;
-    reviewText: true;
   };
   orderBy: [{ monthStart: "asc" }];
 };
@@ -121,7 +118,6 @@ export async function getMonthlyTimeline(
         status: true,
         generatedAt: true,
         errorMessage: true,
-        reviewText: true,
       },
       orderBy: [{ monthStart: "asc" }],
     }) as Promise<MonthlyTimelineReviewRecord[]>,
@@ -139,7 +135,6 @@ export async function getMonthlyTimeline(
       reviewState: toReviewState(review?.status ?? null),
       generatedAt: review?.generatedAt?.toISOString() ?? null,
       errorMessage: review?.errorMessage ?? null,
-      reviewText: review?.reviewText ?? null,
     };
   });
 
