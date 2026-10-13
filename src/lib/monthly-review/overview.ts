@@ -1,4 +1,5 @@
 import { isTransfer } from "@/lib/transactions/transfer";
+import { toReviewMonthKey } from "./review-month-key";
 
 type DecimalLike = { toString(): string } | number;
 
@@ -99,7 +100,7 @@ function toPreviousMonthKey(monthStart: string): string {
   const [yearString, monthString] = monthStart.split("-");
   const year = Number.parseInt(yearString, 10);
   const monthIndex = Number.parseInt(monthString, 10) - 1;
-  const previousMonthDate = new Date(Date.UTC(year, monthIndex - 1, 1));
+  const previousMonthDate = new Date(year, monthIndex - 1, 1);
 
   return toMonthStartKey(previousMonthDate);
 }
@@ -186,7 +187,7 @@ export async function getMonthlyOverview(
   const allMonthKeys = new Set<string>();
 
   for (const review of reviews) {
-    allMonthKeys.add(toMonthStartKey(review.monthStart));
+    allMonthKeys.add(toReviewMonthKey(review.monthStart));
   }
 
   for (const transaction of transactions) {

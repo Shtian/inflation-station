@@ -1,0 +1,111 @@
+.mir-deck {
+  --mir-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  background-color: var(--mir-bg);
+  color: var(--mir-fg);
+  caret-color: var(--mir-accent);
+  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 450ms var(--mir-ease),
+    color 450ms var(--mir-ease);
+}
+
+.mir-deck ::selection {
+  background-color: var(--mir-accent);
+  color: var(--mir-bg);
+}
+
+.mir-deck :focus-visible {
+  outline: 3px solid var(--mir-accent);
+  outline-offset: 3px;
+}
+
+.mir-deck a {
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.22em;
+}
+
+.mir-deck * {
+  scrollbar-color: color-mix(in oklab, var(--mir-accent) 45%, transparent)
+    transparent;
+  scrollbar-width: thin;
+}
+
+.mir-condensed {
+  font-stretch: 62%;
+}
+
+.mir-expanded {
+  font-stretch: 125%;
+}
+
+.mir-track {
+  background-color: color-mix(in oklab, var(--mir-accent) 18%, transparent);
+}
+
+@keyframes mir-wipe-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+    transform: translateY(0.12em);
+  }
+}
+
+.mir-wipe-up {
+  animation: mir-wipe-up 800ms var(--mir-ease) both;
+}
+
+@keyframes mir-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.mir-grow-x {
+  transform-origin: left center;
+  animation: mir-grow-x 900ms var(--mir-ease) both;
+}
+
+@keyframes mir-tick {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35em);
+  }
+}
+
+.mir-tick {
+  animation: mir-tick 240ms steps(3, end) both;
+}
+
+@keyframes mir-rise {
+  from {
+    transform: translateY(105%);
+  }
+}
+
+.mir-rise {
+  animation: mir-rise 750ms var(--mir-ease) both;
+}
+
+@keyframes mir-sweep {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+.mir-sweep {
+  animation: mir-sweep 1100ms var(--mir-ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mir-deck {
+    transition: none;
+  }
+
+  .mir-wipe-up,
+  .mir-grow-x,
+  .mir-tick,
+  .mir-rise,
+  .mir-sweep {
+    animation: none;
+  }
+}

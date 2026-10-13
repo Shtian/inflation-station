@@ -1,5 +1,6 @@
 import { MonthlyReviewStatus } from "@prisma/client";
 import { getMonthlyOverview, type MonthlyOverviewRow } from "./overview";
+import { toReviewMonthKey } from "./review-month-key";
 
 export const MONTHLY_TIMELINE_REVIEW_STATE = {
   NOT_GENERATED: "NOT_GENERATED",
@@ -82,14 +83,7 @@ type MonthlyTimelineDbClient = {
   };
 };
 
-function toMonthStartKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-
-  return `${year}-${month}-01`;
-}
-
-function toReviewState(
+export function toReviewState(
   status: MonthlyReviewStatus | null,
 ): MonthlyTimelineReviewState {
   if (status === MonthlyReviewStatus.GENERATING) {
@@ -134,7 +128,7 @@ export async function getMonthlyTimeline(
   ]);
 
   const reviewByMonthStart = new Map(
-    reviews.map((review) => [toMonthStartKey(review.monthStart), review]),
+    reviews.map((review) => [toReviewMonthKey(review.monthStart), review]),
   );
 
   const rows = overviewRows.map((overviewRow) => {

@@ -3,8 +3,6 @@ import { expect, test } from "@playwright/test";
 test("renders monthly review timeline cards with deterministic overview data", async ({
   page,
 }) => {
-  const generateRequests: Array<{ monthStart?: string }> = [];
-
   await page.route("**/api/monthly-review/timeline", async (route) => {
     await route.fulfill({
       status: 200,
@@ -101,7 +99,7 @@ test("renders monthly review timeline cards with deterministic overview data", a
                 spendNok: 900,
               },
             ],
-            monthOverMonthSpendDeltaNok: 200,
+            monthOverMonthSpendDeltaNok: 0.4,
             reviewState: "GENERATED",
             generatedAt: "2026-02-15T10:00:00.000Z",
             errorMessage: null,
@@ -109,26 +107,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
               "Spending increased due to rent and utilities. Dining out was also higher than last month, while transport costs stayed stable.",
           },
         ],
-      }),
-    });
-  });
-
-  await page.route("**/api/monthly-review/generate", async (route) => {
-    const payload = route.request().postDataJSON() as
-      | { monthStart?: string }
-      | undefined;
-    generateRequests.push(payload ?? {});
-
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        monthStart: payload?.monthStart ?? null,
-        status: "GENERATING",
-        generatedAt: null,
-        errorMessage: null,
-        reviewText: null,
-        unavailableReason: null,
       }),
     });
   });
@@ -154,70 +132,82 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await expect(page.getByText("Total spend").first()).toBeVisible();
   await expect(page.getByText("Total income").first()).toBeVisible();
   await expect(page.getByText("9 spending transactions")).toBeVisible();
-  await expect(page.getByText("AI insight is generating...")).toBeVisible();
-  await expect(
-    page.getByText("Generation failed: provider_error"),
-  ).toBeVisible();
+  await expect(page.getByText("AI insight")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /review/i })).toHaveCount(0);
 
-  const generatedMonthCard = page
+  const reviewStates = page
     .locator("article")
-    .filter({ has: page.getByRole("heading", { name: "February 2026" }) });
-  await expect(generatedMonthCard.getByText("AI insight")).toBeVisible();
-  await expect(
-    generatedMonthCard.getByText(
-      /Spending increased due to rent and utilities/,
-    ),
-  ).toBeVisible();
-  await expect(
-    generatedMonthCard.getByRole("button", { name: "Regenerate insight" }),
-  ).toBeVisible();
+    .getByText(/^(Writing recap…|Recap failed|Recap ready|No recap yet)$/);
+  await expect(reviewStates).toHaveText([
+    "Writing recap…",
+    "Recap failed",
+    "Recap ready",
+    "No recap yet",
+  ]);
 
-  await expect(
-    page.getByRole("button", { name: "Get AI review" }),
-  ).toBeVisible();
-
-  await page
+  const spendChanges = page
     .locator("article")
-    .filter({ has: page.getByRole("heading", { name: "January 2026" }) })
-    .getByRole("button", { name: "Get AI review" })
-    .click();
+    .getByText(/^(Spend (up|down) |Same spend|No previous-month)/);
+  await expect(spendChanges).toHaveText([
+    /^Spend up 100,00\skr \(\+5\.7%\)$/,
+    /^Spend down 125,00\skr \(-6\.8%\)$/,
+    "Same spend as last month",
+    "No previous-month spend data",
+  ]);
 
-  await expect(
-    page.getByRole("heading", { name: "Generate monthly review?" }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("This will generate a monthly AI review for January 2026."),
-  ).toBeVisible();
-  expect(generateRequests).toHaveLength(0);
-
-  await page.getByRole("button", { name: "Cancel" }).click();
-  expect(generateRequests).toHaveLength(0);
-
-  await page
+  const januaryLink = page
     .locator("article")
     .filter({ has: page.getByRole("heading", { name: "January 2026" }) })
-    .getByRole("button", { name: "Get AI review" })
-    .click();
-  await page.getByRole("button", { name: "Generate now" }).click();
-
-  await expect.poll(() => generateRequests.length).toBe(1);
-  expect(generateRequests[0]).toEqual({ monthStart: "2026-01-01" });
-
-  await page
-    .locator("article")
-    .filter({ has: page.getByRole("heading", { name: "February 2026" }) })
-    .getByRole("button", { name: "Regenerate insight" })
-    .click();
-
+    .getByRole("link", { name: "Open January 2026 in review" });
+  await expect(januaryLink).toHaveAttribute(
+    "href",
+    "/monthly-review/2026-01-01",
+  );
   await expect(
-    page.getByRole("heading", { name: "Regenerate monthly review?" }),
-  ).toBeVisible();
+    page.getByRole("link", { name: /^Open .+ in review$/ }),
+  ).toHaveCount(4);
+
+  await page.route("**/api/monthly-review/2026-01-01", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        review: {
+          monthStart: "2026-01-01",
+          cashflow: {
+            incomeNok: 1400,
+            spendNok: 1400,
+            netNok: 0,
+            savingsRate: 0,
+          },
+          previousMonth: null,
+          spendTransactionCount: 6,
+          categories: [],
+          incomeSources: [],
+          bills: { totalNok: 0, count: 0, items: [] },
+          everyday: {
+            totalNok: 0,
+            count: 0,
+            topMerchants: [],
+            biggestPurchase: null,
+            busiestDay: null,
+            dailySpend: [],
+          },
+          adjacentMonths: { previous: null, next: null },
+          reviewState: "NOT_GENERATED",
+          generatedAt: null,
+          errorMessage: null,
+          reviewText: null,
+        },
+      }),
+    });
+  });
+  await januaryLink.click();
+
+  await expect(page).toHaveURL(/\/monthly-review\/2026-01-01$/);
   await expect(
-    page.getByText(
-      "This will replace the existing review text for February 2026.",
-    ),
+    page.getByRole("heading", { name: "January 2026 in review" }),
   ).toBeVisible();
-  expect(generateRequests).toHaveLength(1);
 });
 
 test("opens monthly review settings from header configuration and monthly review cog", async ({

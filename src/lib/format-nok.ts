@@ -5,16 +5,24 @@ const nokFormatter = new Intl.NumberFormat("nb-NO", {
   maximumFractionDigits: 2,
 });
 
-export function formatNok(value: number): string {
-  return nokFormatter.format(value);
+const wholeNokFormatter = new Intl.NumberFormat("nb-NO", {
+  style: "currency",
+  currency: "NOK",
+  maximumFractionDigits: 0,
+});
+
+type FormatNokOptions = { whole?: boolean };
+
+export function formatNok(value: number, options?: FormatNokOptions): string {
+  return (options?.whole ? wholeNokFormatter : nokFormatter).format(value);
 }
 
 export function formatSignedNok(
   value: number,
   mode: "positive" | "negative" | "auto" = "auto",
+  options?: FormatNokOptions,
 ): string {
-  const absValue = Math.abs(value);
-  const formatted = formatNok(absValue);
+  const formatted = formatNok(Math.abs(value), options);
 
   if (mode === "positive") {
     return `+${formatted}`;
