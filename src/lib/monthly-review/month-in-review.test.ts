@@ -336,7 +336,7 @@ describe("getMonthInReview", () => {
 });
 
 describe("getMonthInReviewWithReview", () => {
-  it("attaches the persisted review state and text", async () => {
+  it("attaches the persisted review state and recap", async () => {
     const result = await getMonthInReviewWithReview(
       {
         transaction: {
@@ -348,7 +348,10 @@ describe("getMonthInReviewWithReview", () => {
             status: MonthlyReviewStatus.GENERATED,
             generatedAt: new Date("2026-03-02T08:00:00.000Z"),
             errorMessage: null,
-            reviewText: "Februar gikk i pluss.",
+            recap: {
+              headline: "Februar gikk i pluss.",
+              points: ["Mat gikk ned.", "Sett av overskuddet."],
+            },
           })),
         },
       },
@@ -357,7 +360,10 @@ describe("getMonthInReviewWithReview", () => {
 
     expect(result.reviewState).toBe("GENERATED");
     expect(result.generatedAt).toBe("2026-03-02T08:00:00.000Z");
-    expect(result.reviewText).toBe("Februar gikk i pluss.");
+    expect(result.recap).toEqual({
+      headline: "Februar gikk i pluss.",
+      points: ["Mat gikk ned.", "Sett av overskuddet."],
+    });
   });
 
   it("reports NOT_GENERATED when no review row exists", async () => {
@@ -383,7 +389,7 @@ describe("getMonthInReviewWithReview", () => {
       reviewState: "NOT_GENERATED",
       generatedAt: null,
       errorMessage: null,
-      reviewText: null,
+      recap: null,
     });
   });
 });

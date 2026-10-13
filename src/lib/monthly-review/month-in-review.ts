@@ -1,5 +1,6 @@
-import type { MonthlyReviewStatus, PaymentType } from "@prisma/client";
+import type { MonthlyReviewStatus, PaymentType, Prisma } from "@prisma/client";
 import { isTransfer } from "@/lib/transactions/transfer";
+import { type MonthlyRecap, toMonthlyRecap } from "./recap";
 import { toReviewMonthStartDate } from "./review-month-key";
 import { type MonthlyTimelineReviewState, toReviewState } from "./timeline";
 
@@ -73,13 +74,13 @@ type MonthInReviewWithReviewDbClient = {
         status: true;
         generatedAt: true;
         errorMessage: true;
-        reviewText: true;
+        recap: true;
       };
     }): Promise<{
       status: MonthlyReviewStatus;
       generatedAt: Date | null;
       errorMessage: string | null;
-      reviewText: string | null;
+      recap: Prisma.JsonValue | null;
     } | null>;
   };
 };
@@ -170,7 +171,7 @@ export type MonthInReviewWithReview = MonthInReview & {
   reviewState: MonthlyTimelineReviewState;
   generatedAt: string | null;
   errorMessage: string | null;
-  reviewText: string | null;
+  recap: MonthlyRecap | null;
 };
 
 export type MonthWindow = {
@@ -640,7 +641,7 @@ export async function getMonthInReviewWithReview(
         status: true,
         generatedAt: true,
         errorMessage: true,
-        reviewText: true,
+        recap: true,
       },
     }),
   ]);
@@ -651,6 +652,6 @@ export async function getMonthInReviewWithReview(
     reviewState: toReviewState(review?.status ?? null),
     generatedAt: review?.generatedAt?.toISOString() ?? null,
     errorMessage: review?.errorMessage ?? null,
-    reviewText: review?.reviewText ?? null,
+    recap: toMonthlyRecap(review?.recap ?? null),
   };
 }

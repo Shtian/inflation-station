@@ -154,7 +154,7 @@ model MonthlyReview {
   id           String              @id @default(cuid())
   monthStart   DateTime            @unique
   status       MonthlyReviewStatus @default(GENERATING)
-  reviewText   String?
+  recap        Json?
   errorMessage String?
   generatedAt  DateTime?
   createdAt    DateTime            @default(now())

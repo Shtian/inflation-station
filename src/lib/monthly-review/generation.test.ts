@@ -1,17 +1,34 @@
-import { MonthlyReviewStatus, PaymentType } from "@prisma/client";
+import { MonthlyReviewStatus, PaymentType, Prisma } from "@prisma/client";
 import { describe, expect, it, vi } from "vitest";
 import {
   generateMonthlyReview,
   MonthlyReviewMonthStartValidationError,
 } from "./generation";
+import type { MonthlyRecap } from "./recap";
 
 type MonthlyReviewRow = {
   monthStart: Date;
   status: MonthlyReviewStatus;
   generatedAt: Date | null;
   errorMessage: string | null;
-  reviewText: string | null;
+  recap: Prisma.JsonValue | null;
 };
+
+type MonthlyReviewWrite = Omit<MonthlyReviewRow, "monthStart" | "recap"> & {
+  recap: MonthlyRecap | typeof Prisma.DbNull;
+};
+
+// Mirrors the database: Prisma.DbNull is stored as SQL NULL.
+function toStoredRow(
+  monthStart: Date,
+  write: MonthlyReviewWrite,
+): MonthlyReviewRow {
+  return {
+    ...write,
+    monthStart,
+    recap: write.recap instanceof Prisma.NullTypes.DbNull ? null : write.recap,
+  };
+}
 
 function createGenerationDbMock() {
   const monthlyReviewRowByKey = new Map<string, MonthlyReviewRow>();
@@ -69,21 +86,16 @@ function createGenerationDbMock() {
           update,
         }: {
           where: { monthStart: Date };
-          create: MonthlyReviewRow;
-          update: Omit<MonthlyReviewRow, "monthStart">;
+          create: MonthlyReviewWrite & { monthStart: Date };
+          update: MonthlyReviewWrite;
         }) => {
           const key = where.monthStart.toISOString();
           const existing = monthlyReviewRowByKey.get(key);
 
-          if (existing) {
-            monthlyReviewRowByKey.set(key, {
-              ...existing,
-              ...update,
-            });
-            return;
-          }
-
-          monthlyReviewRowByKey.set(key, create);
+          monthlyReviewRowByKey.set(
+            key,
+            toStoredRow(where.monthStart, existing ? update : create),
+          );
         },
       ),
       update: vi.fn(
@@ -92,13 +104,10 @@ function createGenerationDbMock() {
           data,
         }: {
           where: { monthStart: Date };
-          data: Omit<MonthlyReviewRow, "monthStart">;
+          data: MonthlyReviewWrite;
         }) => {
           const key = where.monthStart.toISOString();
-          const row = {
-            monthStart: where.monthStart,
-            ...data,
-          };
+          const row = toStoredRow(where.monthStart, data);
           monthlyReviewRowByKey.set(key, row);
           return row;
         },
@@ -114,39 +123,48 @@ function createGenerationDbMock() {
   };
 }
 
+function createProviderFetchMock(content: unknown) {
+  return vi.fn(
+    async (_input: RequestInfo | URL, _init?: RequestInit) =>
+      new Response(
+        JSON.stringify({
+          id: "chatcmpl-test",
+          object: "chat.completion",
+          created: 1_738_780_800,
+          model: "gpt-4o-mini",
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: "assistant",
+                content: JSON.stringify(content),
+              },
+              finish_reason: "stop",
+            },
+          ],
+          usage: {
+            prompt_tokens: 123,
+            completion_tokens: 45,
+            total_tokens: 168,
+          },
+        }),
+        { status: 200 },
+      ),
+  );
+}
+
 describe("generateMonthlyReview", () => {
   it("persists generated review output for the month", async () => {
     const { db, getMonthlyReviewRow } = createGenerationDbMock();
 
-    const fetchImpl = vi.fn(
-      async (_input: RequestInfo | URL, _init?: RequestInit) =>
-        new Response(
-          JSON.stringify({
-            id: "chatcmpl-test",
-            object: "chat.completion",
-            created: 1_738_780_800,
-            model: "gpt-4o-mini",
-            choices: [
-              {
-                index: 0,
-                message: {
-                  role: "assistant",
-                  content: JSON.stringify({
-                    reviewText: "## February\nSpend increased mainly in food.",
-                  }),
-                },
-                finish_reason: "stop",
-              },
-            ],
-            usage: {
-              prompt_tokens: 123,
-              completion_tokens: 45,
-              total_tokens: 168,
-            },
-          }),
-          { status: 200 },
-        ),
-    );
+    const fetchImpl = createProviderFetchMock({
+      headline: " Februar endte i pluss med 580 kr. ",
+      points: [
+        "Mat hos REMA 1000 kostet 420 kr.",
+        "  ",
+        "Sett av overskuddet.",
+      ],
+    });
 
     const result = await generateMonthlyReview(
       db,
@@ -171,13 +189,42 @@ describe("generateMonthlyReview", () => {
 
     expect(result.status).toBe(MonthlyReviewStatus.GENERATED);
     expect(result.unavailableReason).toBeNull();
-    expect(result.reviewText).toBe(
-      "## February\nSpend increased mainly in food.",
-    );
+    expect(result.recap).toEqual({
+      headline: "Februar endte i pluss med 580 kr.",
+      points: ["Mat hos REMA 1000 kostet 420 kr.", "Sett av overskuddet."],
+    });
     expect(result.generatedAt).not.toBeNull();
-    expect(getMonthlyReviewRow("2026-02-01")?.status).toBe(
-      MonthlyReviewStatus.GENERATED,
+    expect(getMonthlyReviewRow("2026-02-01")).toMatchObject({
+      status: MonthlyReviewStatus.GENERATED,
+      recap: {
+        headline: "Februar endte i pluss med 580 kr.",
+        points: ["Mat hos REMA 1000 kostet 420 kr.", "Sett av overskuddet."],
+      },
+    });
+  });
+
+  it("marks month as failed with provider_error when the recap has no headline", async () => {
+    const { db, getMonthlyReviewRow } = createGenerationDbMock();
+
+    const result = await generateMonthlyReview(
+      db,
+      { monthStart: "2026-02-01" },
+      {
+        openAiApiKey: "test-key",
+        fetchImpl: createProviderFetchMock({
+          headline: "   ",
+          points: ["Mat hos REMA 1000 kostet 420 kr."],
+        }),
+      },
     );
+
+    expect(result).toMatchObject({
+      status: MonthlyReviewStatus.FAILED,
+      unavailableReason: "provider_error",
+      errorMessage: "Monthly review generation failed due to provider error.",
+      recap: null,
+    });
+    expect(getMonthlyReviewRow("2026-02-01")?.recap).toBeNull();
   });
 
   it("marks month as failed when OPENAI_API_KEY is missing", async () => {
@@ -195,10 +242,10 @@ describe("generateMonthlyReview", () => {
       generatedAt: null,
       errorMessage:
         "Monthly review generation is unavailable because OPENAI_API_KEY is missing.",
-      reviewText: null,
+      recap: null,
       unavailableReason: "key_missing",
     });
-    expect(getMonthlyReviewRow("2026-02-01")?.reviewText).toBeNull();
+    expect(getMonthlyReviewRow("2026-02-01")?.recap).toBeNull();
   });
 
   it("marks month as failed with provider_error for non-ok provider responses", async () => {

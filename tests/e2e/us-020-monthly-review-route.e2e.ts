@@ -31,7 +31,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
             reviewState: "GENERATING",
             generatedAt: null,
             errorMessage: null,
-            reviewText: null,
           },
           {
             monthStart: "2026-03-01",
@@ -55,7 +54,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
             reviewState: "FAILED",
             generatedAt: "2026-03-28T14:00:00.000Z",
             errorMessage: "provider_error",
-            reviewText: null,
           },
           {
             monthStart: "2026-01-01",
@@ -79,7 +77,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
             reviewState: "NOT_GENERATED",
             generatedAt: null,
             errorMessage: null,
-            reviewText: null,
           },
           {
             monthStart: "2026-02-01",
@@ -103,8 +100,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
             reviewState: "GENERATED",
             generatedAt: "2026-02-15T10:00:00.000Z",
             errorMessage: null,
-            reviewText:
-              "Spending increased due to rent and utilities. Dining out was also higher than last month, while transport costs stayed stable.",
           },
         ],
       }),
@@ -197,7 +192,6 @@ test("renders monthly review timeline cards with deterministic overview data", a
           reviewState: "NOT_GENERATED",
           generatedAt: null,
           errorMessage: null,
-          reviewText: null,
         },
       }),
     });

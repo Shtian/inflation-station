@@ -18,5 +18,4 @@ export type MonthlyReviewTimelineRow = {
   reviewState: "NOT_GENERATED" | "GENERATING" | "GENERATED" | "FAILED";
   generatedAt: string | null;
   errorMessage: string | null;
-  reviewText: string | null;
 };

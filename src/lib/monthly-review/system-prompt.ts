@@ -10,9 +10,7 @@ export const DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT = `You write a personal "month
 - Then describe where the money went and the notable changes versus last month when that data is available.
 - End with one concrete, practical suggestion for next month.
 - Use only the provided facts and transactions. Do not invent values.
-- Keep the response to about 2 short paragraphs.
-- Respond in plain text, NOT markdown.
-- Do not include a title.
+- Keep every sentence short. No markdown.
 - Respond in Norwegian.`;
 
 type MonthlyReviewSystemPromptRecord = {
