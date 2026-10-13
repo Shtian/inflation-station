@@ -42,8 +42,8 @@ function whole(value: number): string {
   return formatNok(value, { whole: true });
 }
 
-function plural(count: number, noun: string): string {
-  return `${count}\u00a0${noun}${count === 1 ? "" : "s"}`;
+function plural(count: number, one: string, many: string): string {
+  return `${count}\u00a0${count === 1 ? one : many}`;
 }
 
 function signedNet(netNok: number): string {
@@ -131,14 +131,14 @@ function introLine(review: MonthInReviewWithReview): string {
 
   const { cashflow } = review;
   if (!hasActivity(review)) {
-    return "A quiet month with no spending or income recorded.";
+    return "En rolig måned uten registrert forbruk eller inntekt.";
   }
 
   if (cashflow.netNok >= 0) {
-    return `You kept ${whole(cashflow.netNok)} of what came in. Let's see where the rest went.`;
+    return `Du beholdt ${whole(cashflow.netNok)} av det som kom inn. La oss se hvor resten ble av.`;
   }
 
-  return `You spent ${whole(Math.abs(cashflow.netNok))} more than came in. Let's see where it went.`;
+  return `Du brukte ${whole(Math.abs(cashflow.netNok))} mer enn det som kom inn. La oss se hvor pengene ble av.`;
 }
 
 function IntroSlide({ review }: SlideContext) {
@@ -165,14 +165,14 @@ function savingsSentence(review: MonthInReviewWithReview): string {
   const { savingsRate } = review.cashflow;
 
   if (savingsRate === null) {
-    return "No income was recorded this month.";
+    return "Ingen inntekt ble registrert denne måneden.";
   }
 
   if (savingsRate >= 0) {
-    return `You kept ${formatPercent(savingsRate)} of your income.`;
+    return `Du beholdt ${formatPercent(savingsRate)} av inntekten din.`;
   }
 
-  return `Spending outpaced income by ${formatPercent(Math.abs(savingsRate))}.`;
+  return `Forbruket var ${formatPercent(Math.abs(savingsRate))} høyere enn inntekten.`;
 }
 
 function netChangeSentence(review: MonthInReviewWithReview): string | null {
@@ -186,10 +186,10 @@ function netChangeSentence(review: MonthInReviewWithReview): string | null {
   const direction = toDeltaDirection(change);
 
   if (direction === "flat") {
-    return `Same as ${month}.`;
+    return `Samme som i ${month}.`;
   }
 
-  return `${whole(Math.abs(change))} ${direction === "up" ? "better" : "worse"} than ${month}.`;
+  return `${whole(Math.abs(change))} ${direction === "up" ? "bedre" : "dårligere"} enn i ${month}.`;
 }
 
 function FlowBar({
@@ -228,7 +228,7 @@ function NetSlide({ review }: SlideContext) {
   return (
     <div className="flex flex-col gap-8 md:gap-10">
       <div className="space-y-3">
-        <h2 aria-label={`Net ${signedNet(cashflow.netNok)}`}>
+        <h2 aria-label={`Netto ${signedNet(cashflow.netNok)}`}>
           <span
             aria-hidden
             data-testid="net-result"
@@ -242,8 +242,8 @@ function NetSlide({ review }: SlideContext) {
         </p>
       </div>
       <dl className="grid max-w-2xl gap-5">
-        <FlowBar label="In" amountNok={cashflow.incomeNok} maxNok={maxNok} />
-        <FlowBar label="Out" amountNok={cashflow.spendNok} maxNok={maxNok} />
+        <FlowBar label="Inn" amountNok={cashflow.incomeNok} maxNok={maxNok} />
+        <FlowBar label="Ut" amountNok={cashflow.spendNok} maxNok={maxNok} />
       </dl>
       {change ? <Muted>{change}</Muted> : null}
     </div>
@@ -256,7 +256,7 @@ function categoryDeltaLabel(deltaNok: number): string | null {
     return null;
   }
 
-  return `${whole(Math.abs(deltaNok))} ${direction === "up" ? "more" : "less"}`;
+  return `${whole(Math.abs(deltaNok))} ${direction === "up" ? "mer" : "mindre"}`;
 }
 
 function CategoriesSlide({ review }: SlideContext) {
@@ -281,7 +281,8 @@ function CategoriesSlide({ review }: SlideContext) {
   return (
     <div className="flex flex-col gap-7 md:gap-9">
       <Headline>
-        {top.categoryName} took {formatPercent(top.share)} of your spending.
+        {top.categoryName} utgjorde {formatPercent(top.share)} av forbruket
+        ditt.
       </Headline>
 
       <ul className="grid gap-3.5 md:gap-4">
@@ -339,12 +340,15 @@ function CategoriesSlide({ review }: SlideContext) {
       {rest.length > 0 || allFlat ? (
         <div className="space-y-1">
           {allFlat ? (
-            <Muted>Every category held steady vs {previousMonthName}.</Muted>
+            <Muted>
+              Alle kategorier holdt seg på samme nivå som i {previousMonthName}.
+            </Muted>
           ) : null}
           {rest.length > 0 ? (
             <Muted>
-              {rest.length} more {rest.length === 1 ? "category" : "categories"}{" "}
-              shared the remaining {whole(restSpendNok)}.
+              {rest.length}{" "}
+              {rest.length === 1 ? "annen kategori" : "andre kategorier"} sto
+              for de resterende {whole(restSpendNok)}.
             </Muted>
           ) : null}
         </div>
@@ -362,11 +366,10 @@ function BillsSlide({ review }: SlideContext) {
   return (
     <div className="flex flex-col gap-7 md:gap-9">
       <div className="space-y-3">
-        <Headline>Bills ran like clockwork: {whole(bills.totalNok)}.</Headline>
+        <Headline>Regningene gikk som smurt: {whole(bills.totalNok)}.</Headline>
         <Muted>
-          {plural(bills.count, "fixed payment")},{" "}
-          {formatPercent(bills.totalNok / cashflow.spendNok)} of everything you
-          spent.
+          {plural(bills.count, "fast betaling", "faste betalinger")},{" "}
+          {formatPercent(bills.totalNok / cashflow.spendNok)} av alt du brukte.
         </Muted>
       </div>
 
@@ -395,7 +398,8 @@ function BillsSlide({ review }: SlideContext) {
       </ul>
       {rest.length > 0 ? (
         <Muted>
-          {plural(rest.length, "more bill")} came to {whole(restNok)}.
+          {plural(rest.length, "annen regning", "andre regninger")} utgjorde{" "}
+          {whole(restNok)}.
         </Muted>
       ) : null}
     </div>
@@ -416,7 +420,7 @@ function MerchantsSlide({ review }: SlideContext) {
           </span>
           <span className="mt-2 block font-bold text-2xl md:text-3xl">
             {whole(first.spendNok)},{" "}
-            {plural(first.transactionCount, "purchase")}
+            {plural(first.transactionCount, "kjøp", "kjøp")}
           </span>
         </span>
       </h2>
@@ -489,9 +493,9 @@ function MomentsSlide({ review }: SlideContext) {
             {formatDayLong(biggestPurchase.bookingDate)}
           </Headline>
           <Muted>
-            Your biggest everyday purchase
+            Ditt største hverdagskjøp
             {biggestPurchase.categoryName
-              ? `, in ${biggestPurchase.categoryName}`
+              ? `, i ${biggestPurchase.categoryName}`
               : ""}
             .
           </Muted>
@@ -500,7 +504,7 @@ function MomentsSlide({ review }: SlideContext) {
 
       <figure className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-3">
         <p className="col-start-2 text-[var(--mir-muted)] text-sm">
-          Everyday purchases per day
+          Hverdagskjøp per dag
         </p>
         <div
           className="flex h-36 flex-col justify-between text-right text-[var(--mir-muted)] text-sm tabular-nums leading-none md:h-44"
@@ -512,7 +516,7 @@ function MomentsSlide({ review }: SlideContext) {
         <div
           className="mir-sweep flex h-36 items-end gap-[3px] md:h-44 md:gap-1"
           role="img"
-          aria-label={`Everyday purchases per day${busiestDay ? `, most on ${formatDayLong(busiestDay.bookingDate)}` : ""}`}
+          aria-label={`Hverdagskjøp per dag${busiestDay ? `, flest ${formatDayLong(busiestDay.bookingDate)}` : ""}`}
         >
           {dailySpend.map((day) => {
             const isBusiest =
@@ -538,8 +542,8 @@ function MomentsSlide({ review }: SlideContext) {
         </div>
         {busiestDay ? (
           <figcaption className="col-span-2 text-pretty font-semibold text-lg md:text-xl">
-            Most purchases: {formatDayLong(busiestDay.bookingDate)},{" "}
-            {plural(busiestDay.transactionCount, "purchase")} for{" "}
+            Flest kjøp: {formatDayLong(busiestDay.bookingDate)},{" "}
+            {plural(busiestDay.transactionCount, "kjøp", "kjøp")} for{" "}
             {whole(busiestDay.spendNok)}.
           </figcaption>
         ) : null}
@@ -577,7 +581,7 @@ function RecapVoice({
   if (isGenerating || review.reviewState === "GENERATING") {
     return (
       <output className="block text-[var(--mir-muted)] text-lg">
-        Writing the recap…
+        Skriver oppsummeringen…
       </output>
     );
   }
@@ -585,9 +589,9 @@ function RecapVoice({
   if (generateFailed || review.reviewState === "FAILED") {
     return (
       <div role="alert" className="space-y-2 text-lg">
-        <p>The recap couldn't be written. Try again.</p>
+        <p>Oppsummeringen kunne ikke skrives. Prøv igjen.</p>
         <TextButton onClick={() => onRequestGenerate("regenerate")}>
-          Retry
+          Prøv igjen
         </TextButton>
       </div>
     );
@@ -605,7 +609,7 @@ function RecapVoice({
           ))}
         </ul>
         <TextButton onClick={() => onRequestGenerate("regenerate")}>
-          Rewrite the recap
+          Skriv oppsummeringen på nytt
         </TextButton>
       </div>
     );
@@ -617,7 +621,7 @@ function RecapVoice({
 
   return (
     <TextButton onClick={() => onRequestGenerate("generate")}>
-      Write a recap
+      Skriv en oppsummering
     </TextButton>
   );
 }
@@ -635,7 +639,7 @@ function FinaleSlide(context: SlideContext) {
     <div className="flex flex-col gap-9 md:gap-12">
       <div className="grid items-start gap-8 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-14">
         <div className="space-y-4">
-          <h2 aria-label={`Net ${signedNet(cashflow.netNok)}`}>
+          <h2 aria-label={`Netto ${signedNet(cashflow.netNok)}`}>
             <span
               aria-hidden
               className="mir-condensed block font-black text-[clamp(4rem,20vw,6rem)] text-[var(--mir-accent)] leading-[0.9] tracking-[-0.02em]"
@@ -645,18 +649,18 @@ function FinaleSlide(context: SlideContext) {
           </h2>
           <ul className="space-y-1 text-lg">
             <li>
-              {whole(cashflow.incomeNok)} in, {whole(cashflow.spendNok)} out.
+              {whole(cashflow.incomeNok)} inn, {whole(cashflow.spendNok)} ut.
             </li>
             {topCategory ? (
               <li>
-                {topCategory.categoryName} led spending at{" "}
+                {topCategory.categoryName} toppet forbruket med{" "}
                 {formatPercent(topCategory.share)}.
               </li>
             ) : null}
             {bills.count > 0 ? (
               <li>
-                {whole(bills.totalNok)} in bills, {whole(everyday.totalNok)}{" "}
-                everyday.
+                {whole(bills.totalNok)} i regninger, {whole(everyday.totalNok)}{" "}
+                i hverdagskjøp.
               </li>
             ) : null}
           </ul>
@@ -665,7 +669,7 @@ function FinaleSlide(context: SlideContext) {
       </div>
 
       <nav
-        aria-label="Leave the review"
+        aria-label="Forlat oppsummeringen"
         className="flex flex-wrap items-center gap-x-7 gap-y-3"
       >
         {adjacentMonths.previous ? (
@@ -678,13 +682,13 @@ function FinaleSlide(context: SlideContext) {
           </Link>
         ) : null}
         <button type="button" onClick={onReplay} className={exitLinkClassName}>
-          Replay
+          Spill av igjen
         </button>
         <Link
           href={`/transactions?dateFrom=${dateFrom}&dateTo=${dateTo}`}
           className={exitLinkClassName}
         >
-          See transactions
+          Se transaksjoner
         </Link>
         {adjacentMonths.next ? (
           <Link
@@ -710,7 +714,7 @@ export const MONTH_IN_REVIEW_SLIDES: SlideDefinition[] = [
   },
   {
     id: "net",
-    title: "Net result",
+    title: "Nettoresultat",
     world: (review) =>
       review.cashflow.netNok >= 0 ? DECK_WORLDS.positive : DECK_WORLDS.negative,
     isAvailable: hasActivity,
@@ -718,28 +722,28 @@ export const MONTH_IN_REVIEW_SLIDES: SlideDefinition[] = [
   },
   {
     id: "categories",
-    title: "Where it went",
+    title: "Hvor pengene gikk",
     world: () => DECK_WORLDS.brand,
     isAvailable: (review) => review.categories.length > 0,
     render: (context) => <CategoriesSlide {...context} />,
   },
   {
     id: "bills",
-    title: "Bills",
+    title: "Regninger",
     world: () => DECK_WORLDS.neutral,
     isAvailable: (review) => review.bills.count > 0,
     render: (context) => <BillsSlide {...context} />,
   },
   {
     id: "merchants",
-    title: "Top merchants",
+    title: "Topp brukersteder",
     world: () => DECK_WORLDS.brandSoft,
     isAvailable: (review) => review.everyday.topMerchants.length > 0,
     render: (context) => <MerchantsSlide {...context} />,
   },
   {
     id: "moments",
-    title: "Moments",
+    title: "Øyeblikk",
     world: () => DECK_WORLDS.neutralDeep,
     isAvailable: (review) => review.everyday.count > 0,
     render: (context) => <MomentsSlide {...context} />,

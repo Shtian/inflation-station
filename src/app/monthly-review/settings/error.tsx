@@ -13,10 +13,10 @@ export default function MonthlyReviewSettingsRouteError({
 }: MonthlyReviewSettingsRouteErrorProps) {
   return (
     <RouteErrorState
-      title="Monthly review settings failed to load"
+      title="Kunne ikke laste inn innstillingene for månedsoppsummering"
       message={
         error.message ||
-        "An unexpected error occurred while loading monthly review settings."
+        "Det oppstod en uventet feil under lasting av innstillingene for månedsoppsummering."
       }
       onRetry={reset}
     />

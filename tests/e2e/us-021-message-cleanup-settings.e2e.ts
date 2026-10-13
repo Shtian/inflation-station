@@ -10,30 +10,31 @@ test("submits message cleanup settings through a server action", async ({
   const availableReasoningEfforts = [
     {
       id: "none",
-      label: "None",
-      description: "Fastest, but can silently drop suggestions on some models.",
+      label: "Ingen",
+      description:
+        "Raskest, men kan stille droppe forslag på enkelte modeller.",
     },
     {
       id: "low",
-      label: "Low",
+      label: "Lav",
       description:
-        "Default. Keeps every suggestion, roughly 30% faster than no override.",
+        "Standard. Beholder alle forslag, omtrent 30 % raskere enn uten overstyring.",
     },
     {
       id: "medium",
-      label: "Medium",
-      description: "Balances thoroughness and speed for everyday cleanup runs.",
+      label: "Middels",
+      description: "Balanserer grundighet og fart for vanlige ryddekjøringer.",
     },
     {
       id: "high",
-      label: "High",
+      label: "Høy",
       description:
-        "Reasons more carefully before answering, at a noticeably slower pace.",
+        "Resonnerer grundigere før svaret, i et merkbart lavere tempo.",
     },
     {
       id: "xhigh",
-      label: "Extra high",
-      description: "Slowest, most thorough reasoning.",
+      label: "Ekstra høy",
+      description: "Tregest, med den grundigste resonneringen.",
     },
   ];
 
@@ -73,41 +74,45 @@ test("submits message cleanup settings through a server action", async ({
   await page.goto("/import/settings/message-cleanup");
 
   await expect(
-    page.getByRole("heading", { name: "Message Cleanup Settings" }),
+    page.getByRole("heading", { name: "Innstillinger for meldingsrydding" }),
   ).toBeVisible();
 
-  const systemPromptTextbox = page.getByLabel("Message cleanup system prompt");
+  const systemPromptTextbox = page.getByLabel(
+    "Systemprompt for meldingsrydding",
+  );
   await expect(systemPromptTextbox).toHaveValue("Trim transaction noise.");
 
   const reasoningEffortCombobox = page.getByRole("combobox", {
-    name: "Message cleanup reasoning effort",
+    name: "Resonneringsnivå for meldingsrydding",
   });
   await expect(reasoningEffortCombobox).toBeVisible();
   await expect(
     reasoningEffortCombobox.locator("[data-slot=select-value]"),
-  ).toHaveText("Low");
+  ).toHaveText("Lav");
 
   await systemPromptTextbox.fill("Keep merchant + location only.");
-  await page.getByRole("button", { name: "Save prompt" }).click();
+  await page.getByRole("button", { name: "Lagre prompt" }).click();
 
   await expect.poll(() => serverActionRequestCount).toBe(1);
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "System prompt saved." }),
+    page.locator("[data-sonner-toast]", { hasText: "Systemprompt lagret." }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Save prompt" })).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Lagre prompt" }),
+  ).toBeEnabled();
 
   await reasoningEffortCombobox.click();
-  await page.getByRole("option", { name: "High", exact: true }).click();
+  await page.getByRole("option", { name: "Høy", exact: true }).click();
 
   await expect.poll(() => serverActionRequestCount).toBe(2);
   await expect(
     page.locator("[data-sonner-toast]", {
-      hasText: "Cleanup reasoning effort saved.",
+      hasText: "Resonneringsnivå for rydding lagret.",
     }),
   ).toBeVisible();
   await expect(
     reasoningEffortCombobox.locator("[data-slot=select-value]"),
-  ).toHaveText("High");
+  ).toHaveText("Høy");
 });
 
 test("shows stable save failure feedback when message cleanup action fails", async ({
@@ -134,32 +139,32 @@ test("shows stable save failure feedback when message cleanup action fails", asy
         availableReasoningEfforts: [
           {
             id: "none",
-            label: "None",
+            label: "Ingen",
             description:
-              "Fastest, but can silently drop suggestions on some models.",
+              "Raskest, men kan stille droppe forslag på enkelte modeller.",
           },
           {
             id: "low",
-            label: "Low",
+            label: "Lav",
             description:
-              "Default. Keeps every suggestion, roughly 30% faster than no override.",
+              "Standard. Beholder alle forslag, omtrent 30 % raskere enn uten overstyring.",
           },
           {
             id: "medium",
-            label: "Medium",
+            label: "Middels",
             description:
-              "Balances thoroughness and speed for everyday cleanup runs.",
+              "Balanserer grundighet og fart for vanlige ryddekjøringer.",
           },
           {
             id: "high",
-            label: "High",
+            label: "Høy",
             description:
-              "Reasons more carefully before answering, at a noticeably slower pace.",
+              "Resonnerer grundigere før svaret, i et merkbart lavere tempo.",
           },
           {
             id: "xhigh",
-            label: "Extra high",
-            description: "Slowest, most thorough reasoning.",
+            label: "Ekstra høy",
+            description: "Tregest, med den grundigste resonneringen.",
           },
         ],
       }),
@@ -189,15 +194,17 @@ test("shows stable save failure feedback when message cleanup action fails", asy
   await page
     .getByLabel("Message cleanup system prompt")
     .fill("Keep merchant + location only.");
-  await page.getByRole("button", { name: "Save prompt" }).click();
+  await page.getByRole("button", { name: "Lagre prompt" }).click();
 
   await expect.poll(() => serverActionRequestCount).toBe(1);
   await expect(
     page.getByText(
-      "Could not save message cleanup settings. Please try again.",
+      "Kunne ikke lagre innstillingene for meldingsrydding. Prøv igjen.",
     ),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Save prompt" })).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Lagre prompt" }),
+  ).toBeEnabled();
 });
 
 test("explains when OpenAI models could not be loaded", async ({ page }) => {
@@ -218,7 +225,7 @@ test("explains when OpenAI models could not be loaded", async ({ page }) => {
         resolvedReasoningEffort: "low",
         usesDefaultReasoningEffort: true,
         availableReasoningEfforts: [
-          { id: "low", label: "Low", description: "Default." },
+          { id: "low", label: "Lav", description: "Standard." },
         ],
       }),
     });
@@ -227,14 +234,14 @@ test("explains when OpenAI models could not be loaded", async ({ page }) => {
   await page.goto("/import/settings/message-cleanup");
 
   const modelCombobox = page.getByRole("combobox", {
-    name: "Message cleanup OpenAI model",
+    name: "OpenAI-modell for meldingsrydding",
   });
   await expect(modelCombobox.locator("[data-slot=select-value]")).toHaveText(
     "gpt-6-luna",
   );
   await expect(
     page.getByText(
-      "Couldn't load models from OpenAI. Showing the saved model only.",
+      "Kunne ikke laste inn modeller fra OpenAI. Viser bare den lagrede modellen.",
     ),
   ).toBeVisible();
 });

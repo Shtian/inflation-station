@@ -67,7 +67,7 @@ export function MonthlyReviewSettingsManager() {
       setResolvedModelId(DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL);
       setUsesDefaultModel(true);
       setAvailableModels([]);
-      setError("Could not load monthly review system prompt.");
+      setError("Kunne ikke laste inn systemprompten for månedsoppsummering.");
       setLoading(false);
       return;
     }
@@ -116,7 +116,9 @@ export function MonthlyReviewSettingsManager() {
 
     if (!response.ok || !parsed.success) {
       setSaving(false);
-      setError("Could not save monthly review settings. Please try again.");
+      setError(
+        "Kunne ikke lagre innstillingene for månedsoppsummering. Prøv igjen.",
+      );
       return false;
     }
 
@@ -138,7 +140,7 @@ export function MonthlyReviewSettingsManager() {
     await saveSettings({
       promptText,
       modelId: selectedModelId,
-      successMessage: "System prompt saved.",
+      successMessage: "Systemprompt lagret.",
     });
   }
 
@@ -149,7 +151,7 @@ export function MonthlyReviewSettingsManager() {
     const didSave = await saveSettings({
       promptText,
       modelId: value,
-      successMessage: "Generation model saved.",
+      successMessage: "Genereringsmodell lagret.",
     });
 
     if (!didSave) {
@@ -165,34 +167,34 @@ export function MonthlyReviewSettingsManager() {
           className={buttonVariants({ variant: "ghost", size: "sm" })}
         >
           <ArrowLeft aria-hidden />
-          Back to monthly review
+          Tilbake til månedsoppsummering
         </Link>
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Monthly Review Settings
+          Innstillinger for månedsoppsummering
         </h1>
         <p className="text-muted-foreground text-sm">
-          Configure baseline AI instructions used for future monthly review
-          generation.
+          Konfigurer grunnleggende AI-instruksjoner for fremtidige
+          månedsoppsummeringer.
         </p>
       </div>
 
       <Card>
         <CardHeader className="space-y-1">
           <CardTitle>
-            <h2 className="text-lg">System prompt</h2>
+            <h2 className="text-lg">Systemprompt</h2>
           </CardTitle>
           <CardDescription>
-            Leave this blank to use the default prompt.
+            La feltet stå tomt for å bruke standardprompten.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {loading ? (
-            <p className="text-muted-foreground text-sm">Loading prompt...</p>
+            <p className="text-muted-foreground text-sm">Laster inn prompt…</p>
           ) : (
             <>
               <Field>
                 <FieldLabel htmlFor="monthly-review-openai-model">
-                  Monthly review OpenAI model
+                  OpenAI-modell for månedsoppsummering
                 </FieldLabel>
                 <FieldContent>
                   <Select
@@ -223,8 +225,8 @@ export function MonthlyReviewSettingsManager() {
                   </Select>
                   {availableModelsSource === "unavailable" ? (
                     <FieldDescription className="text-xs">
-                      Couldn't load models from OpenAI. Showing the saved model
-                      only.
+                      Kunne ikke laste inn modeller fra OpenAI. Viser bare den
+                      lagrede modellen.
                     </FieldDescription>
                   ) : null}
                 </FieldContent>
@@ -232,13 +234,13 @@ export function MonthlyReviewSettingsManager() {
 
               <p className="text-muted-foreground text-xs">
                 {usesDefaultModel
-                  ? `Using fallback model ${resolvedModelId}.`
-                  : `Using saved model ${resolvedModelId}.`}
+                  ? `Bruker standardmodellen ${resolvedModelId}.`
+                  : `Bruker den lagrede modellen ${resolvedModelId}.`}
               </p>
 
               <Field>
                 <FieldLabel htmlFor="monthly-review-system-prompt">
-                  Monthly review system prompt
+                  Systemprompt for månedsoppsummering
                 </FieldLabel>
                 <FieldContent>
                   <Textarea
@@ -248,7 +250,7 @@ export function MonthlyReviewSettingsManager() {
                       setPromptText(event.target.value);
                     }}
                     rows={10}
-                    placeholder="Leave empty to use default prompt."
+                    placeholder="La stå tomt for å bruke standardprompten."
                   />
                 </FieldContent>
               </Field>
@@ -256,8 +258,8 @@ export function MonthlyReviewSettingsManager() {
               <div className="space-y-1">
                 <p className="text-muted-foreground text-xs">
                   {usesDefaultPrompt
-                    ? "Using fallback default prompt for generation."
-                    : "Using saved custom prompt for generation."}
+                    ? "Bruker standardprompten for generering."
+                    : "Bruker den lagrede egendefinerte prompten for generering."}
                 </p>
                 {usesDefaultPrompt ? (
                   <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-xs">
@@ -282,7 +284,7 @@ export function MonthlyReviewSettingsManager() {
                   onClick={handleSaveSystemPrompt}
                   disabled={saving}
                 >
-                  {saving ? "Saving..." : "Save prompt"}
+                  {saving ? "Lagrer…" : "Lagre prompt"}
                 </Button>
               </div>
             </>

@@ -16,3 +16,8 @@ src/lib/import/csv/guess-column-mapping.ts	pick the column that best names the m
 src/lib/import/csv/guess-column-mapping.ts	saved
 src/lib/import/csv/values.ts	Unsupported CSV date format:
 src/lib/categorization/jev-eval.ts	Expected exactly one row outcome, got
+src/app/actions/update-message-cleanup-settings.ts	INVALID_MESSAGE_CLEANUP_SETTINGS_PAYLOAD
+src/app/actions/update-monthly-review-system-prompt.ts	INVALID_MONTHLY_REVIEW_SYSTEM_PROMPT_PAYLOAD
+src/app/monthly-review/[monthStart]/month-in-review.tsx	failed
+src/lib/monthly-review/month-in-review.ts	MONTH_START_INVALID
+src/lib/monthly-review/reasoning-effort-registry.ts	DEFAULT_REASONING_EFFORT_MISSING_FROM_REGISTRY

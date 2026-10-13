@@ -1,5 +1,7 @@
 import { RouteLoadingState } from "@/components/route-loading-state";
 
 export default function Loading() {
-  return <RouteLoadingState label="Loading monthly review timeline..." />;
+  return (
+    <RouteLoadingState label="Laster inn tidslinjen for månedsoppsummering…" />
+  );
 }

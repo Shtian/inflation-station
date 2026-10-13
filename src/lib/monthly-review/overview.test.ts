@@ -72,13 +72,13 @@ describe("monthly overview", () => {
         transactionCount: 1,
         topCategory: {
           categoryId: null,
-          categoryName: "Uncategorized",
+          categoryName: "Ukategorisert",
           spendNok: 100,
         },
         categorySpendBreakdown: [
           {
             categoryId: null,
-            categoryName: "Uncategorized",
+            categoryName: "Ukategorisert",
             spendNok: 100,
           },
         ],
@@ -188,13 +188,13 @@ describe("monthly overview", () => {
         transactionCount: 1,
         topCategory: {
           categoryId: null,
-          categoryName: "Uncategorized",
+          categoryName: "Ukategorisert",
           spendNok: 200,
         },
         categorySpendBreakdown: [
           {
             categoryId: null,
-            categoryName: "Uncategorized",
+            categoryName: "Ukategorisert",
             spendNok: 200,
           },
         ],

@@ -19,30 +19,30 @@ export const DEFAULT_REASONING_EFFORT: ReasoningEffort = "low";
 export const REASONING_EFFORTS: readonly ReasoningEffortEntry[] = [
   {
     id: "none",
-    label: "None",
-    description: "Fastest, but can silently drop suggestions on some models.",
+    label: "Ingen",
+    description: "Raskest, men kan stille droppe forslag på enkelte modeller.",
   },
   {
     id: "low",
-    label: "Low",
+    label: "Lav",
     description:
-      "Default. Keeps every suggestion, roughly 30% faster than no override.",
+      "Standard. Beholder alle forslag, omtrent 30 % raskere enn uten overstyring.",
   },
   {
     id: "medium",
-    label: "Medium",
-    description: "Balances thoroughness and speed for everyday cleanup runs.",
+    label: "Middels",
+    description: "Balanserer grundighet og fart for vanlige ryddekjøringer.",
   },
   {
     id: "high",
-    label: "High",
+    label: "Høy",
     description:
-      "Reasons more carefully before answering, at a noticeably slower pace.",
+      "Resonnerer grundigere før svaret, i et merkbart lavere tempo.",
   },
   {
     id: "xhigh",
-    label: "Extra high",
-    description: "Slowest, most thorough reasoning.",
+    label: "Ekstra høy",
+    description: "Tregest, med den grundigste resonneringen.",
   },
 ];
 

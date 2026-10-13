@@ -64,7 +64,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: "MESSAGE_CLEANUP_SETTINGS_FETCH_FAILED",
-        message: "Could not load message cleanup settings.",
+        message: "Kunne ikke laste inn innstillingene for meldingsrydding.",
       },
       { status: 500 },
     );

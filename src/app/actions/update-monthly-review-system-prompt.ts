@@ -74,7 +74,7 @@ export async function updateMonthlyReviewSystemPromptAction(
   if (!parsedInput.success) {
     return mutationValidationError(
       "INVALID_MONTHLY_REVIEW_SYSTEM_PROMPT_PAYLOAD",
-      "Expected promptText and optional modelId in action input.",
+      "Handlingen må få promptText og eventuelt modelId.",
       parsedInput.error,
     );
   }
@@ -92,7 +92,7 @@ export async function updateMonthlyReviewSystemPromptAction(
       ok: false,
       error: {
         code: "INVALID_MONTHLY_REVIEW_MODEL_ID",
-        message: "Expected modelId to be one of the available OpenAI models.",
+        message: "modelId må være en av de tilgjengelige OpenAI-modellene.",
       },
     };
   }
@@ -109,7 +109,7 @@ export async function updateMonthlyReviewSystemPromptAction(
     },
     fallbackError: {
       code: "MONTHLY_REVIEW_SYSTEM_PROMPT_UPDATE_FAILED",
-      message: "Could not update monthly review system prompt.",
+      message: "Kunne ikke oppdatere systemprompten for månedsoppsummering.",
     },
   });
 }

@@ -109,57 +109,63 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await page.goto("/monthly-review");
 
   await expect(
-    page.getByRole("heading", { name: "Financial Timeline" }),
+    page.getByRole("heading", { name: "Økonomisk tidslinje" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Open monthly review settings" }),
+    page.getByRole("link", {
+      name: "Åpne innstillinger for månedsoppsummering",
+    }),
   ).toBeVisible();
   const monthHeadings = page.locator("article h2");
   await expect(monthHeadings).toHaveCount(4);
-  await expect(monthHeadings.nth(0)).toHaveText("April 2026");
-  await expect(monthHeadings.nth(1)).toHaveText("March 2026");
-  await expect(monthHeadings.nth(2)).toHaveText("February 2026");
-  await expect(monthHeadings.nth(3)).toHaveText("January 2026");
+  await expect(monthHeadings.nth(0)).toHaveText("april 2026");
+  await expect(monthHeadings.nth(1)).toHaveText("mars 2026");
+  await expect(monthHeadings.nth(2)).toHaveText("februar 2026");
+  await expect(monthHeadings.nth(3)).toHaveText("januar 2026");
 
-  await expect(page.getByText("Avg. monthly spend").first()).toBeVisible();
+  await expect(page.getByText("Snittforbruk per måned").first()).toBeVisible();
   await expect(page.getByText(/1\s?600,00/).first()).toBeVisible();
-  await expect(page.getByText("Monthly balance").first()).toBeVisible();
-  await expect(page.getByText("Total spend").first()).toBeVisible();
-  await expect(page.getByText("Total income").first()).toBeVisible();
-  await expect(page.getByText("9 spending transactions")).toBeVisible();
-  await expect(page.getByText("AI insight")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /review/i })).toHaveCount(0);
+  await expect(page.getByText("Månedens saldo").first()).toBeVisible();
+  await expect(page.getByText("Samlet forbruk").first()).toBeVisible();
+  await expect(page.getByText("Samlet inntekt").first()).toBeVisible();
+  await expect(page.getByText("9 forbrukstransaksjoner")).toBeVisible();
+  await expect(page.getByText("AI-innsikt")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /oppsummering/i })).toHaveCount(
+    0,
+  );
 
   const reviewStates = page
     .locator("article")
-    .getByText(/^(Writing recap…|Recap failed|Recap ready|No recap yet)$/);
+    .getByText(
+      /^(Skriver oppsummering…|Oppsummering feilet|Oppsummering klar|Ingen oppsummering ennå)$/,
+    );
   await expect(reviewStates).toHaveText([
-    "Writing recap…",
-    "Recap failed",
-    "Recap ready",
-    "No recap yet",
+    "Skriver oppsummering…",
+    "Oppsummering feilet",
+    "Oppsummering klar",
+    "Ingen oppsummering ennå",
   ]);
 
   const spendChanges = page
     .locator("article")
-    .getByText(/^(Spend (up|down) |Same spend|No previous-month)/);
+    .getByText(/^(Forbruk (opp|ned) |Samme forbruk|Ingen forbruksdata)/);
   await expect(spendChanges).toHaveText([
-    /^Spend up 100,00\skr \(\+5\.7%\)$/,
-    /^Spend down 125,00\skr \(-6\.8%\)$/,
-    "Same spend as last month",
-    "No previous-month spend data",
+    /^Forbruk opp 100,00\skr \(\+5,7\s%\)$/,
+    /^Forbruk ned 125,00\skr \(−6,8\s%\)$/,
+    "Samme forbruk som forrige måned",
+    "Ingen forbruksdata for forrige måned",
   ]);
 
   const januaryLink = page
     .locator("article")
-    .filter({ has: page.getByRole("heading", { name: "January 2026" }) })
-    .getByRole("link", { name: "Open January 2026 in review" });
+    .filter({ has: page.getByRole("heading", { name: "januar 2026" }) })
+    .getByRole("link", { name: "Åpne måneden som gikk for januar 2026" });
   await expect(januaryLink).toHaveAttribute(
     "href",
     "/monthly-review/2026-01-01",
   );
   await expect(
-    page.getByRole("link", { name: /^Open .+ in review$/ }),
+    page.getByRole("link", { name: /^Åpne måneden som gikk for .+$/ }),
   ).toHaveCount(4);
 
   await page.route("**/api/monthly-review/2026-01-01", async (route) => {
@@ -200,7 +206,7 @@ test("renders monthly review timeline cards with deterministic overview data", a
 
   await expect(page).toHaveURL(/\/monthly-review\/2026-01-01$/);
   await expect(
-    page.getByRole("heading", { name: "January 2026 in review" }),
+    page.getByRole("heading", { name: "Måneden som gikk: januar 2026" }),
   ).toBeVisible();
 });
 
@@ -272,20 +278,24 @@ test("opens monthly review settings from header configuration and monthly review
 
   await page.goto("/monthly-review");
   await page
-    .getByRole("link", { name: "Open monthly review settings" })
+    .getByRole("link", { name: "Åpne innstillinger for månedsoppsummering" })
     .click();
 
   await expect(
-    page.getByRole("heading", { name: "Monthly Review Settings" }),
+    page.getByRole("heading", {
+      name: "Innstillinger for månedsoppsummering",
+    }),
   ).toBeVisible();
 
-  const systemPromptTextbox = page.getByLabel("Monthly review system prompt");
+  const systemPromptTextbox = page.getByLabel(
+    "Systemprompt for månedsoppsummering",
+  );
   await expect(systemPromptTextbox).toHaveValue(
     "Start with top deltas and concentration signals.",
   );
 
   await systemPromptTextbox.fill("Focus on anomalies and recurring spend.");
-  await page.getByRole("button", { name: "Save prompt" }).click();
+  await page.getByRole("button", { name: "Lagre prompt" }).click();
 
   await expect.poll(() => promptUpdateRequests.length).toBe(1);
   expect(promptUpdateRequests[0]).toEqual({
@@ -293,27 +303,31 @@ test("opens monthly review settings from header configuration and monthly review
     modelId: "gpt-5.4-mini",
   });
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "System prompt saved." }),
+    page.locator("[data-sonner-toast]", { hasText: "Systemprompt lagret." }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "Back to monthly review" }).click();
-
-  await expect(
-    page.getByRole("heading", { name: "Financial Timeline" }),
-  ).toBeVisible();
-
-  await page.getByRole("button", { name: "Configuration" }).click();
   await page
-    .locator('[data-slot="navigation-menu-content"]')
-    .getByRole("link", { name: /Monthly Review Settings/ })
+    .getByRole("link", { name: "Tilbake til månedsoppsummering" })
     .click();
 
   await expect(
-    page.getByRole("heading", { name: "Monthly Review Settings" }),
+    page.getByRole("heading", { name: "Økonomisk tidslinje" }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Innstillinger" }).click();
+  await page
+    .locator('[data-slot="navigation-menu-content"]')
+    .getByRole("link", { name: /Innstillinger for månedsoppsummering/ })
+    .click();
+
+  await expect(
+    page.getByRole("heading", {
+      name: "Innstillinger for månedsoppsummering",
+    }),
   ).toBeVisible();
 
   await systemPromptTextbox.fill("   ");
-  await page.getByRole("button", { name: "Save prompt" }).click();
+  await page.getByRole("button", { name: "Lagre prompt" }).click();
 
   await expect.poll(() => promptUpdateRequests.length).toBe(2);
   expect(promptUpdateRequests[1]).toEqual({
@@ -321,6 +335,6 @@ test("opens monthly review settings from header configuration and monthly review
     modelId: "gpt-5.4-mini",
   });
   await expect(
-    page.getByText("Using fallback default prompt for generation."),
+    page.getByText("Bruker standardprompten for generering."),
   ).toBeVisible();
 });

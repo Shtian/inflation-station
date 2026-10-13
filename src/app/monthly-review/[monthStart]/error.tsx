@@ -13,10 +13,10 @@ export default function MonthInReviewRouteError({
 }: MonthInReviewRouteErrorProps) {
   return (
     <RouteErrorState
-      title="Month in review failed to load"
+      title="Kunne ikke laste inn måneden som gikk"
       message={
         error.message ||
-        "An unexpected error occurred while loading this month in review."
+        "Det oppstod en uventet feil under lasting av måneden som gikk."
       }
       onRetry={reset}
     />

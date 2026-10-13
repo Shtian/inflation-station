@@ -65,7 +65,7 @@ describe("POST /api/monthly-review/generate", () => {
     expect(generateMonthlyReviewMock).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_MONTHLY_REVIEW_GENERATE_PAYLOAD",
-      message: "Expected monthStart (YYYY-MM-01) in request body.",
+      message: "Forespørselen må inneholde monthStart (YYYY-MM-01).",
     });
   });
 
@@ -119,7 +119,7 @@ describe("POST /api/monthly-review/generate", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_MONTH_START",
-      message: "Expected monthStart to match YYYY-MM-01.",
+      message: "monthStart må ha formatet YYYY-MM-01.",
     });
   });
 
@@ -141,7 +141,7 @@ describe("POST /api/monthly-review/generate", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "MONTHLY_REVIEW_GENERATION_FAILED",
-      message: "Could not generate monthly review.",
+      message: "Kunne ikke generere månedsoppsummering.",
     });
   });
 });
