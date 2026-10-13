@@ -91,7 +91,7 @@ export async function GET() {
     return NextResponse.json(
       {
         error: "MONTHLY_REVIEW_SYSTEM_PROMPT_FETCH_FAILED",
-        message: "Could not load monthly review system prompt.",
+        message: "Kunne ikke laste inn systemprompten for månedsoppsummering.",
       },
       { status: 500 },
     );
@@ -105,7 +105,7 @@ export async function PUT(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_MONTHLY_REVIEW_SYSTEM_PROMPT_PAYLOAD",
-        message: "Expected promptText and optional modelId in request body.",
+        message: "Forespørselen må inneholde promptText og eventuelt modelId.",
       },
       { status: 400 },
     );
@@ -120,7 +120,7 @@ export async function PUT(request: Request) {
       return NextResponse.json(
         {
           error: "INVALID_MONTHLY_REVIEW_MODEL_ID",
-          message: "Expected modelId to be one of the available OpenAI models.",
+          message: "modelId må være en av de tilgjengelige OpenAI-modellene.",
         },
         { status: 400 },
       );
@@ -136,7 +136,7 @@ export async function PUT(request: Request) {
     return NextResponse.json(
       {
         error: "MONTHLY_REVIEW_SYSTEM_PROMPT_UPDATE_FAILED",
-        message: "Could not update monthly review system prompt.",
+        message: "Kunne ikke oppdatere systemprompten for månedsoppsummering.",
       },
       { status: 500 },
     );

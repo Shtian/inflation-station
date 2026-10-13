@@ -1,16 +1,16 @@
-const dayFormatter = new Intl.DateTimeFormat("en-GB", {
+const dayFormatter = new Intl.DateTimeFormat("nb-NO", {
   weekday: "long",
   day: "numeric",
   month: "long",
   timeZone: "UTC",
 });
 
-const monthNameFormatter = new Intl.DateTimeFormat("en-GB", {
+const monthNameFormatter = new Intl.DateTimeFormat("nb-NO", {
   month: "long",
   timeZone: "UTC",
 });
 
-const percentFormatter = new Intl.NumberFormat("en-GB", {
+const percentFormatter = new Intl.NumberFormat("nb-NO", {
   style: "percent",
   maximumFractionDigits: 0,
 });
@@ -23,14 +23,14 @@ export function formatPercent(value: number): string {
   return percentFormatter.format(value);
 }
 
-// "Tuesday 1 September", with the day number glued to its month so it never
+// "tirsdag 1. september", with the day number glued to its month so it never
 // ends a line on its own.
 export function formatDayLong(isoDate: string): string {
   const parts = dayFormatter.formatToParts(toUtcDate(isoDate));
   const part = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((entry) => entry.type === type)?.value ?? "";
 
-  return `${part("weekday")} ${part("day")} ${part("month")}`;
+  return `${part("weekday")} ${part("day")}. ${part("month")}`;
 }
 
 export function formatMonthName(monthStart: string): string {

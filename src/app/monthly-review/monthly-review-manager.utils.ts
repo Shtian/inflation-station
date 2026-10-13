@@ -2,13 +2,13 @@ import { formatNok, formatSignedNok } from "@/lib/format-nok";
 
 export { formatNok, formatSignedNok };
 
-const monthFormatter = new Intl.DateTimeFormat("en-US", {
+const monthFormatter = new Intl.DateTimeFormat("nb-NO", {
   month: "long",
   year: "numeric",
   timeZone: "UTC",
 });
 
-const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
+const dateTimeFormatter = new Intl.DateTimeFormat("nb-NO", {
   dateStyle: "medium",
   timeStyle: "short",
   timeZone: "UTC",
@@ -25,7 +25,7 @@ export function formatMonthStartLabel(monthStart: string): string {
 
 export function formatGeneratedAt(value: string | null): string {
   if (!value) {
-    return "Not generated";
+    return "Ikke generert";
   }
 
   const date = new Date(value);

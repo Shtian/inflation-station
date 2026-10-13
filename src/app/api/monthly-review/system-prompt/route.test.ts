@@ -98,7 +98,7 @@ describe("/api/monthly-review/system-prompt", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "MONTHLY_REVIEW_SYSTEM_PROMPT_FETCH_FAILED",
-      message: "Could not load monthly review system prompt.",
+      message: "Kunne ikke laste inn systemprompten for månedsoppsummering.",
     });
   });
 
@@ -119,7 +119,7 @@ describe("/api/monthly-review/system-prompt", () => {
     expect(updateMonthlyReviewSystemPromptSettingsMock).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_MONTHLY_REVIEW_SYSTEM_PROMPT_PAYLOAD",
-      message: "Expected promptText and optional modelId in request body.",
+      message: "Forespørselen må inneholde promptText og eventuelt modelId.",
     });
   });
 
@@ -200,7 +200,7 @@ describe("/api/monthly-review/system-prompt", () => {
     expect(updateMonthlyReviewSystemPromptSettingsMock).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_MONTHLY_REVIEW_MODEL_ID",
-      message: "Expected modelId to be one of the available OpenAI models.",
+      message: "modelId må være en av de tilgjengelige OpenAI-modellene.",
     });
   });
 
@@ -224,7 +224,7 @@ describe("/api/monthly-review/system-prompt", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "MONTHLY_REVIEW_SYSTEM_PROMPT_UPDATE_FAILED",
-      message: "Could not update monthly review system prompt.",
+      message: "Kunne ikke oppdatere systemprompten for månedsoppsummering.",
     });
   });
 });

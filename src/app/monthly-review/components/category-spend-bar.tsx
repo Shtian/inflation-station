@@ -16,7 +16,9 @@ export function CategorySpendBar({
 }) {
   if (categories.length === 0 || total <= 0) {
     return (
-      <p className="text-muted-foreground text-xs">No categorized spend.</p>
+      <p className="text-muted-foreground text-xs">
+        Ikke noe kategorisert forbruk.
+      </p>
     );
   }
 

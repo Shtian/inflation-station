@@ -8,7 +8,7 @@ export function MonthInReviewSkeleton() {
       className="fixed inset-0 z-50 flex flex-col"
       style={{ backgroundColor: world.background, color: world.foreground }}
     >
-      <output className="sr-only">Loading month in review…</output>
+      <output className="sr-only">Laster inn måneden som gikk…</output>
       <div className="flex gap-1.5 px-4 pt-5 md:px-8" aria-hidden>
         {[0, 1, 2, 3, 4, 5, 6].map((segment) => (
           <span

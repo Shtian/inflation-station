@@ -8,12 +8,12 @@ import {
 
 describe("month in review formatting", () => {
   it("writes dates day-first with the day glued to the month", () => {
-    expect(formatDayLong("2026-09-01")).toBe("Tuesday 1 September");
-    expect(formatDayLong("2026-03-14")).toBe("Saturday 14 March");
+    expect(formatDayLong("2026-09-01")).toBe("tirsdag 1. september");
+    expect(formatDayLong("2026-03-14")).toBe("lørdag 14. mars");
   });
 
   it("names the month without the year", () => {
-    expect(formatMonthName("2026-08-01")).toBe("August");
+    expect(formatMonthName("2026-08-01")).toBe("august");
   });
 
   it("covers the whole month, leap years included", () => {

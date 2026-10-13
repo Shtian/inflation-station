@@ -142,7 +142,7 @@ describe("buildMonthInReview", () => {
         },
         {
           categoryId: null,
-          categoryName: "Uncategorized",
+          categoryName: "Ukategorisert",
           spendNok: 550,
           share: 550 / 25500,
           transactionCount: 2,
@@ -200,7 +200,7 @@ describe("buildMonthInReview", () => {
             transactionCount: 1,
           },
           {
-            merchant: "Unknown merchant",
+            merchant: "Ukjent brukersted",
             spendNok: 100,
             share: 100 / 4250,
             transactionCount: 1,

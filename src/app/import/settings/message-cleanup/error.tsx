@@ -13,10 +13,10 @@ export default function MessageCleanupSettingsRouteError({
 }: MessageCleanupSettingsRouteErrorProps) {
   return (
     <RouteErrorState
-      title="Message cleanup settings failed to load"
+      title="Kunne ikke laste inn innstillingene for meldingsrydding"
       message={
         error.message ||
-        "An unexpected error occurred while loading message cleanup settings."
+        "Det oppstod en uventet feil under lasting av innstillingene for meldingsrydding."
       }
       onRetry={reset}
     />

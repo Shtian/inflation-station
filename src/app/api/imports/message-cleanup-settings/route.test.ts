@@ -102,7 +102,7 @@ describe("/api/imports/message-cleanup-settings", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "MESSAGE_CLEANUP_SETTINGS_FETCH_FAILED",
-      message: "Could not load message cleanup settings.",
+      message: "Kunne ikke laste inn innstillingene for meldingsrydding.",
     });
   });
 });

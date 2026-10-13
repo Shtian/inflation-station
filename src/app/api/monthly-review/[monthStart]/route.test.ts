@@ -111,7 +111,7 @@ describe("GET /api/monthly-review/[monthStart]", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_MONTH_START",
-      message: "Expected monthStart to match YYYY-MM-01.",
+      message: "monthStart må ha formatet YYYY-MM-01.",
     });
     expect(findManyMock).not.toHaveBeenCalled();
   });
@@ -124,7 +124,7 @@ describe("GET /api/monthly-review/[monthStart]", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "MONTH_IN_REVIEW_FETCH_FAILED",
-      message: "Could not load month in review data.",
+      message: "Kunne ikke laste inn data for måneden som gikk.",
     });
   });
 });

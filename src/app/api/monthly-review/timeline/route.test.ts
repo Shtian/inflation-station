@@ -28,7 +28,7 @@ describe("GET /api/monthly-review/timeline", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_TIMELINE_LIMIT",
-      message: "Expected limit to be a positive integer.",
+      message: "limit må være et positivt heltall.",
     });
     expect(getMonthlyTimelineMock).not.toHaveBeenCalled();
   });
@@ -55,7 +55,7 @@ describe("GET /api/monthly-review/timeline", () => {
     expect(response.status).toBe(500);
     await expect(response.json()).resolves.toEqual({
       error: "MONTHLY_REVIEW_TIMELINE_FETCH_FAILED",
-      message: "Could not load monthly review timeline data.",
+      message: "Kunne ikke laste inn tidslinjedata for månedsoppsummering.",
     });
   });
 });

@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_MONTHLY_REVIEW_GENERATE_PAYLOAD",
-        message: "Expected monthStart (YYYY-MM-01) in request body.",
+        message: "Forespørselen må inneholde monthStart (YYYY-MM-01).",
       },
       { status: 400 },
     );
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "INVALID_MONTH_START",
-          message: "Expected monthStart to match YYYY-MM-01.",
+          message: "monthStart må ha formatet YYYY-MM-01.",
         },
         { status: 400 },
       );
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "MONTHLY_REVIEW_GENERATION_FAILED",
-        message: "Could not generate monthly review.",
+        message: "Kunne ikke generere månedsoppsummering.",
       },
       { status: 500 },
     );

@@ -184,8 +184,8 @@ export type MonthWindow = {
 
 const MONTH_KEY_PATTERN = /^\d{4}-\d{2}-01$/;
 const UNCATEGORIZED_KEY = "__uncategorized__";
-const UNCATEGORIZED_NAME = "Uncategorized";
-const UNKNOWN_MERCHANT_NAME = "Unknown merchant";
+const UNCATEGORIZED_NAME = "Ukategorisert";
+const UNKNOWN_MERCHANT_NAME = "Ukjent brukersted";
 const TOP_MERCHANT_LIMIT = 5;
 const INCOME_SOURCE_LIMIT = 3;
 

@@ -83,7 +83,7 @@ type MutableMonthTotals = {
 };
 
 const UNCATEGORIZED_KEY = "__uncategorized__";
-const UNCATEGORIZED_NAME = "Uncategorized";
+const UNCATEGORIZED_NAME = "Ukategorisert";
 
 function toNumber(value: DecimalLike): number {
   return Number.parseFloat(value.toString());

@@ -1,2 +1,7 @@
 # English strings the user never sees, such as LLM prompt text and developer invariants.
 # One finding per line, exactly as the scanner prints it with the line number removed: <file>\t<text>
+src/app/actions/update-message-cleanup-settings.ts	INVALID_MESSAGE_CLEANUP_SETTINGS_PAYLOAD
+src/app/actions/update-monthly-review-system-prompt.ts	INVALID_MONTHLY_REVIEW_SYSTEM_PROMPT_PAYLOAD
+src/app/monthly-review/[monthStart]/month-in-review.tsx	failed
+src/lib/monthly-review/month-in-review.ts	MONTH_START_INVALID
+src/lib/monthly-review/reasoning-effort-registry.ts	DEFAULT_REASONING_EFFORT_MISSING_FROM_REGISTRY

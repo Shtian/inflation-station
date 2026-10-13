@@ -26,6 +26,13 @@ const timelineResponseSchema = z.object({
   rows: z.array(z.unknown()),
 });
 
+const deltaPercentFormatter = new Intl.NumberFormat("nb-NO", {
+  style: "percent",
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+  signDisplay: "exceptZero",
+});
+
 function getReviewStateTone(
   reviewState: MonthlyReviewTimelineRow["reviewState"],
 ): {
@@ -35,27 +42,27 @@ function getReviewStateTone(
   if (reviewState === "GENERATED") {
     return {
       dotClassName: "border-success/60 text-success",
-      label: "Recap ready",
+      label: "Oppsummering klar",
     };
   }
 
   if (reviewState === "GENERATING") {
     return {
       dotClassName: "border-warning/60 text-warning",
-      label: "Writing recap…",
+      label: "Skriver oppsummering…",
     };
   }
 
   if (reviewState === "FAILED") {
     return {
       dotClassName: "border-destructive/60 text-destructive",
-      label: "Recap failed",
+      label: "Oppsummering feilet",
     };
   }
 
   return {
     dotClassName: "border-border text-muted-foreground",
-    label: "No recap yet",
+    label: "Ingen oppsummering ennå",
   };
 }
 
@@ -69,23 +76,24 @@ function formatDeltaPercent(row: MonthlyReviewTimelineRow): string | null {
     return null;
   }
 
-  const percent = (row.monthOverMonthSpendDeltaNok / previousSpend) * 100;
-  return `${percent > 0 ? "+" : ""}${percent.toFixed(1)}%`;
+  return deltaPercentFormatter.format(
+    row.monthOverMonthSpendDeltaNok / previousSpend,
+  );
 }
 
 function describeSpendChange(row: MonthlyReviewTimelineRow): string {
   const delta = row.monthOverMonthSpendDeltaNok;
   if (delta === null) {
-    return "No previous-month spend data";
+    return "Ingen forbruksdata for forrige måned";
   }
 
   const direction = toDeltaDirection(delta);
   if (direction === "flat") {
-    return "Same spend as last month";
+    return "Samme forbruk som forrige måned";
   }
 
   const percent = formatDeltaPercent(row);
-  return `Spend ${direction} ${formatNok(Math.abs(delta))}${percent ? ` (${percent})` : ""}`;
+  return `Forbruk ${direction === "up" ? "opp" : "ned"} ${formatNok(Math.abs(delta))}${percent ? ` (${percent})` : ""}`;
 }
 
 export function MonthlyReviewManager() {
@@ -103,7 +111,7 @@ export function MonthlyReviewManager() {
 
     if (!response.ok || !parsed.success) {
       setRows([]);
-      setError("Could not load monthly review timeline.");
+      setError("Kunne ikke laste inn tidslinjen for månedsoppsummering.");
       setLoading(false);
       return;
     }
@@ -157,15 +165,16 @@ export function MonthlyReviewManager() {
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 className="font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
-            Financial Timeline
+            Økonomisk tidslinje
           </h1>
           <p className="text-muted-foreground text-sm">
-            Monthly spending overview. Open a month for its month in review.
+            Månedlig oversikt over forbruket. Åpne en måned for å se måneden som
+            gikk.
           </p>
         </div>
         <Link
           href="/monthly-review/settings"
-          aria-label="Open monthly review settings"
+          aria-label="Åpne innstillinger for månedsoppsummering"
           className={buttonVariants({ variant: "outline", size: "icon" })}
         >
           <Settings aria-hidden />
@@ -175,7 +184,7 @@ export function MonthlyReviewManager() {
       <div className="grid gap-3 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Avg. monthly spend</CardDescription>
+            <CardDescription>Snittforbruk per måned</CardDescription>
             <CardTitle className="text-2xl">
               {formatNok(averageSpendNok)}
             </CardTitle>
@@ -183,28 +192,28 @@ export function MonthlyReviewManager() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Trending</CardDescription>
+            <CardDescription>Trend</CardDescription>
             <CardTitle className={`text-2xl ${trendColor}`}>
               {trendDelta === null
-                ? "No change data"
+                ? "Ingen endringsdata"
                 : trendDirection === "flat"
-                  ? "Holding steady"
+                  ? "Stabilt"
                   : formatSignedNok(trendDelta)}
             </CardTitle>
             <CardDescription>
               {trendDelta === null
-                ? "Waiting for at least two month entries"
+                ? "Venter på minst 2 måneder med data"
                 : trendDirection === "flat"
-                  ? "Same spend as the month before"
-                  : `${trendPercent ?? "Spend"} vs previous month`}
+                  ? "Samme forbruk som måneden før"
+                  : `${trendPercent ?? "Forbruk"} mot forrige måned`}
             </CardDescription>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>AI review coverage</CardDescription>
+            <CardDescription>Dekning av AI-oppsummeringer</CardDescription>
             <CardTitle className="text-2xl">
-              {generatedCount} of {rows.length} months
+              {generatedCount} av {rows.length} måneder
             </CardTitle>
           </CardHeader>
         </Card>
@@ -214,7 +223,7 @@ export function MonthlyReviewManager() {
 
       {loading ? (
         <output className="block text-muted-foreground text-sm">
-          Loading timeline...
+          Laster inn tidslinjen…
         </output>
       ) : null}
 
@@ -229,7 +238,7 @@ export function MonthlyReviewManager() {
 
       {!loading && !error && !hasRows ? (
         <p className="text-muted-foreground text-sm">
-          No monthly data is available yet.
+          Ingen månedsdata er tilgjengelig ennå.
         </p>
       ) : null}
 
@@ -264,14 +273,16 @@ export function MonthlyReviewManager() {
                       </span>
                     </div>
                     <p className="text-muted-foreground text-sm">
-                      {row.transactionCount} spending transaction
-                      {row.transactionCount === 1 ? "" : "s"}
+                      {row.transactionCount}{" "}
+                      {row.transactionCount === 1
+                        ? "forbrukstransaksjon"
+                        : "forbrukstransaksjoner"}
                     </p>
                   </div>
 
                   <div className="space-y-1 text-right">
                     <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                      Monthly balance
+                      Månedens saldo
                     </p>
                     <p
                       className={`font-semibold text-2xl tracking-tight ${row.monthlyBalanceNok >= 0 ? "text-success" : "text-destructive"}`}
@@ -287,7 +298,7 @@ export function MonthlyReviewManager() {
                 <div className="grid gap-2 rounded-md border border-border/70 bg-muted/20 p-3 text-sm md:grid-cols-2">
                   <div className="space-y-0.5">
                     <p className="text-muted-foreground text-xs uppercase tracking-wide">
-                      Total spend
+                      Samlet forbruk
                     </p>
                     <p className="font-medium text-destructive">
                       {formatSignedNok(row.totalSpendNok, "negative")}
@@ -295,7 +306,7 @@ export function MonthlyReviewManager() {
                   </div>
                   <div className="space-y-0.5 md:text-right">
                     <p className="text-muted-foreground text-xs uppercase tracking-wide">
-                      Total income
+                      Samlet inntekt
                     </p>
                     <p className="font-medium text-success">
                       {formatSignedNok(row.totalIncomeNok, "positive")}
@@ -306,7 +317,7 @@ export function MonthlyReviewManager() {
                 <div className="space-y-4 text-sm">
                   <div className="space-y-2 rounded-md border border-border/70 bg-muted/20 p-3">
                     <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                      Category spend
+                      Forbruk per kategori
                     </p>
                     <CategorySpendBar
                       categories={row.categorySpendBreakdown}
@@ -321,7 +332,8 @@ export function MonthlyReviewManager() {
                       "h-11 bg-brand px-5 font-semibold text-base text-brand-foreground hover:bg-brand/90",
                     )}
                   >
-                    Open {formatMonthStartLabel(row.monthStart)} in review
+                    Åpne måneden som gikk for{" "}
+                    {formatMonthStartLabel(row.monthStart)}
                     <ArrowRight aria-hidden />
                   </Link>
                 </div>

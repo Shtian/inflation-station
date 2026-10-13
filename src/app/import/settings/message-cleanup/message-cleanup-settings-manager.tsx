@@ -100,7 +100,7 @@ export function MessageCleanupSettingsManager() {
       setResolvedReasoningEffortState(DEFAULT_MESSAGE_CLEANUP_REASONING_EFFORT);
       setUsesDefaultReasoningEffort(true);
       setAvailableReasoningEfforts([]);
-      setError("Could not load message cleanup settings.");
+      setError("Kunne ikke laste inn innstillingene for meldingsrydding.");
       setLoading(false);
       return;
     }
@@ -151,13 +151,17 @@ export function MessageCleanupSettingsManager() {
       });
     } catch {
       setSaving(false);
-      setError("Could not save message cleanup settings. Please try again.");
+      setError(
+        "Kunne ikke lagre innstillingene for meldingsrydding. Prøv igjen.",
+      );
       return false;
     }
 
     if (!result.ok) {
       setSaving(false);
-      setError("Could not save message cleanup settings. Please try again.");
+      setError(
+        "Kunne ikke lagre innstillingene for meldingsrydding. Prøv igjen.",
+      );
       return false;
     }
 
@@ -189,7 +193,7 @@ export function MessageCleanupSettingsManager() {
       promptText,
       modelId: selectedModelId,
       reasoningEffort: selectedReasoningEffort,
-      successMessage: "System prompt saved.",
+      successMessage: "Systemprompt lagret.",
     });
   }
 
@@ -201,7 +205,7 @@ export function MessageCleanupSettingsManager() {
       promptText,
       modelId: value,
       reasoningEffort: selectedReasoningEffort,
-      successMessage: "Cleanup model saved.",
+      successMessage: "Ryddemodell lagret.",
     });
 
     if (!didSave) {
@@ -217,7 +221,7 @@ export function MessageCleanupSettingsManager() {
       promptText,
       modelId: selectedModelId,
       reasoningEffort: value,
-      successMessage: "Cleanup reasoning effort saved.",
+      successMessage: "Resonneringsnivå for rydding lagret.",
     });
 
     if (!didSave) {
@@ -233,33 +237,36 @@ export function MessageCleanupSettingsManager() {
           className={buttonVariants({ variant: "ghost", size: "sm" })}
         >
           <ArrowLeft aria-hidden />
-          Back to import
+          Tilbake til import
         </Link>
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Message Cleanup Settings
+          Innstillinger for meldingsrydding
         </h1>
         <p className="text-muted-foreground text-sm">
-          Configure model and baseline instructions for import message cleanup.
+          Konfigurer modell og grunnleggende instruksjoner for meldingsrydding
+          ved import.
         </p>
       </div>
 
       <Card>
         <CardHeader className="space-y-1">
           <CardTitle>
-            <h2 className="text-lg">System prompt</h2>
+            <h2 className="text-lg">Systemprompt</h2>
           </CardTitle>
           <CardDescription>
-            Leave this blank to use the default cleanup prompt.
+            La feltet stå tomt for å bruke standardprompten for rydding.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {loading ? (
-            <p className="text-muted-foreground text-sm">Loading settings...</p>
+            <p className="text-muted-foreground text-sm">
+              Laster inn innstillinger…
+            </p>
           ) : (
             <>
               <Field>
                 <FieldLabel htmlFor="message-cleanup-openai-model">
-                  Message cleanup OpenAI model
+                  OpenAI-modell for meldingsrydding
                 </FieldLabel>
                 <FieldContent>
                   <Select
@@ -290,8 +297,8 @@ export function MessageCleanupSettingsManager() {
                   </Select>
                   {availableModelsSource === "unavailable" ? (
                     <FieldDescription className="text-xs">
-                      Couldn't load models from OpenAI. Showing the saved model
-                      only.
+                      Kunne ikke laste inn modeller fra OpenAI. Viser bare den
+                      lagrede modellen.
                     </FieldDescription>
                   ) : null}
                 </FieldContent>
@@ -299,13 +306,13 @@ export function MessageCleanupSettingsManager() {
 
               <p className="text-muted-foreground text-xs">
                 {usesDefaultModel
-                  ? `Using fallback model ${resolvedModelId}.`
-                  : `Using saved model ${resolvedModelId}.`}
+                  ? `Bruker standardmodellen ${resolvedModelId}.`
+                  : `Bruker den lagrede modellen ${resolvedModelId}.`}
               </p>
 
               <Field>
                 <FieldLabel htmlFor="message-cleanup-reasoning-effort">
-                  Message cleanup reasoning effort
+                  Resonneringsnivå for meldingsrydding
                 </FieldLabel>
                 <FieldContent>
                   <Select
@@ -345,13 +352,13 @@ export function MessageCleanupSettingsManager() {
 
               <p className="text-muted-foreground text-xs">
                 {usesDefaultReasoningEffort
-                  ? `Using fallback effort ${resolvedReasoningEffortState}.`
-                  : `Using saved effort ${resolvedReasoningEffortState}.`}
+                  ? `Bruker standardnivået ${getReasoningEffortById(resolvedReasoningEffortState).label}.`
+                  : `Bruker det lagrede nivået ${getReasoningEffortById(resolvedReasoningEffortState).label}.`}
               </p>
 
               <Field>
                 <FieldLabel htmlFor="message-cleanup-system-prompt">
-                  Message cleanup system prompt
+                  Systemprompt for meldingsrydding
                 </FieldLabel>
                 <FieldContent>
                   <Textarea
@@ -361,7 +368,7 @@ export function MessageCleanupSettingsManager() {
                       setPromptText(event.target.value);
                     }}
                     rows={8}
-                    placeholder="Leave empty to use default prompt."
+                    placeholder="La stå tomt for å bruke standardprompten."
                   />
                 </FieldContent>
               </Field>
@@ -369,8 +376,8 @@ export function MessageCleanupSettingsManager() {
               <div className="space-y-1">
                 <p className="text-muted-foreground text-xs">
                   {usesDefaultPrompt
-                    ? "Using fallback default prompt for cleanup."
-                    : "Using saved custom prompt for cleanup."}
+                    ? "Bruker standardprompten for rydding."
+                    : "Bruker den lagrede egendefinerte prompten for rydding."}
                 </p>
                 {usesDefaultPrompt ? (
                   <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-xs">
@@ -395,7 +402,7 @@ export function MessageCleanupSettingsManager() {
                   onClick={handleSaveSystemPrompt}
                   disabled={saving}
                 >
-                  {saving ? "Saving..." : "Save prompt"}
+                  {saving ? "Lagrer…" : "Lagre prompt"}
                 </Button>
               </div>
             </>
