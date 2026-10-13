@@ -1,7 +1,7 @@
 import { DECK_WORLDS } from "./month-in-review.worlds";
 
 export function MonthInReviewSkeleton() {
-  const world = DECK_WORLDS.ink;
+  const world = DECK_WORLDS.base;
 
   return (
     <div
