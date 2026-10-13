@@ -57,7 +57,7 @@ describe("GET /api/transactions", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_PAGE",
-      message: "Expected page to be a positive integer.",
+      message: "page må være et positivt heltall.",
     });
     expect(getTransactionsPageMock).not.toHaveBeenCalled();
   });
@@ -134,7 +134,7 @@ describe("GET /api/transactions", () => {
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_SORTING",
       message:
-        "Expected sorting in <field>:<direction> format using bookingDate, amountNok, merchant, or category fields.",
+        "sorting må ha formatet <felt>:<retning> med feltene bookingDate, amountNok, merchant eller category.",
     });
     expect(getTransactionsPageMock).not.toHaveBeenCalled();
   });
@@ -147,7 +147,7 @@ describe("GET /api/transactions", () => {
     expect(invalidDateResponse.status).toBe(400);
     await expect(invalidDateResponse.json()).resolves.toEqual({
       error: "INVALID_DATE_FROM",
-      message: "Expected dateFrom in YYYY-MM-DD format.",
+      message: "dateFrom må ha formatet ÅÅÅÅ-MM-DD.",
     });
 
     const invalidRangeResponse = await GET(
@@ -159,7 +159,7 @@ describe("GET /api/transactions", () => {
     expect(invalidRangeResponse.status).toBe(400);
     await expect(invalidRangeResponse.json()).resolves.toEqual({
       error: "INVALID_DATE_RANGE",
-      message: "dateFrom must be less than or equal to dateTo.",
+      message: "dateFrom kan ikke være senere enn dateTo.",
     });
     expect(getTransactionsPageMock).not.toHaveBeenCalled();
   });
@@ -172,7 +172,7 @@ describe("GET /api/transactions", () => {
     expect(invalidDateFromResponse.status).toBe(400);
     await expect(invalidDateFromResponse.json()).resolves.toEqual({
       error: "INVALID_DATE_FROM",
-      message: "Expected dateFrom in YYYY-MM-DD format.",
+      message: "dateFrom må ha formatet ÅÅÅÅ-MM-DD.",
     });
 
     const invalidDateToResponse = await GET(
@@ -182,7 +182,7 @@ describe("GET /api/transactions", () => {
     expect(invalidDateToResponse.status).toBe(400);
     await expect(invalidDateToResponse.json()).resolves.toEqual({
       error: "INVALID_DATE_TO",
-      message: "Expected dateTo in YYYY-MM-DD format.",
+      message: "dateTo må ha formatet ÅÅÅÅ-MM-DD.",
     });
 
     expect(getTransactionsPageMock).not.toHaveBeenCalled();
@@ -330,7 +330,7 @@ describe("POST /api/transactions", () => {
     const body = await response.json();
     expect(body.error).toBe("INVALID_PAYLOAD");
     expect(body.message).toBe(
-      "Invalid transaction payload. Invalid input: expected object, received null",
+      "Ugyldige transaksjonsdata. Invalid input: expected object, received null",
     );
     expect(createTransactionMock).not.toHaveBeenCalled();
   });
@@ -348,9 +348,9 @@ describe("POST /api/transactions", () => {
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_PAYLOAD",
       message:
-        "Invalid transaction payload. bookingDate: Expected bookingDate in YYYY-MM-DD format.",
+        "Ugyldige transaksjonsdata. bookingDate: bookingDate må ha formatet ÅÅÅÅ-MM-DD.",
       details: {
-        bookingDate: ["Expected bookingDate in YYYY-MM-DD format."],
+        bookingDate: ["bookingDate må ha formatet ÅÅÅÅ-MM-DD."],
       },
     });
     expect(createTransactionMock).not.toHaveBeenCalled();
@@ -370,7 +370,7 @@ describe("POST /api/transactions", () => {
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
       error: "CATEGORY_OR_ACCOUNT_NOT_FOUND",
-      message: "Selected account or category was not found.",
+      message: "Fant ikke den valgte kontoen eller kategorien.",
     });
   });
 

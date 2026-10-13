@@ -16,3 +16,5 @@ src/lib/import/csv/guess-column-mapping.ts	pick the column that best names the m
 src/lib/import/csv/guess-column-mapping.ts	saved
 src/lib/import/csv/values.ts	Unsupported CSV date format:
 src/lib/categorization/jev-eval.ts	Expected exactly one row outcome, got
+src/app/api/transactions/route.ts	sorting må ha formatet <felt>:<retning> med feltene bookingDate, amountNok, merchant eller category.
+src/lib/transactions/delete.ts	ids must be a non-empty array

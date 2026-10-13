@@ -87,7 +87,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_PAGE",
-        message: "Expected page to be a positive integer.",
+        message: "page må være et positivt heltall.",
       },
       { status: 400 },
     );
@@ -101,7 +101,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_PAGE_SIZE",
-        message: "Expected pageSize to be a positive integer.",
+        message: "pageSize må være et positivt heltall.",
       },
       { status: 400 },
     );
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_PAGE_SIZE",
-        message: `Expected pageSize to be less than or equal to ${MAX_PAGE_SIZE}.`,
+        message: `pageSize kan ikke være større enn ${MAX_PAGE_SIZE}.`,
       },
       { status: 400 },
     );
@@ -123,7 +123,7 @@ export async function GET(request: Request) {
       {
         error: "INVALID_SORTING",
         message:
-          "Expected sorting in <field>:<direction> format using bookingDate, amountNok, merchant, or category fields.",
+          "sorting må ha formatet <felt>:<retning> med feltene bookingDate, amountNok, merchant eller category.",
       },
       { status: 400 },
     );
@@ -134,7 +134,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_DATE_FROM",
-        message: "Expected dateFrom in YYYY-MM-DD format.",
+        message: "dateFrom må ha formatet ÅÅÅÅ-MM-DD.",
       },
       { status: 400 },
     );
@@ -145,7 +145,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_DATE_TO",
-        message: "Expected dateTo in YYYY-MM-DD format.",
+        message: "dateTo må ha formatet ÅÅÅÅ-MM-DD.",
       },
       { status: 400 },
     );
@@ -155,7 +155,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_DATE_RANGE",
-        message: "dateFrom must be less than or equal to dateTo.",
+        message: "dateFrom kan ikke være senere enn dateTo.",
       },
       { status: 400 },
     );
@@ -189,7 +189,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_IDS",
-        message: "Expected ids to be a non-empty array of strings.",
+        message: "ids må være en ikke-tom liste med strenger.",
       },
       { status: 400 },
     );
@@ -212,7 +212,7 @@ export async function POST(request: Request) {
       {
         error: "INVALID_PAYLOAD",
         message: formatPayloadErrorMessage(
-          "Invalid transaction payload.",
+          "Ugyldige transaksjonsdata.",
           flattened,
         ),
         details: flattened.fieldErrors,
@@ -235,7 +235,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "CATEGORY_OR_ACCOUNT_NOT_FOUND",
-          message: "Selected account or category was not found.",
+          message: "Fant ikke den valgte kontoen eller kategorien.",
         },
         { status: 404 },
       );

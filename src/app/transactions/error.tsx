@@ -13,10 +13,10 @@ export default function TransactionsRouteError({
 }: TransactionsErrorProps) {
   return (
     <RouteErrorState
-      title="Transactions failed to load"
+      title="Transaksjonene kunne ikke lastes inn"
       message={
         error.message ||
-        "An unexpected error occurred while loading transactions."
+        "Det oppstod en uventet feil under innlasting av transaksjoner."
       }
       onRetry={reset}
     />

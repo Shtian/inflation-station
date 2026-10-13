@@ -26,7 +26,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   if (!transactionId) {
     return NextResponse.json(
-      { error: "INVALID_TRANSACTION_ID", message: "Invalid transaction id." },
+      { error: "INVALID_TRANSACTION_ID", message: "Ugyldig transaksjons-ID." },
       { status: 400 },
     );
   }
@@ -40,7 +40,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       {
         error: "INVALID_TRANSACTION_UPDATE_PAYLOAD",
         message: formatPayloadErrorMessage(
-          "Invalid transaction update payload.",
+          "Ugyldige data for oppdatering av transaksjon.",
           flattened,
         ),
         details: flattened,
@@ -66,7 +66,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json(
         {
           error: "TRANSACTION_NOT_FOUND",
-          message: "Transaction was not found.",
+          message: "Fant ikke transaksjonen.",
         },
         { status: 404 },
       );
@@ -81,7 +81,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       return NextResponse.json(
         {
           error: "CATEGORY_NOT_FOUND",
-          message: "Selected category was not found.",
+          message: "Fant ikke den valgte kategorien.",
         },
         { status: 404 },
       );
@@ -96,7 +96,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
 
   if (!transactionId) {
     return NextResponse.json(
-      { error: "INVALID_TRANSACTION_ID", message: "Invalid transaction id." },
+      { error: "INVALID_TRANSACTION_ID", message: "Ugyldig transaksjons-ID." },
       { status: 400 },
     );
   }
@@ -114,7 +114,7 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
       return NextResponse.json(
         {
           error: "TRANSACTION_NOT_FOUND",
-          message: "Transaction was not found.",
+          message: "Fant ikke transaksjonen.",
         },
         { status: 404 },
       );

@@ -168,14 +168,16 @@ export function TransactionsManager() {
     const body = await response.json().catch(() => null);
 
     if (!response.ok) {
-      setAddError(getMutationErrorMessage(body, "Could not add transaction."));
+      setAddError(
+        getMutationErrorMessage(body, "Kunne ikke legge til transaksjonen."),
+      );
       setAddSaving(false);
       return;
     }
 
     closeAddDialog();
     await loadTransactions();
-    toast.success("Transaction added");
+    toast.success("Transaksjon lagt til");
   }
 
   async function handleEditSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -216,7 +218,7 @@ export function TransactionsManager() {
 
     if (!response.ok) {
       setEditError(
-        getMutationErrorMessage(body, "Could not update transaction."),
+        getMutationErrorMessage(body, "Kunne ikke oppdatere transaksjonen."),
       );
       setEditSaving(false);
       return;
@@ -244,7 +246,7 @@ export function TransactionsManager() {
 
     if (!response.ok) {
       setDeleteError(
-        getMutationErrorMessage(body, "Could not delete transaction."),
+        getMutationErrorMessage(body, "Kunne ikke slette transaksjonen."),
       );
       setDeleteSaving(false);
       return;
@@ -271,7 +273,7 @@ export function TransactionsManager() {
 
     if (!response.ok) {
       setBulkDeleteError(
-        getMutationErrorMessage(body, "Could not delete transactions."),
+        getMutationErrorMessage(body, "Kunne ikke slette transaksjonene."),
       );
       setBulkDeleteSaving(false);
       return;
@@ -280,17 +282,19 @@ export function TransactionsManager() {
     const count = bulkDeleteIds.length;
     closeBulkDeleteDialog();
     await loadTransactions();
-    toast.success(`Deleted ${count} transaction${count !== 1 ? "s" : ""}`);
+    toast.success(
+      `Slettet ${count} ${count === 1 ? "transaksjon" : "transaksjoner"}`,
+    );
   }
 
   return (
     <div className="space-y-4">
       <div className="space-y-1">
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Transactions
+          Transaksjoner
         </h1>
         <p className="text-muted-foreground text-sm">
-          Filter and page through imported transactions.
+          Filtrer og bla gjennom importerte transaksjoner.
         </p>
       </div>
 

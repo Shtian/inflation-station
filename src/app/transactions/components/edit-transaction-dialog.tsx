@@ -70,16 +70,17 @@ export function EditTransactionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent ref={dialogContentRef}>
         <DialogHeader>
-          <DialogTitle>Edit transaction</DialogTitle>
+          <DialogTitle>Rediger transaksjon</DialogTitle>
           <DialogDescription>
-            Update mutable fields and save to keep this page in sync.
+            Oppdater feltene som kan endres, og lagre for å holde siden
+            oppdatert.
           </DialogDescription>
         </DialogHeader>
 
         {editForm ? (
           <form className="space-y-4" onSubmit={onSubmit}>
             <Field>
-              <FieldLabel htmlFor="edit-category-id">Category</FieldLabel>
+              <FieldLabel htmlFor="edit-category-id">Kategori</FieldLabel>
               <FieldContent>
                 <CategoryCombobox
                   value={
@@ -92,8 +93,8 @@ export function EditTransactionDialog({
                     onCategoryChange(value || UNCATEGORIZED_VALUE)
                   }
                   id="edit-category-id"
-                  placeholder="Uncategorized"
-                  emptyLabel="No matching categories."
+                  placeholder="Ukategorisert"
+                  emptyLabel="Ingen samsvarende kategorier."
                   disabled={editSaving}
                   showClear
                   container={dialogContentRef}
@@ -102,7 +103,7 @@ export function EditTransactionDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="edit-booking-date">Date</FieldLabel>
+              <FieldLabel htmlFor="edit-booking-date">Dato</FieldLabel>
               <FieldContent>
                 <Input
                   id="edit-booking-date"
@@ -115,7 +116,7 @@ export function EditTransactionDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="edit-merchant">Merchant</FieldLabel>
+              <FieldLabel htmlFor="edit-merchant">Brukersted</FieldLabel>
               <FieldContent>
                 <Input
                   id="edit-merchant"
@@ -127,7 +128,7 @@ export function EditTransactionDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="edit-amount-nok">Amount (NOK)</FieldLabel>
+              <FieldLabel htmlFor="edit-amount-nok">Beløp (NOK)</FieldLabel>
               <FieldContent>
                 <Input
                   id="edit-amount-nok"
@@ -140,7 +141,7 @@ export function EditTransactionDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="edit-payment-type">Payment type</FieldLabel>
+              <FieldLabel htmlFor="edit-payment-type">Betalingstype</FieldLabel>
               <FieldContent>
                 <Select
                   value={editForm.paymentType}
@@ -165,7 +166,7 @@ export function EditTransactionDialog({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="edit-note">Note</FieldLabel>
+              <FieldLabel htmlFor="edit-note">Notat</FieldLabel>
               <FieldContent>
                 <Input
                   id="edit-note"
@@ -178,7 +179,7 @@ export function EditTransactionDialog({
                   className={`text-xs ${note.error ? "text-destructive" : "text-muted-foreground"}`}
                 >
                   {note.error ??
-                    `${note.length}/${MAX_TRANSACTION_NOTE_LENGTH} characters`}
+                    `${note.length}/${MAX_TRANSACTION_NOTE_LENGTH} tegn`}
                 </p>
               </FieldContent>
             </Field>
@@ -199,10 +200,10 @@ export function EditTransactionDialog({
                 onClick={onCancel}
                 disabled={editSaving}
               >
-                Cancel
+                Avbryt
               </Button>
               <Button type="submit" disabled={editSaving}>
-                {editSaving ? "Saving..." : "Save changes"}
+                {editSaving ? "Lagrer…" : "Lagre endringer"}
               </Button>
             </DialogFooter>
           </form>

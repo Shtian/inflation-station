@@ -7,34 +7,34 @@ describe("getMutationErrorMessage", () => {
       getMutationErrorMessage(
         {
           error: "CATEGORY_OR_ACCOUNT_NOT_FOUND",
-          message: "Selected account or category was not found.",
+          message: "Fant ikke den valgte kontoen eller kategorien.",
         },
-        "Could not add transaction.",
+        "Kunne ikke legge til transaksjonen.",
       ),
-    ).toBe("Selected account or category was not found.");
+    ).toBe("Fant ikke den valgte kontoen eller kategorien.");
   });
 
   it("does not surface a raw error code when message is missing", () => {
     expect(
       getMutationErrorMessage(
         { error: "INVALID_PAYLOAD", details: { merchant: ["Required"] } },
-        "Could not add transaction.",
+        "Kunne ikke legge til transaksjonen.",
       ),
-    ).toBe("Could not add transaction.");
+    ).toBe("Kunne ikke legge til transaksjonen.");
   });
 
   it("falls back when the body is not an object", () => {
-    expect(getMutationErrorMessage(null, "Could not delete transaction.")).toBe(
-      "Could not delete transaction.",
-    );
+    expect(
+      getMutationErrorMessage(null, "Kunne ikke slette transaksjonen."),
+    ).toBe("Kunne ikke slette transaksjonen.");
   });
 
   it("falls back when message is empty", () => {
     expect(
       getMutationErrorMessage(
         { error: "INVALID_PAYLOAD", message: "" },
-        "Could not add transaction.",
+        "Kunne ikke legge til transaksjonen.",
       ),
-    ).toBe("Could not add transaction.");
+    ).toBe("Kunne ikke legge til transaksjonen.");
   });
 });

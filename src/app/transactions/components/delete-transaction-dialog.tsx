@@ -30,9 +30,9 @@ export function DeleteTransactionDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete transaction</AlertDialogTitle>
+          <AlertDialogTitle>Slett transaksjon</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently remove the selected transaction.
+            Dette sletter den valgte transaksjonen permanent.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -47,14 +47,14 @@ export function DeleteTransactionDialog({
 
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel} disabled={deleteSaving}>
-            Cancel
+            Avbryt
           </AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-white hover:bg-destructive/90"
             onClick={onConfirm}
             disabled={deleteSaving}
           >
-            {deleteSaving ? "Deleting..." : "Delete"}
+            {deleteSaving ? "Sletter…" : "Slett"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

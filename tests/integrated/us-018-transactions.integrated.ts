@@ -17,7 +17,7 @@ function rowFor(page: Page, merchant: string): Locator {
 
 function memoButton(page: Page, bookingDate: string): Locator {
   return page.getByRole("button", {
-    name: `View memo for transaction from ${bookingDate}`,
+    name: `Vis memo for transaksjon fra ${bookingDate}`,
   });
 }
 
@@ -48,7 +48,7 @@ async function reloadTransactions(page: Page): Promise<void> {
 
 async function searchFor(page: Page, query: string): Promise<void> {
   const settled = transactionsResponse(page, query);
-  await page.getByLabel("Search", { exact: true }).fill(query);
+  await page.getByLabel("Søk", { exact: true }).fill(query);
   await settled;
 }
 
@@ -61,7 +61,7 @@ async function openRowActions(
   await row.hover();
   await row
     .getByRole("button", {
-      name: `Actions for transaction from ${bookingDate}`,
+      name: `Handlinger for transaksjon fra ${bookingDate}`,
     })
     .click();
 }
@@ -93,14 +93,14 @@ test(
 
     await openTransactions(page);
     await openRowActions(page, "Kaffeslabberas Gamlebyen", "2026-03-04");
-    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Rediger" }).click();
 
-    const dialog = page.getByRole("dialog", { name: "Edit transaction" });
-    await expect(dialog.getByLabel("Merchant")).toHaveValue(
+    const dialog = page.getByRole("dialog", { name: "Rediger transaksjon" });
+    await expect(dialog.getByLabel("Brukersted")).toHaveValue(
       "Kaffeslabberas Gamlebyen",
     );
-    await dialog.getByLabel("Merchant").fill("Bæveren Ølhus Bryggeri");
-    await dialog.getByRole("button", { name: "Save changes" }).click();
+    await dialog.getByLabel("Brukersted").fill("Bæveren Ølhus Bryggeri");
+    await dialog.getByRole("button", { name: "Lagre endringer" }).click();
 
     await expect(dialog).toBeHidden();
     const edited = rowFor(page, "Bæveren Ølhus Bryggeri");
@@ -114,7 +114,7 @@ test(
 
     await searchFor(page, "Kaffeslabberas");
     await expect(
-      page.getByText("No transactions found for the selected filters."),
+      page.getByText("Fant ingen transaksjoner for de valgte filtrene."),
     ).toBeVisible();
   },
 );
@@ -130,10 +130,10 @@ test(
     });
 
     await openTransactions(page);
-    await expect(page.getByText("No transactions found.")).toBeVisible();
+    await expect(page.getByText("Fant ingen transaksjoner.")).toBeVisible();
 
-    await page.getByRole("button", { name: "Add transaction" }).click();
-    const dialog = page.getByRole("dialog", { name: "Add transaction" });
+    await page.getByRole("button", { name: "Legg til transaksjon" }).click();
+    const dialog = page.getByRole("dialog", { name: "Legg til transaksjon" });
 
     await dialog.locator("#add-account-id").click();
     await page.getByRole("option", { name: ACCOUNT, exact: true }).click();
@@ -146,9 +146,9 @@ test(
     await page.getByRole("option", { name: CATEGORY, exact: true }).click();
     await dialog.locator("#add-note").fill("Fredagsbolle");
 
-    await dialog.getByRole("button", { name: "Add transaction" }).click();
+    await dialog.getByRole("button", { name: "Legg til transaksjon" }).click();
     await expect(
-      page.locator("[data-sonner-toast]", { hasText: "Transaction added" }),
+      page.locator("[data-sonner-toast]", { hasText: "Transaksjon lagt til" }),
     ).toBeVisible();
 
     await reloadTransactions(page);
@@ -181,12 +181,12 @@ test(
     await expect(memoButton(page, "2026-03-04")).toBeVisible();
 
     await openRowActions(page, "Kaffeslabberas Gamlebyen", "2026-03-04");
-    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await page.getByRole("menuitem", { name: "Rediger" }).click();
 
-    const dialog = page.getByRole("dialog", { name: "Edit transaction" });
-    await expect(dialog.getByLabel("Note")).toHaveValue("Reimburse Ola");
-    await dialog.getByLabel("Note").fill("");
-    await dialog.getByRole("button", { name: "Save changes" }).click();
+    const dialog = page.getByRole("dialog", { name: "Rediger transaksjon" });
+    await expect(dialog.getByLabel("Notat")).toHaveValue("Reimburse Ola");
+    await dialog.getByLabel("Notat").fill("");
+    await dialog.getByRole("button", { name: "Lagre endringer" }).click();
     await expect(dialog).toBeHidden();
 
     await reloadTransactions(page);
@@ -221,16 +221,16 @@ test(
     await expect(bodyRows(page)).toHaveCount(2);
 
     await openRowActions(page, "Kaffeslabberas Gamlebyen", "2026-03-04");
-    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await page.getByRole("menuitem", { name: "Slett" }).click();
 
     const confirmation = page.getByRole("alertdialog", {
-      name: "Delete transaction",
+      name: "Slett transaksjon",
     });
     await expect(confirmation).toContainText(
-      "This will permanently remove the selected transaction.",
+      "Dette sletter den valgte transaksjonen permanent.",
     );
     await confirmation
-      .getByRole("button", { name: "Delete", exact: true })
+      .getByRole("button", { name: "Slett", exact: true })
       .click();
 
     await expect(confirmation).toBeHidden();
