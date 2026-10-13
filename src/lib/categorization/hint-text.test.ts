@@ -103,7 +103,7 @@ describe("applyMerchantChip", () => {
     ).toEqual({
       kind: "note",
       message:
-        "“Bolt” is part of your own wording. Edit the text to change it.",
+        "“Bolt” er en del av din egen formulering. Rediger teksten for å endre det.",
     });
   });
 });

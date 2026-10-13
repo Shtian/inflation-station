@@ -107,7 +107,7 @@ export function applyMerchantChip(
   if (presence === "mentioned") {
     return {
       kind: "note",
-      message: `“${merchant.label}” is part of your own wording. Edit the text to change it.`,
+      message: `“${merchant.label}” er en del av din egen formulering. Rediger teksten for å endre det.`,
     };
   }
   if (presence === "off") {

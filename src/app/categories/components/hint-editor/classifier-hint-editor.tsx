@@ -104,7 +104,7 @@ export function ClassifierHintEditor({
       <div className="flex items-center justify-between gap-2">
         <FieldLabel htmlFor={id}>{label}</FieldLabel>
         {view.badge === "suggested" ? (
-          <Badge variant="secondary">Suggested · not saved</Badge>
+          <Badge variant="secondary">Foreslått · ikke lagret</Badge>
         ) : null}
       </div>
       <FieldContent className="gap-2">
@@ -116,10 +116,10 @@ export function ClassifierHintEditor({
             />
             <div className="space-y-2">
               <p>
-                Your saved hint names{" "}
+                Det lagrede hintet ditt nevner{" "}
                 <span className="font-medium">{view.mismatch.savedText}</span>.
-                None of them appear in the {view.mismatch.transactionCount}{" "}
-                transactions filed here.
+                Ingen av dem finnes blant de {view.mismatch.transactionCount}{" "}
+                transaksjonene som er ført her.
               </p>
               <div className="flex gap-2">
                 <Button
@@ -128,7 +128,7 @@ export function ClassifierHintEditor({
                   onClick={() => dispatch({ type: "replace-with-suggestion" })}
                   disabled={disabled}
                 >
-                  Replace with suggestion
+                  Bytt til forslaget
                 </Button>
                 <Button
                   type="button"
@@ -137,7 +137,7 @@ export function ClassifierHintEditor({
                   onClick={() => dispatch({ type: "keep-saved" })}
                   disabled={disabled}
                 >
-                  Keep mine
+                  Behold mitt
                 </Button>
               </div>
             </div>
@@ -155,7 +155,7 @@ export function ClassifierHintEditor({
         />
         <div className="flex items-start justify-between gap-3 text-muted-foreground text-xs">
           <p>
-            Jev reads <span className="text-foreground">{view.jevLine}</span>
+            Jev leser <span className="text-foreground">{view.jevLine}</span>
           </p>
           <span
             className={cn(
@@ -177,7 +177,7 @@ export function ClassifierHintEditor({
             disabled={disabled}
           >
             <History aria-hidden="true" />
-            Suggestions from {suggestions.transactionCount} transactions
+            Forslag fra {suggestions.transactionCount} transaksjoner
           </Button>
         ) : null}
         {suggestions.kind === "expanded" ? (
@@ -198,7 +198,7 @@ export function ClassifierHintEditor({
                   disabled={disabled}
                 />
                 <span id={`${id}-description-label`}>
-                  <span className="text-muted-foreground">Start with</span> “
+                  <span className="text-muted-foreground">Begynn med</span> “
                   {suggestions.description.text}”
                 </span>
               </label>
@@ -206,9 +206,9 @@ export function ClassifierHintEditor({
             {suggestions.history ? (
               <div className="space-y-2">
                 <p className="font-medium text-xs">
-                  From your history{" "}
+                  Fra historikken din{" "}
                   <span className="font-normal text-muted-foreground">
-                    · times used
+                    · antall ganger brukt
                   </span>
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -232,7 +232,7 @@ export function ClassifierHintEditor({
                       onClick={() => dispatch({ type: "show-all-merchants" })}
                       disabled={disabled}
                     >
-                      +{suggestions.history.hiddenCount} more
+                      +{suggestions.history.hiddenCount} flere
                     </Button>
                   ) : null}
                 </div>
@@ -241,9 +241,9 @@ export function ClassifierHintEditor({
             {suggestions.guesses.length > 0 ? (
               <div className="space-y-2">
                 <p className="font-medium text-xs">
-                  Not in your history{" "}
+                  Ikke i historikken din{" "}
                   <span className="font-normal text-muted-foreground">
-                    · likely to show up later
+                    · dukker trolig opp senere
                   </span>
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -274,15 +274,15 @@ export function ClassifierHintEditor({
                   disabled={disabled}
                 >
                   <Sparkles aria-hidden="true" />
-                  Suggest with AI
+                  Foreslå med AI
                 </Button>
-                <span>· description and similar merchants</span>
+                <span>· beskrivelse og lignende brukersteder</span>
               </div>
             ) : null}
             {suggestions.ai?.kind === "pending" ? (
               <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
                 <Loader2 className="size-3 animate-spin" aria-hidden="true" />
-                Finding similar merchants…
+                Finner lignende brukersteder…
               </p>
             ) : null}
             {suggestions.ai?.kind === "unavailable" ? (
@@ -299,7 +299,7 @@ export function ClassifierHintEditor({
                     }
                     disabled={disabled}
                   >
-                    Try again
+                    Prøv igjen
                   </Button>
                 ) : null}
               </p>
@@ -317,9 +317,9 @@ export function ClassifierHintEditor({
 }
 
 const AI_UNAVAILABLE_MESSAGES: Record<HintGuessUnavailableReason, string> = {
-  disabled: "AI suggestions are turned off.",
-  key_missing: "AI suggestions unavailable: OPENAI_API_KEY is missing.",
-  failed: "Couldn't get AI suggestions.",
+  disabled: "AI-forslag er slått av.",
+  key_missing: "AI-forslag er utilgjengelige: OPENAI_API_KEY mangler.",
+  failed: "Kunne ikke hente AI-forslag.",
 };
 
 function MerchantChip({
@@ -342,7 +342,7 @@ function MerchantChip({
       type="button"
       aria-pressed={presence === "on"}
       title={
-        presence === "mentioned" ? "Mentioned in your own wording" : undefined
+        presence === "mentioned" ? "Nevnt i din egen formulering" : undefined
       }
       onClick={onClick}
       disabled={disabled}

@@ -48,16 +48,16 @@ import { ClassifierHintEditor } from "./hint-editor/classifier-hint-editor";
 import type { HintDraft, HintDraftAction } from "./hint-editor/hint-draft";
 
 const CATEGORY_KIND_LABELS: Record<CategoryKind, string> = {
-  EXPENSE: "Expense",
-  INCOME: "Income",
-  TRANSFER: "Transfer",
+  EXPENSE: "Utgift",
+  INCOME: "Inntekt",
+  TRANSFER: "Overføring",
 };
 
-const CLASSIFIER_HINT_LABEL = "Classifier hint (recommended)";
+const CLASSIFIER_HINT_LABEL = "Klassifiseringshint (anbefalt)";
 const CLASSIFIER_HINT_PLACEHOLDER =
-  "Groceries: Rema 1000, Kiwi, Meny, Coop Extra, Joker, Bunnpris";
+  "Dagligvarer: Rema 1000, Kiwi, Meny, Coop Extra, Joker, Bunnpris";
 const CLASSIFIER_HINT_DESCRIPTION =
-  "Describe what belongs here in plain words and list typical merchants as they appear on your bank statement.";
+  "Beskriv med vanlige ord hva som hører hjemme her, og list opp typiske brukersteder slik de står på kontoutskriften.";
 
 type CategoryManagementSectionProps = {
   categories: Category[];
@@ -110,27 +110,27 @@ export function CategoryManagementSection({
     <section className="space-y-4">
       <div className="space-y-1">
         <h3 className="font-semibold text-base text-foreground">
-          Category Management
+          Kategoriadministrasjon
         </h3>
         <p className="text-muted-foreground text-sm">
-          Create and remove categories used in review and analytics.
+          Opprett og fjern kategorier som brukes i gjennomgang og analyser.
         </p>
       </div>
 
       <div className="grid gap-3">
         <Field>
-          <FieldLabel htmlFor="new-category-name">Category name</FieldLabel>
+          <FieldLabel htmlFor="new-category-name">Kategorinavn</FieldLabel>
           <FieldContent>
             <Input
               id="new-category-name"
               value={newCategoryName}
               onChange={(event) => onNewCategoryNameChange(event.target.value)}
-              placeholder="Groceries"
+              placeholder="Dagligvarer"
             />
           </FieldContent>
         </Field>
         <Field>
-          <FieldLabel htmlFor="new-category-kind">Kind</FieldLabel>
+          <FieldLabel htmlFor="new-category-kind">Kategoritype</FieldLabel>
           <FieldContent>
             <Select
               items={Object.entries(CATEGORY_KIND_LABELS).map(
@@ -178,11 +178,11 @@ export function CategoryManagementSection({
           className="gap-2"
         >
           {busyKey === "new-category" ? (
-            "Saving..."
+            "Lagrer…"
           ) : (
             <>
               <Plus className="h-4 w-4" aria-hidden="true" />
-              Add category
+              Legg til kategori
             </>
           )}
         </Button>
@@ -191,9 +191,9 @@ export function CategoryManagementSection({
       {!loading && missingHintCount > 0 ? (
         <output className="block rounded-md border border-border bg-muted/40 px-3 py-2 text-muted-foreground text-sm">
           {missingHintCount === 1
-            ? "1 category has no hint."
-            : `${missingHintCount} categories have no hint.`}{" "}
-          Hints improve automatic categorization.
+            ? "1 kategori mangler hint."
+            : `${missingHintCount} kategorier mangler hint.`}{" "}
+          Hint gir bedre automatisk kategorisering.
         </output>
       ) : null}
 
@@ -201,20 +201,20 @@ export function CategoryManagementSection({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Kind</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Navn</TableHead>
+              <TableHead>Kategoritype</TableHead>
+              <TableHead className="text-right">Handlinger</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={3}>Loading categories...</TableCell>
+                <TableCell colSpan={3}>Laster inn kategorier…</TableCell>
               </TableRow>
             ) : null}
             {!loading && categories.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3}>No categories yet.</TableCell>
+                <TableCell colSpan={3}>Ingen kategorier ennå.</TableCell>
               </TableRow>
             ) : null}
             {!loading
@@ -224,11 +224,11 @@ export function CategoryManagementSection({
                       <div className="flex items-center gap-2">
                         <CategoryBadge label={category.name} />
                         {hasClassifierHint(category) ? null : (
-                          <Badge variant="outline">No hint</Badge>
+                          <Badge variant="outline">Mangler hint</Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>{category.kind}</TableCell>
+                    <TableCell>{CATEGORY_KIND_LABELS[category.kind]}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger
@@ -237,8 +237,8 @@ export function CategoryManagementSection({
                               type="button"
                               variant="outline"
                               size="icon-sm"
-                              aria-label={`Actions for category ${category.name}`}
-                              title={`Actions for category ${category.name}`}
+                              aria-label={`Handlinger for kategorien ${category.name}`}
+                              title={`Handlinger for kategorien ${category.name}`}
                               disabled={busyKey !== null}
                             >
                               {busyKey === `delete-category-${category.id}` ? (
@@ -252,7 +252,7 @@ export function CategoryManagementSection({
                                   aria-hidden="true"
                                 />
                               )}
-                              <span className="sr-only">Actions</span>
+                              <span className="sr-only">Handlinger</span>
                             </Button>
                           }
                         />
@@ -262,7 +262,7 @@ export function CategoryManagementSection({
                               onClick={() => onStartRenameCategory(category)}
                             >
                               <Pencil className="h-4 w-4" aria-hidden="true" />
-                              Edit
+                              Rediger
                             </DropdownMenuItem>
                           </DropdownMenuGroup>
                           <DropdownMenuSeparator />
@@ -272,7 +272,7 @@ export function CategoryManagementSection({
                               onClick={() => onDeleteCategory(category.id)}
                             >
                               <Trash2 className="h-4 w-4" aria-hidden="true" />
-                              Delete
+                              Slett
                             </DropdownMenuItem>
                           </DropdownMenuGroup>
                         </DropdownMenuContent>
@@ -295,15 +295,15 @@ export function CategoryManagementSection({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit category</DialogTitle>
+            <DialogTitle>Rediger kategori</DialogTitle>
             <DialogDescription>
-              Update the category name and classifier hint. Existing transaction
-              and rule links stay connected to the same category ID.
+              Oppdater kategorinavnet og klassifiseringshintet. Eksisterende
+              koblinger til transaksjoner og regler beholder samme kategori-ID.
             </DialogDescription>
           </DialogHeader>
 
           <Field>
-            <FieldLabel htmlFor="edit-category-name">Category name</FieldLabel>
+            <FieldLabel htmlFor="edit-category-name">Kategorinavn</FieldLabel>
             <FieldContent>
               <Input
                 id="edit-category-name"
@@ -311,7 +311,7 @@ export function CategoryManagementSection({
                 onChange={(event) =>
                   onEditCategoryNameChange(event.target.value)
                 }
-                placeholder="Groceries"
+                placeholder="Dagligvarer"
                 disabled={
                   editingCategoryId !== null &&
                   busyKey === `rename-category-${editingCategoryId}`
@@ -342,7 +342,7 @@ export function CategoryManagementSection({
                 busyKey === `rename-category-${editingCategoryId}`
               }
             >
-              Cancel
+              Avbryt
             </Button>
             <Button
               type="button"
@@ -356,8 +356,8 @@ export function CategoryManagementSection({
             >
               {editingCategoryId !== null &&
               busyKey === `rename-category-${editingCategoryId}`
-                ? "Saving..."
-                : "Save"}
+                ? "Lagrer…"
+                : "Lagre"}
             </Button>
           </DialogFooter>
         </DialogContent>

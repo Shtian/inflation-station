@@ -154,7 +154,7 @@ describe("hint draft", () => {
 
     expect(draft.text).toBe("Ruter, Vy, Bolt (not Bolt Food), taxi");
     expect(draft.note).toBe(
-      "“Bolt” is part of your own wording. Edit the text to change it.",
+      "“Bolt” er en del av din egen formulering. Rediger teksten for å endre det.",
     );
     expect(run(draft, { type: "text-edited", text: "Ruter" }).note).toBeNull();
   });

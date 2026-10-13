@@ -54,21 +54,21 @@ export function AccountsTableSection({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Institution</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>Navn</TableHead>
+            <TableHead>Institusjon</TableHead>
+            <TableHead>Tilstand</TableHead>
+            <TableHead className="text-right">Handlinger</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {accountsLoading ? (
             <TableRow>
-              <TableCell colSpan={4}>Loading accounts...</TableCell>
+              <TableCell colSpan={4}>Laster inn kontoer…</TableCell>
             </TableRow>
           ) : null}
           {!accountsLoading && accounts.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={4}>No accounts yet.</TableCell>
+              <TableCell colSpan={4}>Ingen kontoer ennå.</TableCell>
             </TableRow>
           ) : null}
           {!accountsLoading
@@ -81,7 +81,7 @@ export function AccountsTableSection({
                     <TableCell>
                       {isEditing ? (
                         <Input
-                          aria-label={`Edit name ${account.name}`}
+                          aria-label={`Rediger navn ${account.name}`}
                           value={editName}
                           onChange={(event) =>
                             onEditNameChange(event.target.value)
@@ -94,7 +94,7 @@ export function AccountsTableSection({
                     <TableCell>
                       {isEditing ? (
                         <Input
-                          aria-label={`Edit institution ${account.name}`}
+                          aria-label={`Rediger institusjon ${account.name}`}
                           value={editInstitution}
                           onChange={(event) =>
                             onEditInstitutionChange(event.target.value)
@@ -107,14 +107,14 @@ export function AccountsTableSection({
                     <TableCell>
                       {account.isActive ? (
                         <Badge className="border-success/30 bg-success/10 text-success">
-                          Active
+                          Aktiv
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
                           className="text-muted-foreground"
                         >
-                          Inactive
+                          Inaktiv
                         </Badge>
                       )}
                     </TableCell>
@@ -129,7 +129,7 @@ export function AccountsTableSection({
                               className="gap-2"
                             >
                               <Check className="h-4 w-4" aria-hidden="true" />
-                              Save
+                              Lagre
                             </Button>
                             <Button
                               variant="outline"
@@ -138,7 +138,7 @@ export function AccountsTableSection({
                               className="gap-2"
                             >
                               <X className="h-4 w-4" aria-hidden="true" />
-                              Cancel
+                              Avbryt
                             </Button>
                           </>
                         ) : (
@@ -149,8 +149,8 @@ export function AccountsTableSection({
                                   type="button"
                                   variant="outline"
                                   size="icon-sm"
-                                  aria-label={`Actions for account ${account.name}`}
-                                  title={`Actions for account ${account.name}`}
+                                  aria-label={`Handlinger for kontoen ${account.name}`}
+                                  title={`Handlinger for kontoen ${account.name}`}
                                   disabled={isBusy}
                                 >
                                   {isBusy ? (
@@ -164,7 +164,7 @@ export function AccountsTableSection({
                                       aria-hidden="true"
                                     />
                                   )}
-                                  <span className="sr-only">Actions</span>
+                                  <span className="sr-only">Handlinger</span>
                                 </Button>
                               }
                             />
@@ -177,7 +177,7 @@ export function AccountsTableSection({
                                     className="h-4 w-4"
                                     aria-hidden="true"
                                   />
-                                  Rename
+                                  Gi nytt navn
                                 </DropdownMenuItem>
                               </DropdownMenuGroup>
                               <DropdownMenuSeparator />
@@ -192,7 +192,7 @@ export function AccountsTableSection({
                                     className="h-4 w-4"
                                     aria-hidden="true"
                                   />
-                                  Delete
+                                  Slett
                                 </DropdownMenuItem>
                               </DropdownMenuGroup>
                             </DropdownMenuContent>

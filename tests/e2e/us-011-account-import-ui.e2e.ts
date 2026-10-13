@@ -117,16 +117,16 @@ test("manages accounts from /accounts with success and error feedback", async ({
 
   await page.goto("/accounts");
 
-  await expect(page.getByRole("heading", { name: "Accounts" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Kontoer" })).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "Main Account", exact: true }),
   ).toBeVisible();
 
-  await page.getByLabel("Account name").fill("Savings Account");
-  await page.getByLabel("Institution (optional)").fill("Nordea");
-  await page.getByRole("button", { name: "Add account" }).click();
+  await page.getByLabel("Kontonavn").fill("Savings Account");
+  await page.getByLabel("Institusjon (valgfritt)").fill("Nordea");
+  await page.getByRole("button", { name: "Legg til konto" }).click();
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Account added." }),
+    page.locator("[data-sonner-toast]", { hasText: "Konto lagt til." }),
   ).toBeVisible();
 
   await expect(
@@ -134,13 +134,15 @@ test("manages accounts from /accounts with success and error feedback", async ({
   ).toBeVisible();
 
   await page
-    .getByRole("button", { name: "Actions for account Savings Account" })
+    .getByRole("button", { name: "Handlinger for kontoen Savings Account" })
     .click();
-  await page.getByRole("menuitem", { name: "Rename" }).click();
-  await page.getByLabel("Edit name Savings Account").fill("Rainy Day Account");
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("menuitem", { name: "Gi nytt navn" }).click();
+  await page
+    .getByLabel("Rediger navn Savings Account")
+    .fill("Rainy Day Account");
+  await page.getByRole("button", { name: "Lagre" }).click();
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Account updated." }),
+    page.locator("[data-sonner-toast]", { hasText: "Konto oppdatert." }),
   ).toBeVisible();
 
   await expect(
@@ -151,20 +153,20 @@ test("manages accounts from /accounts with success and error feedback", async ({
     void dialog.accept();
   });
   await page
-    .getByRole("button", { name: "Actions for account Rainy Day Account" })
+    .getByRole("button", { name: "Handlinger for kontoen Rainy Day Account" })
     .click();
-  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("menuitem", { name: "Slett" }).click();
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Account removed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Konto fjernet." }),
   ).toBeVisible();
 
   await expect(
     page.getByRole("cell", { name: "Rainy Day Account", exact: true }),
   ).not.toBeVisible();
 
-  await page.getByLabel("Account name").fill("Main Account");
-  await page.getByRole("button", { name: "Add account" }).click();
+  await page.getByLabel("Kontonavn").fill("Main Account");
+  await page.getByRole("button", { name: "Legg til konto" }).click();
   await expect(
-    page.getByText("An account with this name already exists."),
+    page.getByText("Det finnes allerede en konto med dette navnet."),
   ).toBeVisible();
 });
