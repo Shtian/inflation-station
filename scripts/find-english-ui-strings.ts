@@ -40,6 +40,7 @@ const IGNORED_JSX_ATTRIBUTES = new Set([
   "form",
   "value",
   "defaultValue",
+  "defaultTheme",
 ]);
 
 const UI_MESSAGE_CALLEE =
@@ -72,13 +73,13 @@ const ENGLISH_WORDS = new Set(
   open select selected choose search loading failed error could please back next previous new all
   none month months transaction transactions category categories account accounts amount date
   description review reviews settings upload uploaded uploading file files rule rules name from into
-  on in at by has have had update updated updating show hide total income expense expenses spending
+  on in  by has have had update updated updating show hide  income expense expenses spending
   spend spent net merchant unknown uncategorized apply submit continue done retry try again more less
   view details create created changes change nothing yet empty light dark theme generate generating
-  overview help send message cleanup mapping column columns row rows skip skipped duplicate duplicates
-  status pending ready success warning out last first will when what which how why there here than
+  overview help  message cleanup mapping column columns row rows skip skipped duplicate duplicates
+   pending ready success warning out  first will when what which how why there here than
   then only also can cannot must should would use used using it its we our no yes copy copied reset
-  clear manage enter type choose drop or keep left right start end previous today yesterday week year
+  clear manage enter  choose drop or keep left right  end previous today yesterday week year
   something went wrong unable invalid required optional missing found balance accounts ask`
     .split(/\s+/)
     .filter(Boolean),
@@ -163,7 +164,7 @@ function scanFile(path: string): Finding[] {
     if (
       !trimmed ||
       !looksEnglish(trimmed) ||
-      /^[a-z0-9]+([-_][a-z0-9]+)+$/.test(trimmed)
+      /^[a-z0-9]+([-_][a-z0-9]+)+$/i.test(trimmed)
     )
       return;
     const { line } = source.getLineAndCharacterOfPosition(node.getStart());
