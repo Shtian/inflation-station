@@ -33,5 +33,7 @@ export default function nextConfig(phase: string): NextConfig {
     distDir: process.env.NEXT_DIST_DIR ?? ".next",
     reactCompiler: true,
     allowedDevOrigins: ["127.0.0.1"],
+    // AGENTS.md is curated by hand; stop `next dev` from appending its own block.
+    agentRules: false,
   };
 }
