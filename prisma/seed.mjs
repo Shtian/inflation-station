@@ -27,6 +27,22 @@ function lastDayOfMonth(monthStart) {
   return new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
 }
 
+// Seeded PRNG (mulberry32) so a given month always reseeds to the same data.
+function createRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function formatKroner(amount) {
+  return `${(Math.round(amount / 100) * 100).toLocaleString("nb-NO")} kr`;
+}
+
 // --- Cleanup ---
 
 async function clearAll() {
@@ -49,40 +65,83 @@ async function main() {
   // --- Accounts ---
   console.log("Creating accounts...");
   const [checking, savings, creditCard, brukskonto] = await Promise.all([
-    prisma.account.create({ data: { name: "Lønnskonto", institution: "DNB" } }),
-    prisma.account.create({ data: { name: "Sparekonto", institution: "DNB" } }),
     prisma.account.create({
-      data: { name: "Visa Kredittkort", institution: "DNB" },
+      data: { name: "Lønnskonto", institution: "Nordea" },
     }),
-    prisma.account.create({ data: { name: "Brukskonto", institution: "DNB" } }),
+    prisma.account.create({
+      data: { name: "Sparekonto", institution: "Nordea" },
+    }),
+    prisma.account.create({
+      data: { name: "Visa Kredittkort", institution: "Nordea" },
+    }),
+    prisma.account.create({
+      data: { name: "Brukskonto", institution: "Nordea" },
+    }),
   ]);
 
   // --- Categories (global — no accountId so all accounts can use them) ---
   console.log("Creating categories...");
+  // Some categories are left without a hint so the empty hint state shows too.
   const categoryDefs = [
     { name: "Lønn", kind: "INCOME" },
     { name: "Renteinntekt", kind: "INCOME" },
-    { name: "Dagligvarer", kind: "EXPENSE" },
-    { name: "Restaurant & Takeaway", kind: "EXPENSE" },
-    { name: "Transport", kind: "EXPENSE" },
-    { name: "Strøm & Internett", kind: "EXPENSE" },
-    { name: "Abonnementer", kind: "EXPENSE" },
-    { name: "Helse", kind: "EXPENSE" },
+    {
+      name: "Dagligvarer",
+      kind: "EXPENSE",
+      hint: "Matbutikker og dagligvarer. Rema 1000, Kiwi, Meny, Coop Extra, Bondens marked",
+    },
+    {
+      name: "Restaurant & Takeaway",
+      kind: "EXPENSE",
+      hint: "Spisesteder og hurtigmat. Burger King, McDonalds, Pizza Hut, Sushi restaurant, Narvesen kiosk",
+    },
+    {
+      name: "Transport",
+      kind: "EXPENSE",
+      hint: "Kollektivtransport og tog. Ruter månedskort, Vy",
+    },
+    {
+      name: "Strøm & Internett",
+      kind: "EXPENSE",
+      hint: "Strøm og bredbånd hjemme. Fjordkraft strøm, Telenor internett",
+    },
+    {
+      name: "Abonnementer",
+      kind: "EXPENSE",
+      hint: "Strømmetjenester og digitale abonnementer. Spotify, Netflix, Viaplay",
+    },
+    {
+      name: "Helse",
+      kind: "EXPENSE",
+      hint: "Apotek og trening. Apotek 1, Vitusapotek, SATS treningssenter",
+    },
     { name: "Shopping", kind: "EXPENSE" },
     { name: "Forsikring", kind: "EXPENSE" },
     { name: "Boliglån", kind: "EXPENSE" },
     { name: "Billån", kind: "EXPENSE" },
-    { name: "Bil", kind: "EXPENSE" },
+    {
+      name: "Bil",
+      kind: "EXPENSE",
+      hint: "Lading og vask av elbilen men ikke billånet. Recharge elbil-lading, Fortum lading, Bilvask Shellstasjon, Parkering",
+    },
     { name: "Underholdning", kind: "EXPENSE" },
     { name: "Spareoverføring", kind: "TRANSFER" },
-    { name: "Kredittkortbetaling", kind: "TRANSFER" },
+    {
+      name: "Kredittkortbetaling",
+      kind: "TRANSFER",
+      hint: "Betaling av Visa-fakturaen fra lønnskonto og ikke selve kjøpene.",
+    },
     { name: "Kontantuttak", kind: "TRANSFER" },
   ];
 
   const categories = {};
   for (const def of categoryDefs) {
     const cat = await prisma.category.create({
-      data: { name: def.name, kind: def.kind },
+      data: {
+        name: def.name,
+        kind: def.kind,
+        classifierHint: def.hint ?? null,
+      },
     });
     categories[def.name] = cat;
   }
@@ -183,19 +242,20 @@ async function main() {
     Kiwi: "KIWI 0445 STOVNER",
     "Burger King": "BURGER KING OSLO CITY",
     "Ruter månedskort": "RUTER AS MÅNEDSKORT",
-    "Minibank uttak": "DNB MINIBANK OSLO S",
+    "Minibank uttak": "UTTAK MINIBANK OSLO S",
     "Apotek 1": "APOTEK 1 GLASMAGASINET",
     Meny: "MENY BOGSTADVEIEN",
     McDonalds: "MCDONALDS STORO",
     "Telenor internett": "TELENOR NORGE AS",
+    "Fjordkraft strøm": "FJORDKRAFT AS",
     "H&M": "H&M HENNES & MAURITZ OSLO CITY",
     "Fortum lading": "FORTUM CHARGE & DRIVE *HELSFYR",
     "Sushi restaurant": "SUSHI & WOK GRÜNERLØKKA",
     "Coop Extra": "COOP EXTRA HELSFYR",
-    "Kredittkortbetaling DNB": "NETTBETALING VISA KREDITTKORT",
+    "Kredittkortbetaling Nordea": "NETTBETALING VISA KREDITTKORT",
     "Pizza Hut": "PIZZA HUT STORO",
     "Overføring fra lønnskonto": "NETTBETALING FRA LØNNSKONTO",
-    "Renteinntekt DNB": "RENTER DNB SPAREKONTO",
+    "Renteinntekt Nordea": "RENTER NORDEA SPAREKONTO",
     Zalando: "ZALANDO SE",
     "Restaurant Mathallen": "MATHALLEN FOOD HALL AS",
     Elkjøp: "ELKJØP NORGE AS STORO",
@@ -259,25 +319,39 @@ async function main() {
     return null;
   }
 
-  function getMonthlyReviewText(monthStart) {
+  function getMonthlyReviewText(monthStart, totals) {
     const m = monthStart.toLocaleString("nb-NO", {
       month: "long",
       year: "numeric",
     });
     const month = monthStart.getMonth();
     if (month === 11) {
-      return `${m} var preget av julehandel og høyere forbruk enn vanlig. Gaver, julepynt, ekstra dagligvarer og restaurantbesøk dyttet utgiftene godt over normalen. Faste lånekostnader på 24 500 kr gikk som planlagt, men kredittkortfakturaen endte betydelig høyere enn en vanlig måned. Tog til julebesøk la seg også til budsjettet.`;
+      return `${m} var preget av julehandel og høyere forbruk enn vanlig. Gaver, julepynt, ekstra dagligvarer og restaurantbesøk dyttet utgiftene godt over normalen. Faste lånekostnader på 24 500 kr gikk som planlagt, men kredittkortfakturaen endte på ${formatKroner(totals.creditCard)}. Tog til julebesøk la seg også til budsjettet.`;
     }
     if (month === 0) {
       return `${m} var en rolig måned etter julens høye forbruk. Restaurant og shopping dro ned, men et nytt SATS-abonnement og noen januarsalg bidro litt ekstra. Faste lånekostnader på 24 500 kr gikk som normalt, og sparingsoverføringen på 5 000 kr ble gjennomført som planlagt.`;
     }
-    return `${m} var en typisk måned. Faste kostnader dominerte som vanlig — boliglånet på 20 000 kr og billånet på 4 500 kr utgjorde over halvparten av lønnen. Dagligvarer fra Rema 1000, Kiwi og Meny endte på ca. 2 800 kr, og elbil-lading kom til 670 kr. En overføring på 5 000 kr til sparekontoen holder sparemålet på rett kurs.`;
+    return `${m} var en typisk måned. Faste kostnader dominerte som vanlig — boliglånet på 20 000 kr og billånet på 4 500 kr utgjorde over halvparten av lønnen. Dagligvarer endte på ca. ${formatKroner(totals.groceries)}, og elbil-lading kom til ${formatKroner(totals.charging)}. En overføring på 5 000 kr til sparekontoen holder sparemålet på rett kurs.`;
   }
 
   for (let mi = 0; mi < months.length; mi++) {
     const monthStart = months[mi];
     const y = monthStart.getFullYear();
     const mo = monthStart.getMonth() + 1; // 1-indexed
+    const monthNum = monthStart.getMonth();
+
+    // Bills and subscriptions repeat; everyday spending varies month to month.
+    const random = createRandom(y * 100 + mo);
+    const chance = (probability) => random() < probability;
+    const between = (min, max) => min + Math.floor(random() * (max - min + 1));
+    const kroner = (min, max) =>
+      Math.round((min + random() * (max - min)) * 100) / 100;
+    const pick = (items) => items[Math.floor(random() * items.length)];
+    const pickSome = (items, count) =>
+      [...items].sort(() => random() - 0.5).slice(0, count);
+    const anyDay = () => between(1, 28);
+
+    const totals = { groceries: 0, charging: 0, creditCard: 0 };
 
     // Creates a transaction and a RULE suggestion if merchant matches a known pattern
     async function addTx(
@@ -293,6 +367,9 @@ async function main() {
         categoryOverride !== undefined
           ? categoryOverride
           : findCategory(merchant);
+      if (account === creditCard) {
+        totals.creditCard -= amountNok;
+      }
       const tx = await prisma.transaction.create({
         data: {
           accountId: account.id,
@@ -326,7 +403,7 @@ async function main() {
       return tx;
     }
 
-    // --- Lønnskonto ---
+    // --- Lønnskonto: fixed income, bills and subscriptions ---
     // Salary arrives on the 25th of the prior month
     await prisma.transaction.create({
       data: {
@@ -365,10 +442,9 @@ async function main() {
       2,
       categories.Spareoverføring,
     );
-    await addTx(checking, "Spotify", -99, "CARD", 1);
-    await addTx(checking, "Netflix", -179, "CARD", 1);
-    await addTx(checking, "Viaplay", -99, "CARD", 1);
-    await addTx(checking, "Rema 1000", -850, "CARD", 3);
+    await addTx(checking, "Spotify", -99, "CARD", 3);
+    await addTx(checking, "Netflix", -179, "CARD", 11);
+    await addTx(checking, "Viaplay", -99, "CARD", 17);
     await addTx(
       checking,
       "Gjensidige Forsikring",
@@ -377,22 +453,7 @@ async function main() {
       5,
       categories.Forsikring,
     );
-    await addTx(checking, "Recharge elbil-lading", -380, "CARD", 6);
-    await addTx(checking, "Bilvask Shellstasjon", -199, "CARD", 6);
-    await addTx(checking, "Kiwi", -380, "CARD", 7);
-    await addTx(checking, "Burger King", -185, "CARD", 8);
     await addTx(checking, "Ruter månedskort", -420, "CARD", 10);
-    await addTx(
-      checking,
-      "Minibank uttak",
-      -1000,
-      "CASH",
-      12,
-      categories.Kontantuttak,
-    );
-    await addTx(checking, "Apotek 1", -245, "CARD", 14);
-    await addTx(checking, "Meny", -1150, "CARD", 15);
-    await addTx(checking, "McDonalds", -138, "CARD", 16);
     await addTx(
       checking,
       "Telenor internett",
@@ -401,19 +462,87 @@ async function main() {
       18,
       categories["Strøm & Internett"],
     );
-    await addTx(checking, "H&M", -799, "CARD", 20);
-    await addTx(checking, "Fortum lading", -290, "CARD", 21);
-    await addTx(checking, "Sushi restaurant", -420, "CARD", 22);
-    await addTx(checking, "Coop Extra", -640, "CARD", 24);
+    // Electricity is a bill, but the amount follows the season.
+    const isWinter = [10, 11, 0, 1].includes(monthNum);
+    const isSummer = [5, 6, 7].includes(monthNum);
     await addTx(
       checking,
-      "Kredittkortbetaling DNB",
-      -9500,
-      "TRANSFER",
-      25,
-      categories.Kredittkortbetaling,
+      "Fjordkraft strøm",
+      -(isWinter
+        ? kroner(1400, 2300)
+        : isSummer
+          ? kroner(350, 650)
+          : kroner(700, 1200)),
+      "EFT",
+      20,
+      categories["Strøm & Internett"],
     );
-    await addTx(checking, "Pizza Hut", -285, "CARD", 28);
+
+    // --- Lønnskonto: everyday spending ---
+    const groceryStores = [
+      { name: "Rema 1000", min: 180, max: 950 },
+      { name: "Kiwi", min: 90, max: 620 },
+      { name: "Meny", min: 250, max: 1400 },
+      { name: "Coop Extra", min: 150, max: 900 },
+    ];
+    const groceryTrips = between(7, 11);
+    for (let i = 0; i < groceryTrips; i++) {
+      const store = pick(groceryStores);
+      const amount = kroner(store.min, store.max);
+      totals.groceries += amount;
+      await addTx(checking, store.name, -amount, "CARD", anyDay());
+    }
+
+    const takeaway = [
+      { name: "Burger King", min: 140, max: 260 },
+      { name: "McDonalds", min: 110, max: 230 },
+      { name: "Pizza Hut", min: 230, max: 420 },
+      { name: "Sushi restaurant", min: 320, max: 680 },
+    ];
+    const takeawayVisits = between(1, 5);
+    for (let i = 0; i < takeawayVisits; i++) {
+      const place = pick(takeaway);
+      await addTx(
+        checking,
+        place.name,
+        -kroner(place.min, place.max),
+        "CARD",
+        anyDay(),
+      );
+    }
+
+    const chargingSessions = between(2, 5);
+    for (let i = 0; i < chargingSessions; i++) {
+      const amount = kroner(120, 520);
+      totals.charging += amount;
+      await addTx(
+        checking,
+        pick(["Recharge elbil-lading", "Fortum lading"]),
+        -amount,
+        "CARD",
+        anyDay(),
+      );
+    }
+    if (chance(0.4)) {
+      await addTx(checking, "Bilvask Shellstasjon", -199, "CARD", anyDay());
+    }
+
+    if (chance(0.6)) {
+      await addTx(checking, "Apotek 1", -kroner(89, 420), "CARD", anyDay());
+    }
+    if (chance(0.4)) {
+      await addTx(checking, "H&M", -kroner(299, 1199), "CARD", anyDay());
+    }
+    if (chance(0.5)) {
+      await addTx(
+        checking,
+        "Minibank uttak",
+        -pick([500, 1000, 1500]),
+        "CASH",
+        anyDay(),
+        categories.Kontantuttak,
+      );
+    }
 
     // --- Sparekonto ---
     await addTx(
@@ -426,58 +555,112 @@ async function main() {
     );
     await addTx(
       savings,
-      "Renteinntekt DNB",
-      180,
+      "Renteinntekt Nordea",
+      kroner(150, 210),
       "EFT",
       15,
       categories.Renteinntekt,
     );
 
     // --- Visa Kredittkort ---
-    await addTx(creditCard, "Zalando", -1299, "CARD", 4, categories.Shopping);
-    await addTx(
-      creditCard,
-      "Restaurant Mathallen",
-      -680,
-      "CARD",
-      9,
-      categories["Restaurant & Takeaway"],
-    );
-    await addTx(creditCard, "Elkjøp", -2499, "CARD", 13, categories.Shopping);
-    await addTx(creditCard, "Kino", -199, "CARD", 19, categories.Underholdning);
-    await addTx(creditCard, "Vitusapotek", -380, "CARD", 23, categories.Helse);
-    await addTx(creditCard, "Cubus", -899, "CARD", 27, categories.Shopping);
-
-    // --- Brukskonto ---
-    await addTx(
-      brukskonto,
-      "Narvesen kiosk",
-      -45,
-      "CASH",
-      12,
-      categories["Restaurant & Takeaway"],
-    );
-    await addTx(
-      brukskonto,
-      "Bondens marked",
-      -220,
-      "CASH",
-      19,
-      categories.Dagligvarer,
-    );
-    await addTx(brukskonto, "Parkering", -80, "CASH", 26, categories.Bil);
-
-    // --- Month-specific extras ---
-    const monthNum = monthStart.getMonth();
-
-    // --- Uncategorized ---
-    await addTx(checking, "Ukjent betaling", -350, "CARD", 9, null);
-    if (monthNum === 11) {
-      await addTx(checking, "Diverse innkjøp", -180, "CARD", 16, null);
-    } else if (monthNum === 0) {
-      await addTx(creditCard, "Netthandel ukjent", -640, "CARD", 11, null);
+    const cardShopping = [
+      { name: "Zalando", min: 399, max: 1899 },
+      { name: "Elkjøp", min: 249, max: 3999 },
+      { name: "Cubus", min: 199, max: 999 },
+    ];
+    for (const item of pickSome(cardShopping, between(1, 3))) {
+      await addTx(
+        creditCard,
+        item.name,
+        -kroner(item.min, item.max),
+        "CARD",
+        anyDay(),
+        categories.Shopping,
+      );
+    }
+    if (chance(0.6)) {
+      await addTx(
+        creditCard,
+        "Restaurant Mathallen",
+        -kroner(420, 980),
+        "CARD",
+        anyDay(),
+        categories["Restaurant & Takeaway"],
+      );
+    }
+    if (chance(0.5)) {
+      await addTx(
+        creditCard,
+        "Kino",
+        -pick([149, 199, 298, 398]),
+        "CARD",
+        anyDay(),
+        categories.Underholdning,
+      );
+    }
+    if (chance(0.3)) {
+      await addTx(
+        creditCard,
+        "Vitusapotek",
+        -kroner(99, 450),
+        "CARD",
+        anyDay(),
+        categories.Helse,
+      );
     }
 
+    // --- Brukskonto ---
+    const kioskVisits = between(0, 3);
+    for (let i = 0; i < kioskVisits; i++) {
+      await addTx(
+        brukskonto,
+        "Narvesen kiosk",
+        -kroner(35, 120),
+        "CASH",
+        anyDay(),
+        categories["Restaurant & Takeaway"],
+      );
+    }
+    if (chance(0.5)) {
+      await addTx(
+        brukskonto,
+        "Bondens marked",
+        -kroner(150, 420),
+        "CASH",
+        anyDay(),
+        categories.Dagligvarer,
+      );
+    }
+    const parkingStops = between(1, 3);
+    for (let i = 0; i < parkingStops; i++) {
+      await addTx(
+        brukskonto,
+        "Parkering",
+        -kroner(40, 160),
+        "CASH",
+        anyDay(),
+        categories.Bil,
+      );
+    }
+
+    // --- Uncategorized ---
+    const uncategorized = [
+      { account: checking, name: "Ukjent betaling", min: 150, max: 600 },
+      { account: checking, name: "Diverse innkjøp", min: 90, max: 450 },
+      { account: creditCard, name: "Netthandel ukjent", min: 200, max: 900 },
+    ];
+    for (const item of pickSome(uncategorized, between(1, 2))) {
+      await addTx(
+        item.account,
+        item.name,
+        -kroner(item.min, item.max),
+        "CARD",
+        anyDay(),
+        null,
+      );
+    }
+
+    // --- Month-specific extras ---
     if (monthNum === 11) {
       // December: Christmas shopping, food, travel, higher CC bill
       await addTx(
@@ -527,14 +710,6 @@ async function main() {
         "CARD",
         23,
         categories.Dagligvarer,
-      );
-      await addTx(
-        checking,
-        "Kredittkortbetaling DNB",
-        -15500,
-        "TRANSFER",
-        27,
-        categories.Kredittkortbetaling,
       );
       await addTx(
         creditCard,
@@ -598,12 +773,22 @@ async function main() {
       );
     }
 
+    // The card bill pays off whatever was spent on the card this month.
+    await addTx(
+      checking,
+      "Kredittkortbetaling Nordea",
+      -(Math.round(totals.creditCard * 100) / 100),
+      "TRANSFER",
+      28,
+      categories.Kredittkortbetaling,
+    );
+
     // --- Monthly Review ---
     await prisma.monthlyReview.create({
       data: {
         monthStart: new Date(Date.UTC(y, mo - 1, 1)),
         status: "GENERATED",
-        reviewText: getMonthlyReviewText(monthStart),
+        reviewText: getMonthlyReviewText(monthStart, totals),
         generatedAt: lastDayOfMonth(monthStart),
       },
     });
