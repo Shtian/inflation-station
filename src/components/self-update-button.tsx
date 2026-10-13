@@ -73,19 +73,19 @@ function describe(
   switch (state.kind) {
     case "idle":
       if (availability.kind === "available") {
-        return `Version ${availability.remoteSha} is available. Pulling it rebuilds the site, which is offline for a few minutes.`;
+        return `Versjon ${availability.remoteSha} er tilgjengelig. Når den hentes, bygges siden på nytt og er utilgjengelig i noen minutter.`;
       }
-      return "Pull the latest changes and rebuild. If there is anything new, the site is offline for a few minutes while it rebuilds.";
+      return "Hent de siste endringene og bygg på nytt. Hvis det finnes noe nytt, er siden utilgjengelig i noen minutter mens den bygges.";
     case "starting":
-      return "Starting the update.";
+      return "Starter oppdateringen.";
     case "running":
-      return "Updating. This page reloads when the new version is up.";
+      return "Oppdaterer. Siden lastes inn på nytt når den nye versjonen er oppe.";
     case "offline":
-      return "Rebuilding. The site is offline until it restarts.";
+      return "Bygger på nytt. Siden er utilgjengelig til den starter igjen.";
     case "done":
-      return `Updated to ${state.sha}. Reloading.`;
+      return `Oppdatert til ${state.sha}. Laster inn på nytt.`;
     case "up-to-date":
-      return "Already up to date.";
+      return "Allerede oppdatert.";
     case "failed":
       return state.message;
   }
@@ -103,7 +103,7 @@ function UpdateLog({ log }: { log: string }) {
       ref={ref}
       className="max-h-72 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-2 font-mono text-muted-foreground text-xs"
     >
-      {log || "Waiting for output..."}
+      {log || "Venter på utdata..."}
     </pre>
   );
 }
@@ -145,8 +145,8 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
     if (availableSha === null || !claimNotification(availableSha)) {
       return;
     }
-    toast(`New version ${availableSha} is available`, {
-      action: { label: "Update", onClick: () => setOpen(true) },
+    toast(`Ny versjon ${availableSha} er tilgjengelig`, {
+      action: { label: "Oppdater", onClick: () => setOpen(true) },
     });
   }, [availableSha]);
 
@@ -179,7 +179,7 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
     if (state.kind !== "done") {
       return;
     }
-    toast.success(`Updated to ${state.sha}`);
+    toast.success(`Oppdatert til ${state.sha}`);
     const timeout = setTimeout(() => window.location.reload(), RELOAD_DELAY_MS);
     return () => clearTimeout(timeout);
   }, [state]);
@@ -199,7 +199,7 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
     } catch {
       dispatch({
         type: "start-failed",
-        message: "Could not start the update.",
+        message: "Kunne ikke starte oppdateringen.",
       });
     }
   }
@@ -229,11 +229,11 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
         {availableSha === null ? null : (
           <span aria-hidden className="size-1.5 rounded-full bg-brand" />
         )}
-        {availableSha === null ? "Update" : "Update available"}
+        {availableSha === null ? "Oppdater" : "Oppdatering tilgjengelig"}
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Update Inflation Station</DialogTitle>
+          <DialogTitle>Oppdater Inflation Station</DialogTitle>
           <DialogDescription>{describe(state, availability)}</DialogDescription>
         </DialogHeader>
         {"log" in state && (polling || state.log !== "") ? (
@@ -242,7 +242,7 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
         <DialogFooter showCloseButton>
           {state.kind === "idle" || state.kind === "starting" ? (
             <Button onClick={start} disabled={state.kind === "starting"}>
-              {state.kind === "starting" ? "Starting..." : "Start update"}
+              {state.kind === "starting" ? "Starter..." : "Oppdater nå"}
             </Button>
           ) : null}
         </DialogFooter>

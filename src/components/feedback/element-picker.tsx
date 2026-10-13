@@ -106,7 +106,7 @@ export function ElementPickerOverlay({
     <>
       <style>{"* { cursor: crosshair !important; }"}</style>
       <output className="fixed top-3 left-1/2 z-feedback -translate-x-1/2 rounded-full bg-foreground px-4 py-1.5 text-background text-xs shadow-lg">
-        Click an element to attach it · Esc to cancel
+        Klikk på et element for å legge det ved · Esc for å avbryte
       </output>
       {highlight ? (
         <div

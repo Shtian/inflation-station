@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   try {
     payload = await request.json();
   } catch {
-    return invalidMessages("Request body must be JSON.");
+    return invalidMessages("Forespørselen må være JSON.");
   }
 
   // Validation only reads the tool schemas, so the conversation is not needed yet.
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         return error.message;
       }
       console.error("Feedback chat failed", error);
-      return "The feedback assistant ran into a problem.";
+      return "Tilbakemeldingsassistenten fikk et problem.";
     },
   });
 }

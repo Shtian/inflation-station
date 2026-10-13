@@ -42,7 +42,7 @@ function fromStatus(
         ? { kind: "up-to-date", log: status.log }
         : {
             kind: "failed",
-            message: `The update failed with exit code ${status.exitCode}.`,
+            message: `Oppdateringen feilet med avslutningskode ${status.exitCode}.`,
             log: status.log,
           };
     case "never-run":

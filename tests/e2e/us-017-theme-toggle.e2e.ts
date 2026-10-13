@@ -34,12 +34,12 @@ test("switches mode and palette and keeps both across reloads", async ({
   await page.goto("/overview");
 
   const html = page.locator("html");
-  const themeToggle = page.getByRole("button", { name: "Toggle theme" });
+  const themeToggle = page.getByRole("button", { name: "Bytt tema" });
 
   await expect(themeToggle).toBeVisible();
 
   await themeToggle.click();
-  for (const mode of ["Light", "Dark", "System"]) {
+  for (const mode of ["Lyst", "Mørkt", "System"]) {
     await expect(page.getByRole("radio", { name: mode })).toBeVisible();
   }
   for (const palette of ["Ember", "Ocean", "Botanical", "Plum"]) {

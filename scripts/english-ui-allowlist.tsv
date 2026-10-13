@@ -1,2 +1,14 @@
 # English strings the user never sees, such as LLM prompt text and developer invariants.
 # One finding per line, exactly as the scanner prints it with the line number removed: <file>\t<text>
+src/app/actions/start-self-update.ts	SELF_UPDATE_DISABLED
+src/app/actions/start-self-update.ts	SELF_UPDATE_RUNNING
+src/app/actions/start-self-update.ts	The self-update script did not start.
+src/app/layout.tsx	dark
+src/components/ai-elements/confirmation.tsx	Confirmation components must be used within Confirmation
+src/components/ai-elements/message.tsx	MessageBranch components must be used within MessageBranch
+src/components/ai-elements/prompt-input.tsx	Wrap your component inside <PromptInputProvider> to use usePromptInputController().
+src/components/ai-elements/prompt-input.tsx	Wrap your component inside <PromptInputProvider> to use useProviderAttachments().
+src/components/ai-elements/prompt-input.tsx	usePromptInputAttachments must be used within a PromptInput or PromptInputProvider
+src/components/ai-elements/prompt-input.tsx	usePromptInputReferencedSources must be used within a LocalReferencedSourcesContext.Provider
+src/components/ui/chart.tsx	useChart must be used within a <ChartContainer />
+src/lib/feedback/agent.ts	Propose a GitHub issue for the user's bug report or feature idea. The user reviews the draft and must approve it before it is created.
