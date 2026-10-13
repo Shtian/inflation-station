@@ -118,7 +118,7 @@ function getRequestErrorMessage(body: unknown) {
     }
   }
 
-  return "Request failed. Please try again.";
+  return "Forespørselen mislyktes. Prøv igjen.";
 }
 
 function deriveOriginalMessage(row: { name?: string; title?: string }): string {
@@ -130,7 +130,7 @@ function deriveOriginalMessage(row: { name?: string; title?: string }): string {
     return row.name;
   }
 
-  return "No original message";
+  return "Ingen opprinnelig melding";
 }
 
 export function useImportWorkflow() {
@@ -188,7 +188,7 @@ export function useImportWorkflow() {
       typeof body !== "object" ||
       !("accounts" in body)
     ) {
-      setAccountError("Could not load accounts.");
+      setAccountError("Kunne ikke laste inn kontoer.");
       setAccounts([]);
       return;
     }
@@ -219,7 +219,7 @@ export function useImportWorkflow() {
       typeof body !== "object" ||
       !("categories" in body)
     ) {
-      setCategoryError("Could not load categories for review.");
+      setCategoryError("Kunne ikke laste inn kategorier for gjennomgang.");
       setCategories([]);
       return;
     }
@@ -371,12 +371,12 @@ export function useImportWorkflow() {
   const parseCsv = useCallback(
     async (columnMapping?: ColumnMapping) => {
       if (!selectedAccountId) {
-        setImportError("Select an account before parsing.");
+        setImportError("Velg en konto før du leser inn filen.");
         return;
       }
 
       if (!selectedFile) {
-        setImportError("Choose a statement file to parse.");
+        setImportError("Velg en kontoutskrift å lese inn.");
         return;
       }
 
@@ -461,7 +461,7 @@ export function useImportWorkflow() {
     const mapping = mappingDraft ? completeColumnMapping(mappingDraft) : null;
     if (!mapping || !mappingProposal) {
       setImportError(
-        "Choose a date column, an amount and at least one description column.",
+        "Velg en datokolonne, et beløp og minst én beskrivelseskolonne.",
       );
       return;
     }
@@ -476,13 +476,15 @@ export function useImportWorkflow() {
       });
       saveError = saved.ok ? null : saved.error.message;
     } catch {
-      saveError = "Could not save the column mapping for this account.";
+      saveError = "Kunne ikke lagre kolonnekoblingen for denne kontoen.";
     }
 
     // Remembering the mapping is a convenience for the next import; failing to
     // save it must not block this one.
     if (saveError) {
-      toast.warning(`Column mapping not saved for next time. ${saveError}`);
+      toast.warning(
+        `Kolonnekoblingen ble ikke lagret til neste gang. ${saveError}`,
+      );
     }
 
     await parseCsv(mapping);
@@ -558,7 +560,7 @@ export function useImportWorkflow() {
 
   const submitReviewRows = useCallback(async () => {
     if (!parseResult?.review?.sessionId) {
-      setSubmitError("No review session is available to submit.");
+      setSubmitError("Ingen gjennomgang er klar til innsending.");
       return;
     }
 
@@ -584,7 +586,7 @@ export function useImportWorkflow() {
 
     if (Object.keys(rowNoteErrors).length > 0) {
       setNoteValidationErrors(rowNoteErrors);
-      setSubmitError("Fix note validation errors before confirming import.");
+      setSubmitError("Rett feilene i notatene før du bekrefter importen.");
       return;
     }
 
@@ -620,7 +622,7 @@ export function useImportWorkflow() {
 
     const submitResult = body as SubmitResponse;
     toast.success(
-      `Import complete. Imported ${submitResult.summary.imported}, invalid ${submitResult.summary.invalid}.`,
+      `Import fullført. Importert: ${submitResult.summary.imported}, ugyldige: ${submitResult.summary.invalid}.`,
     );
     setParseResult(null);
     setCategoryDecisions({});

@@ -1,0 +1,20 @@
+# English strings the user never sees, such as LLM prompt text and developer invariants.
+# One finding per line, exactly as the scanner prints it with the line number removed: <file>\t<text>
+src/app/onboarding/use-setup-snapshot.ts	Could not load .
+src/lib/onboarding/agent.ts	Propose bank accounts to add. The user reviews the list and must approve it before anything is created. Names that already exist are skipped.
+src/lib/onboarding/agent.ts	Propose categories to add, each with a kind (EXPENSE, INCOME, or TRANSFER) and an optional short classifier hint for the AI categorizer. The user must approve the list before anything is created. Names that already exist are skipped.
+src/app/actions/start-self-update.ts	The self-update script did not start.
+src/components/ai-elements/confirmation.tsx	Confirmation components must be used within Confirmation
+src/components/ai-elements/message.tsx	MessageBranch components must be used within MessageBranch
+src/components/ai-elements/prompt-input.tsx	Wrap your component inside <PromptInputProvider> to use usePromptInputController().
+src/components/ai-elements/prompt-input.tsx	Wrap your component inside <PromptInputProvider> to use useProviderAttachments().
+src/components/ai-elements/prompt-input.tsx	usePromptInputAttachments must be used within a PromptInput or PromptInputProvider
+src/components/ai-elements/prompt-input.tsx	usePromptInputReferencedSources must be used within a LocalReferencedSourcesContext.Provider
+src/components/ui/chart.tsx	useChart must be used within a <ChartContainer />
+src/lib/feedback/agent.ts	Propose a GitHub issue for the user's bug report or feature idea. The user reviews the draft and must approve it before it is created.
+src/lib/import/csv/guess-column-mapping.ts	pick the column that best names the merchant or counterparty of each bank transaction
+src/lib/import/csv/guess-column-mapping.ts	saved
+src/lib/import/csv/values.ts	Unsupported CSV date format:
+src/lib/categorization/jev-eval.ts	Expected exactly one row outcome, got
+src/app/api/transactions/route.ts	sorting må ha formatet <felt>:<retning> med feltene bookingDate, amountNok, merchant eller category.
+src/lib/transactions/delete.ts	ids must be a non-empty array

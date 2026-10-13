@@ -23,20 +23,20 @@ test(
 
     await page.goto("/import");
     await page.getByRole("button", { name: ACCOUNT, exact: true }).click();
-    await page.getByLabel("Statement file").setInputFiles({
+    await page.getByLabel("Kontoutskrift").setInputFiles({
       name: "trumf-2026-09.pdf",
       mimeType: "application/pdf",
       buffer: await readFile(FIXTURE_PDF),
     });
-    await page.getByRole("button", { name: "Parse & Preview" }).click();
+    await page.getByRole("button", { name: "Les inn og forhåndsvis" }).click();
 
-    await expect(page.getByText("Import Preview")).toBeVisible();
+    await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
     await expect(page.getByText("Trumf Kredittkort")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Import 39 / 39" }),
+      page.getByRole("button", { name: "Importer 39 / 39" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("checkbox", { name: /^Select row / }),
+      page.getByRole("checkbox", { name: /^Velg rad / }),
     ).toHaveCount(39);
   },
 );

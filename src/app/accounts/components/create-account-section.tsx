@@ -23,19 +23,19 @@ export function CreateAccountSection({
   return (
     <div className="grid gap-3">
       <Field>
-        <FieldLabel htmlFor="new-account-name">Account name</FieldLabel>
+        <FieldLabel htmlFor="new-account-name">Kontonavn</FieldLabel>
         <FieldContent>
           <Input
             id="new-account-name"
             value={newAccountName}
             onChange={(event) => onNameChange(event.target.value)}
-            placeholder="Spending Account"
+            placeholder="Brukskonto"
           />
         </FieldContent>
       </Field>
       <Field>
         <FieldLabel htmlFor="new-account-institution">
-          Institution (optional)
+          Institusjon (valgfritt)
         </FieldLabel>
         <FieldContent>
           <Input
@@ -52,11 +52,11 @@ export function CreateAccountSection({
         className="gap-2"
       >
         {busyAccountId === "new" ? (
-          "Saving..."
+          "Lagrer…"
         ) : (
           <>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Add account
+            Legg til konto
           </>
         )}
       </Button>

@@ -47,7 +47,7 @@ type HintGuessProviderPayload = z.infer<typeof hintGuessProviderSchema>;
 
 const RULES = `You help a user write a classifier hint for one category in their personal finance app. A small model later assigns Norwegian bank transactions to categories, reading "<Category name>: <hint>".
 Return:
-- description: one short plain-words sentence (max ~70 characters) saying what belongs in the category. Do not repeat the category name. No trailing period. Write the description in English. Do not name any merchant in the description.
+- description: one short plain-words sentence (max ~70 characters) saying what belongs in the category. Do not repeat the category name. No trailing period. Write the description in Norwegian Bokmål. Do not name any merchant in the description.
 - similarMerchants: up to 6 well-known Norwegian merchants or services that fit this category but are NOT already in the history. Use the short brand name as it would appear on a bank statement (e.g. "Rema 1000", "Circle K"). Respect the user's own filing habits shown by the history.
 The user's other categories are listed so you can keep this one distinct from look-alikes. Never suggest a merchant that belongs better in another category.`;
 

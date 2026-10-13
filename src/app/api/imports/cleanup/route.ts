@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   if (!payload.success) {
     return badRequest(
       "INVALID_CLEANUP_CHUNK_PAYLOAD",
-      "Expected sessionId and chunkIndex in request body.",
+      "Forventet sessionId og chunkIndex i forespørselen.",
     );
   }
 
@@ -41,7 +41,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "IMPORT_REVIEW_SESSION_NOT_FOUND",
-        message: "Import review session was not found or already submitted.",
+        message:
+          "Fant ikke importgjennomgangen, eller den er allerede sendt inn.",
       },
       { status: 404 },
     );
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   if (!chunk) {
     return badRequest(
       "INVALID_CLEANUP_CHUNK_INDEX",
-      "chunkIndex does not match a chunk in this session's cleanup plan.",
+      "chunkIndex samsvarer ikke med noen del i ryddeplanen for denne gjennomgangen.",
     );
   }
 

@@ -254,7 +254,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
     expect(result.facts.categories).toEqual([
       {
         categoryId: null,
-        categoryName: "Uncategorized",
+        categoryName: "Ukategorisert",
         spendNok: 200,
         share: 1,
         transactionCount: 1,
@@ -263,7 +263,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
     ]);
     expect(result.facts.everyday.topMerchants).toEqual([
       {
-        merchant: "Unknown merchant",
+        merchant: "Ukjent brukersted",
         spendNok: 200,
         share: 1,
         transactionCount: 1,
@@ -351,7 +351,7 @@ describe("buildMonthlyReviewGenerationInput", () => {
       },
       {
         categoryId: null,
-        categoryName: "Uncategorized",
+        categoryName: "Ukategorisert",
         spendNok: 200,
         share: 0.4,
         transactionCount: 1,

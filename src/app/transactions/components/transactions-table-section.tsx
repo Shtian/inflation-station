@@ -25,6 +25,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { nb } from "react-day-picker/locale";
 import { CategoryBadge } from "@/components/category-badge";
 import { CategoryCombobox } from "@/components/category-combobox";
 import { Button } from "@/components/ui/button";
@@ -96,12 +97,12 @@ const HIDEABLE_COLUMN_IDS = [
   "amountNok",
 ] as const;
 const COLUMN_LABELS: Record<string, string> = {
-  bookingDate: "Date",
-  merchant: "Merchant",
-  account: "Account",
-  paymentType: "Payment type",
-  amountNok: "Amount",
-  category: "Category",
+  bookingDate: "Dato",
+  merchant: "Brukersted",
+  account: "Konto",
+  paymentType: "Betalingstype",
+  amountNok: "Beløp",
+  category: "Kategori",
 };
 const columnHelper = createColumnHelper<TransactionRow>();
 
@@ -346,32 +347,32 @@ export function TransactionsTableSection({
             onCheckedChange={(checked) =>
               table.toggleAllPageRowsSelected(Boolean(checked))
             }
-            aria-label="Select all rows"
+            aria-label="Velg alle rader"
           />
         ),
         cell: ({ row }) => (
           <Checkbox
             checked={row.getIsSelected()}
             onCheckedChange={(checked) => row.toggleSelected(Boolean(checked))}
-            aria-label={`Select transaction from ${row.original.bookingDate}`}
+            aria-label={`Velg transaksjon fra ${row.original.bookingDate}`}
           />
         ),
       }),
       columnHelper.accessor("bookingDate", {
         enableHiding: true,
-        header: () => sortableHeader("Date", "bookingDate"),
+        header: () => sortableHeader("Dato", "bookingDate"),
         cell: (info) => info.getValue(),
       }),
       columnHelper.accessor("merchant", {
         enableHiding: true,
-        header: () => sortableHeader("Merchant", "merchant"),
+        header: () => sortableHeader("Brukersted", "merchant"),
         cell: (info) =>
-          info.getValue() ?? info.row.original.normalizedMerchant ?? "Unknown",
+          info.getValue() ?? info.row.original.normalizedMerchant ?? "Ukjent",
       }),
       columnHelper.display({
         id: "noteIndicator",
         enableHiding: false,
-        header: () => <span className="sr-only">Note</span>,
+        header: () => <span className="sr-only">Notat</span>,
         cell: (info) => {
           const note = info.row.original.note;
           const bookingDate = info.row.original.bookingDate;
@@ -390,7 +391,7 @@ export function TransactionsTableSection({
                       variant="ghost"
                       size="icon-sm"
                       className="h-6 w-6"
-                      aria-label={`View memo for transaction from ${bookingDate}`}
+                      aria-label={`Vis memo for transaksjon fra ${bookingDate}`}
                     >
                       <FileText
                         className="size-4 shrink-0"
@@ -413,27 +414,27 @@ export function TransactionsTableSection({
       columnHelper.accessor("accountName", {
         id: "account",
         enableHiding: true,
-        header: "Account",
+        header: "Konto",
         cell: (info) => info.getValue(),
       }),
       columnHelper.display({
         id: "category",
         enableHiding: true,
-        header: () => sortableHeader("Category", "category"),
+        header: () => sortableHeader("Kategori", "category"),
         cell: (info) => (
           <CategoryBadge
-            label={info.row.original.categoryName ?? "Uncategorized"}
+            label={info.row.original.categoryName ?? "Ukategorisert"}
           />
         ),
       }),
       columnHelper.accessor("paymentType", {
         enableHiding: true,
-        header: "Payment type",
+        header: "Betalingstype",
         cell: (info) => info.getValue(),
       }),
       columnHelper.accessor("amountNok", {
         enableHiding: true,
-        header: () => sortableHeader("Amount", "amountNok"),
+        header: () => sortableHeader("Beløp", "amountNok"),
         cell: (info) => {
           const value = info.getValue();
           return (
@@ -446,7 +447,7 @@ export function TransactionsTableSection({
       columnHelper.display({
         id: "actions",
         enableHiding: false,
-        header: () => <span className="sr-only">Actions</span>,
+        header: () => <span className="sr-only">Handlinger</span>,
         cell: (info) => {
           const row = info.row.original;
 
@@ -459,11 +460,11 @@ export function TransactionsTableSection({
                     variant="ghost"
                     className="invisible cursor-pointer group-hover/row:visible"
                     size="icon-sm"
-                    aria-label={`Actions for transaction from ${row.bookingDate}`}
-                    title={`Actions for transaction from ${row.bookingDate}`}
+                    aria-label={`Handlinger for transaksjon fra ${row.bookingDate}`}
+                    title={`Handlinger for transaksjon fra ${row.bookingDate}`}
                   >
                     <Ellipsis className="h-4 w-4" aria-hidden="true" />
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">Handlinger</span>
                   </Button>
                 }
               />
@@ -471,7 +472,7 @@ export function TransactionsTableSection({
                 <DropdownMenuGroup>
                   <DropdownMenuItem onClick={() => onEdit(row)}>
                     <Pencil className="h-4 w-4" aria-hidden="true" />
-                    Edit
+                    Rediger
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
@@ -481,7 +482,7 @@ export function TransactionsTableSection({
                     onClick={() => onDelete(row)}
                   >
                     <Trash2 className="h-4 w-4" aria-hidden="true" />
-                    Delete
+                    Slett
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
@@ -528,7 +529,7 @@ export function TransactionsTableSection({
 
   if (loading && !transactions) {
     return (
-      <p className="text-muted-foreground text-sm">Loading transactions...</p>
+      <p className="text-muted-foreground text-sm">Laster inn transaksjoner…</p>
     );
   }
 
@@ -553,7 +554,7 @@ export function TransactionsTableSection({
               htmlFor="transactions-global-query"
               className="mb-1.5 block font-medium text-muted-foreground text-xs"
             >
-              Search
+              Søk
             </label>
             <div className="relative">
               <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -562,7 +563,7 @@ export function TransactionsTableSection({
                 type="search"
                 value={globalQuery}
                 onChange={(event) => onGlobalQueryChange(event.target.value)}
-                placeholder="Search merchant or notes..."
+                placeholder="Søk etter brukersted eller notater…"
                 className="h-9 bg-background pl-9"
               />
             </div>
@@ -574,7 +575,7 @@ export function TransactionsTableSection({
                 htmlFor="transactions-date-from"
                 className="mb-1.5 block font-medium text-muted-foreground text-xs"
               >
-                Date from
+                Fra dato
               </label>
               <Popover>
                 <PopoverTrigger
@@ -589,14 +590,17 @@ export function TransactionsTableSection({
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {dateFrom
-                        ? format(parseISO(dateFrom), "dd/MM/yyyy")
-                        : "Pick date"}
+                        ? format(parseISO(dateFrom), "dd.MM.yyyy", {
+                            locale: nb,
+                          })
+                        : "Velg dato"}
                     </Button>
                   }
                 />
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
+                    locale={nb}
                     selected={dateFrom ? parseISO(dateFrom) : undefined}
                     onSelect={(date) =>
                       onDateFromChange(date ? format(date, "yyyy-MM-dd") : "")
@@ -611,7 +615,7 @@ export function TransactionsTableSection({
                 htmlFor="transactions-date-to"
                 className="mb-1.5 block font-medium text-muted-foreground text-xs"
               >
-                Date to
+                Til dato
               </label>
               <Popover>
                 <PopoverTrigger
@@ -626,14 +630,17 @@ export function TransactionsTableSection({
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {dateTo
-                        ? format(parseISO(dateTo), "dd/MM/yyyy")
-                        : "Pick date"}
+                        ? format(parseISO(dateTo), "dd.MM.yyyy", {
+                            locale: nb,
+                          })
+                        : "Velg dato"}
                     </Button>
                   }
                 />
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
+                    locale={nb}
                     selected={dateTo ? parseISO(dateTo) : undefined}
                     onSelect={(date) =>
                       onDateToChange(date ? format(date, "yyyy-MM-dd") : "")
@@ -649,11 +656,11 @@ export function TransactionsTableSection({
               htmlFor="transactions-account-filter"
               className="mb-1.5 block font-medium text-muted-foreground text-xs"
             >
-              Account
+              Konto
             </label>
             <Select
               items={[
-                { value: ALL_ACCOUNTS_VALUE, label: "All accounts" },
+                { value: ALL_ACCOUNTS_VALUE, label: "Alle kontoer" },
                 ...accounts.map((account) => ({
                   value: account.id,
                   label: account.name,
@@ -674,7 +681,7 @@ export function TransactionsTableSection({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_ACCOUNTS_VALUE}>All accounts</SelectItem>
+                <SelectItem value={ALL_ACCOUNTS_VALUE}>Alle kontoer</SelectItem>
                 {accounts.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.name}
@@ -689,15 +696,15 @@ export function TransactionsTableSection({
               htmlFor="transactions-category-filter"
               className="mb-1.5 block font-medium text-muted-foreground text-xs"
             >
-              Category
+              Kategori
             </label>
             <CategoryCombobox
               id="transactions-category-filter"
               value={categoryId}
               categories={categories}
               onValueChange={(value) => onCategoryFilterChange(value)}
-              placeholder="All categories"
-              emptyLabel="No matching categories."
+              placeholder="Alle kategorier"
+              emptyLabel="Ingen samsvarende kategorier."
               showClear
             />
           </div>
@@ -712,12 +719,16 @@ export function TransactionsTableSection({
               <span className="font-medium text-foreground">
                 {Object.keys(rowSelection).length}
               </span>{" "}
-              of {transactions.pagination.total} selected
+              av {transactions.pagination.total} valgt
             </>
           ) : (
             <>
-              {transactions.pagination.total} total transactions.
-              {loading ? " Updating..." : null}
+              {transactions.pagination.total}{" "}
+              {transactions.pagination.total === 1
+                ? "transaksjon"
+                : "transaksjoner"}{" "}
+              totalt.
+              {loading ? " Oppdaterer…" : null}
             </>
           )}
         </span>
@@ -733,7 +744,7 @@ export function TransactionsTableSection({
                 onClick={() => onBulkDelete(Object.keys(rowSelection))}
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
-                Delete
+                Slett
               </Button>
               <div className="mx-1 h-4 w-px bg-border" />
             </>
@@ -749,13 +760,13 @@ export function TransactionsTableSection({
                   className="gap-2"
                 >
                   <Columns3 className="h-4 w-4" aria-hidden="true" />
-                  Columns
+                  Kolonner
                 </Button>
               }
             />
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
-                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                <DropdownMenuLabel>Vis/skjul kolonner</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {visibleColumns.map((column) => (
                   <DropdownMenuCheckboxItem
@@ -774,7 +785,7 @@ export function TransactionsTableSection({
 
           <Button type="button" size="sm" className="gap-2" onClick={onAdd}>
             <Plus className="h-4 w-4" aria-hidden="true" />
-            Add transaction
+            Legg til transaksjon
           </Button>
         </div>
       </div>
@@ -783,8 +794,8 @@ export function TransactionsTableSection({
       {transactions.rows.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           {hasActiveFilters
-            ? "No transactions found for the selected filters."
-            : "No transactions found."}
+            ? "Fant ingen transaksjoner for de valgte filtrene."
+            : "Fant ingen transaksjoner."}
         </p>
       ) : (
         <div className="mt-4 rounded-xl border border-border">
@@ -831,7 +842,7 @@ export function TransactionsTableSection({
             <div className="flex items-center justify-between gap-4">
               <Field orientation="horizontal" className="w-fit">
                 <FieldLabel htmlFor="select-rows-per-page">
-                  Rows per page
+                  Rader per side
                 </FieldLabel>
                 <Select
                   value={String(pageSize)}
@@ -858,25 +869,25 @@ export function TransactionsTableSection({
                     <Button
                       type="button"
                       variant="ghost"
-                      aria-label="Go to previous page"
+                      aria-label="Gå til forrige side"
                       className="cursor-pointer"
                       onClick={() => table.previousPage()}
                       disabled={loading || !table.getCanPreviousPage()}
                     >
                       <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                      Previous
+                      Forrige
                     </Button>
                   </PaginationItem>
                   <PaginationItem>
                     <Button
                       type="button"
                       variant="ghost"
-                      aria-label="Go to next page"
+                      aria-label="Gå til neste side"
                       className="cursor-pointer"
                       onClick={() => table.nextPage()}
                       disabled={loading || !table.getCanNextPage()}
                     >
-                      Next{" "}
+                      Neste{" "}
                       <ChevronRight className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </PaginationItem>

@@ -24,7 +24,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Inflation Station",
   description:
-    "Personal economy dashboard for account imports and transaction review.",
+    "Personlig økonomioversikt for kontoimport og gjennomgang av transaksjoner.",
 };
 
 export default function RootLayout({
@@ -33,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="nb" suppressHydrationWarning>
       <head>
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: static script built from the palette registry, no user input

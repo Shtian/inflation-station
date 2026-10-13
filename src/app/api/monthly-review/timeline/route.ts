@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_TIMELINE_LIMIT",
-        message: "Expected limit to be a positive integer.",
+        message: "limit må være et positivt heltall.",
       },
       { status: 400 },
     );
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_TIMELINE_LIMIT",
-        message: `Expected limit to be less than or equal to ${MAX_LIMIT}.`,
+        message: `limit kan ikke være større enn ${MAX_LIMIT}.`,
       },
       { status: 400 },
     );
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "MONTHLY_REVIEW_TIMELINE_FETCH_FAILED",
-        message: "Could not load monthly review timeline data.",
+        message: "Kunne ikke laste inn tidslinjedata for månedsoppsummering.",
       },
       { status: 500 },
     );

@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_START_DATE",
-        message: "Expected startDate in YYYY-MM-DD format.",
+        message: "startDate må ha formatet ÅÅÅÅ-MM-DD.",
       },
       { status: 400 },
     );
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_END_DATE",
-        message: "Expected endDate in YYYY-MM-DD format.",
+        message: "endDate må ha formatet ÅÅÅÅ-MM-DD.",
       },
       { status: 400 },
     );
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "INVALID_DATE_RANGE",
-        message: "startDate must be less than or equal to endDate.",
+        message: "startDate kan ikke være etter endDate.",
       },
       { status: 400 },
     );

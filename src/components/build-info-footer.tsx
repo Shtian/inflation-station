@@ -5,12 +5,12 @@ export function BuildInfoFooter() {
   const buildTime = process.env.NEXT_PUBLIC_BUILD_TIME;
 
   const formattedTime = buildTime
-    ? new Intl.DateTimeFormat("en-GB", {
+    ? new Intl.DateTimeFormat("nb-NO", {
         dateStyle: "short",
         timeStyle: "short",
         timeZone: "Europe/Oslo",
       }).format(new Date(buildTime))
-    : "unknown";
+    : "ukjent";
 
   return (
     <footer className="mt-auto border-border border-t px-5 py-3 md:px-10">

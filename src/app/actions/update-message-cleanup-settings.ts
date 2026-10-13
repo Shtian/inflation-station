@@ -94,7 +94,7 @@ export async function updateMessageCleanupSettingsAction(
   if (!parsedInput.success) {
     return mutationValidationError(
       "INVALID_MESSAGE_CLEANUP_SETTINGS_PAYLOAD",
-      "Expected promptText and optional modelId in action input.",
+      "Handlingen må få promptText og eventuelt modelId.",
       parsedInput.error,
     );
   }
@@ -112,7 +112,7 @@ export async function updateMessageCleanupSettingsAction(
       ok: false,
       error: {
         code: "INVALID_MESSAGE_CLEANUP_MODEL_ID",
-        message: "Expected modelId to be one of the available OpenAI models.",
+        message: "modelId må være en av de tilgjengelige OpenAI-modellene.",
       },
     };
   }
@@ -131,7 +131,7 @@ export async function updateMessageCleanupSettingsAction(
       ok: false,
       error: {
         code: "INVALID_MESSAGE_CLEANUP_REASONING_EFFORT",
-        message: "Expected reasoningEffort to be one of the available options.",
+        message: "reasoningEffort må være et av de tilgjengelige valgene.",
       },
     };
   }
@@ -149,7 +149,7 @@ export async function updateMessageCleanupSettingsAction(
     },
     fallbackError: {
       code: "MESSAGE_CLEANUP_SETTINGS_UPDATE_FAILED",
-      message: "Could not update message cleanup settings.",
+      message: "Kunne ikke oppdatere innstillingene for meldingsrydding.",
     },
   });
 }

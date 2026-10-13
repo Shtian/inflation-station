@@ -20,8 +20,8 @@ import {
 import { cn } from "@/lib/utils";
 
 const MODES = [
-  { id: "light", label: "Light", Icon: Sun },
-  { id: "dark", label: "Dark", Icon: Moon },
+  { id: "light", label: "Lyst", Icon: Sun },
+  { id: "dark", label: "Mørkt", Icon: Moon },
   { id: "system", label: "System", Icon: Monitor },
 ] as const;
 
@@ -74,14 +74,14 @@ export function ThemeSwitcher() {
           <Button variant="outline" size="icon">
             <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
+            <span className="sr-only">Bytt tema</span>
           </Button>
         }
       />
       <PopoverContent align="end" className="w-80 gap-4 p-3">
         <fieldset>
           <legend className="mb-2 font-medium text-muted-foreground text-xs">
-            Mode
+            Modus
           </legend>
           <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
             {MODES.map(({ id, label, Icon }) => (
@@ -105,7 +105,7 @@ export function ThemeSwitcher() {
         </fieldset>
         <fieldset>
           <legend className="mb-2 font-medium text-muted-foreground text-xs">
-            Palette
+            Palett
           </legend>
           <div className="grid grid-cols-2 gap-3">
             {THEME_PALETTES.map(({ id, label }) => {

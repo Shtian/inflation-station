@@ -32,7 +32,7 @@ export function CategoryCombobox({
   categories,
   onValueChange,
   placeholder,
-  emptyLabel = "No categories found.",
+  emptyLabel = "Fant ingen kategorier.",
   id,
   ariaLabel,
   className,

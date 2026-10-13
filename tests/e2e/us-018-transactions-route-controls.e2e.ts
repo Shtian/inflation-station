@@ -332,35 +332,33 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.goto("/transactions");
 
   await expect(
-    page.getByRole("heading", { name: "Transactions" }),
+    page.getByRole("heading", { name: "Transaksjoner" }),
   ).toBeVisible();
-  await expect(page.getByRole("columnheader", { name: "Date" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Dato" })).toBeVisible();
   await expect(
-    page.getByRole("columnheader", { name: "Merchant" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("columnheader", { name: "Category" }),
+    page.getByRole("columnheader", { name: "Brukersted" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("columnheader", { name: "Amount" }),
+    page.getByRole("columnheader", { name: "Kategori" }),
   ).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Beløp" })).toBeVisible();
   // Payment type and Account ship hidden; the Columns menu is the only way in.
   await expect(
-    page.getByRole("columnheader", { name: "Payment type" }),
+    page.getByRole("columnheader", { name: "Betalingstype" }),
   ).toHaveCount(0);
-  await expect(page.getByText("35 total transactions.")).toBeVisible();
+  await expect(page.getByText("35 transaksjoner totalt.")).toBeVisible();
   await expect(page.getByText("Supermarket")).toBeVisible();
   await expect(page.getByText("Groceries", { exact: true })).toBeVisible();
   await expect(
-    page.getByLabel("View memo for transaction from 2026-02-05"),
+    page.getByLabel("Vis memo for transaksjon fra 2026-02-05"),
   ).toBeVisible();
-  await page.getByLabel("View memo for transaction from 2026-02-05").hover();
+  await page.getByLabel("Vis memo for transaksjon fra 2026-02-05").hover();
   await expect(page.getByRole("tooltip")).toHaveText("Weekly groceries");
 
   const previousPage = page.getByRole("button", {
-    name: "Go to previous page",
+    name: "Gå til forrige side",
   });
-  const nextPage = page.getByRole("button", { name: "Go to next page" });
+  const nextPage = page.getByRole("button", { name: "Gå til neste side" });
 
   // Both controls stay mounted at the edges of the range, so the only signal
   // that the table knows where it is comes from the disabled state.
@@ -384,32 +382,32 @@ test("manages transactions filters and pagination controls from /transactions", 
   // Re-sorting reshuffles which rows land on which page, so the table has to
   // drop back to page 1 instead of stranding the reader mid-range.
   await page
-    .getByRole("columnheader", { name: "Amount" })
-    .getByRole("button", { name: "Amount" })
+    .getByRole("columnheader", { name: "Beløp" })
+    .getByRole("button", { name: "Beløp" })
     .click();
   await expect(page).toHaveURL(/[?&]page=1(&|$)/);
   await expect(page).toHaveURL(/sorting=amountNok%3Aasc/);
   await expect(page.getByText("Sorted Asc Grocery")).toBeVisible();
 
   await page
-    .getByRole("columnheader", { name: "Amount" })
-    .getByRole("button", { name: "Amount" })
+    .getByRole("columnheader", { name: "Beløp" })
+    .getByRole("button", { name: "Beløp" })
     .click();
   await expect(page).toHaveURL(/sorting=amountNok%3Adesc/);
   await expect(page.getByText("Sorted Desc Appliance")).toBeVisible();
 
   await page
-    .getByRole("columnheader", { name: "Amount" })
-    .getByRole("button", { name: "Amount" })
+    .getByRole("columnheader", { name: "Beløp" })
+    .getByRole("button", { name: "Beløp" })
     .click();
   await expect(page).not.toHaveURL(/sorting=/);
 
   const paymentTypeHeader = page.getByRole("columnheader", {
-    name: "Payment type",
+    name: "Betalingstype",
   });
 
-  await page.getByRole("button", { name: "Columns" }).click();
-  await page.getByRole("menuitemcheckbox", { name: "Payment type" }).click();
+  await page.getByRole("button", { name: "Kolonner" }).click();
+  await page.getByRole("menuitemcheckbox", { name: "Betalingstype" }).click();
   await expect(paymentTypeHeader).toBeVisible();
   await expect(page.getByText("CARD")).toBeVisible();
 
@@ -418,8 +416,8 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.reload();
   await expect(paymentTypeHeader).toBeVisible();
 
-  await page.getByRole("button", { name: "Columns" }).click();
-  await page.getByRole("menuitemcheckbox", { name: "Payment type" }).click();
+  await page.getByRole("button", { name: "Kolonner" }).click();
+  await page.getByRole("menuitemcheckbox", { name: "Betalingstype" }).click();
   await expect(paymentTypeHeader).toHaveCount(0);
 
   // The menu deliberately stays open across toggles, so dismiss it before
@@ -427,28 +425,28 @@ test("manages transactions filters and pagination controls from /transactions", 
   await page.keyboard.press("Escape");
   await expect(page.getByRole("menuitemcheckbox")).toHaveCount(0);
 
-  await page.getByLabel("Account").click();
+  await page.getByLabel("Konto").click();
   await page.getByRole("option", { name: "Savings Account" }).click();
   await expect(page).toHaveURL(/accountId=acc-2/);
-  await expect(page.getByText("1 total transactions.")).toBeVisible();
+  await expect(page.getByText("1 transaksjon totalt.")).toBeVisible();
   await expect(page.getByText("Savings Transfer")).toBeVisible();
-  await expect(page.getByText("Uncategorized")).toBeVisible();
+  await expect(page.getByText("Ukategorisert")).toBeVisible();
   await expect(
-    page.getByLabel("View memo for transaction from 2026-02-01"),
+    page.getByLabel("Vis memo for transaksjon fra 2026-02-01"),
   ).toBeVisible();
-  await page.getByLabel("View memo for transaction from 2026-02-01").hover();
+  await page.getByLabel("Vis memo for transaksjon fra 2026-02-01").hover();
   await expect(page.getByRole("tooltip")).toHaveText("Monthly transfer");
 
-  await page.getByLabel("Account").click();
-  await page.getByRole("option", { name: "All accounts" }).click();
+  await page.getByLabel("Konto").click();
+  await page.getByRole("option", { name: "Alle kontoer" }).click();
 
-  await page.getByLabel("Search").fill("market");
+  await page.getByLabel("Søk").fill("market");
   await expect(page).toHaveURL(/globalQuery=market/);
-  await toggleDateFilter(page, "Date from", /February 1st, 2026/);
+  await toggleDateFilter(page, "Fra dato", /\b1\. februar 2026/);
   await expect(page).toHaveURL(/dateFrom=2026-02-01/);
-  await toggleDateFilter(page, "Date to", /February 28th, 2026/);
+  await toggleDateFilter(page, "Til dato", /\b28\. februar 2026/);
   await expect(page).toHaveURL(/dateTo=2026-02-28/);
-  await page.getByLabel("Category").click();
+  await page.getByLabel("Kategori").click();
   await page.getByRole("option", { name: "Groceries", exact: true }).click();
   await expect(page).toHaveURL(/globalQuery=market/);
   await expect(page).toHaveURL(/dateFrom=2026-02-01/);
@@ -469,14 +467,14 @@ test("manages transactions filters and pagination controls from /transactions", 
 
   await expect(page.getByText("Filtered Market")).toBeVisible();
 
-  await page.getByLabel("Search").fill("");
-  await toggleDateFilter(page, "Date from", /February 1st, 2026/);
+  await page.getByLabel("Søk").fill("");
+  await toggleDateFilter(page, "Fra dato", /\b1\. februar 2026/);
   await expect(page).not.toHaveURL(/dateFrom=/);
-  await toggleDateFilter(page, "Date to", /February 28th, 2026/);
+  await toggleDateFilter(page, "Til dato", /\b28\. februar 2026/);
   await expect(page).not.toHaveURL(/dateTo=/);
   // The category filter is a searchable combobox with no "all" option -
   // emptying the query is what clears it.
-  await page.getByLabel("Category").fill("");
+  await page.getByLabel("Kategori").fill("");
   await expect(page).not.toHaveURL(/categoryId=/);
   await expect(page.getByText("Supermarket")).toBeVisible();
 
@@ -485,7 +483,7 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(page.getByText("Corner Shop")).toBeVisible();
   await expect(page.getByText("Food")).toBeVisible();
   await expect(
-    page.getByLabel("View memo for transaction from 2026-01-15"),
+    page.getByLabel("Vis memo for transaksjon fra 2026-01-15"),
   ).toHaveCount(0);
 
   // Resizing the page invalidates the current offset, so this must also land
@@ -495,21 +493,21 @@ test("manages transactions filters and pagination controls from /transactions", 
   await expect(page).toHaveURL(/pageSize=10/);
   await expect(page).toHaveURL(/[?&]page=1(&|$)/);
   await expect(page.getByText("Metro Kiosk")).toBeVisible();
-  await expect(page.getByText("Uncategorized")).toBeVisible();
+  await expect(page.getByText("Ukategorisert")).toBeVisible();
   await expect(
-    page.getByLabel("View memo for transaction from 2026-01-20"),
+    page.getByLabel("Vis memo for transaksjon fra 2026-01-20"),
   ).toBeVisible();
-  await page.getByLabel("View memo for transaction from 2026-01-20").hover();
+  await page.getByLabel("Vis memo for transaksjon fra 2026-01-20").hover();
   await expect(page.getByRole("tooltip")).toHaveText("Train ticket");
 
   await page.locator("#transactions-rows-per-page").click();
   await page.getByRole("option", { name: "25", exact: true }).click();
-  await page.getByLabel("Account").click();
+  await page.getByLabel("Konto").click();
   await page.getByRole("option", { name: "No Transactions Account" }).click();
   await expect(
-    page.getByText("No transactions found for the selected filters."),
+    page.getByText("Fant ingen transaksjoner for de valgte filtrene."),
   ).toBeVisible();
-  await expect(page.getByText("0 total transactions.")).toBeVisible();
+  await expect(page.getByText("0 transaksjoner totalt.")).toBeVisible();
 });
 
 test("edits a transaction in a modal and keeps pagination state after save", async ({
@@ -668,37 +666,40 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
 
   await page.getByRole("row", { name: /Corner Shop/ }).hover();
   await page
-    .getByRole("button", { name: "Actions for transaction from 2026-01-15" })
+    .getByRole("button", { name: "Handlinger for transaksjon fra 2026-01-15" })
     .click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page.getByRole("menuitem", { name: "Rediger" }).click();
   await expect(
-    page.getByRole("heading", { name: "Edit transaction" }),
+    page.getByRole("heading", { name: "Rediger transaksjon" }),
   ).toBeVisible();
-  await expect(page.getByLabel("Currency")).toHaveCount(0);
-  await expect(page.getByLabel("Note")).toHaveValue("Legacy reminder");
+  await expect(page.getByLabel("Valuta")).toHaveCount(0);
+  await expect(page.getByLabel("Notat")).toHaveValue("Legacy reminder");
 
   // Validation and the server both measure the trimmed note, so padding a
   // max-length note must not push the counter past the limit.
-  await page.getByLabel("Note").fill(`  ${"x".repeat(500)}  `);
-  await expect(page.getByText("500/500 characters")).toBeVisible();
-  await expect(page.getByLabel("Note")).toHaveAttribute(
+  await page.getByLabel("Notat").fill(`  ${"x".repeat(500)}  `);
+  await expect(page.getByText("500/500 tegn")).toBeVisible();
+  await expect(page.getByLabel("Notat")).toHaveAttribute(
     "aria-invalid",
     "false",
   );
 
-  await page.getByLabel("Note").fill("x".repeat(501));
-  await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByLabel("Note")).toHaveAttribute("aria-invalid", "true");
+  await page.getByLabel("Notat").fill("x".repeat(501));
+  await page.getByRole("button", { name: "Lagre endringer" }).click();
+  await expect(page.getByLabel("Notat")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
   await expect(page.getByRole("alert")).toHaveText(
-    "Note must be 500 characters or fewer.",
+    "Notatet kan ikke være lengre enn 500 tegn.",
   );
   await expect.poll(() => lastPatchPayload).toBeNull();
 
-  await page.getByLabel("Merchant").fill("Updated Corner Shop");
-  await page.getByLabel("Note").fill("");
+  await page.getByLabel("Brukersted").fill("Updated Corner Shop");
+  await page.getByLabel("Notat").fill("");
   const categoryCombobox = page
-    .getByRole("dialog", { name: "Edit transaction" })
-    .getByRole("combobox", { name: "Category" });
+    .getByRole("dialog", { name: "Rediger transaksjon" })
+    .getByRole("combobox", { name: "Kategori" });
   await expect(categoryCombobox).toHaveValue("Transport");
   await categoryCombobox.click();
   await categoryCombobox.pressSequentially("foo");
@@ -710,7 +711,7 @@ test("edits a transaction in a modal and keeps pagination state after save", asy
   ).toBeVisible();
   await page.getByRole("option", { name: "Food", exact: true }).click();
   await expect(categoryCombobox).toHaveValue("Food");
-  await page.getByRole("button", { name: "Save changes" }).click();
+  await page.getByRole("button", { name: "Lagre endringer" }).click();
 
   await expect(page).toHaveURL(/page=2/);
   await expect(page.getByText("Updated Corner Shop")).toBeVisible();
@@ -860,7 +861,7 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
 
   await page.goto("/transactions");
 
-  await page.getByRole("button", { name: "Go to next page" }).click();
+  await page.getByRole("button", { name: "Gå til neste side" }).click();
   await expect(page).toHaveURL(/[?&]page=2(&|$)/);
   await expect(page.getByText("Corner Shop")).toBeVisible();
 
@@ -868,31 +869,31 @@ test("confirms transaction deletion and keeps pagination valid after last-row re
     .getByRole("row")
     .filter({ hasText: "Corner Shop" });
   const cornerShopActions = page.getByRole("button", {
-    name: "Actions for transaction from 2026-01-15",
+    name: "Handlinger for transaksjon fra 2026-01-15",
   });
 
   // Row actions only materialize under group-hover, so the pointer has to be
   // over the row before the trigger is clickable.
   await cornerShopRow.hover();
   await cornerShopActions.click();
-  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("menuitem", { name: "Slett" }).click();
   await expect(
-    page.getByRole("heading", { name: "Delete transaction" }),
+    page.getByRole("heading", { name: "Slett transaksjon" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Avbryt", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Delete transaction" }),
+    page.getByRole("heading", { name: "Slett transaksjon" }),
   ).not.toBeVisible();
   await expect(page.getByText("Corner Shop")).toBeVisible();
   await expect.poll(() => deleteCallCount).toBe(0);
 
   await cornerShopRow.hover();
   await cornerShopActions.click();
-  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("menuitem", { name: "Slett" }).click();
   await page
     .getByRole("alertdialog")
-    .getByRole("button", { name: "Delete", exact: true })
+    .getByRole("button", { name: "Slett", exact: true })
     .click();
 
   // Deleting the only row on page 2 shrinks the range to a single page, so the
@@ -985,39 +986,39 @@ test("adds a transaction from the modal and counts note length the way validatio
 
   await page.goto("/transactions");
 
-  await page.getByRole("button", { name: "Add transaction" }).click();
-  const dialog = page.getByRole("dialog", { name: "Add transaction" });
+  await page.getByRole("button", { name: "Legg til transaksjon" }).click();
+  const dialog = page.getByRole("dialog", { name: "Legg til transaksjon" });
   await expect(dialog).toBeVisible();
 
-  const note = dialog.getByLabel("Note");
+  const note = dialog.getByLabel("Notat");
   const maxLengthNote = "x".repeat(500);
 
   await note.fill(maxLengthNote);
-  await expect(dialog.getByText("500/500 characters")).toBeVisible();
+  await expect(dialog.getByText("500/500 tegn")).toBeVisible();
 
   // Validation and the server both measure the trimmed note, so padding a
   // max-length note must not push the counter past the limit.
   await note.fill(`  ${maxLengthNote}  `);
-  await expect(dialog.getByText("500/500 characters")).toBeVisible();
+  await expect(dialog.getByText("500/500 tegn")).toBeVisible();
   await expect(note).toHaveAttribute("aria-invalid", "false");
 
   await note.fill(`  ${"x".repeat(501)}  `);
-  await expect(dialog.getByText("501/500 characters")).toHaveCount(0);
+  await expect(dialog.getByText("501/500 tegn")).toHaveCount(0);
   await expect(
-    dialog.getByText("Note must be 500 characters or fewer."),
+    dialog.getByText("Notatet kan ikke være lengre enn 500 tegn."),
   ).toBeVisible();
   await expect(note).toHaveAttribute("aria-invalid", "true");
 
   await note.fill("Weekly shop");
-  await dialog.getByLabel("Account").click();
+  await dialog.getByLabel("Konto").click();
   await page.getByRole("option", { name: "Main Account" }).click();
-  await dialog.getByLabel("Date").fill("2026-02-10");
-  await dialog.getByLabel("Merchant").fill("  Corner Shop  ");
-  await dialog.getByLabel("Amount (NOK)").fill("-12,50");
-  await dialog.getByRole("button", { name: "Add transaction" }).click();
+  await dialog.getByLabel("Dato").fill("2026-02-10");
+  await dialog.getByLabel("Brukersted").fill("  Corner Shop  ");
+  await dialog.getByLabel("Beløp (NOK)").fill("-12,50");
+  await dialog.getByRole("button", { name: "Legg til transaksjon" }).click();
 
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Transaction added" }),
+    page.locator("[data-sonner-toast]", { hasText: "Transaksjon lagt til" }),
   ).toBeVisible();
   await expect.poll(() => lastPostPayload?.accountId).toBe("acc-1");
   await expect.poll(() => lastPostPayload?.merchant).toBe("Corner Shop");

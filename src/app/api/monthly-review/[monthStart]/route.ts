@@ -19,7 +19,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
       return NextResponse.json(
         {
           error: "INVALID_MONTH_START",
-          message: "Expected monthStart to match YYYY-MM-01.",
+          message: "monthStart må ha formatet YYYY-MM-01.",
         },
         { status: 400 },
       );
@@ -28,7 +28,7 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json(
       {
         error: "MONTH_IN_REVIEW_FETCH_FAILED",
-        message: "Could not load month in review data.",
+        message: "Kunne ikke laste inn data for måneden som gikk.",
       },
       { status: 500 },
     );

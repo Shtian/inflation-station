@@ -57,9 +57,9 @@ type Category = {
 
 // Jev suggestions carry the certainty bar instead of a label.
 const SUGGESTION_SOURCE_LABEL: Record<SuggestionSource, string | null> = {
-  RULE: "From rule",
-  HISTORY: "From history",
-  TRANSFER_MATCH: "Matched transfer",
+  RULE: "Fra regel",
+  HISTORY: "Fra historikk",
+  TRANSFER_MATCH: "Koblet til overføring",
   OPENAI: null,
   JEV: null,
 };
@@ -149,17 +149,17 @@ export function ImportReviewTable({
                 checked={headerChecked}
                 indeterminate={headerIndeterminate}
                 onCheckedChange={() => toggleAllRows(allRowIds)}
-                aria-label="Select all rows"
+                aria-label="Velg alle rader"
               />
             </TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>Message</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Payment type</TableHead>
-            <TableHead>Category</TableHead>
-            <TableHead>Note</TableHead>
+            <TableHead>Dato</TableHead>
+            <TableHead>Melding</TableHead>
+            <TableHead>Beløp</TableHead>
+            <TableHead>Betalingstype</TableHead>
+            <TableHead>Kategori</TableHead>
+            <TableHead>Notat</TableHead>
             <TableHead>
-              <span className="sr-only">Warnings</span>
+              <span className="sr-only">Advarsler</span>
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger
@@ -171,7 +171,7 @@ export function ImportReviewTable({
                     }
                   />
                   <TooltipContent side="top">
-                    Potential duplicates or other import warnings
+                    Mulige duplikater eller andre importadvarsler
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -213,7 +213,7 @@ export function ImportReviewTable({
                   <Checkbox
                     checked={selectedRowIds.has(row.id)}
                     onCheckedChange={() => toggleRowSelection(row.id)}
-                    aria-label={`Select row ${row.rowNumber}`}
+                    aria-label={`Velg rad ${row.rowNumber}`}
                   />
                 </TableCell>
                 <TableCell>{row.bookingDate}</TableCell>

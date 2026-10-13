@@ -22,9 +22,9 @@ type NetCashflowCardProps = {
 };
 
 const netCashflowChartConfig = {
-  netNok: { label: "Net cashflow" },
-  positive: { label: "Inflow", color: "var(--success)" },
-  negative: { label: "Outflow", color: "var(--destructive)" },
+  netNok: { label: "Netto kontantstrøm" },
+  positive: { label: "Inn", color: "var(--success)" },
+  negative: { label: "Ut", color: "var(--destructive)" },
 };
 
 export function NetCashflowCard({
@@ -34,15 +34,17 @@ export function NetCashflowCard({
   return (
     <Card>
       <CardContent className="space-y-3">
-        <h3 className="font-semibold text-foreground text-sm">Net Cashflow</h3>
+        <h3 className="font-semibold text-foreground text-sm">
+          Netto kontantstrøm
+        </h3>
         {isLoading ? (
           <output className="mt-3 block text-muted-foreground text-sm">
-            Loading chart data...
+            Laster inn diagramdata…
           </output>
         ) : null}
         {!isLoading && (!netCashflow || netCashflow.length === 0) ? (
           <p className="mt-3 text-muted-foreground text-sm">
-            No data for selected filters.
+            Ingen data for valgte filtre.
           </p>
         ) : null}
         {!isLoading && netCashflow ? (

@@ -53,7 +53,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const DRAFT_DECLINED_REASON =
-  "The user clicked Not yet. Nothing failed; they want to change the draft.";
+  "The user clicked Ikke ennå (Not yet). Nothing failed; they want to change the draft.";
 
 type WidgetView = "closed" | "chat" | "picking";
 
@@ -67,19 +67,19 @@ const transport = new DefaultChatTransport<FeedbackUIMessage>({
 });
 
 const EXAMPLE_PROMPTS = [
-  "Something on this page looks wrong",
-  "I have an idea for a new feature",
-  "A button doesn't do what I expect",
+  "Noe på denne siden ser feil ut",
+  "Jeg har en idé til en ny funksjon",
+  "En knapp gjør ikke det jeg forventer",
 ];
 
 function describeChatError(error: Error): string {
   if (error.message.includes("FEEDBACK_UNAVAILABLE")) {
-    return "Feedback isn't set up on this server right now.";
+    return "Tilbakemelding er ikke satt opp på denne serveren akkurat nå.";
   }
   if (error.message.includes("INVALID_FEEDBACK_MESSAGES")) {
-    return "This conversation couldn't be read. Start a new conversation.";
+    return "Samtalen kunne ikke leses. Start en ny samtale.";
   }
-  return "Couldn't reach the feedback assistant.";
+  return "Fikk ikke kontakt med tilbakemeldingsassistenten.";
 }
 
 function elementLabel(element: PickedElement): string {
@@ -111,7 +111,7 @@ function ElementChip({
         <button
           type="button"
           onClick={onRemove}
-          aria-label="Remove attached element"
+          aria-label="Fjern vedlagt element"
           className="rounded-sm hover:bg-brand/20"
         >
           <X className="size-3" />
@@ -133,14 +133,20 @@ function IssueDraftPart({
   switch (part.state) {
     case "input-streaming":
     case "input-available":
-      return <p className="text-muted-foreground text-xs">Drafting issue…</p>;
+      return (
+        <p className="text-muted-foreground text-xs">Skriver utkast til sak…</p>
+      );
     case "approval-requested":
     case "approval-responded":
     case "output-denied":
       // A reply typed instead of a button press supersedes the draft (the
       // server sends it to the model as denied).
       if (part.state === "approval-requested" && !isLatest) {
-        return <p className="text-muted-foreground text-xs">Draft dismissed</p>;
+        return (
+          <p className="text-muted-foreground text-xs">
+            Utkastet ble forkastet
+          </p>
+        );
       }
       return (
         <Confirmation approval={part.approval} state={part.state}>
@@ -151,7 +157,7 @@ function IssueDraftPart({
                   part.input.kind === "bug" ? "destructive" : "secondary"
                 }
               >
-                {part.input.kind === "bug" ? "Bug" : "Feature"}
+                {part.input.kind === "bug" ? "Feil" : "Funksjon"}
               </Badge>
               <span className="font-medium text-sm">{part.input.title}</span>
             </div>
@@ -159,26 +165,28 @@ function IssueDraftPart({
               <MessageResponse>{part.input.body}</MessageResponse>
             </div>
             <p className="text-muted-foreground text-xs">
-              Page context and selected elements will be attached.
+              Sidekontekst og valgte elementer legges ved.
             </p>
           </ConfirmationRequest>
           <ConfirmationAccepted>
-            <p className="text-muted-foreground text-xs">Creating issue…</p>
+            <p className="text-muted-foreground text-xs">Oppretter sak…</p>
           </ConfirmationAccepted>
           <ConfirmationRejected>
-            <p className="text-muted-foreground text-xs">Draft dismissed</p>
+            <p className="text-muted-foreground text-xs">
+              Utkastet ble forkastet
+            </p>
           </ConfirmationRejected>
           <ConfirmationActions>
             <ConfirmationAction
               variant="outline"
               onClick={() => onRespond(part.approval.id, false)}
             >
-              Not yet
+              Ikke ennå
             </ConfirmationAction>
             <ConfirmationAction
               onClick={() => onRespond(part.approval.id, true)}
             >
-              Create issue
+              Opprett sak
             </ConfirmationAction>
           </ConfirmationActions>
         </Confirmation>
@@ -186,7 +194,7 @@ function IssueDraftPart({
     case "output-available":
       return (
         <p className="text-sm">
-          Created issue{" "}
+          Opprettet sak{" "}
           <a
             href={part.output.url}
             target="_blank"
@@ -284,7 +292,7 @@ export function FeedbackWidget() {
           !announcedIssues.current.has(part.toolCallId)
         ) {
           announcedIssues.current.add(part.toolCallId);
-          toast.success(`Issue #${part.output.number} created`);
+          toast.success(`Sak #${part.output.number} opprettet`);
         }
       }
     },
@@ -347,7 +355,9 @@ export function FeedbackWidget() {
       ) : (
         <Button
           size="icon-lg"
-          aria-label={view === "chat" ? "Close feedback" : "Give feedback"}
+          aria-label={
+            view === "chat" ? "Lukk tilbakemelding" : "Gi tilbakemelding"
+          }
           aria-expanded={view === "chat"}
           onClick={() => setView(view === "chat" ? "closed" : "chat")}
           className="fixed right-5 bottom-5 z-feedback size-12 rounded-full bg-brand text-brand-foreground shadow-lg hover:bg-brand/90 [&_svg:not([class*='size-'])]:size-5"
@@ -358,7 +368,7 @@ export function FeedbackWidget() {
 
       {view === "chat" ? (
         <section
-          aria-label="Feedback"
+          aria-label="Tilbakemelding"
           onKeyDown={(event) => {
             if (event.key === "Escape") {
               setView("closed");
@@ -367,12 +377,12 @@ export function FeedbackWidget() {
           className="fixed inset-x-3 bottom-20 z-feedback flex h-[min(520px,calc(100dvh-7rem))] flex-col overflow-hidden rounded-xl bg-card text-card-foreground text-sm shadow-xl ring-1 ring-foreground/10 sm:inset-x-auto sm:right-5 sm:w-[380px]"
         >
           <header className="flex items-center gap-1 border-border border-b px-3 py-2">
-            <h2 className="flex-1 font-semibold text-sm">Feedback</h2>
+            <h2 className="flex-1 font-semibold text-sm">Tilbakemelding</h2>
             <Button
               size="icon-sm"
               variant="ghost"
-              aria-label="New conversation"
-              title="New conversation"
+              aria-label="Ny samtale"
+              title="Ny samtale"
               onClick={startNewConversation}
             >
               <SquarePen />
@@ -380,7 +390,7 @@ export function FeedbackWidget() {
             <Button
               size="icon-sm"
               variant="ghost"
-              aria-label="Close feedback"
+              aria-label="Lukk tilbakemelding"
               onClick={() => setView("closed")}
             >
               <X />
@@ -392,8 +402,8 @@ export function FeedbackWidget() {
               {messages.length === 0 ? (
                 <ConversationEmptyState className="flex-1 items-start gap-3 p-0 text-left">
                   <p className="text-muted-foreground text-sm">
-                    Found a bug or have an idea? Describe it and I'll turn it
-                    into an issue for the developer.
+                    Har du funnet en feil eller fått en idé? Beskriv den, så
+                    gjør jeg den om til en sak for utvikleren.
                   </p>
                   <div className="flex flex-col items-start gap-1.5">
                     {EXAMPLE_PROMPTS.map((prompt) => (
@@ -423,7 +433,7 @@ export function FeedbackWidget() {
                 ))
               )}
               {status === "submitted" ? (
-                <p className="text-muted-foreground text-xs">Thinking…</p>
+                <p className="text-muted-foreground text-xs">Tenker…</p>
               ) : null}
               {error ? (
                 <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive text-xs">
@@ -434,7 +444,7 @@ export function FeedbackWidget() {
                     onClick={() => void regenerate()}
                   >
                     <RotateCcw />
-                    Retry
+                    Prøv igjen
                   </Button>
                 </div>
               ) : null}
@@ -463,8 +473,8 @@ export function FeedbackWidget() {
                     event.preventDefault();
                   }
                 }}
-                placeholder="Describe the bug or idea…"
-                aria-label="Feedback message"
+                placeholder="Beskriv feilen eller idéen…"
+                aria-label="Din tilbakemelding"
                 rows={2}
                 className="max-h-32 min-h-12"
               />
@@ -472,11 +482,11 @@ export function FeedbackWidget() {
                 <PromptInputTools>
                   <PromptInputButton
                     size="xs"
-                    aria-label="Pick an element on the page"
+                    aria-label="Velg et element på siden"
                     onClick={() => setView("picking")}
                   >
                     <SquareDashedMousePointer />
-                    Pick element
+                    Velg element
                   </PromptInputButton>
                 </PromptInputTools>
                 <PromptInputSubmit
@@ -484,7 +494,7 @@ export function FeedbackWidget() {
                   // row below already offers Retry.
                   status={busy ? status : undefined}
                   onStop={() => void stop()}
-                  aria-label={busy ? "Stop response" : "Send feedback"}
+                  aria-label={busy ? "Stopp svaret" : "Send tilbakemelding"}
                   disabled={!busy && !input.trim()}
                 />
               </PromptInputFooter>

@@ -68,7 +68,8 @@ describe("POST /api/imports/cleanup", () => {
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({
       error: "IMPORT_REVIEW_SESSION_NOT_FOUND",
-      message: "Import review session was not found or already submitted.",
+      message:
+        "Fant ikke importgjennomgangen, eller den er allerede sendt inn.",
     });
   });
 

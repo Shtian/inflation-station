@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "biome check",
     "lint:fix": "biome check --write",
+    "check:english": "tsx scripts/find-english-ui-strings.ts",
     "test": "pnpm run test:unit && pnpm run test:e2e",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",

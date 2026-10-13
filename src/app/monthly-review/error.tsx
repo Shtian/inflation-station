@@ -13,10 +13,10 @@ export default function MonthlyReviewRouteError({
 }: MonthlyReviewRouteErrorProps) {
   return (
     <RouteErrorState
-      title="Monthly review timeline failed to load"
+      title="Kunne ikke laste inn tidslinjen for månedsoppsummering"
       message={
         error.message ||
-        "An unexpected error occurred while loading monthly review timeline data."
+        "Det oppstod en uventet feil under lasting av tidslinjen for månedsoppsummering."
       }
       onRetry={reset}
     />

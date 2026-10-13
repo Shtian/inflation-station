@@ -33,10 +33,10 @@ export function BulkDeleteTransactionsDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Delete {count} transaction{count !== 1 ? "s" : ""}?
+            Slette {count} {count === 1 ? "transaksjon" : "transaksjoner"}?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            This cannot be undone.
+            Dette kan ikke angres.
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -51,14 +51,14 @@ export function BulkDeleteTransactionsDialog({
 
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel} disabled={deleteSaving}>
-            Cancel
+            Avbryt
           </AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-white hover:bg-destructive/90"
             onClick={onConfirm}
             disabled={deleteSaving}
           >
-            {deleteSaving ? "Deleting..." : "Delete"}
+            {deleteSaving ? "Sletter…" : "Slett"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

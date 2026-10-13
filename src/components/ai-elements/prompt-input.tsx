@@ -124,7 +124,8 @@ const captureScreenshot = async (): Promise<File | null> => {
       // oxlint-disable-next-line eslint-plugin-unicorn(prefer-add-event-listener)
       video.onloadedmetadata = () => resolve();
       // oxlint-disable-next-line eslint-plugin-unicorn(prefer-add-event-listener)
-      video.onerror = () => reject(new Error("Failed to load screen stream"));
+      video.onerror = () =>
+        reject(new Error("Kunne ikke laste skjermstrømmen"));
     });
 
     await video.play();
@@ -415,7 +416,7 @@ export type PromptInputActionAddAttachmentsProps = ComponentProps<
 };
 
 export const PromptInputActionAddAttachments = ({
-  label = "Add photos or files",
+  label = "Legg til bilder eller filer",
   ...props
 }: PromptInputActionAddAttachmentsProps) => {
   const attachments = usePromptInputAttachments();
@@ -438,7 +439,7 @@ export type PromptInputActionAddScreenshotProps = ComponentProps<
 };
 
 export const PromptInputActionAddScreenshot = ({
-  label = "Take screenshot",
+  label = "Ta skjermbilde",
   onClick,
   ...props
 }: PromptInputActionAddScreenshotProps) => {
@@ -582,7 +583,7 @@ export const PromptInput = ({
       if (incoming.length && accepted.length === 0) {
         onError?.({
           code: "accept",
-          message: "No files match the accepted types.",
+          message: "Ingen filer har en godtatt filtype.",
         });
         return;
       }
@@ -592,7 +593,7 @@ export const PromptInput = ({
       if (accepted.length > 0 && sized.length === 0) {
         onError?.({
           code: "max_file_size",
-          message: "All files exceed the maximum size.",
+          message: "Alle filene overskrider maksimal størrelse.",
         });
         return;
       }
@@ -607,7 +608,7 @@ export const PromptInput = ({
         if (typeof capacity === "number" && sized.length > capacity) {
           onError?.({
             code: "max_files",
-            message: "Too many files. Some were not added.",
+            message: "For mange filer. Noen ble ikke lagt til.",
           });
         }
         const next: (FileUIPart & { id: string })[] = [];
@@ -646,7 +647,7 @@ export const PromptInput = ({
       if (incoming.length && accepted.length === 0) {
         onError?.({
           code: "accept",
-          message: "No files match the accepted types.",
+          message: "Ingen filer har en godtatt filtype.",
         });
         return;
       }
@@ -656,7 +657,7 @@ export const PromptInput = ({
       if (accepted.length > 0 && sized.length === 0) {
         onError?.({
           code: "max_file_size",
-          message: "All files exceed the maximum size.",
+          message: "Alle filene overskrider maksimal størrelse.",
         });
         return;
       }
@@ -671,7 +672,7 @@ export const PromptInput = ({
       if (typeof capacity === "number" && sized.length > capacity) {
         onError?.({
           code: "max_files",
-          message: "Too many files. Some were not added.",
+          message: "For mange filer. Noen ble ikke lagt til.",
         });
       }
 
@@ -907,12 +908,12 @@ export const PromptInput = ({
     <>
       <input
         accept={accept}
-        aria-label="Upload files"
+        aria-label="Legg ved filer"
         className="hidden"
         multiple={multiple}
         onChange={handleChange}
         ref={inputRef}
-        title="Upload files"
+        title="Legg ved filer"
         type="file"
       />
       <form
@@ -957,7 +958,7 @@ export const PromptInputTextarea = ({
   onChange,
   onKeyDown,
   className,
-  placeholder = "What would you like to know?",
+  placeholder = "Hva vil du vite?",
   ...props
 }: PromptInputTextareaProps) => {
   const controller = useOptionalPromptInputController();
@@ -1249,7 +1250,7 @@ export const PromptInputSubmit = ({
 
   return (
     <InputGroupButton
-      aria-label={isGenerating ? "Stop" : "Submit"}
+      aria-label={isGenerating ? "Stopp" : "Send"}
       className={cn(className)}
       onClick={handleClick}
       size={size}

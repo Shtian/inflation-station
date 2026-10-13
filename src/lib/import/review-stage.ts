@@ -322,7 +322,7 @@ function splitValidAndInvalidRows(rows: ParsedCsvRow[]): {
       invalidRows.push({
         rowNumber,
         code: "INVALID_BOOKING_DATE",
-        message: `Row ${rowNumber} has unsupported booking date "${row.bookingDate}". Expected formats DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD, or YYYY/MM/DD.`,
+        message: `Rad ${rowNumber} har bokføringsdato "${row.bookingDate}" i et format som ikke støttes. Forventede formater: DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD eller YYYY/MM/DD.`,
       });
       continue;
     }

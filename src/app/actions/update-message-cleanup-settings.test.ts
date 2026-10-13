@@ -74,7 +74,7 @@ describe("updateMessageCleanupSettingsAction", () => {
     if (result.ok) return;
     expect(result.error).toEqual({
       code: "INVALID_MESSAGE_CLEANUP_MODEL_ID",
-      message: "Expected modelId to be one of the available OpenAI models.",
+      message: "modelId må være en av de tilgjengelige OpenAI-modellene.",
     });
     expect(updateMessageCleanupSettingsMock).not.toHaveBeenCalled();
   });
@@ -108,7 +108,7 @@ describe("updateMessageCleanupSettingsAction", () => {
     if (result.ok) return;
     expect(result.error).toEqual({
       code: "INVALID_MESSAGE_CLEANUP_REASONING_EFFORT",
-      message: "Expected reasoningEffort to be one of the available options.",
+      message: "reasoningEffort må være et av de tilgjengelige valgene.",
     });
     expect(updateMessageCleanupSettingsMock).not.toHaveBeenCalled();
   });

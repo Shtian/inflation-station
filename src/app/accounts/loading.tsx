@@ -1,5 +1,5 @@
 import { RouteLoadingState } from "@/components/route-loading-state";
 
 export default function Loading() {
-  return <RouteLoadingState label="Loading accounts..." />;
+  return <RouteLoadingState label="Laster inn kontoer…" />;
 }

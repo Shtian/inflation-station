@@ -42,11 +42,11 @@ const SOURCE_LABELS: Record<
   ColumnMappingDraftSources[ColumnMappingField],
   string
 > = {
-  saved: "Saved",
-  jev: "Suggested by Jev",
-  heuristic: "Guessed",
-  none: "Not found",
-  manual: "Chosen by you",
+  saved: "Lagret",
+  jev: "Foreslått av Jev",
+  heuristic: "Gjettet",
+  none: "Ikke funnet",
+  manual: "Valgt av deg",
 };
 
 type ImportColumnMappingPhaseProps = {
@@ -72,7 +72,7 @@ function sampleValues(proposal: ColumnMappingProposal, index: number): string {
 function formatList(items: string[]): string {
   return items.length <= 1
     ? (items[0] ?? "")
-    : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+    : `${items.slice(0, -1).join(", ")} og ${items[items.length - 1]}`;
 }
 
 /** Every header as a radio or checkbox, each showing what that column holds. */
@@ -128,7 +128,7 @@ function ColumnChoices({
               <span className="min-w-0">
                 <span className="block font-medium text-sm">{header}</span>
                 <span className="block truncate font-mono text-muted-foreground text-xs">
-                  {sampleValues(proposal, index) || "Empty"}
+                  {sampleValues(proposal, index) || "Tom"}
                 </span>
               </span>
             </label>
@@ -147,10 +147,10 @@ type PreviewCells = {
 };
 
 const PREVIEW_COLUMNS = [
-  { key: "date", label: "Date", className: "font-mono text-xs" },
-  { key: "amount", label: "Amount", className: "text-right font-mono text-xs" },
-  { key: "description", label: "Description", className: "" },
-  { key: "paymentType", label: "Payment type", className: "" },
+  { key: "date", label: "Dato", className: "font-mono text-xs" },
+  { key: "amount", label: "Beløp", className: "text-right font-mono text-xs" },
+  { key: "description", label: "Beskrivelse", className: "" },
+  { key: "paymentType", label: "Betalingstype", className: "" },
 ] as const;
 
 function PreviewTable({
@@ -162,7 +162,7 @@ function PreviewTable({
 }) {
   return (
     <div className="rounded-lg border">
-      <Table aria-label="Column mapping preview">
+      <Table aria-label="Forhåndsvisning av kolonnekobling">
         <TableHeader>
           <TableRow>
             {PREVIEW_COLUMNS.map((column) => (
@@ -185,7 +185,7 @@ function PreviewTable({
                 colSpan={4}
                 className="text-center text-muted-foreground"
               >
-                No sample row parses with this mapping.
+                Ingen eksempelrader kan leses med denne koblingen.
               </TableCell>
             </TableRow>
           ) : (
@@ -205,7 +205,7 @@ function PreviewTable({
                     {row[column.key] ?? (
                       <span className="text-muted-foreground">
                         <span aria-hidden="true">—</span>
-                        <span className="sr-only">Missing</span>
+                        <span className="sr-only">Mangler</span>
                       </span>
                     )}
                   </TableCell>
@@ -318,33 +318,33 @@ export function ImportColumnMappingPhase({
   }[] = [
     {
       field: "date",
-      label: "Date",
+      label: "Dato",
       columns: draft.date?.header ?? "",
       example: firstRow?.bookingDate ?? firstSample(draft.date),
       chosen: draft.date !== null,
     },
     {
       field: "amount",
-      label: "Amount",
+      label: "Beløp",
       columns:
         draft.amount?.kind === "signed"
           ? draft.amount.column.header
           : draft.amount?.kind === "split"
-            ? `${draft.amount.inflow.header} (in) / ${draft.amount.outflow.header} (out)`
+            ? `${draft.amount.inflow.header} (inn) / ${draft.amount.outflow.header} (ut)`
             : "",
       example: firstRow ? formatNok(firstRow.amountNok) : "",
       chosen: draft.amount !== null,
     },
     {
       field: "description",
-      label: "Description",
+      label: "Beskrivelse",
       columns: draft.description.map((ref) => ref.header).join(" + "),
       example: previewRows[0]?.description ?? "",
       chosen: draft.description.length > 0,
     },
     {
       field: "paymentType",
-      label: "Payment type",
+      label: "Betalingstype",
       columns: draft.paymentType?.header ?? "",
       example: firstSample(draft.paymentType),
       chosen: draft.paymentType !== null,
@@ -370,7 +370,7 @@ export function ImportColumnMappingPhase({
       case "date":
         return (
           <ColumnChoices
-            legend="Date column"
+            legend="Datokolonne"
             proposal={proposal}
             isSelected={(index) => draft.date?.index === index}
             onSelect={(ref) => onChange("date", { ...draft, date: ref })}
@@ -380,17 +380,17 @@ export function ImportColumnMappingPhase({
         return (
           <div className="space-y-3">
             <fieldset className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-              <legend className="sr-only">Amount format</legend>
+              <legend className="sr-only">Beløpsformat</legend>
               {(
                 [
-                  ["signed", "One column, minus means money out"],
-                  ["split", "Separate in and out columns"],
+                  ["signed", "Én kolonne, minus betyr penger ut"],
+                  ["split", "Egne kolonner for inn og ut"],
                 ] as const
               ).map(([kind, label]) => (
                 <label key={kind} className="flex items-center gap-1.5">
                   <input
                     type="radio"
-                    name="Amount format"
+                    name="Beløpsformat"
                     checked={amountKind === kind}
                     onChange={() => chooseAmountKind(kind)}
                     className="accent-primary"
@@ -401,7 +401,7 @@ export function ImportColumnMappingPhase({
             </fieldset>
             {amountKind === "signed" ? (
               <ColumnChoices
-                legend="Amount column"
+                legend="Beløpskolonne"
                 proposal={proposal}
                 isSelected={(index) =>
                   draft.amount?.kind === "signed" &&
@@ -417,13 +417,13 @@ export function ImportColumnMappingPhase({
             ) : (
               <>
                 <ColumnChoices
-                  legend="Money in column"
+                  legend="Kolonne for penger inn"
                   proposal={proposal}
                   isSelected={(index) => split.inflow?.index === index}
                   onSelect={(ref) => updateSplit({ ...split, inflow: ref })}
                 />
                 <ColumnChoices
-                  legend="Money out column"
+                  legend="Kolonne for penger ut"
                   proposal={proposal}
                   isSelected={(index) => split.outflow?.index === index}
                   onSelect={(ref) => updateSplit({ ...split, outflow: ref })}
@@ -435,7 +435,7 @@ export function ImportColumnMappingPhase({
       case "description":
         return (
           <ColumnChoices
-            legend="Description columns"
+            legend="Beskrivelseskolonner"
             proposal={proposal}
             multiple
             isSelected={(index) =>
@@ -456,7 +456,7 @@ export function ImportColumnMappingPhase({
         return (
           <div className="space-y-2">
             <ColumnChoices
-              legend="Payment type column"
+              legend="Betalingstypekolonne"
               proposal={proposal}
               isSelected={(index) => draft.paymentType?.index === index}
               onSelect={(ref) =>
@@ -472,7 +472,7 @@ export function ImportColumnMappingPhase({
                   onChange("paymentType", { ...draft, paymentType: null })
                 }
               >
-                Don't use a payment type column
+                Ikke bruk en betalingstypekolonne
               </Button>
             ) : null}
           </div>
@@ -490,10 +490,10 @@ export function ImportColumnMappingPhase({
           className="flex items-center gap-1.5 text-muted-foreground text-xs transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3 w-3" aria-hidden="true" />
-          Back
+          Tilbake
         </button>
         <h2 className="font-semibold text-foreground text-xl tracking-tight">
-          Map Columns
+          Koble kolonner
         </h2>
       </div>
 
@@ -511,12 +511,12 @@ export function ImportColumnMappingPhase({
         )}
         <span>
           {mapping
-            ? `Ready to review · checked against ${proposal.sampleRows.length} sample rows`
-            : `${missingSummary.charAt(0).toUpperCase()}${missingSummary.slice(1)} ${missingLabels.length === 1 ? "needs" : "need"} a column`}
+            ? `Klar til gjennomgang · sjekket mot ${proposal.sampleRows.length} eksempelrader`
+            : `${missingSummary.charAt(0).toUpperCase()}${missingSummary.slice(1)} mangler kolonne`}
         </span>
       </output>
 
-      <ul aria-label="Column mapping" className="divide-y rounded-xl border">
+      <ul aria-label="Kolonnekobling" className="divide-y rounded-xl border">
         {rows.map((row) => {
           const open = openField === row.field;
           return (
@@ -548,11 +548,11 @@ export function ImportColumnMappingPhase({
                   <span className="min-w-0 flex-1">
                     <span className="block break-words font-mono text-xs sm:truncate">
                       {row.columns ||
-                        (row.optional ? "Not used" : "Choose a column")}
+                        (row.optional ? "Ikke brukt" : "Velg en kolonne")}
                     </span>
                     {row.example ? (
                       <span className="block break-words text-muted-foreground text-xs sm:truncate">
-                        e.g. {row.example}
+                        f.eks. {row.example}
                       </span>
                     ) : null}
                     <span className="block text-muted-foreground text-xs sm:hidden">
@@ -595,21 +595,24 @@ export function ImportColumnMappingPhase({
           className="font-medium text-foreground text-sm"
         >
           {mapping
-            ? `How the first ${proposal.sampleRows.length} rows will import`
-            : "Raw values so far"}
+            ? `Slik blir de første ${proposal.sampleRows.length} radene importert`
+            : "Råverdier så langt"}
         </h3>
         <PreviewTable rows={previewRows} missing={missingPreviewColumns} />
       </section>
 
       {preview && preview.summary.ignoredReserved > 0 ? (
         <p className="text-muted-foreground text-xs">
-          {preview.summary.ignoredReserved} reserved row
-          {preview.summary.ignoredReserved === 1 ? "" : "s"} will be skipped.
+          {preview.summary.ignoredReserved}{" "}
+          {preview.summary.ignoredReserved === 1
+            ? "reservert rad"
+            : "reserverte rader"}{" "}
+          hoppes over.
         </p>
       ) : null}
       {preview && preview.errors.length > 0 ? (
         <ul
-          aria-label="Preview parse errors"
+          aria-label="Feil i forhåndsvisningen"
           className="space-y-1 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
         >
           {preview.errors.map((error) => (
@@ -631,14 +634,14 @@ export function ImportColumnMappingPhase({
         <p className="text-muted-foreground text-xs sm:max-w-sm">
           {mapping ? (
             <>
-              Saved for{" "}
+              Lagres for{" "}
               <span className="font-medium text-foreground">{accountName}</span>{" "}
-              and reused for files with the same headers. Nothing is imported
-              until you finish the review.
+              og brukes igjen for filer med de samme kolonneoverskriftene.
+              Ingenting importeres før du har fullført gjennomgangen.
             </>
           ) : (
             <span id="column-mapping-missing">
-              Pick a column for {missingSummary} to continue.
+              Velg en kolonne for {missingSummary} for å fortsette.
             </span>
           )}
         </p>
@@ -653,7 +656,7 @@ export function ImportColumnMappingPhase({
           ) : (
             <Check className="h-4 w-4" aria-hidden="true" />
           )}
-          Confirm mapping
+          Bekreft kobling
         </Button>
       </div>
     </div>

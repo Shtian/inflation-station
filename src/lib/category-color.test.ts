@@ -4,8 +4,8 @@ import { getDeterministicColorFromText } from "./deterministic-color";
 
 describe("getCategoryColor", () => {
   it("returns a fixed neutral color for uncategorized", () => {
-    const first = getCategoryColor("Uncategorized");
-    const second = getCategoryColor("  uncategorized ");
+    const first = getCategoryColor("Ukategorisert");
+    const second = getCategoryColor("  ukategorisert ");
 
     expect(first).toEqual(second);
     expect(first.backgroundColor).toBe("oklch(72% 0 0)");

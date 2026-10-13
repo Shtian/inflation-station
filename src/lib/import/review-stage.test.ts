@@ -331,7 +331,7 @@ describe("stageParsedImportRows", () => {
         rowNumber: 2,
         code: "INVALID_BOOKING_DATE",
         message:
-          'Row 2 has unsupported booking date "32.01.2026". Expected formats DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD, or YYYY/MM/DD.',
+          'Rad 2 har bokføringsdato "32.01.2026" i et format som ikke støttes. Forventede formater: DD.MM.YYYY, DD.MM.YY, YYYY-MM-DD eller YYYY/MM/DD.',
       },
     ]);
     expect(result.review).toEqual({
@@ -409,7 +409,7 @@ describe("stageParsedImportRows", () => {
           {
             rowNumber: 2,
             code: "INVALID_AMOUNT",
-            message: 'Row 2 has invalid amount "abc".',
+            message: 'Rad 2 har ugyldig beløp "abc".',
           },
         ],
         summary: { imported: 0, duplicates: 0, ignoredReserved: 0, invalid: 1 },

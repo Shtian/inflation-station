@@ -42,8 +42,8 @@ export type ConversationEmptyStateProps = ComponentProps<"div"> & {
 
 export const ConversationEmptyState = ({
   className,
-  title = "No messages yet",
-  description = "Start a conversation to see messages here",
+  title = "Ingen meldinger ennå",
+  description = "Start en samtale for å se meldinger her",
   icon,
   children,
   ...props

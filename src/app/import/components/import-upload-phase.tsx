@@ -96,16 +96,18 @@ export function ImportUploadPhase({
     return (
       <div className="flex flex-col items-center">
         <FadeIn className="mb-6 space-y-1 text-center">
-          <p className="text-foreground text-sm">Which account is this for?</p>
+          <p className="text-foreground text-sm">
+            Hvilken konto gjelder dette?
+          </p>
           <p className="text-muted-foreground text-xs">
-            Select the account these transactions belong to.
+            Velg kontoen disse transaksjonene hører til.
           </p>
         </FadeIn>
 
         {!hasActiveAccounts ? (
           <FadeIn delay={60}>
             <p className="text-muted-foreground text-sm">
-              No active accounts available.
+              Ingen aktive kontoer tilgjengelig.
             </p>
           </FadeIn>
         ) : (
@@ -164,7 +166,7 @@ export function ImportUploadPhase({
             className="flex items-center gap-1.5 text-muted-foreground text-xs transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3" />
-            Back to accounts
+            Tilbake til kontoer
           </button>
         </FadeIn>
 
@@ -195,7 +197,7 @@ export function ImportUploadPhase({
             ref={fileInputRef}
             type="file"
             accept=".csv,text/csv,.pdf,application/pdf"
-            aria-label="Statement file"
+            aria-label="Kontoutskrift"
             id="statement-file"
             className="sr-only"
             onChange={(event) => {
@@ -219,7 +221,7 @@ export function ImportUploadPhase({
               </div>
               <Button
                 variant="ghost"
-                aria-label="Clear selected file"
+                aria-label="Fjern valgt fil"
                 onClick={clearSelectedFile}
                 className="shrink-0 rounded p-0.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
@@ -252,10 +254,10 @@ export function ImportUploadPhase({
               <UploadCloud className="h-5 w-5 text-muted-foreground" />
               <div className="space-y-0.5">
                 <p className="text-foreground text-sm">
-                  Drop your statement here
+                  Slipp kontoutskriften her
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  or click to browse · .csv or .pdf up to 10 MB
+                  eller klikk for å velge fil · .csv eller .pdf opptil 10 MB
                 </p>
               </div>
             </button>
@@ -286,12 +288,12 @@ export function ImportUploadPhase({
             {importLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Parsing…
+                Leser inn…
               </>
             ) : (
               <>
                 <FileText className="h-4 w-4" />
-                Parse &amp; Preview
+                Les inn og forhåndsvis
               </>
             )}
           </Button>

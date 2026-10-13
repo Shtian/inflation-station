@@ -225,16 +225,16 @@ export function MonthInReview({
         </h1>
         <p role="alert" className="text-lg">
           {loadError === "invalid-month"
-            ? "That month is not valid. Pick a month from the timeline."
-            : "Could not load this month. Try again."}
+            ? "Den måneden er ikke gyldig. Velg en måned fra tidslinjen."
+            : "Kunne ikke laste inn denne måneden. Prøv igjen."}
         </p>
         <div className="flex gap-6 font-semibold underline decoration-2 underline-offset-[0.22em]">
           {loadError === "failed" ? (
             <button type="button" onClick={() => void loadReview()}>
-              Retry
+              Prøv igjen
             </button>
           ) : null}
-          <Link href={TIMELINE_HREF}>Back to timeline</Link>
+          <Link href={TIMELINE_HREF}>Tilbake til tidslinjen</Link>
         </div>
       </div>
     );
@@ -253,13 +253,13 @@ export function MonthInReview({
       style={worldStyle(activeSlide.world(review))}
     >
       <header className="flex flex-col gap-1 px-4 pt-3 md:px-8 md:pt-4">
-        <nav aria-label="Slides" className="flex gap-1.5">
+        <nav aria-label="Lysbilder" className="flex gap-1.5">
           {slides.map((slide, index) => (
             <button
               key={slide.id}
               type="button"
               onClick={() => goTo(index)}
-              aria-label={`Go to slide ${index + 1}: ${slide.title}`}
+              aria-label={`Gå til lysbilde ${index + 1}: ${slide.title}`}
               aria-current={index === activeIndex ? "step" : undefined}
               className="group flex-1 rounded-full py-2"
             >
@@ -276,7 +276,7 @@ export function MonthInReview({
         <div className="flex items-center justify-between gap-4">
           <Link
             href={TIMELINE_HREF}
-            aria-label="Close month in review"
+            aria-label="Lukk måneden som gikk"
             className="-ml-2 inline-flex size-10 items-center justify-center rounded-full hover:bg-[color-mix(in_oklab,var(--mir-accent)_14%,transparent)]"
           >
             <X aria-hidden className="size-6" />
@@ -286,8 +286,8 @@ export function MonthInReview({
               activeSlide.id === "intro" ? "sr-only" : ""
             }`}
           >
+            <span className="sr-only">Måneden som gikk: </span>
             {monthLabel}
-            <span className="sr-only"> in review</span>
           </h1>
           <span className="size-10" aria-hidden />
         </div>
@@ -297,8 +297,8 @@ export function MonthInReview({
         key={activeSlide.id}
         ref={slideRef}
         tabIndex={-1}
-        aria-roledescription="slide"
-        aria-label={`${activeIndex + 1} of ${slides.length}: ${activeSlide.title}`}
+        aria-roledescription="lysbilde"
+        aria-label={`${activeIndex + 1} av ${slides.length}: ${activeSlide.title}`}
         onPointerDown={onSlidePointerDown}
         onPointerUp={onSlidePointerUp}
         className="flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto focus-visible:outline-none"
@@ -323,7 +323,7 @@ export function MonthInReview({
           className={`${controlClassName} border-2 border-[var(--mir-accent)] text-[var(--mir-accent)]`}
         >
           <ChevronLeft aria-hidden className="size-5" />
-          Previous
+          Forrige
         </button>
         <button
           type="button"
@@ -331,7 +331,7 @@ export function MonthInReview({
           disabled={isLast}
           className={`${controlClassName} bg-[var(--mir-accent)] text-[var(--mir-bg)]`}
         >
-          Next
+          Neste
           <ChevronRight aria-hidden className="size-5" />
         </button>
       </footer>
@@ -348,19 +348,19 @@ export function MonthInReview({
           <AlertDialogHeader>
             <AlertDialogTitle>
               {generateMode === "regenerate"
-                ? "Rewrite the recap?"
-                : "Write a recap?"}
+                ? "Skrive oppsummeringen på nytt?"
+                : "Skrive en oppsummering?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {generateMode === "regenerate"
-                ? `This replaces the current recap for ${monthLabel}.`
-                : `This writes a short recap of ${monthLabel} from the numbers in this review.`}
+                ? `Dette erstatter den nåværende oppsummeringen for ${monthLabel}.`
+                : `Dette skriver en kort oppsummering av ${monthLabel} basert på tallene i denne gjennomgangen.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Avbryt</AlertDialogCancel>
             <AlertDialogAction onClick={() => void handleConfirmGenerate()}>
-              {generateMode === "regenerate" ? "Rewrite" : "Write it"}
+              {generateMode === "regenerate" ? "Skriv på nytt" : "Skriv den"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

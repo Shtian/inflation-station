@@ -15,19 +15,19 @@ function getAccountErrorMessage(status: number, body: unknown) {
     const code = String((body as { error: unknown }).error);
 
     if (status === 409 && code === "ACCOUNT_HAS_TRANSACTIONS") {
-      return "Cannot delete account with imported transactions.";
+      return "Kan ikke slette en konto med importerte transaksjoner.";
     }
 
     if (status === 409 && code === "ACCOUNT_NAME_MUST_BE_UNIQUE") {
-      return "An account with this name already exists.";
+      return "Det finnes allerede en konto med dette navnet.";
     }
 
     if (status === 404 && code === "ACCOUNT_NOT_FOUND") {
-      return "Selected account was not found.";
+      return "Fant ikke den valgte kontoen.";
     }
   }
 
-  return "Request failed. Please try again.";
+  return "Forespørselen mislyktes. Prøv igjen.";
 }
 
 export function useAccountsManager() {
@@ -56,7 +56,7 @@ export function useAccountsManager() {
       typeof body !== "object" ||
       !("accounts" in body)
     ) {
-      setAccountError("Could not load accounts.");
+      setAccountError("Kunne ikke laste inn kontoer.");
       setAccounts([]);
       setAccountsLoading(false);
       return;
@@ -74,7 +74,7 @@ export function useAccountsManager() {
 
   async function createAccount() {
     if (!newAccountName.trim()) {
-      setAccountError("Account name is required.");
+      setAccountError("Kontonavn er påkrevd.");
       return;
     }
 
@@ -103,7 +103,7 @@ export function useAccountsManager() {
     setNewAccountName("");
     setNewAccountInstitution("");
     setBusyAccountId(null);
-    toast.success("Account added.");
+    toast.success("Konto lagt til.");
     await loadAccounts();
   }
 
@@ -116,7 +116,7 @@ export function useAccountsManager() {
 
   async function saveEdit(accountId: string) {
     if (!editName.trim()) {
-      setAccountError("Account name is required.");
+      setAccountError("Kontonavn er påkrevd.");
       return;
     }
 
@@ -144,12 +144,12 @@ export function useAccountsManager() {
 
     setEditingAccountId(null);
     setBusyAccountId(null);
-    toast.success("Account updated.");
+    toast.success("Konto oppdatert.");
     await loadAccounts();
   }
 
   async function deleteAccount(accountId: string) {
-    if (!window.confirm("Delete this account?")) {
+    if (!window.confirm("Vil du slette denne kontoen?")) {
       return;
     }
 
@@ -169,7 +169,7 @@ export function useAccountsManager() {
     }
 
     setBusyAccountId(null);
-    toast.success("Account removed.");
+    toast.success("Konto fjernet.");
     await loadAccounts();
   }
 

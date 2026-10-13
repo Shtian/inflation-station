@@ -38,7 +38,7 @@ describe("readNoteField", () => {
     expect(readNoteField("x".repeat(501))).toEqual({
       value: "x".repeat(501),
       length: 501,
-      error: "Note must be 500 characters or fewer.",
+      error: "Notatet kan ikke være lengre enn 500 tegn.",
     });
   });
 });

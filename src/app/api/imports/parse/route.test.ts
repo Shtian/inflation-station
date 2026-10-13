@@ -153,7 +153,7 @@ describe("POST /api/imports/parse", () => {
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_IMPORT_PAYLOAD",
       message:
-        "Expected accountId and a CSV or PDF upload via multipart form-data, or accountId and csvContent via JSON payload.",
+        "Forventet accountId og en CSV- eller PDF-fil som multipart/form-data, eller accountId og csvContent som JSON.",
     });
     expect(prismaMock.account.findUnique).not.toHaveBeenCalled();
   });
@@ -166,7 +166,7 @@ describe("POST /api/imports/parse", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "ACCOUNT_ID_REQUIRED",
-      message: "An account must be selected.",
+      message: "Du må velge en konto.",
     });
   });
 
@@ -191,7 +191,8 @@ describe("POST /api/imports/parse", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "CSV_FILE_REQUIRED",
-      message: "A statement file is required for transaction import.",
+      message:
+        "Du må laste opp en kontoutskrift for å importere transaksjoner.",
     });
   });
 
@@ -204,7 +205,7 @@ describe("POST /api/imports/parse", () => {
     await expect(response.json()).resolves.toEqual({
       error: "CSV_HEADERS_NOT_FOUND",
       message:
-        "No header row was found in this CSV. The first non-blank line must name its columns.",
+        "Fant ingen overskriftsrad i denne CSV-filen. Den første linjen som ikke er tom, må navngi kolonnene.",
     });
   });
 
@@ -391,7 +392,7 @@ describe("POST /api/imports/parse", () => {
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_COLUMN_MAPPING",
       message:
-        "The column mapping must name a date column, an amount and at least one description column.",
+        "Kolonnekoblingen må angi en datokolonne, et beløp og minst én beskrivelseskolonne.",
     });
     expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
   });
@@ -507,7 +508,7 @@ describe("POST /api/imports/parse", () => {
     expect(response.status).toBe(413);
     await expect(response.json()).resolves.toEqual({
       error: "IMPORT_FILE_TOO_LARGE",
-      message: "The file is larger than the 10 MB import limit.",
+      message: "Filen er større enn importgrensen på 10 MB.",
     });
     expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
   });
@@ -596,7 +597,7 @@ describe("POST /api/imports/parse", () => {
     await expect(response.json()).resolves.toEqual({
       error: "PDF_TEXT_EXTRACTION_FAILED",
       message:
-        "No text could be read from this PDF. A scanned or photographed statement carries only an image, so ask your provider for the PDF they generated.",
+        "Fant ingen tekst i denne PDF-en. En skannet eller fotografert kontoutskrift inneholder bare et bilde, så spør utstederen etter PDF-en de selv har laget.",
     });
     expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
   });
@@ -628,7 +629,7 @@ describe("POST /api/imports/parse", () => {
     await expect(response.json()).resolves.toEqual({
       error: "PDF_PROVIDER_NOT_RECOGNIZED",
       message:
-        "No supported card issuer was found in this PDF. Supported: Trumf Kredittkort, SAS Amex Premium.",
+        "Fant ingen støttet kortutsteder i denne PDF-en. Støttet: Trumf Kredittkort, SAS Amex Premium.",
     });
     expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
   });
@@ -646,7 +647,7 @@ describe("POST /api/imports/parse", () => {
     await expect(response.json()).resolves.toEqual({
       error: "PDF_NO_TRANSACTIONS_FOUND",
       message:
-        "This PDF was read as a Trumf Kredittkort statement but holds no transactions.",
+        "Denne PDF-en ble lest som en kontoutskrift fra Trumf Kredittkort, men inneholder ingen transaksjoner.",
     });
     expect(stageParsedImportRowsMock).not.toHaveBeenCalled();
   });

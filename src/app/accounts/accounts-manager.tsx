@@ -31,10 +31,10 @@ export function AccountsManager() {
     <div className="space-y-4">
       <div className="space-y-1">
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Accounts
+          Kontoer
         </h1>
         <p className="text-muted-foreground text-sm">
-          Add, rename, and remove accounts used in imports.
+          Legg til, gi nytt navn til og fjern kontoer som brukes i importer.
         </p>
       </div>
 

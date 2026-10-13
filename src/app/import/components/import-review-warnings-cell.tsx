@@ -24,11 +24,11 @@ export function ImportReviewWarningsCell({
           render={
             <TriangleAlert
               className="h-4 w-4 text-warning"
-              aria-label="Potential duplicate"
+              aria-label="Mulig duplikat"
             />
           }
         />
-        <TooltipContent side="top">Potential duplicate</TooltipContent>
+        <TooltipContent side="top">Mulig duplikat</TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

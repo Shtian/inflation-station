@@ -20,43 +20,45 @@ test(
     const upload = async () => {
       await page.goto("/import");
       await page.getByRole("button", { name: ACCOUNT, exact: true }).click();
-      await page.getByLabel("Statement file").setInputFiles({
+      await page.getByLabel("Kontoutskrift").setInputFiles({
         name: "dnb.csv",
         mimeType: "text/csv",
         buffer: Buffer.from(DNB_CSV, "utf8"),
       });
-      await page.getByRole("button", { name: "Parse & Preview" }).click();
+      await page
+        .getByRole("button", { name: "Les inn og forhåndsvis" })
+        .click();
     };
 
     await upload();
 
     await expect(
-      page.getByRole("heading", { name: "Map Columns" }),
+      page.getByRole("heading", { name: "Koble kolonner" }),
     ).toBeVisible();
     await expect(
       page
-        .getByRole("list", { name: "Column mapping" })
-        .getByRole("button", { name: /^Amount/ }),
-    ).toContainText("Ut fra konto (out)");
-    await page.getByRole("button", { name: "Confirm mapping" }).click();
+        .getByRole("list", { name: "Kolonnekobling" })
+        .getByRole("button", { name: /^Beløp/ }),
+    ).toContainText("Ut fra konto (ut)");
+    await page.getByRole("button", { name: "Bekreft kobling" }).click();
 
-    await expect(page.getByText("Import Preview")).toBeVisible();
+    await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Import 2 / 2" }),
+      page.getByRole("button", { name: "Importer 2 / 2" }),
     ).toBeVisible();
     await expect(page.getByText("Kiwi Majorstuen")).toBeVisible();
 
     await upload();
 
-    await expect(page.getByText("Import Preview")).toBeVisible();
+    await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Map Columns" }),
+      page.getByRole("heading", { name: "Koble kolonner" }),
     ).toHaveCount(0);
     await expect(
       page.getByText("Dato · Inn på konto / Ut fra konto · Forklaring"),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Import 2 / 2" }),
+      page.getByRole("button", { name: "Importer 2 / 2" }),
     ).toBeVisible();
   },
 );

@@ -76,13 +76,13 @@ describe("parseMappedCsv", () => {
         rowNumber: 4,
         code: "INVALID_AMOUNT",
         message:
-          'Row 4 has invalid amount "abc". Expected a number using "," as the decimal separator.',
+          'Rad 4 har ugyldig beløp "abc". Forventet et tall med "," som desimaltegn.',
       },
       {
         rowNumber: 5,
         code: "INVALID_BOOKING_DATE",
         message:
-          'Row 5 has booking date "2026-01-03" that does not match the format DD.MM.YYYY.',
+          'Rad 5 har bokføringsdato "2026-01-03", som ikke samsvarer med formatet DD.MM.YYYY.',
       },
     ]);
     expect(result.summary).toEqual({
@@ -108,7 +108,7 @@ describe("parseMappedCsv", () => {
         rowNumber: 4,
         code: "INVALID_AMOUNT",
         message:
-          'Row 4 has invalid amount "". Expected a number using "," as the decimal separator.',
+          'Rad 4 har ugyldig beløp "". Forventet et tall med "," som desimaltegn.',
       },
     ]);
   });

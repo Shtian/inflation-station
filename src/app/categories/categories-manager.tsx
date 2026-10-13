@@ -82,7 +82,7 @@ export function CategoriesManager() {
       typeof rulesBody !== "object" ||
       !("rules" in rulesBody)
     ) {
-      setError("Could not load category management data.");
+      setError("Kunne ikke laste inn kategoridata.");
       setAccounts([]);
       setCategories([]);
       setCategoryRules([]);
@@ -122,7 +122,7 @@ export function CategoriesManager() {
 
   async function createCategory() {
     if (!newCategoryName.trim()) {
-      setError("Category name is required.");
+      setError("Kategorinavn er påkrevd.");
       return;
     }
 
@@ -153,12 +153,12 @@ export function CategoriesManager() {
     setNewCategoryKind("EXPENSE");
     setNewCategoryClassifierHint("");
     setBusyKey(null);
-    toast.success("Category added.");
+    toast.success("Kategori lagt til.");
     await loadData();
   }
 
   async function deleteCategory(categoryId: string) {
-    if (!window.confirm("Delete this category?")) {
+    if (!window.confirm("Vil du slette denne kategorien?")) {
       return;
     }
 
@@ -177,7 +177,7 @@ export function CategoriesManager() {
     }
 
     setBusyKey(null);
-    toast.success("Category removed.");
+    toast.success("Kategori fjernet.");
     await loadData();
   }
 
@@ -196,7 +196,7 @@ export function CategoriesManager() {
 
   async function renameCategory(categoryId: string) {
     if (!editCategoryName.trim()) {
-      setError("Category name is required.");
+      setError("Kategorinavn er påkrevd.");
       return;
     }
 
@@ -223,24 +223,24 @@ export function CategoriesManager() {
 
     setBusyKey(null);
     cancelRenameCategory();
-    toast.success("Category renamed.");
+    toast.success("Kategori oppdatert.");
     await loadData();
   }
 
   async function createRule() {
     if (!ruleCategoryId) {
-      setError("Select a category for the rule.");
+      setError("Velg en kategori for regelen.");
       return;
     }
 
     if (!ruleMerchantContains.trim()) {
-      setError("Merchant contains is required.");
+      setError("Brukersted inneholder er påkrevd.");
       return;
     }
 
     const parsedPriority = Number.parseInt(rulePriority, 10);
     if (!Number.isInteger(parsedPriority)) {
-      setError("Priority must be an integer.");
+      setError("Prioritet må være et heltall.");
       return;
     }
 
@@ -274,12 +274,12 @@ export function CategoriesManager() {
     setRulePriority("100");
     setRuleScope("");
     setBusyKey(null);
-    toast.success("Category rule added.");
+    toast.success("Kategoriregel lagt til.");
     await loadData();
   }
 
   async function deleteRule(ruleId: string) {
-    if (!window.confirm("Delete this category rule?")) {
+    if (!window.confirm("Vil du slette denne kategoriregelen?")) {
       return;
     }
 
@@ -298,7 +298,7 @@ export function CategoriesManager() {
     }
 
     setBusyKey(null);
-    toast.success("Category rule removed.");
+    toast.success("Kategoriregel fjernet.");
     await loadData();
   }
 
@@ -306,16 +306,17 @@ export function CategoriesManager() {
     <div className="space-y-4">
       <div className="space-y-1">
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Categories
+          Kategorier
         </h1>
         <p className="text-muted-foreground text-sm">
-          Manage categories and deterministic rules used in imports and review.
+          Administrer kategorier og faste regler som brukes ved import og
+          gjennomgang.
         </p>
       </div>
 
       <p className="rounded-md border border-brand/20 bg-brand/5 px-3 py-2 text-muted-foreground text-sm">
-        Transfer-category transactions are excluded from spend and income
-        analytics.
+        Transaksjoner i overføringskategorier holdes utenfor analyser av forbruk
+        og inntekt.
       </p>
 
       {error ? (
@@ -330,9 +331,9 @@ export function CategoriesManager() {
       <Tabs defaultValue="category-management" className="space-y-4">
         <TabsList variant="line">
           <TabsTrigger value="category-management">
-            Category management
+            Kategoriadministrasjon
           </TabsTrigger>
-          <TabsTrigger value="category-rules">Category rules</TabsTrigger>
+          <TabsTrigger value="category-rules">Kategoriregler</TabsTrigger>
         </TabsList>
 
         <TabsContent value="category-management">

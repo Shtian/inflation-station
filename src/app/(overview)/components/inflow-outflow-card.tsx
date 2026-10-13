@@ -22,8 +22,8 @@ type InflowOutflowCardProps = {
 };
 
 const inflowOutflowChartConfig = {
-  inflowNok: { label: "Inflow", color: "var(--success)" },
-  outflowNok: { label: "Outflow", color: "var(--destructive)" },
+  inflowNok: { label: "Inn", color: "var(--success)" },
+  outflowNok: { label: "Ut", color: "var(--destructive)" },
 };
 
 export function InflowOutflowCard({
@@ -33,17 +33,15 @@ export function InflowOutflowCard({
   return (
     <Card>
       <CardContent className="space-y-3">
-        <h3 className="font-semibold text-foreground text-sm">
-          Inflow vs Outflow
-        </h3>
+        <h3 className="font-semibold text-foreground text-sm">Inn og ut</h3>
         {isLoading ? (
           <output className="mt-3 block text-muted-foreground text-sm">
-            Loading chart data...
+            Laster inn diagramdata…
           </output>
         ) : null}
         {!isLoading && (!inflowOutflow || inflowOutflow.length === 0) ? (
           <p className="mt-3 text-muted-foreground text-sm">
-            No data for selected filters.
+            Ingen data for valgte filtre.
           </p>
         ) : null}
         {!isLoading && inflowOutflow ? (
@@ -76,11 +74,13 @@ export function InflowOutflowCard({
               <Legend />
               <Bar
                 dataKey="inflowNok"
+                name="Inn"
                 fill="var(--color-inflowNok)"
                 radius={[4, 4, 0, 0]}
               />
               <Bar
                 dataKey="outflowNok"
+                name="Ut"
                 fill="var(--color-outflowNok)"
                 radius={[4, 4, 0, 0]}
               />

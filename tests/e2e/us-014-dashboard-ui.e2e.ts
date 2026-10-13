@@ -135,36 +135,37 @@ test("updates dashboard charts when account and date filters change", async ({
 
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Oversikt" })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Net Cashflow" }),
+    page.getByRole("heading", { name: "Netto kontantstrøm" }),
   ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Inn og ut" })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Inflow vs Outflow" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "Account State Trend" }),
+    page.getByRole("heading", { name: "Kontoutvikling" }),
   ).toBeVisible();
   await expect(page.locator("[data-slot='chart']")).toHaveCount(3);
+  const flowLegend = page.locator(".recharts-default-legend").first();
+  await expect(flowLegend.getByText("Inn", { exact: true })).toBeVisible();
+  await expect(flowLegend.getByText("Ut", { exact: true })).toBeVisible();
   await expect(page.getByText(/200,00/).first()).toBeVisible();
-  await page.getByRole("tab", { name: "Category", exact: true }).click();
+  await page.getByRole("tab", { name: "Kategori", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Category Spend Breakdown" }),
+    page.getByRole("heading", { name: "Forbruk per kategori" }),
   ).toBeVisible();
   await expect(page.getByText(/Food:\s/)).toBeVisible();
 
-  await page.getByRole("tab", { name: "Flow", exact: true }).click();
-  await page.getByRole("combobox", { name: "Account filter" }).click();
+  await page.getByRole("tab", { name: "Flyt", exact: true }).click();
+  await page.getByRole("combobox", { name: "Kontofilter" }).click();
   await page
     .getByRole("option", { name: "Savings Account", exact: true })
     .click();
   await expect(page.getByText(/1\s?100,00/)).toBeVisible();
 
-  await page.getByRole("button", { name: "Year to date" }).click();
+  await page.getByRole("button", { name: "Hittil i år" }).click();
   await expect(
-    page.getByRole("button", { name: "Year to date" }),
+    page.getByRole("button", { name: "Hittil i år" }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText(/960,00/).first()).toBeVisible();
-  await page.getByRole("tab", { name: "Category", exact: true }).click();
+  await page.getByRole("tab", { name: "Kategori", exact: true }).click();
   await expect(page.getByText(/Utilities:\s/)).toBeVisible();
 });

@@ -27,29 +27,31 @@ test(
 
     await page.goto("/import");
     await page.getByRole("button", { name: ACCOUNT, exact: true }).click();
-    await page.getByLabel("Statement file").setInputFiles({
+    await page.getByLabel("Kontoutskrift").setInputFiles({
       name: "transactions.csv",
       mimeType: "text/csv",
       buffer: Buffer.from(CSV_CONTENT, "utf8"),
     });
-    await page.getByRole("button", { name: "Parse & Preview" }).click();
-    await page.getByRole("button", { name: "Confirm mapping" }).click();
+    await page.getByRole("button", { name: "Les inn og forhåndsvis" }).click();
+    await page.getByRole("button", { name: "Bekreft kobling" }).click();
 
-    await expect(page.getByText("Import Preview")).toBeVisible();
+    await expect(page.getByText("Forhåndsvisning av import")).toBeVisible();
     await expect(
-      page.getByText("Message cleanup unavailable: OPENAI_API_KEY is missing."),
+      page.getByText(
+        "Meldingsrydding er utilgjengelig: OPENAI_API_KEY mangler.",
+      ),
     ).toBeVisible();
     await expect(
       page.getByText(ORIGINAL_MESSAGE, { exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: /Toggle message source for row/ }),
+      page.getByRole("button", { name: /Bytt meldingskilde for rad/ }),
     ).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Import 1 / 1" }).click();
+    await page.getByRole("button", { name: "Importer 1 / 1" }).click();
     await expect(
       page.locator("[data-sonner-toast]", {
-        hasText: "Import complete. Imported 1, invalid 0.",
+        hasText: "Import fullført. Importert: 1, ugyldige: 0.",
       }),
     ).toBeVisible();
 

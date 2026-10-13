@@ -52,13 +52,13 @@ export async function createGithubIssue(
   const { stdout, stderr, error } = await run("gh", args, input.body);
   if (error) {
     throw new GithubIssueError(
-      `Could not create the GitHub issue: ${stderr.trim() || error.message}`,
+      `Kunne ikke opprette GitHub-saken: ${stderr.trim() || error.message}`,
     );
   }
   const match = ISSUE_URL_PATTERN.exec(stdout);
   if (!match) {
     throw new GithubIssueError(
-      `gh did not report an issue URL. Output: ${stdout.trim() || "(empty)"}`,
+      `gh oppga ingen URL til saken. Utdata: ${stdout.trim() || "(tom)"}`,
     );
   }
   return { number: Number(match[1]), url: match[0] };
