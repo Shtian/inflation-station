@@ -12,20 +12,6 @@ src/components/ai-elements/prompt-input.tsx	usePromptInputAttachments must be us
 src/components/ai-elements/prompt-input.tsx	usePromptInputReferencedSources must be used within a LocalReferencedSourcesContext.Provider
 src/components/ui/chart.tsx	useChart must be used within a <ChartContainer />
 src/lib/feedback/agent.ts	Propose a GitHub issue for the user's bug report or feature idea. The user reviews the draft and must approve it before it is created.
-src/app/actions/save-account-csv-column-mapping.ts	INVALID_CSV_COLUMN_MAPPING_PAYLOAD
-src/app/actions/save-account-csv-column-mapping.ts	INVALID_CSV_COLUMN_MAPPING
-src/app/api/imports/cleanup/route.ts	INVALID_CLEANUP_CHUNK_PAYLOAD
-src/app/api/imports/cleanup/route.ts	INVALID_CLEANUP_CHUNK_INDEX
-src/app/api/imports/parse/route.ts	PDF_TEXT_EXTRACTION_FAILED
-src/app/api/imports/parse/route.ts	PDF_PROVIDER_NOT_RECOGNIZED
-src/app/api/imports/parse/route.ts	PDF_NO_TRANSACTIONS_FOUND
-src/app/api/imports/parse/route.ts	CSV_HEADERS_NOT_FOUND
-src/app/api/imports/parse/route.ts	INVALID_COLUMN_MAPPING
-src/app/api/imports/parse/route.ts	COLUMN_MAPPING_MISMATCH
-src/app/api/imports/parse/route.ts	INVALID_IMPORT_PAYLOAD
-src/app/api/imports/parse/route.ts	ACCOUNT_ID_REQUIRED
-src/app/api/imports/parse/route.ts	CSV_FILE_REQUIRED
-src/app/api/imports/submit/route.ts	INVALID_IMPORT_REVIEW_SUBMIT_PAYLOAD
 src/lib/import/csv/guess-column-mapping.ts	pick the column that best names the merchant or counterparty of each bank transaction
 src/lib/import/csv/guess-column-mapping.ts	saved
 src/lib/import/csv/values.ts	Unsupported CSV date format:

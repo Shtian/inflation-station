@@ -68,7 +68,7 @@ const UI_PROPERTY_NAMES = new Set([
 ]);
 
 const ENGLISH_WORDS = new Set(
-  `the and of to with without your you is are was were be been not this that these those
+  `the and of to with without your you is are was were been not this that these those
   add added adding edit edited delete deleted deleting remove removed save saved saving cancel close
   open select selected choose search loading failed error could please back next previous new all
   none month months transaction transactions category categories account accounts amount date
