@@ -96,7 +96,7 @@ export function useOverviewDashboard(): UseOverviewDashboardResult {
     const body = await response.json().catch(() => null);
 
     if (!response.ok || !body || typeof body !== "object") {
-      setDashboardError("Could not load dashboard analytics.");
+      setDashboardError("Kunne ikke laste inn data til oversikten.");
       setDashboardData(null);
       setDashboardLoading(false);
       return;

@@ -65,11 +65,11 @@ export function OverviewDashboard() {
     <div className="space-y-4">
       <div className="space-y-1">
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Overview
+          Oversikt
         </h1>
         <p className="text-muted-foreground text-sm">
-          Track net cashflow, inflow and outflow, category spending, and account
-          trends.
+          Følg netto kontantstrøm, inn og ut, forbruk per kategori og
+          kontoutvikling.
         </p>
       </div>
 
@@ -81,11 +81,11 @@ export function OverviewDashboard() {
             htmlFor="dashboard-account-filter"
             className="block font-medium text-foreground text-sm"
           >
-            Account filter
+            Kontofilter
           </Label>
           <Select
             items={[
-              { value: ALL_ACCOUNTS_VALUE, label: "All accounts" },
+              { value: ALL_ACCOUNTS_VALUE, label: "Alle kontoer" },
               ...accounts.map((account) => ({
                 value: account.id,
                 label: account.name,
@@ -101,7 +101,7 @@ export function OverviewDashboard() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_ACCOUNTS_VALUE}>All accounts</SelectItem>
+              <SelectItem value={ALL_ACCOUNTS_VALUE}>Alle kontoer</SelectItem>
               {accounts.map((account) => (
                 <SelectItem key={account.id} value={account.id}>
                   {account.name}
@@ -116,7 +116,7 @@ export function OverviewDashboard() {
             id="date-range-label"
             className="font-medium text-foreground text-sm"
           >
-            Date range
+            Datoperiode
           </p>
           <ButtonGroup role="group" aria-labelledby="date-range-label">
             <Button
@@ -124,21 +124,21 @@ export function OverviewDashboard() {
               onClick={() => setDashboardPreset("30d")}
               aria-pressed={dashboardRangePreset === "30d"}
             >
-              Last 30 days
+              Siste 30 dager
             </Button>
             <Button
               variant={dashboardRangePreset === "90d" ? "default" : "outline"}
               onClick={() => setDashboardPreset("90d")}
               aria-pressed={dashboardRangePreset === "90d"}
             >
-              Last 90 days
+              Siste 90 dager
             </Button>
             <Button
               variant={dashboardRangePreset === "ytd" ? "default" : "outline"}
               onClick={() => setDashboardPreset("ytd")}
               aria-pressed={dashboardRangePreset === "ytd"}
             >
-              Year to date
+              Hittil i år
             </Button>
             <Popover
               open={customDatePopoverOpen}
@@ -153,7 +153,7 @@ export function OverviewDashboard() {
                     onClick={() => setDashboardRangePreset("custom")}
                     aria-pressed={dashboardRangePreset === "custom"}
                   >
-                    Custom
+                    Egendefinert
                   </Button>
                 }
               />
@@ -198,8 +198,8 @@ export function OverviewDashboard() {
 
       <Tabs defaultValue="flow" className="space-y-4">
         <TabsList variant="line">
-          <TabsTrigger value="flow">Flow</TabsTrigger>
-          <TabsTrigger value="category">Category</TabsTrigger>
+          <TabsTrigger value="flow">Flyt</TabsTrigger>
+          <TabsTrigger value="category">Kategori</TabsTrigger>
         </TabsList>
 
         <TabsContent value="flow" className="space-y-4">

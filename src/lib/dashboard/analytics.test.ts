@@ -98,7 +98,7 @@ describe("analytics", () => {
       },
       {
         categoryId: null,
-        categoryName: "Uncategorized",
+        categoryName: "Ukategorisert",
         spendNok: 10,
         transactionCount: 1,
       },
@@ -244,7 +244,7 @@ describe("analytics", () => {
       },
       {
         categoryId: null,
-        categoryName: "Uncategorized",
+        categoryName: "Ukategorisert",
         spendNok: 100,
         transactionCount: 1,
       },

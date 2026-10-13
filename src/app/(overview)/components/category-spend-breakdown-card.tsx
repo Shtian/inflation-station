@@ -24,7 +24,7 @@ type CategorySpendBreakdownCardProps = {
 };
 
 const categoryBreakdownChartConfig = {
-  spendNok: { label: "Spend", color: "var(--chart-3)" },
+  spendNok: { label: "Forbruk", color: "var(--chart-3)" },
 };
 
 export function CategorySpendBreakdownCard({
@@ -40,17 +40,17 @@ export function CategorySpendBreakdownCard({
     <Card>
       <CardContent className="space-y-3">
         <h3 className="font-semibold text-foreground text-sm">
-          Category Spend Breakdown
+          Forbruk per kategori
         </h3>
         {isLoading ? (
           <output className="mt-3 block text-muted-foreground text-sm">
-            Loading chart data...
+            Laster inn diagramdata…
           </output>
         ) : null}
         {!isLoading &&
         (!categoryBreakdown || categoryBreakdown.length === 0) ? (
           <p className="mt-3 text-muted-foreground text-sm">
-            No spending data for selected filters.
+            Ingen forbruksdata for valgte filtre.
           </p>
         ) : null}
         {!isLoading && categoryBreakdown ? (
