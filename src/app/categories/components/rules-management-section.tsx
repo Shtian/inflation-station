@@ -75,17 +75,17 @@ export function RulesManagementSection({
     <section className="space-y-4">
       <div className="space-y-1">
         <h3 className="font-semibold text-base text-foreground">
-          Category Rules
+          Kategoriregler
         </h3>
         <p className="text-muted-foreground text-sm">
-          Define deterministic category suggestions by merchant text and
-          optional payment type.
+          Lag faste kategoriforslag basert på tekst i brukerstedet og eventuelt
+          betalingstype.
         </p>
       </div>
 
       <div className="grid gap-3">
         <Field>
-          <FieldLabel htmlFor="rule-category">Category</FieldLabel>
+          <FieldLabel htmlFor="rule-category">Kategori</FieldLabel>
           <FieldContent>
             <CategoryCombobox
               value={ruleCategoryId}
@@ -94,10 +94,10 @@ export function RulesManagementSection({
               id="rule-category"
               placeholder={
                 categories.length === 0
-                  ? "No categories available"
-                  : "Select category"
+                  ? "Ingen kategorier tilgjengelig"
+                  : "Velg kategori"
               }
-              emptyLabel="No matching categories."
+              emptyLabel="Ingen kategorier passer."
               disabled={categories.length === 0}
               showClear
             />
@@ -105,7 +105,7 @@ export function RulesManagementSection({
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="rule-merchant">Merchant contains</FieldLabel>
+          <FieldLabel htmlFor="rule-merchant">Brukersted inneholder</FieldLabel>
           <FieldContent>
             <Input
               id="rule-merchant"
@@ -120,12 +120,12 @@ export function RulesManagementSection({
 
         <Field>
           <FieldLabel htmlFor="rule-payment-type">
-            Payment type (optional)
+            Betalingstype (valgfritt)
           </FieldLabel>
           <FieldContent>
             <Select
               items={[
-                { value: ANY_PAYMENT_TYPE_VALUE, label: "Any" },
+                { value: ANY_PAYMENT_TYPE_VALUE, label: "Alle" },
                 { value: "CARD", label: "CARD" },
                 { value: "TRANSFER", label: "TRANSFER" },
                 { value: "EFT", label: "EFT" },
@@ -144,7 +144,7 @@ export function RulesManagementSection({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ANY_PAYMENT_TYPE_VALUE}>Any</SelectItem>
+                <SelectItem value={ANY_PAYMENT_TYPE_VALUE}>Alle</SelectItem>
                 <SelectItem value="CARD">CARD</SelectItem>
                 <SelectItem value="TRANSFER">TRANSFER</SelectItem>
                 <SelectItem value="EFT">EFT</SelectItem>
@@ -156,7 +156,7 @@ export function RulesManagementSection({
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="rule-priority">Priority</FieldLabel>
+          <FieldLabel htmlFor="rule-priority">Prioritet</FieldLabel>
           <FieldContent>
             <Input
               id="rule-priority"
@@ -169,11 +169,11 @@ export function RulesManagementSection({
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="rule-scope">Scope</FieldLabel>
+          <FieldLabel htmlFor="rule-scope">Omfang</FieldLabel>
           <FieldContent>
             <Select
               items={[
-                { value: GLOBAL_SCOPE_VALUE, label: "Global" },
+                { value: GLOBAL_SCOPE_VALUE, label: "Alle kontoer" },
                 ...activeAccounts.map((account) => ({
                   value: account.id,
                   label: account.name,
@@ -189,7 +189,7 @@ export function RulesManagementSection({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={GLOBAL_SCOPE_VALUE}>Global</SelectItem>
+                <SelectItem value={GLOBAL_SCOPE_VALUE}>Alle kontoer</SelectItem>
                 {activeAccounts.map((account) => (
                   <SelectItem key={account.id} value={account.id}>
                     {account.name}
@@ -206,11 +206,11 @@ export function RulesManagementSection({
           className="gap-2"
         >
           {busyKey === "new-rule" ? (
-            "Saving..."
+            "Lagrer…"
           ) : (
             <>
               <Plus className="h-4 w-4" aria-hidden="true" />
-              Add rule
+              Legg til regel
             </>
           )}
         </Button>
@@ -220,23 +220,23 @@ export function RulesManagementSection({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Merchant contains</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Payment type</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead>Scope</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>Brukersted inneholder</TableHead>
+              <TableHead>Kategori</TableHead>
+              <TableHead>Betalingstype</TableHead>
+              <TableHead>Prioritet</TableHead>
+              <TableHead>Omfang</TableHead>
+              <TableHead className="text-right">Handlinger</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6}>Loading category rules...</TableCell>
+                <TableCell colSpan={6}>Laster inn kategoriregler…</TableCell>
               </TableRow>
             ) : null}
             {!loading && categoryRules.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6}>No category rules yet.</TableCell>
+                <TableCell colSpan={6}>Ingen kategoriregler ennå.</TableCell>
               </TableRow>
             ) : null}
             {!loading
@@ -246,7 +246,7 @@ export function RulesManagementSection({
                     <TableCell>
                       <CategoryBadge label={rule.category.name} />
                     </TableCell>
-                    <TableCell>{rule.paymentType ?? "ANY"}</TableCell>
+                    <TableCell>{rule.paymentType ?? "Alle"}</TableCell>
                     <TableCell>{rule.priority}</TableCell>
                     <TableCell>
                       {getScopeLabel(rule.accountId, accounts)}
@@ -260,8 +260,8 @@ export function RulesManagementSection({
                           busyKey !== `delete-rule-${rule.id}`
                         }
                         className="h-8 w-8 px-0"
-                        aria-label={`Delete rule for ${rule.merchantContains}`}
-                        title={`Delete rule for ${rule.merchantContains}`}
+                        aria-label={`Slett regel for ${rule.merchantContains}`}
+                        title={`Slett regel for ${rule.merchantContains}`}
                       >
                         {busyKey === `delete-rule-${rule.id}` ? (
                           <Loader2

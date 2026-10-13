@@ -234,46 +234,46 @@ test("manages categories and category rules from /categories", async ({
 
   await expect(
     page.getByText(
-      "Transfer-category transactions are excluded from spend and income analytics.",
+      "Transaksjoner i overføringskategorier holdes utenfor analyser av forbruk og inntekt.",
     ),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Category Management" }),
+    page.getByRole("heading", { name: "Kategoriadministrasjon" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "Food No hint", exact: true }),
+    page.getByRole("cell", { name: "Food Mangler hint", exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("tab", { name: "Category rules" }).click();
+  await page.getByRole("tab", { name: "Kategoriregler" }).click();
   await expect(
-    page.getByRole("heading", { name: "Category Rules" }),
+    page.getByRole("heading", { name: "Kategoriregler" }),
   ).toBeVisible();
 
-  await page.getByRole("tab", { name: "Category management" }).click();
+  await page.getByRole("tab", { name: "Kategoriadministrasjon" }).click();
 
-  await page.getByLabel("Category name").fill("Transport");
-  await page.getByRole("button", { name: "Add category" }).click();
+  await page.getByLabel("Kategorinavn").fill("Transport");
+  await page.getByRole("button", { name: "Legg til kategori" }).click();
 
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category added." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori lagt til." }),
   ).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "Transport No hint", exact: true }),
+    page.getByRole("cell", { name: "Transport Mangler hint", exact: true }),
   ).toBeVisible();
 
   await page
     .getByRole("row", { name: /Transport/i })
-    .getByRole("button", { name: "Actions for category Transport" })
+    .getByRole("button", { name: "Handlinger for kategorien Transport" })
     .click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
-  await page.getByRole("dialog").getByLabel("Category name").fill("Commute");
-  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+  await page.getByRole("menuitem", { name: "Rediger" }).click();
+  await page.getByRole("dialog").getByLabel("Kategorinavn").fill("Commute");
+  await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();
 
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori oppdatert." }),
   ).toBeVisible();
   await expect(
-    page.getByRole("cell", { name: "Commute No hint", exact: true }),
+    page.getByRole("cell", { name: "Commute Mangler hint", exact: true }),
   ).toBeVisible();
 
   await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
@@ -282,17 +282,17 @@ test("manages categories and category rules from /categories", async ({
 
   await page
     .getByRole("row", { name: /Commute/i })
-    .getByRole("button", { name: "Actions for category Commute" })
+    .getByRole("button", { name: "Handlinger for kategorien Commute" })
     .click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page.getByRole("menuitem", { name: "Rediger" }).click();
   await page
     .getByRole("dialog")
-    .getByLabel("Classifier hint (recommended)")
+    .getByLabel("Klassifiseringshint (anbefalt)")
     .fill("Recurring transport top-ups");
-  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();
 
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori oppdatert." }),
   ).toBeVisible();
   await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
     timeout: 15_000,
@@ -300,29 +300,29 @@ test("manages categories and category rules from /categories", async ({
 
   await page
     .getByRole("row", { name: /Commute/i })
-    .getByRole("button", { name: "Actions for category Commute" })
+    .getByRole("button", { name: "Handlinger for kategorien Commute" })
     .click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page.getByRole("menuitem", { name: "Rediger" }).click();
   await expect(
-    page.getByRole("dialog").getByLabel("Classifier hint (recommended)"),
+    page.getByRole("dialog").getByLabel("Klassifiseringshint (anbefalt)"),
   ).toHaveValue("Recurring transport top-ups");
   await page
     .getByRole("dialog")
-    .getByRole("button", { name: "Cancel" })
+    .getByRole("button", { name: "Avbryt" })
     .click();
 
-  await page.getByRole("tab", { name: "Category rules" }).click();
+  await page.getByRole("tab", { name: "Kategoriregler" }).click();
 
   await page.locator("#rule-category").click();
   await page.getByRole("option", { name: "Commute", exact: true }).click();
-  await page.getByLabel("Merchant contains").fill("ruter");
-  await page.getByLabel("Payment type (optional)").click();
+  await page.getByLabel("Brukersted inneholder").fill("ruter");
+  await page.getByLabel("Betalingstype (valgfritt)").click();
   await page.getByRole("option", { name: "CARD", exact: true }).click();
-  await page.getByLabel("Priority").fill("5");
-  await page.getByRole("button", { name: "Add rule" }).click();
+  await page.getByLabel("Prioritet").fill("5");
+  await page.getByRole("button", { name: "Legg til regel" }).click();
 
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category rule added." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategoriregel lagt til." }),
   ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "ruter", exact: true }),
@@ -335,16 +335,16 @@ test("manages categories and category rules from /categories", async ({
   page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("row", { name: /ruter/i })
-    .getByRole("button", { name: "Delete" })
+    .getByRole("button", { name: "Slett" })
     .click();
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category rule removed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategoriregel fjernet." }),
   ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "ruter", exact: true }),
   ).toHaveCount(0);
 
-  await page.getByRole("tab", { name: "Category management" }).click();
+  await page.getByRole("tab", { name: "Kategoriadministrasjon" }).click();
 
   // Toasts stack in the bottom-right corner and sit over the row actions menu
   // that opens next, so let the previous one retire before reaching under it.
@@ -355,11 +355,11 @@ test("manages categories and category rules from /categories", async ({
   page.once("dialog", (dialog) => dialog.accept());
   await page
     .getByRole("row", { name: /Commute/i })
-    .getByRole("button", { name: "Actions for category Commute" })
+    .getByRole("button", { name: "Handlinger for kategorien Commute" })
     .click();
-  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("menuitem", { name: "Slett" }).click();
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category removed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori fjernet." }),
   ).toBeVisible();
   await expect(
     page.getByRole("cell", { name: "Commute", exact: true }),
@@ -444,58 +444,64 @@ test("flags categories without a classifier hint on /categories", async ({
 
   const notice = page
     .getByRole("status")
-    .filter({ hasText: "Hints improve automatic categorization." });
+    .filter({ hasText: "Hint gir bedre automatisk kategorisering." });
   const foodRow = page.getByRole("row", { name: /Food/ });
   const groceriesRow = page.getByRole("row", { name: /Groceries/ });
 
   await page.goto("/categories");
 
   await expect(notice).toHaveText(
-    "1 category has no hint. Hints improve automatic categorization.",
+    "1 kategori mangler hint. Hint gir bedre automatisk kategorisering.",
   );
-  await expect(foodRow.getByText("No hint", { exact: true })).toBeVisible();
+  await expect(
+    foodRow.getByText("Mangler hint", { exact: true }),
+  ).toBeVisible();
   await expect(groceriesRow).toBeVisible();
-  await expect(groceriesRow.getByText("No hint", { exact: true })).toHaveCount(
-    0,
-  );
+  await expect(
+    groceriesRow.getByText("Mangler hint", { exact: true }),
+  ).toHaveCount(0);
 
   await foodRow
-    .getByRole("button", { name: "Actions for category Food" })
+    .getByRole("button", { name: "Handlinger for kategorien Food" })
     .click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page.getByRole("menuitem", { name: "Rediger" }).click();
   await page
     .getByRole("dialog")
-    .getByLabel("Classifier hint (recommended)")
+    .getByLabel("Klassifiseringshint (anbefalt)")
     .fill("Restaurants and takeaway: Foodora, Wolt");
-  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();
 
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori oppdatert." }),
   ).toBeVisible();
   await expect(notice).toHaveCount(0);
-  await expect(foodRow.getByText("No hint", { exact: true })).toHaveCount(0);
+  await expect(foodRow.getByText("Mangler hint", { exact: true })).toHaveCount(
+    0,
+  );
 
   await expect(page.locator("[data-sonner-toast]")).toHaveCount(0, {
     timeout: 15_000,
   });
 
   await foodRow
-    .getByRole("button", { name: "Actions for category Food" })
+    .getByRole("button", { name: "Handlinger for kategorien Food" })
     .click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page.getByRole("menuitem", { name: "Rediger" }).click();
   await page
     .getByRole("dialog")
-    .getByLabel("Classifier hint (recommended)")
+    .getByLabel("Klassifiseringshint (anbefalt)")
     .fill("");
-  await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();
 
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori oppdatert." }),
   ).toBeVisible();
   await expect(notice).toHaveText(
-    "1 category has no hint. Hints improve automatic categorization.",
+    "1 kategori mangler hint. Hint gir bedre automatisk kategorisering.",
   );
-  await expect(foodRow.getByText("No hint", { exact: true })).toBeVisible();
+  await expect(
+    foodRow.getByText("Mangler hint", { exact: true }),
+  ).toBeVisible();
 });
 
 type MerchantHistory = {
@@ -556,9 +562,9 @@ async function stubHintEditorRoutes(
 async function openEditDialog(page: Page, categoryName: string) {
   await page
     .getByRole("row", { name: new RegExp(categoryName) })
-    .getByRole("button", { name: `Actions for category ${categoryName}` })
+    .getByRole("button", { name: `Handlinger for kategorien ${categoryName}` })
     .click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await page.getByRole("menuitem", { name: "Rediger" }).click();
   return page.getByRole("dialog");
 }
 
@@ -589,18 +595,18 @@ test("prefills an empty classifier hint from the category's merchant history", a
   const guessRequests = recordHintGuessRequests(page);
   await page.goto("/categories");
   const dialog = await openEditDialog(page, "Groceries");
-  const hint = dialog.getByLabel("Classifier hint (recommended)");
+  const hint = dialog.getByLabel("Klassifiseringshint (anbefalt)");
 
   await expect(hint).toHaveValue("Rema, Kiwi, Meny");
   await expect(
-    dialog.getByRole("button", { name: "Suggest with AI" }),
+    dialog.getByRole("button", { name: "Foreslå med AI" }),
   ).toBeVisible();
   expect(guessRequests).toEqual([]);
-  await expect(dialog.getByText("Suggested · not saved")).toBeVisible();
-  await expect(dialog.getByText("Start with")).toHaveCount(0);
-  await expect(dialog.getByText("Not in your history")).toHaveCount(0);
+  await expect(dialog.getByText("Foreslått · ikke lagret")).toBeVisible();
+  await expect(dialog.getByText("Begynn med")).toHaveCount(0);
+  await expect(dialog.getByText("Ikke i historikken din")).toHaveCount(0);
   await expect(
-    dialog.getByText("Jev reads Groceries: Rema, Kiwi, Meny"),
+    dialog.getByText("Jev leser Groceries: Rema, Kiwi, Meny"),
   ).toBeVisible();
 
   const kiwi = dialog.getByRole("button", { name: "Kiwi 23" });
@@ -609,12 +615,12 @@ test("prefills an empty classifier hint from the category's merchant history", a
 
   await expect(hint).toHaveValue("Rema, Meny");
   await expect(kiwi).toHaveAttribute("aria-pressed", "false");
-  await expect(dialog.getByText("Suggested · not saved")).toHaveCount(0);
+  await expect(dialog.getByText("Foreslått · ikke lagret")).toHaveCount(0);
 
-  await dialog.getByRole("button", { name: "Save" }).click();
+  await dialog.getByRole("button", { name: "Lagre" }).click();
 
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori oppdatert." }),
   ).toBeVisible();
   expect(patches).toEqual([
     { name: "Groceries", classifierHint: "Rema, Meny" },
@@ -645,24 +651,24 @@ test("asks before replacing a saved hint that names none of the category's merch
     }),
   );
   const mismatch =
-    "Your saved hint names Rema 1000, Meny, Kiwi. None of them appear in the 28 transactions filed here.";
+    "Det lagrede hintet ditt nevner Rema 1000, Meny, Kiwi. Ingen av dem finnes blant de 28 transaksjonene som er ført her.";
 
   await page.goto("/categories");
   let dialog = await openEditDialog(page, "Abonnementer");
-  let hint = dialog.getByLabel("Classifier hint (recommended)");
+  let hint = dialog.getByLabel("Klassifiseringshint (anbefalt)");
 
   await expect(dialog.getByText(mismatch)).toBeVisible();
-  await dialog.getByRole("button", { name: "Keep mine" }).click();
+  await dialog.getByRole("button", { name: "Behold mitt" }).click();
 
   await expect(dialog.getByText(mismatch)).toHaveCount(0);
   await expect(hint).toHaveValue("Rema 1000, Meny, Kiwi");
   await expect(
-    dialog.getByRole("button", { name: "Suggestions from 28 transactions" }),
+    dialog.getByRole("button", { name: "Forslag fra 28 transaksjoner" }),
   ).toBeVisible();
 
-  await dialog.getByRole("button", { name: "Save" }).click();
+  await dialog.getByRole("button", { name: "Lagre" }).click();
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori oppdatert." }),
   ).toBeVisible();
   expect(patches).toEqual([
     { name: "Abonnementer", classifierHint: "Rema 1000, Meny, Kiwi" },
@@ -672,8 +678,8 @@ test("asks before replacing a saved hint that names none of the category's merch
   });
 
   dialog = await openEditDialog(page, "Abonnementer");
-  hint = dialog.getByLabel("Classifier hint (recommended)");
-  await dialog.getByRole("button", { name: "Replace with suggestion" }).click();
+  hint = dialog.getByLabel("Klassifiseringshint (anbefalt)");
+  await dialog.getByRole("button", { name: "Bytt til forslaget" }).click();
 
   await expect(hint).toHaveValue("Netflix, Spotify, Viaplay");
   await expect(dialog.getByText(mismatch)).toHaveCount(0);
@@ -702,17 +708,17 @@ test("keeps today's plain hint field when merchant history fails to load", async
   );
   const dialog = await openEditDialog(page, "Food");
   expect((await merchantsResponse).status()).toBe(500);
-  const hint = dialog.getByLabel("Classifier hint (recommended)");
+  const hint = dialog.getByLabel("Klassifiseringshint (anbefalt)");
 
   await expect(hint).toHaveValue("");
-  await expect(dialog.getByText("Suggested · not saved")).toHaveCount(0);
-  await expect(dialog.getByText("From your history")).toHaveCount(0);
+  await expect(dialog.getByText("Foreslått · ikke lagret")).toHaveCount(0);
+  await expect(dialog.getByText("Fra historikken din")).toHaveCount(0);
 
   await hint.fill("Restaurants and takeaway: Foodora, Wolt");
-  await dialog.getByRole("button", { name: "Save" }).click();
+  await dialog.getByRole("button", { name: "Lagre" }).click();
 
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori oppdatert." }),
   ).toBeVisible();
   expect(patches).toEqual([
     {
@@ -758,25 +764,25 @@ test("leads the hint with a guessed description and offers merchants not in hist
   const guessRequests = recordHintGuessRequests(page);
   await page.goto("/categories");
   const dialog = await openEditDialog(page, "Groceries");
-  const hint = dialog.getByLabel("Classifier hint (recommended)");
+  const hint = dialog.getByLabel("Klassifiseringshint (anbefalt)");
   const description = dialog.getByRole("checkbox", {
-    name: "Start with “Groceries and food shopping”",
+    name: "Begynn med “Groceries and food shopping”",
   });
 
   await expect(hint).toHaveValue("Rema, Kiwi");
   await expect(description).toHaveCount(0);
   expect(guessRequests).toEqual([]);
 
-  await dialog.getByRole("button", { name: "Suggest with AI" }).click();
+  await dialog.getByRole("button", { name: "Foreslå med AI" }).click();
 
   await expect(hint).toHaveValue("Groceries and food shopping. Rema, Kiwi");
   expect(guessRequests).toEqual([
     expect.stringContaining("/api/categories/cat-groceries/hint-guess"),
   ]);
   await expect(
-    dialog.getByRole("button", { name: "Suggest with AI" }),
+    dialog.getByRole("button", { name: "Foreslå med AI" }),
   ).toHaveCount(0);
-  await expect(dialog.getByText("Suggested · not saved")).toBeVisible();
+  await expect(dialog.getByText("Foreslått · ikke lagret")).toBeVisible();
   await expect(description).toBeChecked();
 
   await description.click();
@@ -789,9 +795,9 @@ test("leads the hint with a guessed description and offers merchants not in hist
   await expect(hint).toHaveValue("Rema, Kiwi, Bunnpris");
   await expect(bunnpris).toHaveAttribute("aria-pressed", "true");
 
-  await dialog.getByRole("button", { name: "Save" }).click();
+  await dialog.getByRole("button", { name: "Lagre" }).click();
   await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Category renamed." }),
+    page.locator("[data-sonner-toast]", { hasText: "Kategori oppdatert." }),
   ).toBeVisible();
   expect(patches).toEqual([
     { name: "Groceries", classifierHint: "Rema, Kiwi, Bunnpris" },
@@ -811,20 +817,24 @@ test("keeps text typed while the guess is still loading", async ({ page }) => {
 
   await page.goto("/categories");
   const dialog = await openEditDialog(page, "Groceries");
-  const hint = dialog.getByLabel("Classifier hint (recommended)");
+  const hint = dialog.getByLabel("Klassifiseringshint (anbefalt)");
 
   await expect(hint).toHaveValue("Rema, Kiwi");
-  await expect(dialog.getByText("Finding similar merchants…")).toHaveCount(0);
-  await dialog.getByRole("button", { name: "Suggest with AI" }).click();
-  await expect(dialog.getByText("Finding similar merchants…")).toBeVisible();
+  await expect(dialog.getByText("Finner lignende brukersteder…")).toHaveCount(
+    0,
+  );
+  await dialog.getByRole("button", { name: "Foreslå med AI" }).click();
+  await expect(dialog.getByText("Finner lignende brukersteder…")).toBeVisible();
   await hint.fill("Coop, Joker");
 
-  await expect(dialog.getByText("Not in your history")).toBeVisible();
-  await expect(dialog.getByText("Finding similar merchants…")).toHaveCount(0);
+  await expect(dialog.getByText("Ikke i historikken din")).toBeVisible();
+  await expect(dialog.getByText("Finner lignende brukersteder…")).toHaveCount(
+    0,
+  );
   await expect(hint).toHaveValue("Coop, Joker");
   await expect(
     dialog.getByRole("checkbox", {
-      name: "Start with “Groceries and food shopping”",
+      name: "Begynn med “Groceries and food shopping”",
     }),
   ).not.toBeChecked();
 });
@@ -835,23 +845,21 @@ test("says so when AI suggestions are turned off", async ({ page }) => {
   const guessRequests = recordHintGuessRequests(page);
   await page.goto("/categories");
   const dialog = await openEditDialog(page, "Groceries");
-  const hint = dialog.getByLabel("Classifier hint (recommended)");
+  const hint = dialog.getByLabel("Klassifiseringshint (anbefalt)");
 
   await expect(hint).toHaveValue("Rema, Kiwi");
-  await dialog.getByRole("button", { name: "Suggest with AI" }).click();
+  await dialog.getByRole("button", { name: "Foreslå med AI" }).click();
 
-  await expect(
-    dialog.getByText("AI suggestions are turned off."),
-  ).toBeVisible();
+  await expect(dialog.getByText("AI-forslag er slått av.")).toBeVisible();
   expect(guessRequests).toHaveLength(1);
   await expect(
-    dialog.getByRole("button", { name: "Suggest with AI" }),
+    dialog.getByRole("button", { name: "Foreslå med AI" }),
   ).toHaveCount(0);
-  await expect(dialog.getByRole("button", { name: "Try again" })).toHaveCount(
+  await expect(dialog.getByRole("button", { name: "Prøv igjen" })).toHaveCount(
     0,
   );
-  await expect(dialog.getByText("Start with")).toHaveCount(0);
-  await expect(dialog.getByText("Not in your history")).toHaveCount(0);
+  await expect(dialog.getByText("Begynn med")).toHaveCount(0);
+  await expect(dialog.getByText("Ikke i historikken din")).toHaveCount(0);
   await expect(hint).toHaveValue("Rema, Kiwi");
 });
 
@@ -870,16 +878,16 @@ test("offers a retry when the AI suggestion fails", async ({ page }) => {
   const guessRequests = recordHintGuessRequests(page);
   await page.goto("/categories");
   const dialog = await openEditDialog(page, "Groceries");
-  const hint = dialog.getByLabel("Classifier hint (recommended)");
+  const hint = dialog.getByLabel("Klassifiseringshint (anbefalt)");
 
   await expect(hint).toHaveValue("Rema, Kiwi");
-  await dialog.getByRole("button", { name: "Suggest with AI" }).click();
+  await dialog.getByRole("button", { name: "Foreslå med AI" }).click();
 
-  await expect(dialog.getByText("Couldn't get AI suggestions.")).toBeVisible();
+  await expect(dialog.getByText("Kunne ikke hente AI-forslag.")).toBeVisible();
   await expect(hint).toHaveValue("Rema, Kiwi");
-  await dialog.getByRole("button", { name: "Try again" }).click();
+  await dialog.getByRole("button", { name: "Prøv igjen" }).click();
 
   await expect(hint).toHaveValue("Groceries and food shopping. Rema, Kiwi");
-  await expect(dialog.getByText("Couldn't get AI suggestions.")).toHaveCount(0);
+  await expect(dialog.getByText("Kunne ikke hente AI-forslag.")).toHaveCount(0);
   expect(guessRequests).toHaveLength(2);
 });

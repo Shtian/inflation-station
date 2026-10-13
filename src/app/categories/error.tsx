@@ -13,10 +13,10 @@ export default function CategoriesRouteError({
 }: CategoriesErrorProps) {
   return (
     <RouteErrorState
-      title="Categories failed to load"
+      title="Kunne ikke laste inn kategorier"
       message={
         error.message ||
-        "An unexpected error occurred while loading categories."
+        "Det oppstod en uventet feil under innlasting av kategorier."
       }
       onRetry={reset}
     />

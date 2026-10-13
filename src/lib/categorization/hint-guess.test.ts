@@ -154,7 +154,7 @@ describe("buildHintGuessPrompt", () => {
       "Category: Groceries (EXPENSE)\nMerchants already in history: Rema, Kiwi, Coop Extra\n\nOther categories:\n- Fuel: Circle K",
     );
     expect(prompt).not.toContain("- Groceries:");
-    expect(prompt).toContain("Write the description in English.");
+    expect(prompt).toContain("Write the description in Norwegian Bokmål.");
     expect(prompt).toContain("Do not name any merchant in the description.");
   });
 

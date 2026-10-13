@@ -15,3 +15,4 @@ src/lib/feedback/agent.ts	Propose a GitHub issue for the user's bug report or fe
 src/lib/import/csv/guess-column-mapping.ts	pick the column that best names the merchant or counterparty of each bank transaction
 src/lib/import/csv/guess-column-mapping.ts	saved
 src/lib/import/csv/values.ts	Unsupported CSV date format:
+src/lib/categorization/jev-eval.ts	Expected exactly one row outcome, got

@@ -14,7 +14,7 @@ const updateAccountSchema = z
       value.institution !== undefined ||
       value.isActive !== undefined,
     {
-      message: "At least one field must be provided",
+      message: "Minst ett felt må fylles ut",
     },
   );
 
@@ -102,7 +102,8 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     return NextResponse.json(
       {
         error: "ACCOUNT_HAS_TRANSACTIONS",
-        message: "Cannot delete account while transactions are linked to it.",
+        message:
+          "Kan ikke slette kontoen så lenge transaksjoner er knyttet til den.",
       },
       { status: 409 },
     );

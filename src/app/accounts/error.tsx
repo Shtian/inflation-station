@@ -13,9 +13,10 @@ export default function AccountsRouteError({
 }: AccountsErrorProps) {
   return (
     <RouteErrorState
-      title="Accounts failed to load"
+      title="Kunne ikke laste inn kontoer"
       message={
-        error.message || "An unexpected error occurred while loading accounts."
+        error.message ||
+        "Det oppstod en uventet feil under innlasting av kontoer."
       }
       onRetry={reset}
     />
