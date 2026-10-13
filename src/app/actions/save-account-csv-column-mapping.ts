@@ -54,7 +54,7 @@ export async function saveAccountCsvColumnMappingAction(
   if (!parsedInput.success) {
     return mutationValidationError(
       "INVALID_CSV_COLUMN_MAPPING_PAYLOAD",
-      "Expected accountId, the file's headers and a column mapping.",
+      "Forventet accountId, filens kolonneoverskrifter og en kolonnekobling.",
       parsedInput.error,
     );
   }
@@ -65,7 +65,7 @@ export async function saveAccountCsvColumnMappingAction(
   if (!mapping || !columnMappingFitsHeaders(mapping, headers)) {
     return mutationError(
       "INVALID_CSV_COLUMN_MAPPING",
-      "Choose a date column, an amount and at least one description column from this file.",
+      "Velg en datokolonne, et beløp og minst én beskrivelseskolonne fra denne filen.",
     );
   }
 
@@ -85,11 +85,11 @@ export async function saveAccountCsvColumnMappingAction(
     },
     mapError: (error) =>
       isRecordNotFound(error)
-        ? { code: "ACCOUNT_NOT_FOUND", message: "Account was not found." }
+        ? { code: "ACCOUNT_NOT_FOUND", message: "Fant ikke kontoen." }
         : null,
     fallbackError: {
       code: "CSV_COLUMN_MAPPING_SAVE_FAILED",
-      message: "Could not save the column mapping for this account.",
+      message: "Kunne ikke lagre kolonnekoblingen for denne kontoen.",
     },
   });
 }

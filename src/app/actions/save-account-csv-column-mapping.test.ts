@@ -82,7 +82,7 @@ describe("saveAccountCsvColumnMappingAction", () => {
       error: {
         code: "INVALID_CSV_COLUMN_MAPPING",
         message:
-          "Choose a date column, an amount and at least one description column from this file.",
+          "Velg en datokolonne, et beløp og minst én beskrivelseskolonne fra denne filen.",
       },
     });
     expect(accountUpdateMock).not.toHaveBeenCalled();
@@ -112,7 +112,7 @@ describe("saveAccountCsvColumnMappingAction", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: { code: "ACCOUNT_NOT_FOUND", message: "Account was not found." },
+      error: { code: "ACCOUNT_NOT_FOUND", message: "Fant ikke kontoen." },
     });
   });
 
@@ -129,7 +129,7 @@ describe("saveAccountCsvColumnMappingAction", () => {
       ok: false,
       error: {
         code: "CSV_COLUMN_MAPPING_SAVE_FAILED",
-        message: "Could not save the column mapping for this account.",
+        message: "Kunne ikke lagre kolonnekoblingen for denne kontoen.",
       },
     });
   });

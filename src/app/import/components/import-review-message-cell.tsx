@@ -39,7 +39,7 @@ export function ImportReviewMessageCell({
       {isPending ? (
         <Sparkles
           className="h-3.5 w-3.5 shrink-0 animate-pulse text-muted-foreground"
-          aria-label={`Cleaning message for row ${rowNumber}`}
+          aria-label={`Rydder melding for rad ${rowNumber}`}
         />
       ) : hasCleanedAlternative ? (
         <TooltipProvider>
@@ -48,7 +48,7 @@ export function ImportReviewMessageCell({
               render={
                 <button
                   type="button"
-                  aria-label={`Toggle message source for row ${rowNumber}`}
+                  aria-label={`Bytt meldingskilde for rad ${rowNumber}`}
                   onClick={() => onToggleMessageSource(rowId)}
                   className={cn(
                     "shrink-0 rounded p-0.5 transition-colors hover:bg-accent",
@@ -66,10 +66,11 @@ export function ImportReviewMessageCell({
               className="max-w-xs space-y-1 p-3 text-xs"
             >
               <p>
-                <span className="font-medium">Original:</span> {originalMessage}
+                <span className="font-medium">Opprinnelig:</span>{" "}
+                {originalMessage}
               </p>
               <p>
-                <span className="font-medium">AI-cleaned:</span> {cleanedText}
+                <span className="font-medium">AI-ryddet:</span> {cleanedText}
               </p>
             </TooltipContent>
           </Tooltip>

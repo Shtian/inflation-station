@@ -18,7 +18,7 @@ function outcomes(counts: Partial<JevOutcomeSummary>): JevOutcomeSummary {
 describe("describeJevUnavailability", () => {
   it("names the missing API key when every Jev row lacked one", () => {
     expect(describeJevUnavailability(outcomes({ key_missing: 37 }), 40)).toBe(
-      "Automatic categorization was unavailable for 37 of 40 rows (API key not configured).",
+      "Automatisk kategorisering var utilgjengelig for 37 av 40 rader (API-nøkkel er ikke konfigurert).",
     );
   });
 
@@ -29,7 +29,7 @@ describe("describeJevUnavailability", () => {
         10,
       ),
     ).toBe(
-      "Automatic categorization was unavailable for 3 of 10 rows (timed out, provider error).",
+      "Automatisk kategorisering var utilgjengelig for 3 av 10 rader (tidsavbrudd, feil hos leverandøren).",
     );
   });
 
@@ -41,7 +41,7 @@ describe("describeJevUnavailability", () => {
       ),
     ).toBeNull();
     expect(describeJevUnavailability(outcomes({ ok: 3, disabled: 1 }), 4)).toBe(
-      "Automatic categorization was unavailable for 1 of 4 rows (disabled by configuration).",
+      "Automatisk kategorisering var utilgjengelig for 1 av 4 rader (slått av i konfigurasjonen).",
     );
   });
 });

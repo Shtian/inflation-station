@@ -216,7 +216,7 @@ async function parsePdfImport(accountId: string, bytes: Uint8Array) {
   if (items.length === 0) {
     return badRequest(
       "PDF_TEXT_EXTRACTION_FAILED",
-      "No text could be read from this PDF. A scanned or photographed statement carries only an image, so ask your provider for the PDF they generated.",
+      "Fant ingen tekst i denne PDF-en. En skannet eller fotografert kontoutskrift inneholder bare et bilde, så spør utstederen etter PDF-en de selv har laget.",
     );
   }
 
@@ -228,7 +228,7 @@ async function parsePdfImport(accountId: string, bytes: Uint8Array) {
     ).join(", ");
     return badRequest(
       "PDF_PROVIDER_NOT_RECOGNIZED",
-      `No supported card issuer was found in this PDF. Supported: ${supported}.`,
+      `Fant ingen støttet kortutsteder i denne PDF-en. Støttet: ${supported}.`,
     );
   }
 
@@ -237,7 +237,7 @@ async function parsePdfImport(accountId: string, bytes: Uint8Array) {
   if (parsed.rows.length === 0) {
     return badRequest(
       "PDF_NO_TRANSACTIONS_FOUND",
-      `This PDF was read as a ${extractor.providerName} statement but holds no transactions.`,
+      `Denne PDF-en ble lest som en kontoutskrift fra ${extractor.providerName}, men inneholder ingen transaksjoner.`,
     );
   }
 
@@ -270,14 +270,14 @@ async function parseCsvImport(options: {
   if (table.headers.length === 0) {
     return badRequest(
       "CSV_HEADERS_NOT_FOUND",
-      "No header row was found in this CSV. The first non-blank line must name its columns.",
+      "Fant ingen overskriftsrad i denne CSV-filen. Den første linjen som ikke er tom, må navngi kolonnene.",
     );
   }
 
   if (options.columnMapping === null) {
     return badRequest(
       "INVALID_COLUMN_MAPPING",
-      "The column mapping must name a date column, an amount and at least one description column.",
+      "Kolonnekoblingen må angi en datokolonne, et beløp og minst én beskrivelseskolonne.",
     );
   }
 
@@ -289,7 +289,7 @@ async function parseCsvImport(options: {
     if (!columnMappingFitsHeaders(confirmed, table.headers)) {
       return badRequest(
         "COLUMN_MAPPING_MISMATCH",
-        "The column mapping names columns this file does not have. Map the columns again.",
+        "Kolonnekoblingen viser til kolonner som ikke finnes i denne filen. Koble kolonnene på nytt.",
       );
     }
 
@@ -322,7 +322,7 @@ export async function POST(request: Request) {
   if (!payload) {
     return badRequest(
       "INVALID_IMPORT_PAYLOAD",
-      "Expected accountId and a CSV or PDF upload via multipart form-data, or accountId and csvContent via JSON payload.",
+      "Forventet accountId og en CSV- eller PDF-fil som multipart/form-data, eller accountId og csvContent som JSON.",
     );
   }
 
@@ -330,7 +330,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "IMPORT_FILE_TOO_LARGE",
-        message: "The file is larger than the 10 MB import limit.",
+        message: "Filen er større enn importgrensen på 10 MB.",
       },
       { status: 413 },
     );
@@ -338,7 +338,7 @@ export async function POST(request: Request) {
 
   const accountId = payload.accountId.trim();
   if (!accountId) {
-    return badRequest("ACCOUNT_ID_REQUIRED", "An account must be selected.");
+    return badRequest("ACCOUNT_ID_REQUIRED", "Du må velge en konto.");
   }
 
   const account = await prisma.account.findUnique({
@@ -358,7 +358,7 @@ export async function POST(request: Request) {
   if (!csvContent) {
     return badRequest(
       "CSV_FILE_REQUIRED",
-      "A statement file is required for transaction import.",
+      "Du må laste opp en kontoutskrift for å importere transaksjoner.",
     );
   }
 

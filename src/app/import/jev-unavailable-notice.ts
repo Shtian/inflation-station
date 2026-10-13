@@ -2,10 +2,10 @@ import type { JevOutcomeSummary } from "@/lib/categorization/jev-categorize";
 import type { JevUnavailableReason } from "@/lib/jev/client";
 
 const UNAVAILABLE_REASON_TEXT: Record<JevUnavailableReason, string> = {
-  disabled: "disabled by configuration",
-  key_missing: "API key not configured",
-  timeout: "timed out",
-  provider_error: "provider error",
+  disabled: "slått av i konfigurasjonen",
+  key_missing: "API-nøkkel er ikke konfigurert",
+  timeout: "tidsavbrudd",
+  provider_error: "feil hos leverandøren",
 };
 
 const UNAVAILABLE_REASONS = Object.keys(
@@ -33,5 +33,5 @@ export function describeJevUnavailability(
   const reasonText = reasons
     .map((reason) => UNAVAILABLE_REASON_TEXT[reason])
     .join(", ");
-  return `Automatic categorization was unavailable for ${unavailableRows} of ${totalRows} rows (${reasonText}).`;
+  return `Automatisk kategorisering var utilgjengelig for ${unavailableRows} av ${totalRows} rader (${reasonText}).`;
 }

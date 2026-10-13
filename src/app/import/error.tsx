@@ -10,10 +10,10 @@ type ImportErrorProps = {
 export default function ImportRouteError({ error, reset }: ImportErrorProps) {
   return (
     <RouteErrorState
-      title="Import workspace failed to load"
+      title="Importen kunne ikke lastes inn"
       message={
         error.message ||
-        "An unexpected error occurred while loading the import flow."
+        "Det oppstod en uventet feil under innlasting av importen."
       }
       onRetry={reset}
     />

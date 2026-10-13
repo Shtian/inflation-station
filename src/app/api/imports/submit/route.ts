@@ -112,7 +112,7 @@ export async function POST(request: Request) {
   if (!payload) {
     return badRequest(
       "INVALID_IMPORT_REVIEW_SUBMIT_PAYLOAD",
-      `Expected sessionId and rows [{ rowId, categoryId, selectedMessage, note? }] in request body. ${MAX_TRANSACTION_NOTE_LENGTH_MESSAGE}`,
+      `Forventet sessionId og en liste med radvalg [{ rowId, categoryId, selectedMessage, note? }] i forespørselen. ${MAX_TRANSACTION_NOTE_LENGTH_MESSAGE}`,
     );
   }
 
@@ -124,7 +124,8 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "IMPORT_REVIEW_SESSION_NOT_FOUND",
-          message: "Import review session was not found or already submitted.",
+          message:
+            "Fant ikke importgjennomgangen, eller den er allerede sendt inn.",
         },
         { status: 404 },
       );
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: "INVALID_IMPORT_REVIEW_CATEGORY",
-          message: "One or more selected categories do not exist.",
+          message: "Én eller flere av de valgte kategoriene finnes ikke.",
           categoryIds: error.categoryIds,
         },
         { status: 400 },
@@ -146,7 +147,7 @@ export async function POST(request: Request) {
         {
           error: "INVALID_IMPORT_REVIEW_DECISIONS",
           message:
-            "One or more submitted row decisions are invalid: duplicate or unknown row IDs.",
+            "Ett eller flere av de innsendte radvalgene er ugyldige: dupliserte eller ukjente rad-ID-er.",
           duplicateRowIds: error.duplicateRowIds,
           unknownRowIds: error.unknownRowIds,
         },

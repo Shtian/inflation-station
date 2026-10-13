@@ -36,9 +36,9 @@ export function ImportReviewCategoryCell({
         value={selectedCategoryId}
         categories={categories}
         onValueChange={(value) => onCategoryChange(rowId, value)}
-        placeholder="Uncategorized"
-        emptyLabel="No matching categories."
-        ariaLabel={`Category for row ${rowNumber}`}
+        placeholder="Ukategorisert"
+        emptyLabel="Ingen kategorier passer."
+        ariaLabel={`Kategori for rad ${rowNumber}`}
         className={cn("w-[220px]", isUncategorized && "text-warning")}
         showClear
       />
