@@ -517,7 +517,8 @@ function MomentsSlide({ review }: SlideContext) {
           aria-label={`Everyday purchases per day${busiestDay ? `, most on ${formatDayLong(busiestDay.bookingDate)}` : ""}`}
         >
           {dailySpend.map((day) => {
-            const isBusiest = day.date === busiestDay?.bookingDate;
+            const isBusiest =
+              day.transactionCount === busiestDay?.transactionCount;
             return (
               <div
                 key={day.date}
