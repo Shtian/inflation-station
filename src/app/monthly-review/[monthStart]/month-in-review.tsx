@@ -218,7 +218,7 @@ export function MonthInReview({
     return (
       <div
         className="mir-deck fixed inset-0 z-50 flex flex-col items-start justify-center gap-5 px-6 md:px-12"
-        style={worldStyle(DECK_WORLDS.ink)}
+        style={worldStyle(DECK_WORLDS.base)}
       >
         <h1 className="font-extrabold text-3xl text-[var(--mir-accent)] md:text-5xl">
           {monthLabel}

@@ -5,50 +5,32 @@ export type DeckWorld = {
   muted: string;
 };
 
-const INK = "#0E0B1F";
-const CREAM = "#FFF6E5";
+// Worlds are tints of the active theme palette (see globals.css), so the deck
+// follows the selected palette and light/dark mode instead of fixed brights.
+function tintWorld(
+  surface: string,
+  tintPercent: number,
+  accentSource: string,
+): DeckWorld {
+  const background =
+    tintPercent === 0
+      ? "var(--background)"
+      : `color-mix(in oklab, var(${surface}) ${tintPercent}%, var(--background))`;
+
+  return {
+    background,
+    foreground: "var(--foreground)",
+    accent: `color-mix(in oklab, var(${accentSource}) 78%, var(--foreground))`,
+    muted: `color-mix(in oklab, var(--foreground) 70%, ${background})`,
+  };
+}
 
 export const DECK_WORLDS = {
-  ink: {
-    background: INK,
-    foreground: CREAM,
-    accent: "#D7FF3A",
-    muted: "#CFC7BD",
-  },
-  lime: {
-    background: "#C6F432",
-    foreground: INK,
-    accent: INK,
-    muted: "#333A23",
-  },
-  red: {
-    background: "#FF4D3D",
-    foreground: INK,
-    accent: INK,
-    muted: "#3E1825",
-  },
-  violet: {
-    background: "#4C2EE6",
-    foreground: CREAM,
-    accent: CREAM,
-    muted: "#E4D8E5",
-  },
-  steel: {
-    background: "#BFD4FF",
-    foreground: INK,
-    accent: INK,
-    muted: "#31334C",
-  },
-  coral: {
-    background: "#FF7A59",
-    foreground: INK,
-    accent: INK,
-    muted: "#3E212B",
-  },
-  amber: {
-    background: "#FFC93C",
-    foreground: INK,
-    accent: INK,
-    muted: "#3E3125",
-  },
+  base: tintWorld("--brand", 0, "--brand"),
+  positive: tintWorld("--success", 12, "--success"),
+  negative: tintWorld("--destructive", 11, "--destructive"),
+  brand: tintWorld("--brand", 15, "--brand"),
+  brandSoft: tintWorld("--brand", 7, "--brand"),
+  neutral: tintWorld("--primary", 6, "--primary"),
+  neutralDeep: tintWorld("--primary", 11, "--brand"),
 } satisfies Record<string, DeckWorld>;
