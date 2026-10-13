@@ -30,14 +30,14 @@ export async function startSelfUpdateAction(): Promise<
   if (!root) {
     return mutationError(
       "SELF_UPDATE_DISABLED",
-      "Self-update is only available in the standalone production build.",
+      "Selvoppdatering er bare tilgjengelig i det frittstående produksjonsbygget.",
     );
   }
 
   if ((await readSelfUpdateStatus(root, sha)).phase === "running") {
     return mutationError(
       "SELF_UPDATE_RUNNING",
-      "An update is already running.",
+      "En oppdatering kjører allerede.",
     );
   }
 
@@ -59,7 +59,7 @@ export async function startSelfUpdateAction(): Promise<
     },
     fallbackError: {
       code: "SELF_UPDATE_FAILED",
-      message: "Could not start the update.",
+      message: "Kunne ikke starte oppdateringen.",
     },
   });
 }

@@ -98,7 +98,7 @@ describe("selfUpdateDialogReducer", () => {
       ]),
     ).toEqual({
       kind: "failed",
-      message: "The update failed with exit code 1.",
+      message: "Oppdateringen feilet med avslutningskode 1.",
       log: "ERR_PNPM_OUTDATED_LOCKFILE",
     });
   });
@@ -107,11 +107,11 @@ describe("selfUpdateDialogReducer", () => {
     expect(
       run([
         { type: "start" },
-        { type: "start-failed", message: "An update is already running." },
+        { type: "start-failed", message: "En oppdatering kjører allerede." },
       ]),
     ).toEqual({
       kind: "failed",
-      message: "An update is already running.",
+      message: "En oppdatering kjører allerede.",
       log: "",
     });
   });

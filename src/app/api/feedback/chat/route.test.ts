@@ -51,7 +51,7 @@ describe("POST /api/feedback/chat", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "INVALID_FEEDBACK_MESSAGES",
-      message: "Request body must be JSON.",
+      message: "Forespørselen må være JSON.",
     });
   });
 

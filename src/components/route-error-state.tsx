@@ -11,7 +11,7 @@ type RouteErrorStateProps = {
 };
 
 export function RouteErrorState({
-  actionLabel = "Retry",
+  actionLabel = "Prøv igjen",
   message,
   onRetry,
   title,

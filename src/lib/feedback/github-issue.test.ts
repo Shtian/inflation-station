@@ -48,7 +48,7 @@ describe("createGithubIssue", () => {
     });
 
     await expect(createGithubIssue(input, run)).rejects.toThrow(
-      "Could not create the GitHub issue: could not add label: 'needs-triage' not found",
+      "Kunne ikke opprette GitHub-saken: could not add label: 'needs-triage' not found",
     );
   });
 
@@ -60,7 +60,7 @@ describe("createGithubIssue", () => {
     });
 
     await expect(createGithubIssue(input, run)).rejects.toThrow(
-      "gh did not report an issue URL. Output: Creating issue in Shtian/inflation-station",
+      "gh oppga ingen URL til saken. Utdata: Creating issue in Shtian/inflation-station",
     );
   });
 });
