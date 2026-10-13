@@ -197,7 +197,7 @@ export async function getDashboardAnalytics(
 
     if (amount < 0) {
       const categoryId = transaction.category?.id ?? null;
-      const categoryName = transaction.category?.name ?? "Uncategorized";
+      const categoryName = transaction.category?.name ?? "Ukategorisert";
       const categoryKey = categoryId ?? "__uncategorized__";
       const categoryTotals = spendByCategory.get(categoryKey) ?? {
         categoryId,

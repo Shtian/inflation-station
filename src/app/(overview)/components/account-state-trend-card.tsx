@@ -23,7 +23,7 @@ type AccountStateTrendCardProps = {
 
 const accountTrendChartConfig = {
   cumulativeNok: {
-    label: "Cumulative balance",
+    label: "Akkumulert saldo",
     color: "var(--brand)",
   },
 };
@@ -35,12 +35,10 @@ export function AccountStateTrendCard({
   return (
     <div className="space-y-3">
       <Separator />
-      <h3 className="font-semibold text-foreground text-sm">
-        Account State Trend
-      </h3>
+      <h3 className="font-semibold text-foreground text-sm">Kontoutvikling</h3>
       {!isLoading && (!accountTrend || accountTrend.length === 0) ? (
         <p className="text-muted-foreground text-sm">
-          No trend data for selected filters.
+          Ingen utviklingsdata for valgte filtre.
         </p>
       ) : null}
       {!isLoading && accountTrend ? (

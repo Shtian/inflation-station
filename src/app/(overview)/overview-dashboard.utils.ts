@@ -38,7 +38,7 @@ export function formatChartDate(value: string) {
 export function formatFullDate(value: string) {
   const date = fromDateInputValue(value);
   if (!date) {
-    return "Pick a date";
+    return "Velg en dato";
   }
 
   return new Intl.DateTimeFormat("nb-NO", {

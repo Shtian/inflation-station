@@ -46,7 +46,7 @@ describe("GET /api/dashboard/analytics", () => {
     expect(invalidStartResponse.status).toBe(400);
     await expect(invalidStartResponse.json()).resolves.toEqual({
       error: "INVALID_START_DATE",
-      message: "Expected startDate in YYYY-MM-DD format.",
+      message: "startDate må ha formatet ÅÅÅÅ-MM-DD.",
     });
 
     const invalidEndResponse = await GET(
@@ -58,7 +58,7 @@ describe("GET /api/dashboard/analytics", () => {
     expect(invalidEndResponse.status).toBe(400);
     await expect(invalidEndResponse.json()).resolves.toEqual({
       error: "INVALID_END_DATE",
-      message: "Expected endDate in YYYY-MM-DD format.",
+      message: "endDate må ha formatet ÅÅÅÅ-MM-DD.",
     });
 
     expect(getDashboardAnalyticsMock).not.toHaveBeenCalled();
