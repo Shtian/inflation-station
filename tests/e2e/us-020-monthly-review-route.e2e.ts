@@ -314,7 +314,7 @@ test("opens monthly review settings from header configuration and monthly review
     page.getByRole("heading", { name: "Økonomisk tidslinje" }),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Innstillinger" }).click();
+  await page.getByRole("button", { name: "Konfigurasjon" }).click();
   await page
     .locator('[data-slot="navigation-menu-content"]')
     .getByRole("link", { name: /Innstillinger for månedsoppsummering/ })

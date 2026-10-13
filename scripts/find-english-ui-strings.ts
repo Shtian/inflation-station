@@ -44,7 +44,7 @@ const IGNORED_JSX_ATTRIBUTES = new Set([
 ]);
 
 const UI_MESSAGE_CALLEE =
-  /^(toast(\.\w+)?|badRequest|mutationError|mutationValidationError|\w*Error|.*\.(min|max|length|nonempty|regex|refine|superRefine|int|positive|nonnegative))$/;
+  /^(toast(\.\w+)?|badRequest|mutationError|mutationValidationError|[A-Z]\w*Error|.*\.(min|max|length|nonempty|regex|refine|superRefine|int|positive|nonnegative))$/;
 
 const UI_PROPERTY_NAMES = new Set([
   "label",
