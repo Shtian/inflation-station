@@ -231,7 +231,7 @@ test("parses CSV uploads from /import and shows validation feedback", async ({
     page.getByText("Rett feilene i notatene før du bekrefter importen."),
   ).toBeVisible();
   await expect(
-    page.getByText("Note must be 500 characters or fewer."),
+    page.getByText("Notatet kan ikke være lengre enn 500 tegn."),
   ).toBeVisible();
   expect(submitRequestCount).toBe(0);
   await rowOneNote.fill("Split groceries with roommate");
