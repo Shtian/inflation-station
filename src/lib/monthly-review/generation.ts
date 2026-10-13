@@ -10,6 +10,7 @@ import {
   buildMonthlyReviewGenerationInput,
   type MonthlyReviewGenerationInput,
 } from "./generation-input";
+import { toReviewMonthKey, toReviewMonthStartDate } from "./review-month-key";
 import { DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL } from "./system-prompt";
 
 const MONTH_START_PATTERN = /^\d{4}-\d{2}-01$/;
@@ -179,13 +180,7 @@ function toMonthStartDate(monthStart: string): Date {
     throw new MonthlyReviewMonthStartValidationError();
   }
 
-  return new Date(Date.UTC(year, month - 1, 1));
-}
-
-function toMonthStartKey(monthStart: Date): string {
-  const year = monthStart.getUTCFullYear();
-  const month = `${monthStart.getUTCMonth() + 1}`.padStart(2, "0");
-  return `${year}-${month}-01`;
+  return toReviewMonthStartDate(year, month);
 }
 
 function toResult(
@@ -193,7 +188,7 @@ function toResult(
   unavailableReason: MonthlyReviewGenerationUnavailableReason | null,
 ): MonthlyReviewGenerationResult {
   return {
-    monthStart: toMonthStartKey(row.monthStart),
+    monthStart: toReviewMonthKey(row.monthStart),
     status: row.status,
     generatedAt: row.generatedAt?.toISOString() ?? null,
     errorMessage: row.errorMessage,

@@ -1,5 +1,6 @@
 import type { MonthlyReviewStatus } from "@prisma/client";
 import { isTransfer } from "@/lib/transactions/transfer";
+import { toReviewMonthStartDate } from "./review-month-key";
 import { type MonthlyTimelineReviewState, toReviewState } from "./timeline";
 
 type DecimalLike = { toString(): string } | number;
@@ -185,14 +186,12 @@ export function toMonthWindow(monthStart: string): MonthWindow {
 
   const monthStartDate = new Date(year, month - 1, 1);
 
-  // Transactions are bucketed by local calendar month, like overview.ts, while
-  // MonthlyReview rows are keyed by UTC midnight in generation.ts.
   return {
     monthStart: toMonthStartKey(monthStartDate),
     monthStartDate,
     nextMonthStartDate: new Date(year, month, 1),
     previousMonthStartDate: new Date(year, month - 2, 1),
-    reviewMonthStartDate: new Date(Date.UTC(year, month - 1, 1)),
+    reviewMonthStartDate: toReviewMonthStartDate(year, month),
   };
 }
 

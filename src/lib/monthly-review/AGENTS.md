@@ -3,6 +3,7 @@
 Load this when working in `src/lib/monthly-review`.
 
 - Persist one `MonthlyReview` row per calendar month (`monthStart` unique) with lifecycle fields (`status`, optional `generatedAt`, optional `errorMessage`/`reviewText`).
+- `MonthlyReview.monthStart` is UTC midnight on the 1st. Build and read it only through `review-month-key.ts`; local getters on it shift the month in any zone west of UTC. Transactions, by contrast, bucket by local calendar month.
 - Persist configurable system prompt in singleton `MonthlyReviewSystemPrompt` (`id = "monthly-review-system-prompt"`); treat missing/blank values as fallback-to-default.
 - Keep deterministic month aggregation in `overview.ts`: spend from negative transactions only, exclude `category.kind = TRANSFER` via `isTransfer` (`src/lib/transactions/transfer.ts`), keep uncategorized rows, include review-only months.
 - Compute month-over-month spend deltas only when the immediate prior calendar month exists.

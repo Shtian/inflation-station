@@ -601,7 +601,7 @@ async function main() {
     // --- Monthly Review ---
     await prisma.monthlyReview.create({
       data: {
-        monthStart,
+        monthStart: new Date(Date.UTC(y, mo - 1, 1)),
         status: "GENERATED",
         reviewText: getMonthlyReviewText(monthStart),
         generatedAt: lastDayOfMonth(monthStart),
