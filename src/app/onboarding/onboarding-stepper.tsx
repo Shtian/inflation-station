@@ -13,14 +13,14 @@ import {
 import { cn } from "@/lib/utils";
 
 const STATUS_LABELS: Record<OnboardingStepStatus, string> = {
-  done: "Done",
-  current: "Current step",
-  upcoming: "Up next",
+  done: "Ferdig",
+  current: "Nåværende steg",
+  upcoming: "Neste",
 };
 
 const MANAGE_LABELS: Record<OnboardingStep["manageHref"], string> = {
-  "/accounts": "Or add them on the Accounts page",
-  "/categories": "Or add them on the Categories page",
+  "/accounts": "Eller legg dem til på Kontoer-siden",
+  "/categories": "Eller legg dem til på Kategorier-siden",
 };
 
 export function OnboardingStepper({
@@ -29,7 +29,7 @@ export function OnboardingStepper({
   snapshot: SetupSnapshot | null;
 }) {
   return (
-    <ol aria-label="Setup steps" className="flex flex-col gap-5">
+    <ol aria-label="Oppsettssteg" className="flex flex-col gap-5">
       {ONBOARDING_STEPS.map((step, index) => {
         const status = snapshot ? resolveStepStatus(step, snapshot) : null;
         const items = snapshot ? step.presentItems(snapshot) : [];
@@ -65,7 +65,7 @@ export function OnboardingStepper({
                       : "text-muted-foreground",
                   )}
                 >
-                  {status ? STATUS_LABELS[status] : "Checking…"}
+                  {status ? STATUS_LABELS[status] : "Sjekker…"}
                 </span>
               </div>
               <p className="text-muted-foreground text-xs">
@@ -73,7 +73,7 @@ export function OnboardingStepper({
               </p>
               {items.length > 0 ? (
                 <ul
-                  aria-label={`${step.title}: already added`}
+                  aria-label={`${step.title}: allerede lagt til`}
                   className="flex flex-wrap gap-1 pt-1"
                 >
                   {items.map((item) => (

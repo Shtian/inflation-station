@@ -20,9 +20,11 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
         <OnboardingStepper snapshot={snapshot} />
         {state.status === "error" ? (
           <div className="flex items-center gap-2 text-destructive text-xs">
-            <span className="flex-1">Couldn't load your setup progress.</span>
+            <span className="flex-1">
+              Kunne ikke laste inn fremdriften i oppsettet.
+            </span>
             <Button size="xs" variant="outline" onClick={() => void reload()}>
-              Retry
+              Prøv igjen
             </Button>
           </div>
         ) : null}
@@ -30,8 +32,8 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
           <div className="flex flex-col gap-2">
             <p className="text-muted-foreground text-xs">
               {isDone
-                ? "You're all set. Import a bank statement to see your spending."
-                : "You can finish the remaining steps later."}
+                ? "Alt er klart. Importer en kontoutskrift for å se forbruket ditt."
+                : "Du kan fullføre de gjenstående stegene senere."}
             </p>
             <div className="flex flex-wrap gap-2">
               <Link
@@ -41,14 +43,14 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
                   size: "sm",
                 })}
               >
-                Import a statement
+                Importer en kontoutskrift
                 <ArrowRight data-icon="inline-end" />
               </Link>
               <Link
                 href="/"
                 className={buttonVariants({ variant: "ghost", size: "sm" })}
               >
-                Go to dashboard
+                Gå til oversikten
               </Link>
             </div>
           </div>
@@ -59,11 +61,14 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
         <OnboardingChat onSetupChanged={() => void reload()} />
       ) : (
         <div className="flex flex-col gap-2 text-sm">
-          <h2 className="font-medium text-foreground">Chat unavailable</h2>
+          <h2 className="font-medium text-foreground">
+            Chatten er ikke tilgjengelig
+          </h2>
           <p className="max-w-prose text-muted-foreground">
-            The setup guide chat needs an OpenAI API key (OPENAI_API_KEY) on the
-            server. You can still do every step by hand on the Accounts and
-            Categories pages linked beside each step.
+            Chatten i oppsettsguiden trenger en OpenAI API-nøkkel
+            (OPENAI_API_KEY) på serveren. Du kan fortsatt gjøre hvert steg for
+            hånd på sidene for kontoer og kategorier som er lenket ved hvert
+            steg.
           </p>
         </div>
       )}

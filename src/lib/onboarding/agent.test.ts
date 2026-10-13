@@ -39,10 +39,10 @@ describe("buildOnboardingSystemPrompt", () => {
       ],
     });
 
-    expect(prompt).toContain("1. Add your accounts (done):");
-    expect(prompt).toContain("2. Create categories (done):");
-    expect(prompt).toContain("3. Hide transfers (current):");
-    expect(prompt).toContain('The current step is "Hide transfers".');
+    expect(prompt).toContain("1. Legg til kontoene dine (done):");
+    expect(prompt).toContain("2. Opprett kategorier (done):");
+    expect(prompt).toContain("3. Skjul overføringer (current):");
+    expect(prompt).toContain('The current step is "Skjul overføringer".');
     expect(prompt).toContain(
       "Existing accounts:\n- Brukskonto (DNB)\n- Kontanter\n",
     );
@@ -57,8 +57,8 @@ describe("buildOnboardingSystemPrompt", () => {
       categories: [],
     });
 
-    expect(prompt).toContain("1. Add your accounts (current):");
-    expect(prompt).toContain("2. Create categories (upcoming):");
+    expect(prompt).toContain("1. Legg til kontoene dine (current):");
+    expect(prompt).toContain("2. Opprett kategorier (upcoming):");
     expect(prompt).toContain(
       "Existing accounts:\n- none yet\n\nExisting categories:\n- none yet",
     );
