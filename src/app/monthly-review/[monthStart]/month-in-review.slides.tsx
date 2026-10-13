@@ -1,14 +1,19 @@
-import { RefreshCw, Sparkles } from "lucide-react";
-import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getCategoryColor } from "@/lib/category-color";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { type ReactNode, useEffect, useState } from "react";
 import { formatNok, formatSignedNok } from "@/lib/format-nok";
+import { toDeltaDirection } from "@/lib/monthly-review/delta";
 import type { MonthInReviewWithReview } from "@/lib/monthly-review/month-in-review";
+import { formatMonthStartLabel } from "../monthly-review-manager.utils";
 import {
-  formatGeneratedAt,
-  formatMonthStartLabel,
-} from "../monthly-review-manager.utils";
+  firstSentence,
+  formatDayLong,
+  formatMonthName,
+  formatPercent,
+  keepAmountsTogether,
+  toMonthDateRange,
+} from "./month-in-review.format";
+import { DECK_WORLDS, type DeckWorld } from "./month-in-review.worlds";
 
 export type GenerateMode = "generate" | "regenerate";
 
@@ -16,204 +21,245 @@ export type SlideContext = {
   review: MonthInReviewWithReview;
   monthLabel: string;
   isGenerating: boolean;
+  generateFailed: boolean;
   onRequestGenerate: (mode: GenerateMode) => void;
+  onReplay: () => void;
 };
 
 export type SlideDefinition = {
   id: string;
   title: string;
-  toneClassName: string;
+  world: (review: MonthInReviewWithReview) => DeckWorld;
   isAvailable: (review: MonthInReviewWithReview) => boolean;
   render: (context: SlideContext) => ReactNode;
 };
 
-const percentFormatter = new Intl.NumberFormat("en-US", {
-  style: "percent",
-  maximumFractionDigits: 0,
-});
+const VISIBLE_CATEGORY_LIMIT = 6;
+const VISIBLE_BILL_LIMIT = 6;
+const COUNT_UP_MS = 900;
 
-const dayFormatter = new Intl.DateTimeFormat("en-US", {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  timeZone: "UTC",
-});
-
-function formatPercent(value: number): string {
-  return percentFormatter.format(value);
+function whole(value: number): string {
+  return formatNok(value, { whole: true });
 }
 
-function formatBookingDate(isoDate: string): string {
-  return dayFormatter.format(new Date(`${isoDate}T00:00:00.000Z`));
+function plural(count: number, noun: string): string {
+  return `${count}\u00a0${noun}${count === 1 ? "" : "s"}`;
 }
 
-function signedTone(value: number): string {
-  return value >= 0 ? "text-success" : "text-destructive";
+function signedNet(netNok: number): string {
+  return toDeltaDirection(netNok) === "flat"
+    ? whole(0)
+    : formatSignedNok(netNok, "auto", { whole: true });
 }
 
-function spendDeltaTone(deltaNok: number): string {
-  if (deltaNok === 0) {
-    return "text-muted-foreground";
-  }
-
-  return deltaNok > 0 ? "text-destructive" : "text-success";
+function hasActivity(review: MonthInReviewWithReview): boolean {
+  return review.cashflow.incomeNok > 0 || review.cashflow.spendNok > 0;
 }
 
-function Eyebrow({ children }: { children: ReactNode }) {
-  return (
-    <p className="font-semibold text-muted-foreground text-xs uppercase tracking-[0.2em]">
-      {children}
-    </p>
+function recapText(review: MonthInReviewWithReview): string | null {
+  return review.reviewState === "GENERATED" && review.reviewText?.trim()
+    ? review.reviewText.trim()
+    : null;
+}
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function useCountUp(target: number): number {
+  const [value, setValue] = useState(() =>
+    typeof window === "undefined" || prefersReducedMotion() ? target : 0,
   );
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      setValue(target);
+      return;
+    }
+
+    let frame = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / COUNT_UP_MS);
+      const eased = progress === 1 ? 1 : 1 - 2 ** (-10 * progress);
+      setValue(target * eased);
+      if (progress < 1) {
+        frame = requestAnimationFrame(tick);
+      }
+    };
+    frame = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frame);
+  }, [target]);
+
+  return value;
 }
 
-function Headline({ children }: { children: ReactNode }) {
+function Headline({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <h2 className="text-balance font-extrabold text-4xl text-foreground tracking-tighter md:text-6xl">
+    <h2
+      className={`text-balance font-extrabold text-[clamp(2rem,7vw,4rem)] text-[var(--mir-accent)] leading-[1.02] tracking-[-0.025em] ${className}`}
+    >
       {children}
     </h2>
   );
 }
 
-function Stat({
-  label,
-  value,
-  valueClassName = "text-foreground",
+function Muted({
+  children,
+  className = "",
 }: {
-  label: string;
-  value: string;
-  valueClassName?: string;
+  children: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="space-y-1">
-      <p className="text-muted-foreground text-xs uppercase tracking-wide">
-        {label}
-      </p>
-      <p
-        className={`font-bold text-2xl tabular-nums tracking-tight md:text-3xl ${valueClassName}`}
-      >
-        {value}
+    <p className={`text-[var(--mir-muted)] text-base md:text-lg ${className}`}>
+      {children}
+    </p>
+  );
+}
+
+function introLine(review: MonthInReviewWithReview): string {
+  const recap = recapText(review);
+  if (recap) {
+    return keepAmountsTogether(firstSentence(recap));
+  }
+
+  const { cashflow } = review;
+  if (!hasActivity(review)) {
+    return "A quiet month with no spending or income recorded.";
+  }
+
+  if (cashflow.netNok >= 0) {
+    return `You kept ${whole(cashflow.netNok)} of what came in. Let's see where the rest went.`;
+  }
+
+  return `You spent ${whole(Math.abs(cashflow.netNok))} more than came in. Let's see where it went.`;
+}
+
+function IntroSlide({ review }: SlideContext) {
+  const [monthName, year] = formatMonthStartLabel(review.monthStart).split(" ");
+
+  return (
+    <div className="flex flex-col gap-8 md:gap-10">
+      <h2 className="mir-wipe-up font-black text-[var(--mir-accent)] leading-[0.92] tracking-[-0.02em]">
+        <span className="mir-expanded block text-[clamp(2.75rem,11.5vw,6rem)]">
+          {monthName}
+        </span>
+        <span className="mir-condensed block text-[clamp(2.75rem,11.5vw,6rem)]">
+          {year}
+        </span>
+      </h2>
+      <p className="max-w-[38ch] text-pretty text-xl leading-snug md:text-3xl">
+        {introLine(review)}
       </p>
     </div>
   );
 }
 
-function introHook(review: MonthInReviewWithReview): string {
-  const { cashflow } = review;
+function savingsSentence(review: MonthInReviewWithReview): string {
+  const { savingsRate } = review.cashflow;
 
-  if (cashflow.incomeNok === 0 && cashflow.spendNok === 0) {
-    return "A quiet month with no spending or income recorded.";
-  }
-
-  if (cashflow.netNok >= 0) {
-    return `You kept ${formatNok(cashflow.netNok)} of what came in. Let's see where the rest went.`;
-  }
-
-  return `You spent ${formatNok(Math.abs(cashflow.netNok))} more than came in. Let's see where it went.`;
-}
-
-function netSentence(review: MonthInReviewWithReview): string {
-  const { cashflow } = review;
-
-  if (cashflow.savingsRate === null) {
+  if (savingsRate === null) {
     return "No income was recorded this month.";
   }
 
-  if (cashflow.savingsRate >= 0) {
-    return `You kept ${formatPercent(cashflow.savingsRate)} of your income.`;
+  if (savingsRate >= 0) {
+    return `You kept ${formatPercent(savingsRate)} of your income.`;
   }
 
-  return `Spending outpaced income by ${formatPercent(Math.abs(cashflow.savingsRate))}.`;
+  return `Spending outpaced income by ${formatPercent(Math.abs(savingsRate))}.`;
 }
 
-function IntroSlide({ review, monthLabel }: SlideContext) {
+function netChangeSentence(review: MonthInReviewWithReview): string | null {
+  const { previousMonth, cashflow } = review;
+  if (!previousMonth) {
+    return null;
+  }
+
+  const month = formatMonthName(previousMonth.monthStart);
+  const change = cashflow.netNok - previousMonth.netNok;
+  const direction = toDeltaDirection(change);
+
+  if (direction === "flat") {
+    return `Same as ${month}.`;
+  }
+
+  return `${whole(Math.abs(change))} ${direction === "up" ? "better" : "worse"} than ${month}.`;
+}
+
+function FlowBar({
+  label,
+  amountNok,
+  maxNok,
+}: {
+  label: string;
+  amountNok: number;
+  maxNok: number;
+}) {
   return (
-    <div className="space-y-6">
-      <Eyebrow>Month in review</Eyebrow>
-      <Headline>{monthLabel}</Headline>
-      <p className="max-w-xl text-lg text-muted-foreground md:text-xl">
-        <span className="font-semibold text-foreground tabular-nums">
-          {review.spendTransactionCount} purchase
-          {review.spendTransactionCount === 1 ? "" : "s"}
-        </span>
-        . {introHook(review)}
-      </p>
+    <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-4 gap-y-1">
+      <dt className="font-semibold text-[var(--mir-muted)] text-sm uppercase tracking-[0.08em]">
+        {label}
+      </dt>
+      <dd className="font-bold text-lg md:text-xl">{whole(amountNok)}</dd>
+      <div className="mir-track col-span-2 h-3 overflow-hidden rounded-full">
+        <div
+          className="mir-grow-x h-full rounded-full bg-[var(--mir-accent)]"
+          style={{
+            width: `${maxNok > 0 ? Math.max((amountNok / maxNok) * 100, 1) : 0}%`,
+          }}
+        />
+      </div>
     </div>
   );
 }
 
 function NetSlide({ review }: SlideContext) {
-  const { cashflow, previousMonth, incomeSources } = review;
-  const netChange = previousMonth
-    ? cashflow.netNok - previousMonth.netNok
-    : null;
+  const { cashflow } = review;
+  const shown = useCountUp(cashflow.netNok);
+  const maxNok = Math.max(cashflow.incomeNok, cashflow.spendNok);
+  const change = netChangeSentence(review);
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8 md:gap-10">
       <div className="space-y-3">
-        <Eyebrow>Net result</Eyebrow>
-        <Headline>
+        <h2 aria-label={`Net ${signedNet(cashflow.netNok)}`}>
           <span
-            className={`tabular-nums ${signedTone(cashflow.netNok)}`}
+            aria-hidden
             data-testid="net-result"
+            className="mir-condensed block font-black text-[clamp(4.5rem,24vw,6rem)] text-[var(--mir-accent)] leading-[0.9] tracking-[-0.02em]"
           >
-            {formatSignedNok(cashflow.netNok, "auto")}
+            {signedNet(Math.round(shown))}
           </span>
-        </Headline>
-        <p className="text-lg text-muted-foreground">{netSentence(review)}</p>
+        </h2>
+        <p className="text-pretty font-semibold text-xl md:text-2xl">
+          {savingsSentence(review)}
+        </p>
       </div>
-
-      <div className="grid gap-6 sm:grid-cols-3">
-        <Stat
-          label="Income in"
-          value={formatSignedNok(cashflow.incomeNok, "positive")}
-          valueClassName="text-success"
-        />
-        <Stat
-          label="Spend out"
-          value={formatSignedNok(cashflow.spendNok, "negative")}
-          valueClassName="text-destructive"
-        />
-        <Stat
-          label={
-            previousMonth
-              ? `vs ${formatMonthStartLabel(previousMonth.monthStart)}`
-              : "vs previous month"
-          }
-          value={netChange === null ? "No data" : formatSignedNok(netChange)}
-          valueClassName={
-            netChange === null ? "text-muted-foreground" : signedTone(netChange)
-          }
-        />
-      </div>
-
-      {incomeSources.length > 0 ? (
-        <div className="space-y-2">
-          <p className="text-muted-foreground text-xs uppercase tracking-wide">
-            Top income sources
-          </p>
-          <ul className="space-y-1">
-            {incomeSources.map((source) => (
-              <li
-                key={source.source}
-                className="flex items-baseline justify-between gap-4 border-border/60 border-b py-1.5 last:border-b-0"
-              >
-                <span className="truncate font-medium text-foreground">
-                  {source.source}
-                </span>
-                <span className="text-success tabular-nums">
-                  {formatSignedNok(source.amountNok, "positive")}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      <dl className="grid max-w-2xl gap-5">
+        <FlowBar label="In" amountNok={cashflow.incomeNok} maxNok={maxNok} />
+        <FlowBar label="Out" amountNok={cashflow.spendNok} maxNok={maxNok} />
+      </dl>
+      {change ? <Muted>{change}</Muted> : null}
     </div>
   );
 }
 
-const VISIBLE_CATEGORY_LIMIT = 6;
+function categoryDeltaLabel(deltaNok: number): string | null {
+  const direction = toDeltaDirection(deltaNok);
+  if (direction === "flat") {
+    return null;
+  }
+
+  return `${whole(Math.abs(deltaNok))} ${direction === "up" ? "more" : "less"}`;
+}
 
 function CategoriesSlide({ review }: SlideContext) {
   const [top] = review.categories;
@@ -223,305 +269,414 @@ function CategoriesSlide({ review }: SlideContext) {
     (sum, category) => sum + category.spendNok,
     0,
   );
+  const previousMonthName = review.previousMonth
+    ? formatMonthName(review.previousMonth.monthStart)
+    : null;
+  const allFlat =
+    previousMonthName !== null &&
+    review.categories.every(
+      (category) => toDeltaDirection(category.deltaNok ?? 0) === "flat",
+    );
+  const showRowDeltas = previousMonthName !== null && !allFlat;
+  const { dateFrom, dateTo } = toMonthDateRange(review.monthStart);
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-3">
-        <Eyebrow>Where it went</Eyebrow>
-        <Headline>
-          {top.categoryName} took {formatPercent(top.share)} of your spending.
-        </Headline>
-      </div>
+    <div className="flex flex-col gap-7 md:gap-9">
+      <Headline>
+        {top.categoryName} took {formatPercent(top.share)} of your spending.
+      </Headline>
 
-      <ul className="space-y-4">
-        {visible.map((category) => {
-          const color = getCategoryColor(category.categoryName);
-
-          return (
-            <li
-              key={category.categoryId ?? category.categoryName}
-              className="space-y-1.5"
-            >
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <span className="font-semibold text-foreground">
+      <ul className="grid gap-3.5 md:gap-4">
+        {visible.map((category, index) => {
+          const delta =
+            showRowDeltas && category.deltaNok !== null
+              ? categoryDeltaLabel(category.deltaNok)
+              : null;
+          const row = (
+            <>
+              <span className="flex items-baseline justify-between gap-4">
+                <span className="truncate font-bold text-lg md:text-xl">
                   {category.categoryName}
                 </span>
-                <span className="flex items-baseline gap-3 text-sm tabular-nums">
-                  <span className="font-medium text-foreground">
-                    {formatNok(category.spendNok)}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {formatPercent(category.share)}
-                  </span>
-                  {category.deltaNok !== null ? (
-                    <span className={spendDeltaTone(category.deltaNok)}>
-                      {category.deltaNok === 0
-                        ? "Same as last month"
-                        : `${formatSignedNok(category.deltaNok)} vs last month`}
+                <span className="flex shrink-0 items-baseline gap-3">
+                  {delta ? (
+                    <span className="text-[var(--mir-muted)] text-sm">
+                      {delta}
                     </span>
                   ) : null}
+                  <span className="font-semibold">
+                    {whole(category.spendNok)}
+                  </span>
                 </span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full"
+              </span>
+              <span className="mir-track mt-1.5 block h-2.5 overflow-hidden rounded-full">
+                <span
+                  className="mir-grow-x block h-full rounded-full bg-[var(--mir-accent)]"
                   style={{
-                    width: `${Math.max(category.share * 100, 1)}%`,
-                    backgroundColor: color.backgroundColor,
+                    width: `${Math.max((category.spendNok / top.spendNok) * 100, 1)}%`,
+                    animationDelay: `${index * 70}ms`,
                   }}
                 />
-              </div>
+              </span>
+            </>
+          );
+
+          return (
+            <li key={category.categoryId ?? category.categoryName}>
+              {category.categoryId ? (
+                <Link
+                  href={`/transactions?dateFrom=${dateFrom}&dateTo=${dateTo}&categoryId=${encodeURIComponent(category.categoryId)}`}
+                  className="block rounded-sm no-underline decoration-[var(--mir-accent)] hover:[&_span.truncate]:underline"
+                >
+                  {row}
+                </Link>
+              ) : (
+                <div>{row}</div>
+              )}
             </li>
           );
         })}
       </ul>
+
+      {rest.length > 0 || allFlat ? (
+        <div className="space-y-1">
+          {allFlat ? (
+            <Muted>Every category held steady vs {previousMonthName}.</Muted>
+          ) : null}
+          {rest.length > 0 ? (
+            <Muted>
+              {rest.length} more {rest.length === 1 ? "category" : "categories"}{" "}
+              shared the remaining {whole(restSpendNok)}.
+            </Muted>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function BillsSlide({ review }: SlideContext) {
+  const { bills, cashflow } = review;
+  const visible = bills.items.slice(0, VISIBLE_BILL_LIMIT);
+  const rest = bills.items.slice(VISIBLE_BILL_LIMIT);
+  const restNok = rest.reduce((sum, bill) => sum + bill.amountNok, 0);
+
+  return (
+    <div className="flex flex-col gap-7 md:gap-9">
+      <div className="space-y-3">
+        <Headline>Bills ran like clockwork: {whole(bills.totalNok)}.</Headline>
+        <Muted>
+          {plural(bills.count, "fixed payment")},{" "}
+          {formatPercent(bills.totalNok / cashflow.spendNok)} of everything you
+          spent.
+        </Muted>
+      </div>
+
+      <ul className="grid max-w-3xl">
+        {visible.map((bill, index) => (
+          <li
+            key={`${bill.merchant}-${index}`}
+            className="mir-tick flex items-baseline justify-between gap-4 border-[color-mix(in_oklab,var(--mir-fg)_22%,transparent)] border-b py-2.5 last:border-b-0"
+            style={{ animationDelay: `${index * 140}ms` }}
+          >
+            <span className="min-w-0">
+              <span className="block truncate font-bold text-lg">
+                {bill.merchant}
+              </span>
+              {bill.categoryName ? (
+                <span className="block truncate text-[var(--mir-muted)] text-sm">
+                  {bill.categoryName}
+                </span>
+              ) : null}
+            </span>
+            <span className="shrink-0 font-semibold text-lg">
+              {whole(bill.amountNok)}
+            </span>
+          </li>
+        ))}
+      </ul>
       {rest.length > 0 ? (
-        <p className="text-muted-foreground text-sm">
-          {rest.length} more {rest.length === 1 ? "category" : "categories"}{" "}
-          shared the remaining {formatNok(restSpendNok)}.
-        </p>
+        <Muted>
+          {plural(rest.length, "more bill")} came to {whole(restNok)}.
+        </Muted>
       ) : null}
     </div>
   );
 }
 
 function MerchantsSlide({ review }: SlideContext) {
-  const [top] = review.everyday.topMerchants;
+  const [first, ...others] = review.everyday.topMerchants;
+  const runnersUp = others.slice(0, 2);
+  const tail = others.slice(2);
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-3">
-        <Eyebrow>Top merchants</Eyebrow>
-        <Headline>{top.merchant} was your top spot.</Headline>
-      </div>
+    <div className="flex flex-col gap-7 md:gap-9">
+      <h2 className="overflow-hidden pb-1">
+        <span className="mir-rise block">
+          <span className="mir-condensed block break-words font-black text-[clamp(3.5rem,17vw,6rem)] text-[var(--mir-accent)] leading-[0.92] tracking-[-0.02em]">
+            {first.merchant}
+          </span>
+          <span className="mt-2 block font-bold text-2xl md:text-3xl">
+            {whole(first.spendNok)},{" "}
+            {plural(first.transactionCount, "purchase")}
+          </span>
+        </span>
+      </h2>
 
-      <ol className="space-y-3">
-        {review.everyday.topMerchants.map((merchant, index) => (
-          <li
-            key={merchant.merchant}
-            className="flex items-center gap-4 border-border/60 border-b pb-3 last:border-b-0"
-          >
-            <span
-              className="w-10 font-extrabold text-3xl text-muted-foreground/60 tabular-nums tracking-tighter"
-              aria-hidden
-            >
-              {index + 1}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-foreground text-lg">
-                {merchant.merchant}
-              </p>
-              <p className="text-muted-foreground text-sm">
-                {merchant.transactionCount} purchase
-                {merchant.transactionCount === 1 ? "" : "s"} ·{" "}
-                {formatPercent(merchant.share)} of spend
-              </p>
-            </div>
-            <span className="font-semibold text-foreground tabular-nums">
-              {formatNok(merchant.spendNok)}
-            </span>
-          </li>
-        ))}
-      </ol>
+      {runnersUp.length > 0 ? (
+        <ol start={2} className="grid gap-5 sm:grid-cols-2">
+          {runnersUp.map((merchant, index) => (
+            <li key={merchant.merchant} className="overflow-hidden pb-1">
+              <div
+                className="mir-rise flex items-baseline gap-3"
+                style={{ animationDelay: `${(index + 1) * 120}ms` }}
+              >
+                <span className="font-black text-2xl text-[var(--mir-muted)]">
+                  {index + 2}
+                </span>
+                <span className="min-w-0">
+                  <span className="mir-condensed block truncate font-extrabold text-[clamp(2rem,8vw,3rem)] leading-none">
+                    {merchant.merchant}
+                  </span>
+                  <span className="block font-semibold text-lg">
+                    {whole(merchant.spendNok)}
+                  </span>
+                </span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+
+      {tail.length > 0 ? (
+        <ol
+          start={4}
+          className="flex flex-wrap gap-x-8 gap-y-2 text-[var(--mir-muted)]"
+        >
+          {tail.map((merchant, index) => (
+            <li key={merchant.merchant} className="overflow-hidden">
+              <span
+                className="mir-rise block"
+                style={{ animationDelay: `${(index + 3) * 120}ms` }}
+              >
+                <span className="font-black">{index + 4}</span>{" "}
+                <span className="font-semibold text-[var(--mir-fg)]">
+                  {merchant.merchant}
+                </span>{" "}
+                {whole(merchant.spendNok)}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
     </div>
   );
 }
 
 function MomentsSlide({ review }: SlideContext) {
-  const { biggestPurchase, busiestDay } = review.everyday;
+  const { biggestPurchase, busiestDay, dailySpend } = review.everyday;
+  const maxDayNok = Math.max(...dailySpend.map((day) => day.spendNok), 1);
+  const [firstDay] = dailySpend;
+  const lastDay = dailySpend.at(-1);
 
   return (
-    <div className="space-y-8">
-      <div className="space-y-3">
-        <Eyebrow>Moments</Eyebrow>
-        <Headline>The moments that stood out.</Headline>
-      </div>
+    <div className="flex flex-col gap-8 md:gap-10">
+      {biggestPurchase ? (
+        <div className="space-y-3">
+          <Headline>
+            {biggestPurchase.merchant}, {whole(biggestPurchase.amountNok)},{" "}
+            {formatDayLong(biggestPurchase.bookingDate)}
+          </Headline>
+          <Muted>
+            Your biggest everyday purchase
+            {biggestPurchase.categoryName
+              ? `, in ${biggestPurchase.categoryName}`
+              : ""}
+            .
+          </Muted>
+        </div>
+      ) : null}
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {biggestPurchase ? (
-          <div className="space-y-2 rounded-2xl bg-background/70 p-5">
-            <p className="text-muted-foreground text-xs uppercase tracking-wide">
-              Biggest purchase
-            </p>
-            <p className="font-extrabold text-3xl text-destructive tabular-nums tracking-tight">
-              {formatNok(biggestPurchase.amountNok)}
-            </p>
-            <p className="font-semibold text-foreground">
-              {biggestPurchase.merchant}
-            </p>
-            <p className="text-muted-foreground text-sm">
-              {formatBookingDate(biggestPurchase.bookingDate)}
-              {biggestPurchase.categoryName
-                ? ` · ${biggestPurchase.categoryName}`
-                : ""}
-            </p>
-          </div>
-        ) : null}
-
+      <figure className="space-y-3">
+        <div
+          className="mir-sweep flex h-36 items-end gap-[3px] md:h-44 md:gap-1"
+          role="img"
+          aria-label={`Everyday spending per day${busiestDay ? `, busiest on ${formatDayLong(busiestDay.bookingDate)}` : ""}`}
+        >
+          {dailySpend.map((day) => {
+            const isBusiest = day.date === busiestDay?.bookingDate;
+            return (
+              <div
+                key={day.date}
+                className={`min-h-[3px] flex-1 rounded-t-[3px] ${
+                  isBusiest
+                    ? "bg-[var(--mir-accent)]"
+                    : "bg-[color-mix(in_oklab,var(--mir-accent)_32%,transparent)]"
+                }`}
+                style={{ height: `${(day.spendNok / maxDayNok) * 100}%` }}
+              />
+            );
+          })}
+        </div>
+        <div className="flex justify-between text-[var(--mir-muted)] text-sm">
+          <span>{firstDay ? Number(firstDay.date.slice(8)) : null}</span>
+          <span>{lastDay ? Number(lastDay.date.slice(8)) : null}</span>
+        </div>
         {busiestDay ? (
-          <div className="space-y-2 rounded-2xl bg-background/70 p-5">
-            <p className="text-muted-foreground text-xs uppercase tracking-wide">
-              Busiest day
-            </p>
-            <p className="font-extrabold text-3xl text-foreground tracking-tight">
-              {formatBookingDate(busiestDay.bookingDate)}
-            </p>
-            <p className="text-muted-foreground text-sm tabular-nums">
-              {busiestDay.transactionCount} purchase
-              {busiestDay.transactionCount === 1 ? "" : "s"} ·{" "}
-              {formatNok(busiestDay.spendNok)}
-            </p>
-          </div>
+          <figcaption className="text-pretty font-semibold text-lg md:text-xl">
+            Busiest day: {formatDayLong(busiestDay.bookingDate)},{" "}
+            {plural(busiestDay.transactionCount, "purchase")} for{" "}
+            {whole(busiestDay.spendNok)}.
+          </figcaption>
         ) : null}
-      </div>
+      </figure>
     </div>
   );
 }
 
-function AiRecapSlide({
+function TextButton({
+  children,
+  onClick,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="justify-self-start text-left font-semibold text-[var(--mir-accent)] underline decoration-2 underline-offset-[0.22em] hover:decoration-[3px]"
+    >
+      {children}
+    </button>
+  );
+}
+
+function RecapVoice({
   review,
   isGenerating,
+  generateFailed,
   onRequestGenerate,
 }: SlideContext) {
-  const generating = isGenerating || review.reviewState === "GENERATING";
+  const recap = recapText(review);
+
+  if (isGenerating || review.reviewState === "GENERATING") {
+    return (
+      <output className="block text-[var(--mir-muted)] text-lg">
+        Writing the recap…
+      </output>
+    );
+  }
+
+  if (generateFailed || review.reviewState === "FAILED") {
+    return (
+      <div role="alert" className="space-y-2 text-lg">
+        <p>The recap couldn't be written. Try again.</p>
+        <TextButton onClick={() => onRequestGenerate("regenerate")}>
+          Retry
+        </TextButton>
+      </div>
+    );
+  }
+
+  if (recap) {
+    return (
+      <div className="space-y-3">
+        <p className="max-w-[60ch] whitespace-pre-line text-pretty text-lg leading-relaxed md:text-xl">
+          {keepAmountsTogether(recap)}
+        </p>
+        <TextButton onClick={() => onRequestGenerate("regenerate")}>
+          Rewrite the recap
+        </TextButton>
+      </div>
+    );
+  }
+
+  if (!hasActivity(review)) {
+    return null;
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <Eyebrow>AI recap</Eyebrow>
-        <Headline>In a nutshell.</Headline>
-      </div>
-
-      {generating ? (
-        <div className="space-y-3">
-          <output className="block text-muted-foreground">
-            Writing your recap...
-          </output>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-11/12" />
-            <Skeleton className="h-4 w-10/12" />
-            <Skeleton className="mb-4 h-4 w-3/4" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
-          </div>
-        </div>
-      ) : null}
-
-      {!generating && review.reviewState === "FAILED" ? (
-        <div className="space-y-4">
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-          >
-            {review.errorMessage
-              ? `Generation failed: ${review.errorMessage}`
-              : "Generation failed. Try regenerating the review."}
-          </p>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => onRequestGenerate("regenerate")}
-          >
-            <RefreshCw aria-hidden />
-            Regenerate review
-          </Button>
-        </div>
-      ) : null}
-
-      {!generating && review.reviewState === "NOT_GENERATED" ? (
-        <div className="space-y-4">
-          <p className="max-w-xl text-lg text-muted-foreground">
-            Get a short written recap of this month, based on the same numbers
-            you just flipped through.
-          </p>
-          <Button type="button" onClick={() => onRequestGenerate("generate")}>
-            <Sparkles aria-hidden />
-            Generate review
-          </Button>
-        </div>
-      ) : null}
-
-      {!generating &&
-      review.reviewState === "GENERATED" &&
-      review.reviewText ? (
-        <div className="space-y-4">
-          <p className="max-w-2xl whitespace-pre-wrap text-foreground text-lg leading-relaxed">
-            {review.reviewText}
-          </p>
-          <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-sm">
-            <span>Generated {formatGeneratedAt(review.generatedAt)}</span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => onRequestGenerate("regenerate")}
-            >
-              <RefreshCw aria-hidden />
-              Regenerate review
-            </Button>
-          </div>
-        </div>
-      ) : null}
-    </div>
+    <TextButton onClick={() => onRequestGenerate("generate")}>
+      Write a recap
+    </TextButton>
   );
 }
 
-function SummarySlide({ review, monthLabel }: SlideContext) {
-  const { cashflow } = review;
+const exitLinkClassName =
+  "inline-flex items-center gap-2 font-semibold underline decoration-2 underline-offset-[0.22em] hover:text-[var(--mir-accent)]";
+
+function FinaleSlide(context: SlideContext) {
+  const { review, onReplay } = context;
+  const { cashflow, bills, everyday, adjacentMonths } = review;
   const [topCategory] = review.categories;
-  const [topMerchant] = review.everyday.topMerchants;
+  const { dateFrom, dateTo } = toMonthDateRange(review.monthStart);
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <Eyebrow>Summary</Eyebrow>
-        <Headline>{monthLabel} at a glance.</Headline>
+    <div className="flex flex-col gap-9 md:gap-12">
+      <div className="grid items-start gap-8 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-14">
+        <div className="space-y-4">
+          <h2 aria-label={`Net ${signedNet(cashflow.netNok)}`}>
+            <span
+              aria-hidden
+              className="mir-condensed block font-black text-[clamp(4rem,20vw,6rem)] text-[var(--mir-accent)] leading-[0.9] tracking-[-0.02em]"
+            >
+              {signedNet(cashflow.netNok)}
+            </span>
+          </h2>
+          <ul className="space-y-1 text-lg">
+            <li>
+              {whole(cashflow.incomeNok)} in, {whole(cashflow.spendNok)} out.
+            </li>
+            {topCategory ? (
+              <li>
+                {topCategory.categoryName} led spending at{" "}
+                {formatPercent(topCategory.share)}.
+              </li>
+            ) : null}
+            {bills.count > 0 ? (
+              <li>
+                {whole(bills.totalNok)} in bills, {whole(everyday.totalNok)}{" "}
+                everyday.
+              </li>
+            ) : null}
+          </ul>
+        </div>
+        <RecapVoice {...context} />
       </div>
 
-      <div className="grid gap-6 rounded-2xl bg-background/70 p-6 sm:grid-cols-2 md:p-8">
-        <Stat
-          label="Net"
-          value={formatSignedNok(cashflow.netNok, "auto")}
-          valueClassName={signedTone(cashflow.netNok)}
-        />
-        <Stat
-          label="Savings rate"
-          value={
-            cashflow.savingsRate === null
-              ? "No income"
-              : formatPercent(cashflow.savingsRate)
-          }
-        />
-        <Stat
-          label="Income in"
-          value={formatSignedNok(cashflow.incomeNok, "positive")}
-          valueClassName="text-success"
-        />
-        <Stat
-          label="Spend out"
-          value={formatSignedNok(cashflow.spendNok, "negative")}
-          valueClassName="text-destructive"
-        />
-        {topCategory ? (
-          <Stat label="Top category" value={topCategory.categoryName} />
+      <nav
+        aria-label="Leave the review"
+        className="flex flex-wrap items-center gap-x-7 gap-y-3"
+      >
+        {adjacentMonths.previous ? (
+          <Link
+            href={`/monthly-review/${adjacentMonths.previous}`}
+            className={exitLinkClassName}
+          >
+            <ArrowLeft aria-hidden className="size-4" />
+            {formatMonthStartLabel(adjacentMonths.previous)}
+          </Link>
         ) : null}
-        {topMerchant ? (
-          <Stat label="Top merchant" value={topMerchant.merchant} />
+        <button type="button" onClick={onReplay} className={exitLinkClassName}>
+          Replay
+        </button>
+        <Link
+          href={`/transactions?dateFrom=${dateFrom}&dateTo=${dateTo}`}
+          className={exitLinkClassName}
+        >
+          See transactions
+        </Link>
+        {adjacentMonths.next ? (
+          <Link
+            href={`/monthly-review/${adjacentMonths.next}`}
+            className={exitLinkClassName}
+          >
+            {formatMonthStartLabel(adjacentMonths.next)}
+            <ArrowRight aria-hidden className="size-4" />
+          </Link>
         ) : null}
-        {review.everyday.biggestPurchase ? (
-          <Stat
-            label="Biggest purchase"
-            value={formatNok(review.everyday.biggestPurchase.amountNok)}
-          />
-        ) : null}
-        {review.everyday.busiestDay ? (
-          <Stat
-            label="Busiest day"
-            value={formatBookingDate(review.everyday.busiestDay.bookingDate)}
-          />
-        ) : null}
-      </div>
+      </nav>
     </div>
   );
 }
@@ -530,53 +685,51 @@ export const MONTH_IN_REVIEW_SLIDES: SlideDefinition[] = [
   {
     id: "intro",
     title: "Intro",
-    toneClassName: "bg-brand/10",
+    world: () => DECK_WORLDS.ink,
     isAvailable: () => true,
     render: (context) => <IntroSlide {...context} />,
   },
   {
     id: "net",
     title: "Net result",
-    toneClassName: "bg-muted/60",
-    isAvailable: (review) =>
-      review.cashflow.incomeNok > 0 || review.cashflow.spendNok > 0,
+    world: (review) =>
+      review.cashflow.netNok >= 0 ? DECK_WORLDS.lime : DECK_WORLDS.red,
+    isAvailable: hasActivity,
     render: (context) => <NetSlide {...context} />,
   },
   {
     id: "categories",
     title: "Where it went",
-    toneClassName: "bg-chart-1/10",
+    world: () => DECK_WORLDS.violet,
     isAvailable: (review) => review.categories.length > 0,
     render: (context) => <CategoriesSlide {...context} />,
   },
   {
+    id: "bills",
+    title: "Bills",
+    world: () => DECK_WORLDS.steel,
+    isAvailable: (review) => review.bills.count > 0,
+    render: (context) => <BillsSlide {...context} />,
+  },
+  {
     id: "merchants",
     title: "Top merchants",
-    toneClassName: "bg-chart-2/10",
+    world: () => DECK_WORLDS.coral,
     isAvailable: (review) => review.everyday.topMerchants.length > 0,
     render: (context) => <MerchantsSlide {...context} />,
   },
   {
     id: "moments",
     title: "Moments",
-    toneClassName: "bg-chart-3/10",
-    isAvailable: (review) =>
-      review.everyday.biggestPurchase !== null ||
-      review.everyday.busiestDay !== null,
+    world: () => DECK_WORLDS.amber,
+    isAvailable: (review) => review.everyday.count > 0,
     render: (context) => <MomentsSlide {...context} />,
   },
   {
-    id: "ai-recap",
-    title: "AI recap",
-    toneClassName: "bg-brand/10",
+    id: "finale",
+    title: "Finale",
+    world: () => DECK_WORLDS.ink,
     isAvailable: () => true,
-    render: (context) => <AiRecapSlide {...context} />,
-  },
-  {
-    id: "summary",
-    title: "Summary",
-    toneClassName: "bg-muted/60",
-    isAvailable: () => true,
-    render: (context) => <SummarySlide {...context} />,
+    render: (context) => <FinaleSlide {...context} />,
   },
 ];

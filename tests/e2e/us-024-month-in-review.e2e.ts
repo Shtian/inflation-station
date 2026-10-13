@@ -128,7 +128,18 @@ function activeSlide(page: Page) {
   return page.locator('section[aria-roledescription="slide"]');
 }
 
-test("navigates month in review slides by buttons, keyboard, and progress bar", async ({
+const EMPTY_MONTH: MonthInReviewWithReview = {
+  ...MARCH_REVIEW,
+  cashflow: { incomeNok: 0, spendNok: 0, netNok: 0, savingsRate: null },
+  previousMonth: null,
+  spendTransactionCount: 0,
+  categories: [],
+  incomeSources: [],
+  bills: { totalNok: 0, count: 0, items: [] },
+  everyday: EMPTY_EVERYDAY,
+};
+
+test("steps through every slide by buttons and keyboard, keeping the slide in the URL", async ({
   page,
 }) => {
   await stubReview(page, () => MARCH_REVIEW);
@@ -137,12 +148,16 @@ test("navigates month in review slides by buttons, keyboard, and progress bar", 
 
   await expect(
     page.getByRole("heading", { name: "March 2026 in review" }),
-  ).toBeVisible();
+  ).toBeAttached();
   await expect(activeSlide(page)).toHaveAttribute(
     "aria-label",
     "1 of 7: Intro",
   );
-  await expect(page.getByText("9 purchases")).toBeVisible();
+  await expect(
+    activeSlide(page).getByText(
+      /^You kept 12\s500\skr of what came in\. Let's see where the rest went\.$/,
+    ),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Previous", exact: true }),
   ).toBeDisabled();
@@ -152,15 +167,12 @@ test("navigates month in review slides by buttons, keyboard, and progress bar", 
     "aria-label",
     "2 of 7: Net result",
   );
-  await expect(page.getByTestId("net-result")).toHaveText(/^\+12\s500,00\skr$/);
-  await expect(activeSlide(page).getByText(/^\+25\s000,00\skr$/)).toHaveCount(
-    2,
-  );
-  await expect(activeSlide(page).getByText(/^-12\s500,00\skr$/)).toBeVisible();
+  await expect(page).toHaveURL(/\/monthly-review\/2026-03-01\?slide=net$/);
+  await expect(page.getByTestId("net-result")).toHaveText(/^\+12\s500\skr$/);
   await expect(page.getByText("You kept 50% of your income.")).toBeVisible();
-  await expect(page.getByText("vs February 2026")).toBeVisible();
-  await expect(activeSlide(page).getByText(/^\+1\s500,00\skr$/)).toBeVisible();
-  await expect(activeSlide(page).getByText("EMPLOYER")).toBeVisible();
+  await expect(
+    activeSlide(page).getByText(/^1\s500\skr better than February\.$/),
+  ).toBeVisible();
 
   await page.keyboard.press("ArrowRight");
   await expect(activeSlide(page)).toHaveAttribute(
@@ -170,62 +182,184 @@ test("navigates month in review slides by buttons, keyboard, and progress bar", 
   await expect(
     page.getByRole("heading", { name: "Rent took 64% of your spending." }),
   ).toBeVisible();
-  await expect(page.getByText(/^-500,00\skr vs last month$/)).toBeVisible();
-
-  await page.keyboard.press("ArrowLeft");
-  await expect(activeSlide(page)).toHaveAttribute(
-    "aria-label",
-    "2 of 7: Net result",
+  const rentRow = activeSlide(page).getByRole("link", { name: /^Rent/ });
+  await expect(rentRow).toHaveAttribute(
+    "href",
+    "/transactions?dateFrom=2026-03-01&dateTo=2026-03-31&categoryId=cat-rent",
   );
-
-  await page.getByRole("button", { name: "Go to slide 7: Summary" }).click();
-  await expect(activeSlide(page)).toHaveAttribute(
-    "aria-label",
-    "7 of 7: Summary",
-  );
+  await expect(rentRow).not.toContainText(/more|less/);
   await expect(
-    page.getByRole("heading", { name: "March 2026 at a glance." }),
+    activeSlide(page).getByRole("link", { name: /^Food/ }),
+  ).toContainText(/500\skr less/);
+  await expect(
+    activeSlide(page).getByRole("link", { name: /^Travel/ }),
+  ).toContainText(/1\s500\skr more/);
+
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    page.getByRole("heading", {
+      name: /^Bills ran like clockwork: 8\s000\skr\.$/,
+    }),
   ).toBeVisible();
+  await expect(activeSlide(page).getByText("LANDLORD")).toBeVisible();
+
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    page.getByRole("heading", {
+      name: /^REMA 1000\s*2\s000\skr, 4\spurchases$/,
+    }),
+  ).toBeVisible();
+
+  await page.keyboard.press("ArrowRight");
+  await expect(
+    page.getByRole("heading", { name: /^VY, 900\skr, Sunday 8\sMarch$/ }),
+  ).toBeVisible();
+  await expect(
+    activeSlide(page).getByText(
+      /^Busiest day: Saturday 14\sMarch, 3\spurchases for 1\s800\skr\.$/,
+    ),
+  ).toBeVisible();
+
+  await page.keyboard.press("Home");
+  await expect(activeSlide(page)).toHaveAttribute(
+    "aria-label",
+    "1 of 7: Intro",
+  );
+  await page.keyboard.press("End");
+  await expect(activeSlide(page)).toHaveAttribute(
+    "aria-label",
+    "7 of 7: Finale",
+  );
   await expect(
     page.getByRole("button", { name: "Next", exact: true }),
   ).toBeDisabled();
 
-  await page.getByRole("button", { name: "Previous", exact: true }).click();
-  await expect(activeSlide(page)).toHaveAttribute(
-    "aria-label",
-    "6 of 7: AI recap",
-  );
-
-  await page.getByRole("link", { name: "Back to timeline" }).click();
+  await page.keyboard.press("Escape");
   await expect(page).toHaveURL(/\/monthly-review$/);
 });
 
-test("drops slides that have no data", async ({ page }) => {
+test("opens the slide named in the URL and jumps with the progress bar", async ({
+  page,
+}) => {
+  await stubReview(page, () => MARCH_REVIEW);
+
+  await page.goto("/monthly-review/2026-03-01?slide=bills");
+  await expect(activeSlide(page)).toHaveAttribute(
+    "aria-label",
+    "4 of 7: Bills",
+  );
+
+  await page.getByRole("button", { name: "Go to slide 6: Moments" }).click();
+  await expect(page).toHaveURL(/\?slide=moments$/);
+  await page.reload();
+  await expect(activeSlide(page)).toHaveAttribute(
+    "aria-label",
+    "6 of 7: Moments",
+  );
+});
+
+test("ends on a finale with real exits", async ({ page }) => {
   await stubReview(page, () => ({
     ...MARCH_REVIEW,
-    cashflow: { incomeNok: 0, spendNok: 0, netNok: 0, savingsRate: null },
-    previousMonth: null,
-    spendTransactionCount: 0,
-    categories: [],
-    incomeSources: [],
-    bills: { totalNok: 0, count: 0, items: [] },
-    everyday: EMPTY_EVERYDAY,
+    adjacentMonths: { previous: "2026-02-01", next: "2026-04-01" },
   }));
+
+  await page.goto("/monthly-review/2026-03-01?slide=finale");
+
+  await expect(
+    page.getByRole("heading", { name: /^Net \+12\s500\skr$/ }),
+  ).toBeVisible();
+  await expect(
+    activeSlide(page).getByText(/^25\s000\skr in, 12\s500\skr out\.$/),
+  ).toBeVisible();
+  await expect(
+    activeSlide(page).getByText(/^8\s000\skr in bills, 4\s500\skr everyday\.$/),
+  ).toBeVisible();
+
+  const exits = page.getByRole("navigation", { name: "Leave the review" });
+  await expect(
+    exits.getByRole("link", { name: "February 2026" }),
+  ).toHaveAttribute("href", "/monthly-review/2026-02-01");
+  await expect(exits.getByRole("link", { name: "April 2026" })).toHaveAttribute(
+    "href",
+    "/monthly-review/2026-04-01",
+  );
+  await expect(
+    exits.getByRole("link", { name: "See transactions" }),
+  ).toHaveAttribute(
+    "href",
+    "/transactions?dateFrom=2026-03-01&dateTo=2026-03-31",
+  );
+
+  await exits.getByRole("button", { name: "Replay" }).click();
+  await expect(activeSlide(page)).toHaveAttribute(
+    "aria-label",
+    "1 of 7: Intro",
+  );
+  await expect(page).toHaveURL(/\?slide=intro$/);
+});
+
+test("omits a month exit when there is no month on that side", async ({
+  page,
+}) => {
+  await stubReview(page, () => MARCH_REVIEW);
+
+  await page.goto("/monthly-review/2026-03-01?slide=finale");
+
+  const exits = page.getByRole("navigation", { name: "Leave the review" });
+  await expect(exits.getByRole("link")).toHaveText([
+    "February 2026",
+    "See transactions",
+  ]);
+});
+
+test("says once that every category held steady instead of repeating it per row", async ({
+  page,
+}) => {
+  await stubReview(page, () => ({
+    ...MARCH_REVIEW,
+    categories: MARCH_REVIEW.categories.map((category) => ({
+      ...category,
+      deltaNok: 0.4,
+    })),
+  }));
+
+  await page.goto("/monthly-review/2026-03-01?slide=categories");
+
+  await expect(
+    activeSlide(page).getByText("Every category held steady vs February."),
+  ).toBeVisible();
+  await expect(activeSlide(page).getByText(/ (more|less)$/)).toHaveCount(0);
+});
+
+test("an empty month keeps only the intro and finale, with no recap offer", async ({
+  page,
+}) => {
+  await stubReview(page, () => EMPTY_MONTH);
 
   await page.goto("/monthly-review/2026-03-01");
 
   await expect(activeSlide(page)).toHaveAttribute(
     "aria-label",
-    "1 of 3: Intro",
+    "1 of 2: Intro",
   );
+  await expect(
+    page.getByText("A quiet month with no spending or income recorded."),
+  ).toBeVisible();
   await page.keyboard.press("ArrowRight");
   await expect(activeSlide(page)).toHaveAttribute(
     "aria-label",
-    "2 of 3: AI recap",
+    "2 of 2: Finale",
+  );
+  await expect(page.getByRole("heading", { name: "Net 0 kr" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Write a recap" })).toHaveCount(
+    0,
   );
 });
 
-test("generates the AI recap after confirmation", async ({ page }) => {
+test("writes the recap after confirmation and opens with it next time", async ({
+  page,
+}) => {
   const generateRequests: Array<{ monthStart?: string }> = [];
   let releaseGeneration: () => void = () => {};
   const generationReleased = new Promise<void>((resolve) => {
@@ -241,7 +375,7 @@ test("generates the AI recap after confirmation", async ({ page }) => {
       ...MARCH_REVIEW,
       reviewState: "GENERATED",
       generatedAt: "2026-04-02T09:30:00.000Z",
-      reviewText: "Mars endte med et overskudd på 12 500 kr.",
+      reviewText: "Mars endte med et overskudd på 12 500 kr. Mat gikk ned.",
     };
     await route.fulfill({
       status: 200,
@@ -251,49 +385,54 @@ test("generates the AI recap after confirmation", async ({ page }) => {
         status: "GENERATED",
         generatedAt: "2026-04-02T09:30:00.000Z",
         errorMessage: null,
-        reviewText: "Mars endte med et overskudd på 12 500 kr.",
+        reviewText: review.reviewText,
         unavailableReason: null,
       }),
     });
   });
 
-  await page.goto("/monthly-review/2026-03-01");
-  await page.getByRole("button", { name: "Go to slide 6: AI recap" }).click();
+  await page.goto("/monthly-review/2026-03-01?slide=finale");
 
-  await page.getByRole("button", { name: "Generate review" }).click();
+  await page.getByRole("button", { name: "Write a recap" }).click();
   await expect(
-    page.getByRole("heading", { name: "Generate monthly review?" }),
+    page.getByRole("heading", { name: "Write a recap?" }),
   ).toBeVisible();
-  await expect(
-    page.getByText("This will generate a monthly AI review for March 2026."),
-  ).toBeVisible();
-
-  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowLeft");
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect(activeSlide(page)).toHaveAttribute(
     "aria-label",
-    "6 of 7: AI recap",
+    "7 of 7: Finale",
   );
   expect(generateRequests).toHaveLength(0);
 
-  await page.getByRole("button", { name: "Generate review" }).click();
-  await page.getByRole("button", { name: "Generate now" }).click();
+  await page.getByRole("button", { name: "Write a recap" }).click();
+  await page.getByRole("button", { name: "Write it" }).click();
 
-  await expect(page.getByText("Writing your recap...")).toBeVisible();
+  await expect(page.getByText("Writing the recap…")).toBeVisible();
   await expect.poll(() => generateRequests.length).toBe(1);
   expect(generateRequests[0]).toEqual({ monthStart: "2026-03-01" });
 
   releaseGeneration();
 
   await expect(
-    page.getByText("Mars endte med et overskudd på 12 500 kr."),
+    activeSlide(page).getByText(
+      /^Mars endte med et overskudd på 12\s500\skr\. Mat gikk ned\.$/,
+    ),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Regenerate review" }),
+    page.getByRole("button", { name: "Rewrite the recap" }),
+  ).toBeVisible();
+
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await page.keyboard.press("Home");
+  await expect(
+    activeSlide(page).getByText(
+      /^Mars endte med et overskudd på 12\s500\skr\.$/,
+    ),
   ).toBeVisible();
 });
 
-test("shows a failed AI recap with a regenerate action", async ({ page }) => {
+test("a failed recap says so plainly and offers a retry", async ({ page }) => {
   const generateRequests: Array<{ monthStart?: string }> = [];
 
   await stubReview(page, () => ({
@@ -310,28 +449,63 @@ test("shows a failed AI recap with a regenerate action", async ({ page }) => {
     });
   });
 
-  await page.goto("/monthly-review/2026-03-01");
-  await page.getByRole("button", { name: "Go to slide 6: AI recap" }).click();
+  await page.goto("/monthly-review/2026-03-01?slide=finale");
 
   await expect(
-    page.getByText("Generation failed: provider_error"),
+    page.getByText("The recap couldn't be written. Try again."),
   ).toBeVisible();
+  await expect(page.getByText("provider_error")).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Regenerate review" }).click();
+  await page.getByRole("button", { name: "Retry" }).click();
   await expect(
-    page.getByRole("heading", { name: "Regenerate monthly review?" }),
+    page.getByRole("heading", { name: "Rewrite the recap?" }),
   ).toBeVisible();
-  await expect(
-    page.getByText(
-      "This will replace the existing review text for March 2026.",
-    ),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Regenerate now" }).click();
+  await page.getByRole("button", { name: "Rewrite", exact: true }).click();
 
   await expect.poll(() => generateRequests.length).toBe(1);
   await expect(
-    page.getByText(
-      "Could not start monthly review generation. Please try again.",
-    ),
+    page.getByText("The recap couldn't be written. Try again."),
   ).toBeVisible();
+});
+
+test.describe("on a phone", () => {
+  test.use({ hasTouch: true, viewport: { width: 390, height: 844 } });
+
+  test("taps the side thirds and swipes to step", async ({ page }) => {
+    await stubReview(page, () => MARCH_REVIEW);
+    await page.goto("/monthly-review/2026-03-01");
+    await expect(activeSlide(page)).toHaveAttribute(
+      "aria-label",
+      "1 of 7: Intro",
+    );
+
+    await page.touchscreen.tap(350, 420);
+    await expect(activeSlide(page)).toHaveAttribute(
+      "aria-label",
+      "2 of 7: Net result",
+    );
+    await page.touchscreen.tap(40, 420);
+    await expect(activeSlide(page)).toHaveAttribute(
+      "aria-label",
+      "1 of 7: Intro",
+    );
+
+    await activeSlide(page).evaluate((slide) => {
+      const touch = (type: string, clientX: number) =>
+        slide.dispatchEvent(
+          new PointerEvent(type, {
+            pointerType: "touch",
+            clientX,
+            clientY: 420,
+            bubbles: true,
+          }),
+        );
+      touch("pointerdown", 300);
+      touch("pointerup", 120);
+    });
+    await expect(activeSlide(page)).toHaveAttribute(
+      "aria-label",
+      "2 of 7: Net result",
+    );
+  });
 });

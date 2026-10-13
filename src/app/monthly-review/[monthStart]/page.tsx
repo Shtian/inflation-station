@@ -1,19 +1,33 @@
+import { Archivo } from "next/font/google";
 import { MonthInReview } from "./month-in-review";
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  axes: ["wdth"],
+  variable: "--font-archivo",
+});
 
 type MonthInReviewPageProps = {
   params: Promise<{
     monthStart: string;
   }>;
+  searchParams: Promise<{
+    slide?: string | string[];
+  }>;
 };
 
 export default async function MonthInReviewPage({
   params,
+  searchParams,
 }: MonthInReviewPageProps) {
-  const { monthStart } = await params;
+  const [{ monthStart }, { slide }] = await Promise.all([params, searchParams]);
 
   return (
-    <main className="mx-auto w-full max-w-4xl px-5 py-8 md:px-10">
-      <MonthInReview monthStart={monthStart} />
+    <main className={archivo.variable}>
+      <MonthInReview
+        monthStart={monthStart}
+        initialSlideId={typeof slide === "string" ? slide : null}
+      />
     </main>
   );
 }

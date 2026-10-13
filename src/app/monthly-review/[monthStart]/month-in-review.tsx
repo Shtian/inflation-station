@@ -1,8 +1,17 @@
 "use client";
 
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useEffectEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  type CSSProperties,
+  type PointerEvent,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 import { z } from "zod";
 import {
   AlertDialog,
@@ -14,31 +23,56 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
 import type { MonthInReviewWithReview } from "@/lib/monthly-review/month-in-review";
 import { formatMonthStartLabel } from "../monthly-review-manager.utils";
 import {
   type GenerateMode,
   MONTH_IN_REVIEW_SLIDES,
 } from "./month-in-review.slides";
+import { DECK_WORLDS, type DeckWorld } from "./month-in-review.worlds";
+import { MonthInReviewSkeleton } from "./month-in-review-skeleton";
+import "./month-in-review.css";
 
 const reviewResponseSchema = z.object({
   review: z.object({ monthStart: z.string() }).passthrough(),
 });
 
+const TIMELINE_HREF = "/monthly-review";
+const SWIPE_THRESHOLD_PX = 48;
+
 type LoadError = "invalid-month" | "failed";
 
-export function MonthInReview({ monthStart }: { monthStart: string }) {
+function worldStyle(world: DeckWorld): CSSProperties {
+  return {
+    "--mir-bg": world.background,
+    "--mir-fg": world.foreground,
+    "--mir-accent": world.accent,
+    "--mir-muted": world.muted,
+  } as CSSProperties;
+}
+
+const controlClassName =
+  "inline-flex h-12 items-center gap-1.5 rounded-full px-5 font-bold text-base transition-opacity disabled:pointer-events-none disabled:opacity-25";
+
+export function MonthInReview({
+  monthStart,
+  initialSlideId,
+}: {
+  monthStart: string;
+  initialSlideId: string | null;
+}) {
+  const router = useRouter();
   const monthLabel = formatMonthStartLabel(monthStart);
   const [review, setReview] = useState<MonthInReviewWithReview | null>(null);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [activeSlideId, setActiveSlideId] = useState(
-    MONTH_IN_REVIEW_SLIDES[0].id,
+    initialSlideId ?? MONTH_IN_REVIEW_SLIDES[0].id,
   );
-  const [direction, setDirection] = useState<1 | -1>(1);
   const [generateMode, setGenerateMode] = useState<GenerateMode | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [generateFailed, setGenerateFailed] = useState(false);
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const slideRef = useRef<HTMLElement>(null);
 
   const loadReview = useCallback(async () => {
     setLoadError(null);
@@ -66,6 +100,15 @@ export function MonthInReview({ monthStart }: { monthStart: string }) {
     void loadReview();
   }, [loadReview]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const previousOverflow = root.style.overflow;
+    root.style.overflow = "hidden";
+    return () => {
+      root.style.overflow = previousOverflow;
+    };
+  }, []);
+
   const slides = review
     ? MONTH_IN_REVIEW_SLIDES.filter((slide) => slide.isAvailable(review))
     : [];
@@ -74,8 +117,6 @@ export function MonthInReview({ monthStart }: { monthStart: string }) {
     slides.findIndex((slide) => slide.id === activeSlideId),
   );
   const activeSlide = slides[activeIndex];
-  const isFirst = activeIndex === 0;
-  const isLast = activeIndex === slides.length - 1;
 
   function goTo(index: number) {
     const target = slides[index];
@@ -83,8 +124,10 @@ export function MonthInReview({ monthStart }: { monthStart: string }) {
       return;
     }
 
-    setDirection(index > activeIndex ? 1 : -1);
     setActiveSlideId(target.id);
+    const url = new URL(window.location.href);
+    url.searchParams.set("slide", target.id);
+    window.history.replaceState(window.history.state, "", url);
   }
 
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
@@ -98,12 +141,17 @@ export function MonthInReview({ monthStart }: { monthStart: string }) {
       return;
     }
 
-    if (event.key === "ArrowRight") {
+    const step: Record<string, () => void> = {
+      ArrowRight: () => goTo(activeIndex + 1),
+      ArrowLeft: () => goTo(activeIndex - 1),
+      Home: () => goTo(0),
+      End: () => goTo(slides.length - 1),
+      Escape: () => router.push(TIMELINE_HREF),
+    };
+    const action = step[event.key];
+    if (action) {
       event.preventDefault();
-      goTo(activeIndex + 1);
-    } else if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      goTo(activeIndex - 1);
+      action();
     }
   });
 
@@ -112,9 +160,38 @@ export function MonthInReview({ monthStart }: { monthStart: string }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  function requestGenerate(mode: GenerateMode) {
-    setGenerateError(null);
-    setGenerateMode(mode);
+  function onSlidePointerDown(event: PointerEvent<HTMLElement>) {
+    pointerStart.current =
+      event.pointerType === "mouse"
+        ? null
+        : { x: event.clientX, y: event.clientY };
+  }
+
+  function onSlidePointerUp(event: PointerEvent<HTMLElement>) {
+    const start = pointerStart.current;
+    pointerStart.current = null;
+    if (!start || (event.target as Element).closest("a, button")) {
+      return;
+    }
+
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    if (Math.abs(dx) > SWIPE_THRESHOLD_PX && Math.abs(dx) > Math.abs(dy)) {
+      goTo(activeIndex + (dx < 0 ? 1 : -1));
+      return;
+    }
+
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+      return;
+    }
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const fraction = (event.clientX - bounds.left) / bounds.width;
+    if (fraction < 1 / 3) {
+      goTo(activeIndex - 1);
+    } else if (fraction > 2 / 3) {
+      goTo(activeIndex + 1);
+    }
   }
 
   async function handleConfirmGenerate() {
@@ -123,7 +200,7 @@ export function MonthInReview({ monthStart }: { monthStart: string }) {
     }
 
     setGenerateMode(null);
-    setGenerateError(null);
+    setGenerateFailed(false);
     setIsGenerating(true);
 
     const response = await fetch("/api/monthly-review/generate", {
@@ -132,146 +209,132 @@ export function MonthInReview({ monthStart }: { monthStart: string }) {
       body: JSON.stringify({ monthStart }),
     });
 
-    if (!response.ok) {
-      setGenerateError(
-        "Could not start monthly review generation. Please try again.",
-      );
-    }
-
+    setGenerateFailed(!response.ok);
     await loadReview();
     setIsGenerating(false);
   }
 
-  const header = (
-    <div className="flex items-center justify-between gap-4">
-      <Link
-        href="/monthly-review"
-        className={buttonVariants({ variant: "ghost", size: "sm" })}
-      >
-        <ArrowLeft aria-hidden />
-        Back to timeline
-      </Link>
-      <h1 className="font-semibold text-muted-foreground text-sm uppercase tracking-[0.2em]">
-        {monthLabel} in review
-      </h1>
-      <span className="min-w-16 text-right text-muted-foreground text-sm tabular-nums">
-        {slides.length > 0 ? `${activeIndex + 1} / ${slides.length}` : null}
-      </span>
-    </div>
-  );
-
   if (loadError) {
     return (
-      <div className="space-y-6">
-        {header}
-        <div className="space-y-3">
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-          >
-            {loadError === "invalid-month"
-              ? "That month is not valid. Pick a month from the timeline."
-              : "Could not load month in review."}
-          </p>
+      <div
+        className="mir-deck fixed inset-0 z-50 flex flex-col items-start justify-center gap-5 px-6 md:px-12"
+        style={worldStyle(DECK_WORLDS.ink)}
+      >
+        <h1 className="font-extrabold text-3xl text-[var(--mir-accent)] md:text-5xl">
+          {monthLabel}
+        </h1>
+        <p role="alert" className="text-lg">
+          {loadError === "invalid-month"
+            ? "That month is not valid. Pick a month from the timeline."
+            : "Could not load this month. Try again."}
+        </p>
+        <div className="flex gap-6 font-semibold underline decoration-2 underline-offset-[0.22em]">
           {loadError === "failed" ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void loadReview()}
-            >
+            <button type="button" onClick={() => void loadReview()}>
               Retry
-            </Button>
+            </button>
           ) : null}
+          <Link href={TIMELINE_HREF}>Back to timeline</Link>
         </div>
       </div>
     );
   }
 
   if (!review || !activeSlide) {
-    return (
-      <div className="space-y-6">
-        {header}
-        <output className="flex items-center gap-2 py-16 text-muted-foreground text-sm">
-          <Loader2 className="size-4 animate-spin" aria-hidden />
-          Loading month in review...
-        </output>
-      </div>
-    );
+    return <MonthInReviewSkeleton />;
   }
 
-  return (
-    <div className="space-y-6">
-      {header}
+  const isFirst = activeIndex === 0;
+  const isLast = activeIndex === slides.length - 1;
 
-      <nav aria-label="Slides" className="flex gap-1.5">
-        {slides.map((slide, index) => (
-          <button
-            key={slide.id}
-            type="button"
-            onClick={() => goTo(index)}
-            aria-label={`Go to slide ${index + 1}: ${slide.title}`}
-            aria-current={index === activeIndex ? "step" : undefined}
-            className="group flex-1 py-2 outline-none"
+  return (
+    <div
+      className="mir-deck fixed inset-0 z-50 flex flex-col"
+      style={worldStyle(activeSlide.world(review))}
+    >
+      <header className="flex flex-col gap-1 px-4 pt-3 md:px-8 md:pt-4">
+        <nav aria-label="Slides" className="flex gap-1.5">
+          {slides.map((slide, index) => (
+            <button
+              key={slide.id}
+              type="button"
+              onClick={() => goTo(index)}
+              aria-label={`Go to slide ${index + 1}: ${slide.title}`}
+              aria-current={index === activeIndex ? "step" : undefined}
+              className="group flex-1 rounded-full py-2"
+            >
+              <span
+                className={`block h-1 rounded-full transition-opacity duration-300 ${
+                  index <= activeIndex
+                    ? "bg-[var(--mir-accent)]"
+                    : "mir-track group-hover:opacity-70"
+                }`}
+              />
+            </button>
+          ))}
+        </nav>
+        <div className="flex items-center justify-between gap-4">
+          <Link
+            href={TIMELINE_HREF}
+            aria-label="Close month in review"
+            className="-ml-2 inline-flex size-10 items-center justify-center rounded-full hover:bg-[color-mix(in_oklab,var(--mir-accent)_14%,transparent)]"
           >
-            <span
-              className={`block h-1.5 rounded-full transition-colors duration-300 group-focus-visible:ring-2 group-focus-visible:ring-ring ${
-                index <= activeIndex
-                  ? "bg-foreground"
-                  : "bg-muted-foreground/25 group-hover:bg-muted-foreground/50"
-              }`}
-            />
-          </button>
-        ))}
-      </nav>
+            <X aria-hidden className="size-6" />
+          </Link>
+          <h1
+            className={`mir-expanded font-bold text-sm tracking-[0.02em] ${
+              activeSlide.id === "intro" ? "sr-only" : ""
+            }`}
+          >
+            {monthLabel}
+            <span className="sr-only"> in review</span>
+          </h1>
+          <span className="size-10" aria-hidden />
+        </div>
+      </header>
 
       <section
         key={activeSlide.id}
+        ref={slideRef}
+        tabIndex={-1}
         aria-roledescription="slide"
         aria-label={`${activeIndex + 1} of ${slides.length}: ${activeSlide.title}`}
-        className={`fade-in flex min-h-[30rem] animate-in flex-col justify-center rounded-3xl p-8 duration-300 ease-out motion-reduce:animate-none md:min-h-[34rem] md:p-14 ${
-          direction === 1 ? "slide-in-from-right-6" : "slide-in-from-left-6"
-        } ${activeSlide.toneClassName}`}
+        onPointerDown={onSlidePointerDown}
+        onPointerUp={onSlidePointerUp}
+        className="flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto focus-visible:outline-none"
       >
-        {activeSlide.render({
-          review,
-          monthLabel,
-          isGenerating,
-          onRequestGenerate: requestGenerate,
-        })}
-        {generateError && activeSlide.id === "ai-recap" ? (
-          <p
-            role="alert"
-            className="mt-4 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-          >
-            {generateError}
-          </p>
-        ) : null}
+        <div className="mx-auto my-auto w-full max-w-5xl px-6 py-6 md:px-12">
+          {activeSlide.render({
+            review,
+            monthLabel,
+            isGenerating,
+            generateFailed,
+            onRequestGenerate: setGenerateMode,
+            onReplay: () => goTo(0),
+          })}
+        </div>
       </section>
 
-      <div className="flex items-center justify-between gap-4">
-        <Button
+      <footer className="flex items-center justify-between gap-4 px-4 pt-2 pb-4 md:px-8 md:pb-6">
+        <button
           type="button"
-          variant="outline"
-          size="lg"
           onClick={() => goTo(activeIndex - 1)}
           disabled={isFirst}
+          className={`${controlClassName} border-2 border-[var(--mir-accent)] text-[var(--mir-accent)]`}
         >
-          <ChevronLeft aria-hidden />
+          <ChevronLeft aria-hidden className="size-5" />
           Previous
-        </Button>
-        <p className="hidden text-muted-foreground text-xs sm:block">
-          Use the arrow keys to flip through
-        </p>
-        <Button
+        </button>
+        <button
           type="button"
-          size="lg"
           onClick={() => goTo(activeIndex + 1)}
           disabled={isLast}
+          className={`${controlClassName} bg-[var(--mir-accent)] text-[var(--mir-bg)]`}
         >
           Next
-          <ChevronRight aria-hidden />
-        </Button>
-      </div>
+          <ChevronRight aria-hidden className="size-5" />
+        </button>
+      </footer>
 
       <AlertDialog
         open={generateMode !== null}
@@ -281,25 +344,23 @@ export function MonthInReview({ monthStart }: { monthStart: string }) {
           }
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent finalFocus={slideRef}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {generateMode === "regenerate"
-                ? "Regenerate monthly review?"
-                : "Generate monthly review?"}
+                ? "Rewrite the recap?"
+                : "Write a recap?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {generateMode === "regenerate"
-                ? `This will replace the existing review text for ${monthLabel}.`
-                : `This will generate a monthly AI review for ${monthLabel}.`}
+                ? `This replaces the current recap for ${monthLabel}.`
+                : `This writes a short recap of ${monthLabel} from the numbers in this review.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => void handleConfirmGenerate()}>
-              {generateMode === "regenerate"
-                ? "Regenerate now"
-                : "Generate now"}
+              {generateMode === "regenerate" ? "Rewrite" : "Write it"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

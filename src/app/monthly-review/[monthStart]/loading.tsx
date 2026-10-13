@@ -1,5 +1,5 @@
-import { RouteLoadingState } from "@/components/route-loading-state";
+import { MonthInReviewSkeleton } from "./month-in-review-skeleton";
 
 export default function Loading() {
-  return <RouteLoadingState label="Loading month in review..." />;
+  return <MonthInReviewSkeleton />;
 }
