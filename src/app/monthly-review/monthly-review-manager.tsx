@@ -12,6 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { toDeltaDirection } from "@/lib/monthly-review/delta";
+import { cn } from "@/lib/utils";
 import { CategorySpendBar } from "./components/category-spend-bar";
 import type { MonthlyReviewTimelineRow } from "./monthly-review-manager.types";
 import {
@@ -33,27 +35,27 @@ function getReviewStateTone(
   if (reviewState === "GENERATED") {
     return {
       dotClassName: "border-success/60 text-success",
-      label: "Generated",
+      label: "Recap ready",
     };
   }
 
   if (reviewState === "GENERATING") {
     return {
       dotClassName: "border-warning/60 text-warning",
-      label: "Generating",
+      label: "Writing recap…",
     };
   }
 
   if (reviewState === "FAILED") {
     return {
       dotClassName: "border-destructive/60 text-destructive",
-      label: "Failed",
+      label: "Recap failed",
     };
   }
 
   return {
     dotClassName: "border-border text-muted-foreground",
-    label: "Not generated",
+    label: "No recap yet",
   };
 }
 
@@ -69,6 +71,21 @@ function formatDeltaPercent(row: MonthlyReviewTimelineRow): string | null {
 
   const percent = (row.monthOverMonthSpendDeltaNok / previousSpend) * 100;
   return `${percent > 0 ? "+" : ""}${percent.toFixed(1)}%`;
+}
+
+function describeSpendChange(row: MonthlyReviewTimelineRow): string {
+  const delta = row.monthOverMonthSpendDeltaNok;
+  if (delta === null) {
+    return "No previous-month spend data";
+  }
+
+  const direction = toDeltaDirection(delta);
+  if (direction === "flat") {
+    return "Same spend as last month";
+  }
+
+  const percent = formatDeltaPercent(row);
+  return `Spend ${direction} ${formatNok(Math.abs(delta))}${percent ? ` (${percent})` : ""}`;
 }
 
 export function MonthlyReviewManager() {
@@ -117,12 +134,17 @@ export function MonthlyReviewManager() {
   );
 
   const trendDelta = latestTrendRow?.monthOverMonthSpendDeltaNok ?? null;
+  const trendDirection =
+    trendDelta === null ? null : toDeltaDirection(trendDelta);
   const trendColor =
-    trendDelta !== null && trendDelta !== 0
-      ? trendDelta > 0
-        ? "text-destructive"
-        : "text-success"
-      : "";
+    trendDirection === "up"
+      ? "text-destructive"
+      : trendDirection === "down"
+        ? "text-success"
+        : "";
+  const trendPercent = latestTrendRow
+    ? formatDeltaPercent(latestTrendRow)
+    : null;
 
   const generatedCount = rows.filter(
     (row) => row.reviewState === "GENERATED",
@@ -163,14 +185,18 @@ export function MonthlyReviewManager() {
           <CardHeader className="pb-2">
             <CardDescription>Trending</CardDescription>
             <CardTitle className={`text-2xl ${trendColor}`}>
-              {latestTrendRow
-                ? formatNok(latestTrendRow.monthOverMonthSpendDeltaNok ?? 0)
-                : "No change data"}
+              {trendDelta === null
+                ? "No change data"
+                : trendDirection === "flat"
+                  ? "Holding steady"
+                  : formatSignedNok(trendDelta)}
             </CardTitle>
             <CardDescription>
-              {latestTrendRow && formatDeltaPercent(latestTrendRow)
-                ? `${formatDeltaPercent(latestTrendRow)} vs previous month`
-                : "Waiting for at least two month entries"}
+              {trendDelta === null
+                ? "Waiting for at least two month entries"
+                : trendDirection === "flat"
+                  ? "Same spend as the month before"
+                  : `${trendPercent ?? "Spend"} vs previous month`}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -214,7 +240,6 @@ export function MonthlyReviewManager() {
 
         {rows.map((row) => {
           const stateTone = getReviewStateTone(row.reviewState);
-          const deltaPercent = formatDeltaPercent(row);
 
           return (
             <article key={row.monthStart} className="relative md:pl-14">
@@ -235,7 +260,7 @@ export function MonthlyReviewManager() {
                       <span
                         className={`rounded-full border px-2 py-0.5 text-xs ${stateTone.dotClassName}`}
                       >
-                        AI review: {stateTone.label.toLowerCase()}
+                        {stateTone.label}
                       </span>
                     </div>
                     <p className="text-muted-foreground text-sm">
@@ -249,14 +274,12 @@ export function MonthlyReviewManager() {
                       Monthly balance
                     </p>
                     <p
-                      className={`font-semibold text-3xl tracking-tight ${row.monthlyBalanceNok >= 0 ? "text-success" : "text-destructive"}`}
+                      className={`font-semibold text-2xl tracking-tight ${row.monthlyBalanceNok >= 0 ? "text-success" : "text-destructive"}`}
                     >
                       {formatSignedNok(row.monthlyBalanceNok, "auto")}
                     </p>
                     <p className="text-muted-foreground text-sm">
-                      {row.monthOverMonthSpendDeltaNok === null
-                        ? "No previous-month spend data"
-                        : `${row.monthOverMonthSpendDeltaNok > 0 ? "Spend up" : "Spend down"} ${formatNok(Math.abs(row.monthOverMonthSpendDeltaNok))}${deltaPercent ? ` (${deltaPercent})` : ""}`}
+                      {describeSpendChange(row)}
                     </p>
                   </div>
                 </div>
@@ -293,7 +316,10 @@ export function MonthlyReviewManager() {
 
                   <Link
                     href={`/monthly-review/${row.monthStart}`}
-                    className={buttonVariants({ size: "lg" })}
+                    className={cn(
+                      buttonVariants({ size: "lg" }),
+                      "h-11 bg-brand px-5 font-semibold text-base text-brand-foreground hover:bg-brand/90",
+                    )}
                   >
                     Open {formatMonthStartLabel(row.monthStart)} in review
                     <ArrowRight aria-hidden />

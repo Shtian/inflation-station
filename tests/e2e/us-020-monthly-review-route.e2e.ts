@@ -99,7 +99,7 @@ test("renders monthly review timeline cards with deterministic overview data", a
                 spendNok: 900,
               },
             ],
-            monthOverMonthSpendDeltaNok: 200,
+            monthOverMonthSpendDeltaNok: 0.4,
             reviewState: "GENERATED",
             generatedAt: "2026-02-15T10:00:00.000Z",
             errorMessage: null,
@@ -135,12 +135,24 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await expect(page.getByText("AI insight")).toHaveCount(0);
   await expect(page.getByRole("button", { name: /review/i })).toHaveCount(0);
 
-  const reviewStates = page.locator("article").getByText(/^AI review: /);
+  const reviewStates = page
+    .locator("article")
+    .getByText(/^(Writing recap…|Recap failed|Recap ready|No recap yet)$/);
   await expect(reviewStates).toHaveText([
-    "AI review: generating",
-    "AI review: failed",
-    "AI review: generated",
-    "AI review: not generated",
+    "Writing recap…",
+    "Recap failed",
+    "Recap ready",
+    "No recap yet",
+  ]);
+
+  const spendChanges = page
+    .locator("article")
+    .getByText(/^(Spend (up|down) |Same spend|No previous-month)/);
+  await expect(spendChanges).toHaveText([
+    /^Spend up 100,00\skr \(\+5\.7%\)$/,
+    /^Spend down 125,00\skr \(-6\.8%\)$/,
+    "Same spend as last month",
+    "No previous-month spend data",
   ]);
 
   const januaryLink = page
