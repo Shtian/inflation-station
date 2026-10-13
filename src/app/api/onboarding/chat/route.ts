@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   try {
     payload = await request.json();
   } catch {
-    return invalidMessages("Request body must be JSON.");
+    return invalidMessages("Forespørselen må være JSON.");
   }
 
   const tools = createOnboardingTools({ db: prisma });
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     originalMessages: messages,
     onError: (error) => {
       console.error("Onboarding chat failed", error);
-      return "The setup guide ran into a problem.";
+      return "Oppsettsguiden fikk et problem.";
     },
   });
 }

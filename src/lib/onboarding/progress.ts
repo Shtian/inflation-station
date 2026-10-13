@@ -31,9 +31,9 @@ function defineStep(step: Omit<OnboardingStep, "isComplete">): OnboardingStep {
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   defineStep({
     id: "accounts",
-    title: "Add your accounts",
+    title: "Legg til kontoene dine",
     description:
-      "The bank accounts and cards you import statements from, so every transaction has a home.",
+      "Bankkontoene og kortene du importerer kontoutskrifter fra, så hver transaksjon hører til et sted.",
     agentGuidance:
       "Ask which accounts the user wants to track: the bank (institution) and the account name, for example DNB Brukskonto or Sbanken Kredittkort. Propose all of them in one addAccounts call.",
     manageHref: "/accounts",
@@ -44,9 +44,9 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   }),
   defineStep({
     id: "categories",
-    title: "Create categories",
+    title: "Opprett kategorier",
     description:
-      "Spending and income categories, each with a short hint that helps the AI categorizer.",
+      "Utgifts- og inntektskategorier, hver med et kort hint som hjelper AI-kategoriseringen.",
     agentGuidance:
       "Ask briefly about the user's spending habits (groceries, housing, transport, subscriptions, eating out, income). Propose EXPENSE and INCOME categories in one addCategories call. Give each a short, concrete classifier hint that names typical merchants or keywords, for example Rema, Kiwi, Coop, Meny for groceries. Explain once that hints help the AI categorizer tell categories apart when it sorts imported transactions.",
     manageHref: "/categories",
@@ -57,9 +57,9 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   }),
   defineStep({
     id: "transfer",
-    title: "Hide transfers",
+    title: "Skjul overføringer",
     description:
-      "A transfer category for moves between your own accounts, so they stay out of your statistics.",
+      "En overføringskategori for penger du flytter mellom egne kontoer, så de holdes utenfor statistikken.",
     agentGuidance:
       "Suggest one TRANSFER category, for example Overføringer, with a hint such as: Overføring mellom egne kontoer, sparing til egen sparekonto. Explain that the dashboard leaves TRANSFER categories out of its statistics, and that this is currently the way to hide transfers between the user's own accounts.",
     manageHref: "/categories",

@@ -13,10 +13,10 @@ export default function OnboardingRouteError({
 }: OnboardingErrorProps) {
   return (
     <RouteErrorState
-      title="Setup guide failed to load"
+      title="Oppsettsguiden kunne ikke lastes inn"
       message={
         error.message ||
-        "An unexpected error occurred while loading the setup guide."
+        "Det oppstod en uventet feil under innlasting av oppsettsguiden."
       }
       onRetry={reset}
     />

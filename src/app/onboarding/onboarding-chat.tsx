@@ -48,15 +48,15 @@ const PROPOSAL_DECLINED_REASON =
   "The user clicked Not yet. Nothing failed; they want to change the proposal.";
 
 const SUGGESTIONS = [
-  "I bank with DNB: a checking account, a savings account and a credit card",
-  "Suggest categories for a typical household",
-  "How do I keep transfers between my accounts out of the statistics?",
+  "Jeg har DNB: en brukskonto, en sparekonto og et kredittkort",
+  "Foreslå kategorier for en vanlig husholdning",
+  "Hvordan holder jeg overføringer mellom kontoene mine utenfor statistikken?",
 ];
 
 const KIND_LABELS: Record<CategoryKindName, string> = {
-  EXPENSE: "Expense",
-  INCOME: "Income",
-  TRANSFER: "Transfer",
+  EXPENSE: "Utgift",
+  INCOME: "Inntekt",
+  TRANSFER: "Overføring",
 };
 
 type ProposalPart = Extract<
@@ -72,23 +72,23 @@ const transport = new DefaultChatTransport<OnboardingUIMessage>({
 
 function describeChatError(error: Error): string {
   if (error.message.includes("ONBOARDING_UNAVAILABLE")) {
-    return "The setup guide isn't available on this server right now.";
+    return "Oppsettsguiden er ikke tilgjengelig på denne serveren akkurat nå.";
   }
   if (error.message.includes("INVALID_ONBOARDING_MESSAGES")) {
-    return "This conversation couldn't be read. Start a new conversation.";
+    return "Samtalen kunne ikke leses. Start en ny samtale.";
   }
-  return "Couldn't reach the setup guide.";
+  return "Fikk ikke kontakt med oppsettsguiden.";
 }
 
 function describeBatchResult({ created, existing }: BatchResult) {
   const sentences = [];
   if (created.length > 0) {
-    sentences.push(`Added ${created.join(", ")}.`);
+    sentences.push(`La til ${created.join(", ")}.`);
   }
   if (existing.length > 0) {
-    sentences.push(`Already existed: ${existing.join(", ")}.`);
+    sentences.push(`Fantes allerede: ${existing.join(", ")}.`);
   }
-  return sentences.join(" ") || "Nothing to add.";
+  return sentences.join(" ") || "Ingenting å legge til.";
 }
 
 function isProposalPart(
@@ -123,23 +123,25 @@ function ProposalCard({
   isLatest: boolean;
   onRespond: (approvalId: string, approved: boolean) => void;
 }) {
-  const noun = part.type === "tool-addAccounts" ? "accounts" : "categories";
+  const noun = part.type === "tool-addAccounts" ? "kontoer" : "kategorier";
   switch (part.state) {
     case "input-streaming":
     case "input-available":
-      return <p className="text-muted-foreground text-xs">Preparing {noun}…</p>;
+      return (
+        <p className="text-muted-foreground text-xs">Forbereder {noun}…</p>
+      );
     case "approval-requested":
     case "approval-responded":
     case "output-denied":
       if (part.state === "approval-requested" && !isLatest) {
         return (
-          <p className="text-muted-foreground text-xs">Proposal dismissed</p>
+          <p className="text-muted-foreground text-xs">Forslaget ble avvist</p>
         );
       }
       return (
         <Confirmation approval={part.approval} state={part.state}>
           <ConfirmationRequest>
-            <p className="font-medium text-sm">Add these {noun}?</p>
+            <p className="font-medium text-sm">Legge til disse {noun}?</p>
             <ul className="flex flex-col gap-2">
               {proposalRows(part).map((row) => (
                 <li key={row.name} className="flex flex-col gap-0.5">
@@ -159,22 +161,24 @@ function ProposalCard({
             </ul>
           </ConfirmationRequest>
           <ConfirmationAccepted>
-            <p className="text-muted-foreground text-xs">Adding {noun}…</p>
+            <p className="text-muted-foreground text-xs">Legger til {noun}…</p>
           </ConfirmationAccepted>
           <ConfirmationRejected>
-            <p className="text-muted-foreground text-xs">Proposal dismissed</p>
+            <p className="text-muted-foreground text-xs">
+              Forslaget ble avvist
+            </p>
           </ConfirmationRejected>
           <ConfirmationActions>
             <ConfirmationAction
               variant="outline"
               onClick={() => onRespond(part.approval.id, false)}
             >
-              Not yet
+              Ikke ennå
             </ConfirmationAction>
             <ConfirmationAction
               onClick={() => onRespond(part.approval.id, true)}
             >
-              Add
+              Legg til
             </ConfirmationAction>
           </ConfirmationActions>
         </Confirmation>
@@ -267,7 +271,7 @@ export function OnboardingChat({
           announcedResults.current.add(part.toolCallId);
           changed = true;
           if (part.output.created.length > 0) {
-            toast.success(`Added ${part.output.created.join(", ")}`);
+            toast.success(`La til ${part.output.created.join(", ")}`);
           }
         }
       }
@@ -306,16 +310,16 @@ export function OnboardingChat({
 
   return (
     <section
-      aria-label="Setup guide chat"
+      aria-label="Samtale med oppsettsguiden"
       className="flex h-[70dvh] min-h-[28rem] flex-col overflow-hidden rounded-xl bg-card text-card-foreground text-sm ring-1 ring-foreground/10 lg:h-[calc(100dvh-14rem)]"
     >
       <header className="flex items-center gap-1 border-border border-b px-4 py-2">
-        <h2 className="flex-1 font-semibold text-sm">Setup guide</h2>
+        <h2 className="flex-1 font-semibold text-sm">Oppsettsguide</h2>
         <Button
           size="icon-sm"
           variant="ghost"
-          aria-label="New conversation"
-          title="New conversation"
+          aria-label="Ny samtale"
+          title="Ny samtale"
           onClick={startNewConversation}
         >
           <SquarePen />
@@ -327,11 +331,11 @@ export function OnboardingChat({
           {messages.length === 0 ? (
             <ConversationEmptyState className="flex-1 items-start justify-end gap-3 p-0 text-left">
               <p className="max-w-prose text-muted-foreground text-sm">
-                I'll help you set up Inflation Station. Tell me which bank
-                accounts you use, and I'll add them. Then we'll pick categories
-                for your spending and a way to keep transfers between your own
-                accounts out of the statistics. Nothing is added until you
-                approve it.
+                Jeg hjelper deg med å sette opp Inflation Station. Fortell meg
+                hvilke bankkontoer du bruker, så legger jeg dem til. Deretter
+                velger vi kategorier for forbruket ditt og en måte å holde
+                overføringer mellom egne kontoer utenfor statistikken. Ingenting
+                legges til før du godkjenner det.
               </p>
               <div className="flex flex-col items-start gap-1.5">
                 {SUGGESTIONS.map((suggestion) => (
@@ -356,7 +360,7 @@ export function OnboardingChat({
             ))
           )}
           {status === "submitted" ? (
-            <p className="text-muted-foreground text-xs">Thinking…</p>
+            <p className="text-muted-foreground text-xs">Tenker…</p>
           ) : null}
           {error ? (
             <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive text-xs">
@@ -367,7 +371,7 @@ export function OnboardingChat({
                 onClick={() => void regenerate()}
               >
                 <RotateCcw />
-                Retry
+                Prøv igjen
               </Button>
             </div>
           ) : null}
@@ -386,8 +390,8 @@ export function OnboardingChat({
                 event.preventDefault();
               }
             }}
-            placeholder="Tell the guide about your accounts or spending…"
-            aria-label="Message the setup guide"
+            placeholder="Fortell guiden om kontoene eller forbruket ditt…"
+            aria-label="Skriv til oppsettsguiden"
             rows={2}
             className="max-h-32 min-h-12"
           />
@@ -396,7 +400,7 @@ export function OnboardingChat({
             <PromptInputSubmit
               status={busy ? status : undefined}
               onStop={() => void stop()}
-              aria-label={busy ? "Stop response" : "Send message"}
+              aria-label={busy ? "Stopp svaret" : "Send melding"}
               disabled={!busy && !input.trim()}
             />
           </PromptInputFooter>
