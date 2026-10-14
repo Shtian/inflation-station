@@ -67,13 +67,11 @@ function useAvailability() {
       const body = (await response.json()) as {
         disabledReason?: AssistantDisabledReason | null;
       };
-      if (!response.ok || body.disabledReason === undefined) {
-        throw new Error("Could not load chat availability.");
-      }
-      setAvailability({
-        status: "ready",
-        disabledReason: body.disabledReason,
-      });
+      setAvailability(
+        response.ok && body.disabledReason !== undefined
+          ? { status: "ready", disabledReason: body.disabledReason }
+          : { status: "error" },
+      );
     } catch {
       setAvailability({ status: "error" });
     }
