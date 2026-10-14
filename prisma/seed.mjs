@@ -20,11 +20,15 @@ function getPreviousMonths(count) {
 }
 
 function monthDate(monthStart, day) {
-  return new Date(monthStart.getFullYear(), monthStart.getMonth(), day);
+  return new Date(
+    Date.UTC(monthStart.getFullYear(), monthStart.getMonth(), day),
+  );
 }
 
 function lastDayOfMonth(monthStart) {
-  return new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+  return new Date(
+    Date.UTC(monthStart.getFullYear(), monthStart.getMonth() + 1, 0),
+  );
 }
 
 // Seeded PRNG (mulberry32) so a given month always reseeds to the same data.
@@ -429,7 +433,7 @@ async function main() {
       data: {
         accountId: checking.id,
         categoryId: categories.Lønn.id,
-        bookingDate: new Date(y, mo - 1, 25),
+        bookingDate: new Date(Date.UTC(y, mo - 1, 25)),
         amountNok: "45000",
         currency: "NOK",
         merchant: merchantRawMap["Norsk Arbeidsgiver AS"] ?? null,
