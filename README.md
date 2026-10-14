@@ -148,6 +148,10 @@ Jev suggests a category for each imported row and helps guess which CSV columns 
 - Transactions do not store the import's name, title, sender or recipient. The eval sends `merchant` (or the normalized merchant) as the name and leaves the other three empty, so it is a little harder than a real import.
 - The report counts suggested (correct and wrong), uncategorized, below floor and each unavailable reason, with p50 and max latency, then lists every wrong or missed row.
 
+## Querying from Claude
+
+To ask Claude Code or Claude Desktop about your spending, see [docs/mcp-server.md](docs/mcp-server.md).
+
 ## Useful Commands
 
 - `pnpm lint`
