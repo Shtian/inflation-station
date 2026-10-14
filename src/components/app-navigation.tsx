@@ -15,6 +15,7 @@ const primaryLinks = [
   { href: "/transactions", label: "Transaksjoner" },
   { href: "/import", label: "Import" },
   { href: "/monthly-review", label: "Månedsoppsummering" },
+  { href: "/assistant", label: "Spør" },
 ];
 
 const configurationLinks = [
