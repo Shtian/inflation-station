@@ -149,7 +149,7 @@ test("steps through every slide by buttons and keyboard, keeping the slide in th
   await page.goto("/monthly-review/2026-03-01");
 
   await expect(
-    page.getByRole("heading", { name: "Måneden som gikk: mars 2026" }),
+    page.getByRole("heading", { name: "Måneden som gikk: Mars 2026" }),
   ).toBeAttached();
   await expect(activeSlide(page)).toHaveAttribute(
     "aria-label",
@@ -288,9 +288,9 @@ test("ends on a finale with real exits", async ({ page }) => {
 
   const exits = page.getByRole("navigation", { name: "Forlat oppsummeringen" });
   await expect(
-    exits.getByRole("link", { name: "februar 2026" }),
+    exits.getByRole("link", { name: "Februar 2026" }),
   ).toHaveAttribute("href", "/monthly-review/2026-02-01");
-  await expect(exits.getByRole("link", { name: "april 2026" })).toHaveAttribute(
+  await expect(exits.getByRole("link", { name: "April 2026" })).toHaveAttribute(
     "href",
     "/monthly-review/2026-04-01",
   );
@@ -318,7 +318,7 @@ test("omits a month exit when there is no month on that side", async ({
 
   const exits = page.getByRole("navigation", { name: "Forlat oppsummeringen" });
   await expect(exits.getByRole("link")).toHaveText([
-    "februar 2026",
+    "Februar 2026",
     "Se transaksjoner",
   ]);
 });

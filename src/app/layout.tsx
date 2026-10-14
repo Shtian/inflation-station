@@ -3,6 +3,7 @@ import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import Link from "next/link";
 import { AppNavigation } from "@/components/app-navigation";
 import { BuildInfoFooter } from "@/components/build-info-footer";
+import { ConfigurationMenu } from "@/components/configuration-menu";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -60,7 +61,10 @@ export default function RootLayout({
                   Inflation Station
                 </Link>
                 <AppNavigation />
-                <ThemeSwitcher />
+                <div className="flex items-center gap-2">
+                  <ConfigurationMenu />
+                  <ThemeSwitcher />
+                </div>
               </div>
             </header>
             {children}

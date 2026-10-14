@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Calendar, Settings } from "lucide-react";
+import { ArrowRight, Calendar } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { CategorySpendBar } from "./components/category-spend-bar";
 import type { MonthlyReviewTimelineRow } from "./monthly-review-manager.types";
 import {
+  formatMonthHeading,
   formatMonthStartLabel,
   formatNok,
   formatSignedNok,
@@ -154,34 +155,21 @@ export function MonthlyReviewManager() {
     ? formatDeltaPercent(latestTrendRow)
     : null;
 
-  const generatedCount = rows.filter(
-    (row) => row.reviewState === "GENERATED",
-  ).length;
-
   const hasRows = rows.length > 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
-            Økonomisk tidslinje
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Månedlig oversikt over forbruket. Åpne en måned for å se måneden som
-            gikk.
-          </p>
-        </div>
-        <Link
-          href="/monthly-review/settings"
-          aria-label="Åpne innstillinger for månedsoppsummering"
-          className={buttonVariants({ variant: "outline", size: "icon" })}
-        >
-          <Settings aria-hidden />
-        </Link>
+      <div className="space-y-1">
+        <h1 className="font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
+          Økonomisk tidslinje
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Månedlig oversikt over forbruket. Åpne en måned for å se måneden som
+          gikk.
+        </p>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Snittforbruk per måned</CardDescription>
@@ -207,14 +195,6 @@ export function MonthlyReviewManager() {
                   ? "Samme forbruk som måneden før"
                   : `${trendPercent ?? "Forbruk"} mot forrige måned`}
             </CardDescription>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Dekning av AI-oppsummeringer</CardDescription>
-            <CardTitle className="text-2xl">
-              {generatedCount} av {rows.length} måneder
-            </CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -264,7 +244,7 @@ export function MonthlyReviewManager() {
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-semibold text-foreground text-xl">
-                        {formatMonthStartLabel(row.monthStart)}
+                        {formatMonthHeading(row.monthStart)}
                       </h2>
                       <span
                         className={`rounded-full border px-2 py-0.5 text-xs ${stateTone.dotClassName}`}
@@ -332,8 +312,7 @@ export function MonthlyReviewManager() {
                       "h-11 bg-brand px-5 font-semibold text-base text-brand-foreground hover:bg-brand/90",
                     )}
                   >
-                    Åpne måneden som gikk for{" "}
-                    {formatMonthStartLabel(row.monthStart)}
+                    Månedsrapport for {formatMonthStartLabel(row.monthStart)}
                     <ArrowRight aria-hidden />
                   </Link>
                 </div>

@@ -6,7 +6,7 @@ export default function AssistantPage() {
     <main className="mx-auto w-full max-w-4xl px-5 py-8 md:px-10">
       <div className="space-y-1">
         <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Spør
+          Innsikt
         </h1>
         <p className="text-muted-foreground text-sm">
           Still spørsmål om forbruket ditt. Svarene bygger på transaksjonene du

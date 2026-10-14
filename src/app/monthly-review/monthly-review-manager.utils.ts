@@ -23,6 +23,11 @@ export function formatMonthStartLabel(monthStart: string): string {
   return monthFormatter.format(date);
 }
 
+export function formatMonthHeading(monthStart: string): string {
+  const label = formatMonthStartLabel(monthStart);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export function formatGeneratedAt(value: string | null): string {
   if (!value) {
     return "Ikke generert";
