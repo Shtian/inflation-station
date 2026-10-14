@@ -44,7 +44,7 @@ test("explains that the chat needs an API key when the server has none", async (
 
   await page.goto("/assistant");
 
-  await expect(page.getByRole("heading", { name: "Spør" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Innsikt" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Chatten er ikke tilgjengelig" }),
   ).toBeVisible();
