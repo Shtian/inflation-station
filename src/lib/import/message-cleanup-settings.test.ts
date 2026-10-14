@@ -58,7 +58,7 @@ describe("message cleanup settings", () => {
     expect(result).toEqual({
       prompt: DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
       isDefaultPrompt: true,
-      modelId: "gpt-5.6-luna",
+      modelId: "gpt-6-luna",
       isDefaultModel: true,
       reasoningEffort: "low",
       isDefaultReasoningEffort: true,
@@ -75,7 +75,7 @@ describe("message cleanup settings", () => {
     expect(result).toEqual({
       prompt: "Keep merchant names concise.",
       isDefaultPrompt: false,
-      modelId: "gpt-5.6-luna",
+      modelId: "gpt-6-luna",
       isDefaultModel: true,
       reasoningEffort: "low",
       isDefaultReasoningEffort: true,
@@ -92,7 +92,7 @@ describe("message cleanup settings", () => {
       resolvedPrompt: DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
       isDefaultPrompt: true,
       storedModelId: null,
-      resolvedModelId: "gpt-5.6-luna",
+      resolvedModelId: "gpt-6-luna",
       isDefaultModel: true,
       storedReasoningEffort: null,
       resolvedReasoningEffort: "low",
@@ -142,7 +142,7 @@ describe("message cleanup settings", () => {
 
     const result = await updateMessageCleanupSettings(db, {
       promptText: "   ",
-      modelId: "gpt-5.6-luna",
+      modelId: "gpt-6-luna",
       reasoningEffort: null,
     });
 
@@ -150,8 +150,8 @@ describe("message cleanup settings", () => {
       storedPromptText: null,
       resolvedPrompt: DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
       isDefaultPrompt: true,
-      storedModelId: "gpt-5.6-luna",
-      resolvedModelId: "gpt-5.6-luna",
+      storedModelId: "gpt-6-luna",
+      resolvedModelId: "gpt-6-luna",
       isDefaultModel: true,
       storedReasoningEffort: null,
       resolvedReasoningEffort: "low",
@@ -164,7 +164,7 @@ describe("message cleanup settings", () => {
 
     const result = await updateMessageCleanupSettings(db, {
       promptText: "Keep merchant names and locations only.",
-      modelId: "gpt-5.6-luna",
+      modelId: "gpt-6-luna",
       reasoningEffort: "high",
     });
 
@@ -172,8 +172,8 @@ describe("message cleanup settings", () => {
       storedPromptText: "Keep merchant names and locations only.",
       resolvedPrompt: "Keep merchant names and locations only.",
       isDefaultPrompt: false,
-      storedModelId: "gpt-5.6-luna",
-      resolvedModelId: "gpt-5.6-luna",
+      storedModelId: "gpt-6-luna",
+      resolvedModelId: "gpt-6-luna",
       isDefaultModel: true,
       storedReasoningEffort: "high",
       resolvedReasoningEffort: "high",
@@ -184,12 +184,12 @@ describe("message cleanup settings", () => {
       create: {
         id: "message-cleanup-settings",
         promptText: "Keep merchant names and locations only.",
-        modelId: "gpt-5.6-luna",
+        modelId: "gpt-6-luna",
         reasoningEffort: "high",
       },
       update: {
         promptText: "Keep merchant names and locations only.",
-        modelId: "gpt-5.6-luna",
+        modelId: "gpt-6-luna",
         reasoningEffort: "high",
       },
       select: { promptText: true, modelId: true, reasoningEffort: true },
@@ -200,13 +200,13 @@ describe("message cleanup settings", () => {
     const db = createMessageCleanupSettingsDbMock();
     await updateMessageCleanupSettings(db, {
       promptText: "",
-      modelId: "gpt-6-luna",
+      modelId: "gpt-5.6-luna",
       reasoningEffort: null,
     });
 
     const result = await getMessageCleanupSettings(db);
 
-    expect(result.modelId).toBe("gpt-6-luna");
+    expect(result.modelId).toBe("gpt-5.6-luna");
     expect(result.isDefaultModel).toBe(false);
   });
 });

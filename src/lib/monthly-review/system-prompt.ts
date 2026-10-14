@@ -2,7 +2,8 @@ import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 
 const MONTHLY_REVIEW_SYSTEM_PROMPT_ID = "monthly-review-system-prompt";
 
-export const DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL: OpenAIChatModelId = "gpt-5.4";
+export const DEFAULT_MONTHLY_REVIEW_OPENAI_MODEL: OpenAIChatModelId =
+  "gpt-6-luna";
 
 export const DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT = `You write a personal "month in review" recap of one calendar month of household finances.
 - Be warm and encouraging, like a friend looking back on the month, but stay factual.
