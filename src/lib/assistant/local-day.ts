@@ -4,7 +4,7 @@ function toLocalStart(isoDate: string, field: string): Date {
   const parsed = parseIsoDate(isoDate);
   if (!parsed) {
     throw new Error(
-      `Invalid ${field} date "${isoDate}". Expected an existing calendar day as YYYY-MM-DD.`,
+      `Ugyldig ${field}-dato "${isoDate}". Bruk en dag som finnes i kalenderen, på formen YYYY-MM-DD.`,
     );
   }
   return new Date(
@@ -24,7 +24,7 @@ export function toLocalDayBounds(range: { from?: string; to?: string }): {
     range.to !== undefined ? toLocalStart(range.to, "to") : undefined;
   if (start && toStart && start > toStart) {
     throw new Error(
-      `Invalid range: from (${range.from}) is after to (${range.to}).`,
+      `Ugyldig periode: from (${range.from}) er etter to (${range.to}).`,
     );
   }
   const end = toStart

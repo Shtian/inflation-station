@@ -47,7 +47,7 @@ describe("createAssistantQueries", () => {
     it("rejects a month that is not YYYY-MM", async () => {
       await expect(
         queries.getMonthInReview({ month: "2026-13" }),
-      ).rejects.toThrow('Invalid month "2026-13". Expected YYYY-MM.');
+      ).rejects.toThrow('Ugyldig måned "2026-13". Bruk formen YYYY-MM.');
     });
   });
 

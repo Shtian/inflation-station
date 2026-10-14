@@ -229,7 +229,7 @@ describe("createAssistantQueries", () => {
           groupBy: "category",
         }),
       ).rejects.toThrow(
-        'Invalid from date "2026-02-30". Expected an existing calendar day as YYYY-MM-DD.',
+        'Ugyldig from-dato "2026-02-30". Bruk en dag som finnes i kalenderen, på formen YYYY-MM-DD.',
       );
     });
 
@@ -241,7 +241,7 @@ describe("createAssistantQueries", () => {
           groupBy: "category",
         }),
       ).rejects.toThrow(
-        "Invalid range: from (2026-09-02) is after to (2026-09-01).",
+        "Ugyldig periode: from (2026-09-02) er etter to (2026-09-01).",
       );
     });
   });

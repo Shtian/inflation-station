@@ -14,7 +14,7 @@ export function createAssistantQueries({ db }: { db: PrismaClient }) {
     month: string;
   }): Promise<MonthInReview & { month: string }> {
     if (!parseIsoDate(`${month}-01`)) {
-      throw new Error(`Invalid month "${month}". Expected YYYY-MM.`);
+      throw new Error(`Ugyldig måned "${month}". Bruk formen YYYY-MM.`);
     }
     const review = await loadMonthInReview(db, { monthStart: `${month}-01` });
     return { month, ...review };
