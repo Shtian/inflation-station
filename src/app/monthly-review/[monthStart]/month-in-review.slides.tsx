@@ -5,7 +5,7 @@ import { formatNok, formatSignedNok } from "@/lib/format-nok";
 import { toDeltaDirection } from "@/lib/monthly-review/delta";
 import type { MonthInReviewWithReview } from "@/lib/monthly-review/month-in-review";
 import type { MonthlyRecap } from "@/lib/monthly-review/recap";
-import { formatMonthStartLabel } from "../monthly-review-manager.utils";
+import { formatMonthHeading } from "../monthly-review-manager.utils";
 import {
   formatDayLong,
   formatMonthName,
@@ -142,7 +142,7 @@ function introLine(review: MonthInReviewWithReview): string {
 }
 
 function IntroSlide({ review }: SlideContext) {
-  const [monthName, year] = formatMonthStartLabel(review.monthStart).split(" ");
+  const [monthName, year] = formatMonthHeading(review.monthStart).split(" ");
 
   return (
     <div className="flex flex-col gap-8 md:gap-10">
@@ -678,7 +678,7 @@ function FinaleSlide(context: SlideContext) {
             className={exitLinkClassName}
           >
             <ArrowLeft aria-hidden className="size-4" />
-            {formatMonthStartLabel(adjacentMonths.previous)}
+            {formatMonthHeading(adjacentMonths.previous)}
           </Link>
         ) : null}
         <button type="button" onClick={onReplay} className={exitLinkClassName}>
@@ -695,7 +695,7 @@ function FinaleSlide(context: SlideContext) {
             href={`/monthly-review/${adjacentMonths.next}`}
             className={exitLinkClassName}
           >
-            {formatMonthStartLabel(adjacentMonths.next)}
+            {formatMonthHeading(adjacentMonths.next)}
             <ArrowRight aria-hidden className="size-4" />
           </Link>
         ) : null}

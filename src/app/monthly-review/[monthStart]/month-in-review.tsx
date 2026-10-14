@@ -24,7 +24,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { MonthInReviewWithReview } from "@/lib/monthly-review/month-in-review";
-import { formatMonthStartLabel } from "../monthly-review-manager.utils";
+import {
+  formatMonthHeading,
+  formatMonthStartLabel,
+} from "../monthly-review-manager.utils";
 import {
   type GenerateMode,
   MONTH_IN_REVIEW_SLIDES,
@@ -63,6 +66,7 @@ export function MonthInReview({
 }) {
   const router = useRouter();
   const monthLabel = formatMonthStartLabel(monthStart);
+  const monthHeading = formatMonthHeading(monthStart);
   const [review, setReview] = useState<MonthInReviewWithReview | null>(null);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [activeSlideId, setActiveSlideId] = useState(
@@ -221,7 +225,7 @@ export function MonthInReview({
         style={worldStyle(DECK_WORLDS.base)}
       >
         <h1 className="font-extrabold text-3xl text-[var(--mir-accent)] md:text-5xl">
-          {monthLabel}
+          {monthHeading}
         </h1>
         <p role="alert" className="text-lg">
           {loadError === "invalid-month"
@@ -287,7 +291,7 @@ export function MonthInReview({
             }`}
           >
             <span className="sr-only">Måneden som gikk: </span>
-            {monthLabel}
+            {monthHeading}
           </h1>
           <span className="size-10" aria-hidden />
         </div>
