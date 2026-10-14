@@ -13,7 +13,7 @@ const primaryLinks = [
   { href: "/transactions", label: "Transaksjoner" },
   { href: "/import", label: "Import" },
   { href: "/monthly-review", label: "Månedsoppsummering" },
-  { href: "/assistant", label: "Spør" },
+  { href: "/assistant", label: "Innsikt" },
 ];
 
 export function AppNavigation() {
