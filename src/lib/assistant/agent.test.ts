@@ -82,7 +82,7 @@ describe("createAssistantTools", () => {
         groupBy: "category",
       }),
     ).rejects.toThrow(
-      'Ugyldig from-dato "2026-02-30". Bruk en dag som finnes i kalenderen, på formen YYYY-MM-DD.',
+      'Ugyldig startdato "2026-02-30". Bruk en dag som finnes i kalenderen, på formen YYYY-MM-DD.',
     );
   });
 

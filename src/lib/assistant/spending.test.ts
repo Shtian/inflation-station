@@ -229,7 +229,7 @@ describe("createAssistantQueries", () => {
           groupBy: "category",
         }),
       ).rejects.toThrow(
-        'Ugyldig from-dato "2026-02-30". Bruk en dag som finnes i kalenderen, på formen YYYY-MM-DD.',
+        'Ugyldig startdato "2026-02-30". Bruk en dag som finnes i kalenderen, på formen YYYY-MM-DD.',
       );
     });
 
@@ -241,7 +241,7 @@ describe("createAssistantQueries", () => {
           groupBy: "category",
         }),
       ).rejects.toThrow(
-        "Ugyldig periode: from (2026-09-02) er etter to (2026-09-01).",
+        "Ugyldig periode: startdatoen (2026-09-02) er etter sluttdatoen (2026-09-01).",
       );
     });
   });
