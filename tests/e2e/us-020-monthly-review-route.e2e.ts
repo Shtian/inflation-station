@@ -111,17 +111,12 @@ test("renders monthly review timeline cards with deterministic overview data", a
   await expect(
     page.getByRole("heading", { name: "Økonomisk tidslinje" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("link", {
-      name: "Åpne innstillinger for månedsoppsummering",
-    }),
-  ).toBeVisible();
   const monthHeadings = page.locator("article h2");
   await expect(monthHeadings).toHaveCount(4);
-  await expect(monthHeadings.nth(0)).toHaveText("april 2026");
-  await expect(monthHeadings.nth(1)).toHaveText("mars 2026");
-  await expect(monthHeadings.nth(2)).toHaveText("februar 2026");
-  await expect(monthHeadings.nth(3)).toHaveText("januar 2026");
+  await expect(monthHeadings.nth(0)).toHaveText("April 2026");
+  await expect(monthHeadings.nth(1)).toHaveText("Mars 2026");
+  await expect(monthHeadings.nth(2)).toHaveText("Februar 2026");
+  await expect(monthHeadings.nth(3)).toHaveText("Januar 2026");
 
   await expect(page.getByText("Snittforbruk per måned").first()).toBeVisible();
   await expect(page.getByText(/1\s?600,00/).first()).toBeVisible();
@@ -158,14 +153,14 @@ test("renders monthly review timeline cards with deterministic overview data", a
 
   const januaryLink = page
     .locator("article")
-    .filter({ has: page.getByRole("heading", { name: "januar 2026" }) })
-    .getByRole("link", { name: "Åpne måneden som gikk for januar 2026" });
+    .filter({ has: page.getByRole("heading", { name: "Januar 2026" }) })
+    .getByRole("link", { name: "Månedsrapport for januar 2026" });
   await expect(januaryLink).toHaveAttribute(
     "href",
     "/monthly-review/2026-01-01",
   );
   await expect(
-    page.getByRole("link", { name: /^Åpne måneden som gikk for .+$/ }),
+    page.getByRole("link", { name: /^Månedsrapport for .+$/ }),
   ).toHaveCount(4);
 
   await page.route("**/api/monthly-review/2026-01-01", async (route) => {
@@ -210,7 +205,7 @@ test("renders monthly review timeline cards with deterministic overview data", a
   ).toBeVisible();
 });
 
-test("opens monthly review settings from header configuration and monthly review cog", async ({
+test("opens monthly review settings from the header configuration menu", async ({
   page,
 }) => {
   const promptUpdateRequests: Array<{ promptText?: string }> = [];
@@ -277,8 +272,9 @@ test("opens monthly review settings from header configuration and monthly review
   });
 
   await page.goto("/monthly-review");
+  await page.getByRole("button", { name: "Konfigurasjon" }).click();
   await page
-    .getByRole("link", { name: "Åpne innstillinger for månedsoppsummering" })
+    .getByRole("menuitem", { name: /Innstillinger for månedsoppsummering/ })
     .click();
 
   await expect(
