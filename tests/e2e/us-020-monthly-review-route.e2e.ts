@@ -316,8 +316,7 @@ test("opens monthly review settings from header configuration and monthly review
 
   await page.getByRole("button", { name: "Konfigurasjon" }).click();
   await page
-    .locator('[data-slot="navigation-menu-content"]')
-    .getByRole("link", { name: /Innstillinger for månedsoppsummering/ })
+    .getByRole("menuitem", { name: /Innstillinger for månedsoppsummering/ })
     .click();
 
   await expect(
