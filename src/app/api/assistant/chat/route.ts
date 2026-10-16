@@ -1,6 +1,9 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import {
+  consumeStream,
   convertToModelMessages,
+  createUIMessageStreamResponse,
+  generateId,
   safeValidateUIMessages,
   stepCountIs,
   streamText,
@@ -13,6 +16,10 @@ import {
   resolveAssistantDisabledReason,
 } from "@/lib/assistant/agent";
 import type { AssistantUIMessage } from "@/lib/assistant/contract";
+import {
+  assistantThreadIdSchema,
+  saveAssistantThreadMessages,
+} from "@/lib/assistant/threads";
 import { prisma } from "@/lib/prisma";
 
 // The API key is read per request, so a key added after the build still
@@ -47,15 +54,26 @@ export async function POST(request: Request) {
     return invalidMessages("Forespørselen må være JSON.");
   }
 
+  const body = payload as { id?: unknown; messages?: unknown } | null;
+  const threadId = assistantThreadIdSchema.safeParse(body?.id);
+  if (!threadId.success) {
+    return invalidMessages("Samtalen mangler en gyldig id.");
+  }
+  const id = threadId.data;
+
   const tools = createAssistantTools({ db: prisma });
   const validation = await safeValidateUIMessages<AssistantUIMessage>({
-    messages: (payload as { messages?: unknown } | null)?.messages,
+    messages: body?.messages,
     tools,
   });
   if (!validation.success) {
     return invalidMessages(validation.error.message);
   }
   const messages = validation.data;
+
+  // Saved before the model runs, so a reload while it answers still shows the
+  // question.
+  await saveAssistantThreadMessages(prisma, id, messages);
 
   const openai = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
@@ -75,11 +93,26 @@ export async function POST(request: Request) {
     providerOptions: { openai: { reasoningEffort: "none" } },
   });
 
-  return result.toUIMessageStreamResponse({
+  const stream = result.toUIMessageStream({
     originalMessages: messages,
+    generateMessageId: generateId,
+    onFinish: async ({ messages: finishedMessages }) => {
+      try {
+        await saveAssistantThreadMessages(prisma, id, finishedMessages);
+      } catch (error) {
+        console.error("Saving assistant thread failed", error);
+      }
+    },
     onError: (error) => {
       console.error("Assistant chat failed", error);
       return "Spør fikk et problem.";
     },
   });
+  // Cancelling a response body aborts the stream it reads, which would save a
+  // half answer. The server drains its own branch, so a reload or closed tab
+  // mid-answer still saves the whole turn.
+  const [clientStream, serverStream] = stream.tee();
+  void consumeStream({ stream: serverStream });
+
+  return createUIMessageStreamResponse({ stream: clientStream });
 }
