@@ -14,6 +14,7 @@ import {
   mutationError,
   mutationValidationError,
 } from "@/lib/server-actions/mutation-result";
+import { isRecordNotFound } from "@/lib/server-actions/prisma-errors";
 
 const saveAccountCsvColumnMappingInputSchema = z.object({
   accountId: z.string().trim().min(1),
@@ -31,15 +32,6 @@ type SaveAccountCsvColumnMappingResponse = {
   accountId: string;
   csvHeaderSignature: string;
 };
-
-function isRecordNotFound(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "P2025"
-  );
-}
 
 export async function saveAccountCsvColumnMappingAction(
   input: unknown,

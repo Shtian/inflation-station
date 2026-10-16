@@ -53,6 +53,14 @@ export type FixtureTransaction = {
   note?: string;
 };
 
+/** A saved assistant conversation, stored exactly as stated. */
+export type FixtureAssistantThread = {
+  id: string;
+  title: string;
+  /** UI messages as the chat route stores them. */
+  messages: Prisma.InputJsonArray;
+};
+
 /**
  * The complete contents of the integrated database for one test.
  */
@@ -60,6 +68,7 @@ export type TransactionFixture = {
   accounts: readonly FixtureAccount[];
   categories?: readonly FixtureCategory[];
   transactions: readonly FixtureTransaction[];
+  assistantThreads?: readonly FixtureAssistantThread[];
 };
 
 const FIXTURE_CURRENCY = "NOK";
@@ -173,6 +182,10 @@ export async function layFixture(
         data: toTransactionData(transaction, accountIds, categoryIds),
       });
     }
+
+    for (const thread of fixture.assistantThreads ?? []) {
+      await client.assistantThread.create({ data: thread });
+    }
   } finally {
     await client.$disconnect();
   }
@@ -206,6 +219,7 @@ async function truncateAll(client: PrismaClient): Promise<void> {
     client.monthlyReview.deleteMany(),
     client.monthlyReviewSystemPrompt.deleteMany(),
     client.messageCleanupSettings.deleteMany(),
+    client.assistantThread.deleteMany(),
   ]);
 }
 
