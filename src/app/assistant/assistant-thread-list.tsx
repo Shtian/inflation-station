@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -203,16 +203,17 @@ export function AssistantThreadList({
       aria-label="Samtaler"
       className="flex max-h-60 min-h-0 flex-col gap-2 lg:max-h-[calc(100dvh-14rem)]"
     >
-      <Button
-        variant="outline"
-        size="sm"
-        className="justify-start"
-        nativeButton={false}
-        render={<Link href="/assistant" />}
+      <Link
+        href="/assistant"
+        className={buttonVariants({
+          variant: "outline",
+          size: "sm",
+          className: "justify-start",
+        })}
       >
-        <SquarePen />
+        <SquarePen aria-hidden />
         Ny samtale
-      </Button>
+      </Link>
 
       {threads.length === 0 ? (
         <p className="px-2 py-1 text-muted-foreground text-xs">
