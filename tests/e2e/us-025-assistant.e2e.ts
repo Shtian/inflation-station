@@ -10,9 +10,19 @@ function sse(chunks: unknown[]): string {
     .join("");
 }
 
+const ANSWER_CHUNKS = [
+  { type: "text-start", id: "text-1" },
+  { type: "text-delta", id: "text-1", delta: ANSWER.slice(0, 20) },
+  { type: "text-delta", id: "text-1", delta: ANSWER.slice(20) },
+  { type: "text-end", id: "text-1" },
+];
+
 async function stubAssistant(
   page: Page,
-  { disabledReason }: { disabledReason: "key_missing" | null },
+  {
+    disabledReason,
+    toolChunks = [],
+  }: { disabledReason: "key_missing" | null; toolChunks?: unknown[] },
 ) {
   await page.route("**/api/assistant/chat", async (route) => {
     if (route.request().method() === "GET") {
@@ -27,10 +37,8 @@ async function stubAssistant(
       },
       body: sse([
         { type: "start" },
-        { type: "text-start", id: "text-1" },
-        { type: "text-delta", id: "text-1", delta: ANSWER.slice(0, 20) },
-        { type: "text-delta", id: "text-1", delta: ANSWER.slice(20) },
-        { type: "text-end", id: "text-1" },
+        ...toolChunks,
+        ...ANSWER_CHUNKS,
         { type: "finish" },
       ]),
     });
@@ -194,4 +202,94 @@ test("keeps one status line visible until the answer text streams", async ({
   ).toBeVisible();
   await expect(thinking).toHaveCount(0);
   await expect(fetching).toHaveCount(0);
+});
+
+test("links a finished answer to the transactions its tool call looked at", async ({
+  page,
+  context,
+}) => {
+  const input = {
+    from: "2026-09-01",
+    to: "2026-09-30",
+    groupBy: "category",
+    categoryIds: ["cat-food"],
+  };
+  await stubAssistant(page, {
+    disabledReason: null,
+    toolChunks: [
+      {
+        type: "tool-input-available",
+        toolCallId: "call-1",
+        toolName: "summarizeSpending",
+        input,
+      },
+      {
+        type: "tool-output-available",
+        toolCallId: "call-1",
+        output: {
+          range: { from: input.from, to: input.to },
+          filters: {
+            categoryIds: input.categoryIds,
+            accountIds: [],
+            merchantQuery: null,
+          },
+          groupBy: "category",
+          totalSpendNok: 4250,
+          transactionCount: 12,
+          groups: [],
+        },
+      },
+    ],
+  });
+  const transactionRequests: URL[] = [];
+  await context.route("**/api/accounts", (route) =>
+    route.fulfill({ json: { accounts: [] } }),
+  );
+  await context.route("**/api/categories", (route) =>
+    route.fulfill({ json: { categories: [] } }),
+  );
+  await context.route("**/api/transactions**", async (route, request) => {
+    transactionRequests.push(new URL(request.url()));
+    await route.fulfill({
+      json: {
+        rows: [],
+        pagination: { total: 0, page: 1, pageSize: 25, totalPages: 1 },
+      },
+    });
+  });
+
+  await page.goto("/assistant");
+  await page.getByRole("button", { name: QUESTION }).click();
+
+  const conversation = page.getByRole("region", {
+    name: "Samtale om forbruket ditt",
+  });
+  await expect(conversation.getByText(ANSWER)).toBeVisible();
+  const link = conversation.getByRole("link", {
+    name: "Se transaksjonene · 1.–30. sep. 2026",
+  });
+  await expect(link).toHaveAttribute(
+    "href",
+    "/transactions?page=1&pageSize=25&dateFrom=2026-09-01&dateTo=2026-09-30&categoryId=cat-food",
+  );
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+
+  const popupPromise = page.waitForEvent("popup");
+  await link.click();
+  const popup = await popupPromise;
+
+  await expect(popup).toHaveURL(
+    /\/transactions\?page=1&pageSize=25&dateFrom=2026-09-01&dateTo=2026-09-30&categoryId=cat-food$/,
+  );
+  await expect
+    .poll(() =>
+      transactionRequests.some(
+        (url) =>
+          url.searchParams.get("dateFrom") === "2026-09-01" &&
+          url.searchParams.get("dateTo") === "2026-09-30" &&
+          url.searchParams.get("categoryId") === "cat-food",
+      ),
+    )
+    .toBe(true);
 });

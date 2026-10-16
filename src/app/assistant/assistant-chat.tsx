@@ -2,7 +2,8 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { RotateCcw, SquarePen } from "lucide-react";
+import { ArrowUpRight, RotateCcw, SquarePen } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Conversation,
@@ -30,6 +31,7 @@ import {
   type AssistantDisabledReason,
   type AssistantUIMessage,
 } from "@/lib/assistant/contract";
+import { deriveTransactionLinks } from "./transaction-links";
 
 const SUGGESTIONS = [
   "Hvor mye brukte jeg på dagligvarer forrige måned?",
@@ -93,6 +95,10 @@ function AssistantMessage({
   isAnimating: boolean;
 }) {
   const isUser = message.role === "user";
+  const transactionLinks =
+    message.role === "assistant" && !isAnimating
+      ? deriveTransactionLinks(message)
+      : [];
   return (
     <Message from={message.role}>
       {message.parts.map((part, index) => {
@@ -115,6 +121,23 @@ function AssistantMessage({
         }
         return null;
       })}
+      {transactionLinks.length > 0 ? (
+        <ul className="flex flex-col items-start gap-1 text-xs">
+          {transactionLinks.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              >
+                {link.label}
+                <ArrowUpRight aria-hidden className="size-3" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
     </Message>
   );
 }
