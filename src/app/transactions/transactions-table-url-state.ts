@@ -6,7 +6,7 @@ import {
 } from "./transactions-manager.types";
 
 const DEFAULT_PAGE = 1;
-const DEFAULT_PAGE_SIZE = 25;
+export const DEFAULT_PAGE_SIZE = 25;
 
 const TABLE_QUERY_PARAMS = [
   "page",
