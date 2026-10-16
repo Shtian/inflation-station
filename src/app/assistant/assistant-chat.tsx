@@ -2,9 +2,10 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { ArrowUpRight, RotateCcw, SquarePen } from "lucide-react";
+import { ArrowUpRight, RotateCcw } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import {
   Conversation,
   ConversationContent,
@@ -46,7 +47,15 @@ type Availability =
 
 const transport = new DefaultChatTransport<AssistantUIMessage>({
   api: ASSISTANT_CHAT_ENDPOINT,
+  prepareSendMessagesRequest: ({ id, messages }) => ({
+    body: { id, messages },
+  }),
 });
+
+type ThreadProps = {
+  threadId: string;
+  initialMessages: AssistantUIMessage[];
+};
 
 function describeChatError(error: Error): string {
   if (error.message.includes("ASSISTANT_UNAVAILABLE")) {
@@ -142,20 +151,17 @@ function AssistantMessage({
   );
 }
 
-function AssistantConversation() {
+function AssistantConversation({ threadId, initialMessages }: ThreadProps) {
+  const router = useRouter();
   const [input, setInput] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const {
-    messages,
-    sendMessage,
-    status,
-    error,
-    stop,
-    regenerate,
-    setMessages,
-    clearError,
-  } = useChat<AssistantUIMessage>({ transport });
+  const { messages, sendMessage, status, error, stop, regenerate } =
+    useChat<AssistantUIMessage>({
+      id: threadId,
+      messages: initialMessages,
+      transport,
+      onFinish: () => router.refresh(),
+    });
 
   const busy = status === "submitted" || status === "streaming";
   const chatStatus = getAssistantChatStatus(status, messages);
@@ -165,16 +171,13 @@ function AssistantConversation() {
     if (!text || busy) {
       return;
     }
+    if (
+      new URLSearchParams(window.location.search).get("thread") !== threadId
+    ) {
+      window.history.replaceState(null, "", `?thread=${threadId}`);
+    }
     void sendMessage({ text });
     setInput("");
-  }
-
-  function startNewConversation() {
-    void stop();
-    clearError();
-    setMessages([]);
-    setInput("");
-    textareaRef.current?.focus();
   }
 
   return (
@@ -184,15 +187,6 @@ function AssistantConversation() {
     >
       <header className="flex items-center gap-1 border-border border-b px-4 py-2">
         <h2 className="flex-1 font-semibold text-sm">Samtale</h2>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          aria-label="Ny samtale"
-          title="Ny samtale"
-          onClick={startNewConversation}
-        >
-          <SquarePen />
-        </Button>
       </header>
 
       <Conversation className="min-h-0">
@@ -248,7 +242,6 @@ function AssistantConversation() {
       <div className="border-border border-t p-3">
         <PromptInput onSubmit={(message) => send(message.text)}>
           <PromptInputTextarea
-            ref={textareaRef}
             value={input}
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={(event) => {
@@ -276,7 +269,7 @@ function AssistantConversation() {
   );
 }
 
-export function AssistantChat() {
+export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
   const { availability, reload } = useAvailability();
 
   if (availability.status === "loading") {
@@ -300,18 +293,40 @@ export function AssistantChat() {
 
   if (availability.disabledReason === "key_missing") {
     return (
-      <div className="flex flex-col gap-2 text-sm">
-        <h2 className="font-medium text-foreground">
-          Chatten er ikke tilgjengelig
-        </h2>
-        <p className="max-w-prose text-muted-foreground">
-          Chatten trenger en OpenAI API-nøkkel (OPENAI_API_KEY) på serveren. Du
-          kan fortsatt se forbruket ditt i oversikten, på transaksjonssiden og i
-          månedsoppsummeringen.
-        </p>
+      <div className="flex flex-col gap-6 text-sm">
+        <div className="flex flex-col gap-2">
+          <h2 className="font-medium text-foreground">
+            Chatten er ikke tilgjengelig
+          </h2>
+          <p className="max-w-prose text-muted-foreground">
+            Chatten trenger en OpenAI API-nøkkel (OPENAI_API_KEY) på serveren.
+            Du kan fortsatt lese lagrede samtaler og se forbruket ditt i
+            oversikten, på transaksjonssiden og i månedsoppsummeringen.
+          </p>
+        </div>
+        {initialMessages.length > 0 ? (
+          <section
+            aria-label="Lagret samtale"
+            className="flex flex-col gap-4 rounded-xl bg-card p-4 text-card-foreground ring-1 ring-foreground/10"
+          >
+            {initialMessages.map((message) => (
+              <AssistantMessage
+                key={message.id}
+                message={message}
+                isAnimating={false}
+              />
+            ))}
+          </section>
+        ) : null}
       </div>
     );
   }
 
-  return <AssistantConversation />;
+  return (
+    <AssistantConversation
+      key={threadId}
+      threadId={threadId}
+      initialMessages={initialMessages}
+    />
+  );
 }
