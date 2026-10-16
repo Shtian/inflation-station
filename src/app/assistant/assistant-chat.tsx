@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, isToolUIPart } from "ai";
+import { DefaultChatTransport } from "ai";
 import { RotateCcw, SquarePen } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -24,6 +24,7 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { Suggestion } from "@/components/ai-elements/suggestion";
 import { Button } from "@/components/ui/button";
+import { getAssistantChatStatus } from "@/lib/assistant/chat-status";
 import {
   ASSISTANT_CHAT_ENDPOINT,
   type AssistantDisabledReason,
@@ -112,16 +113,6 @@ function AssistantMessage({
             </MessageContent>
           );
         }
-        if (
-          isToolUIPart(part) &&
-          (part.state === "input-streaming" || part.state === "input-available")
-        ) {
-          return (
-            <p key={key} className="text-muted-foreground text-xs">
-              Henter tall…
-            </p>
-          );
-        }
         return null;
       })}
     </Message>
@@ -144,6 +135,7 @@ function AssistantConversation() {
   } = useChat<AssistantUIMessage>({ transport });
 
   const busy = status === "submitted" || status === "streaming";
+  const chatStatus = getAssistantChatStatus(status, messages);
 
   function send(rawText: string) {
     const text = rawText.trim();
@@ -210,8 +202,8 @@ function AssistantConversation() {
               />
             ))
           )}
-          {status === "submitted" ? (
-            <p className="text-muted-foreground text-xs">Tenker…</p>
+          {chatStatus ? (
+            <p className="text-muted-foreground text-xs">{chatStatus}</p>
           ) : null}
           {error ? (
             <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive text-xs">
