@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 import {
   buildInitialAddForm,
   isFutureDate,
@@ -6,7 +7,6 @@ import {
   validateTransactionFields,
 } from "./transaction-form";
 import type { EditFormState } from "./transactions-manager.types";
-import { UNCATEGORIZED_VALUE } from "./transactions-manager.types";
 
 function baseFields(): EditFormState {
   return {

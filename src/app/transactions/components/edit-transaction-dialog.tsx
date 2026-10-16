@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 import {
   MAX_TRANSACTION_NOTE_LENGTH,
   type NoteField,
@@ -26,7 +27,6 @@ import {
   type Category,
   type EditFormState,
   PAYMENT_TYPE_OPTIONS,
-  UNCATEGORIZED_VALUE,
 } from "../transactions-manager.types";
 
 type EditTransactionDialogProps = {

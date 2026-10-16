@@ -1,9 +1,6 @@
+import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 import { readNoteField } from "@/lib/transactions/note";
-import {
-  type AddFormState,
-  type EditFormState,
-  UNCATEGORIZED_VALUE,
-} from "./transactions-manager.types";
+import type { AddFormState, EditFormState } from "./transactions-manager.types";
 
 type ValidTransactionFields = {
   valid: true;

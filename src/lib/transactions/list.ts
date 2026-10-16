@@ -1,4 +1,5 @@
 import type { Prisma } from "@prisma/client";
+import { categoryFilterWhere } from "./category-filter";
 import { normalizeMerchantKey } from "./merchant";
 import {
   TRANSACTION_ROW_SELECT,
@@ -86,7 +87,7 @@ export async function getTransactionsPage(
 ): Promise<TransactionsListResult> {
   const where: Prisma.TransactionWhereInput = {
     accountId: filters.accountId,
-    categoryId: filters.categoryId,
+    ...categoryFilterWhere(filters.categoryId ? [filters.categoryId] : []),
   };
 
   if (filters.dateFrom || filters.dateTo) {

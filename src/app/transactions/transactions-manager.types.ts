@@ -36,7 +36,6 @@ export const TRANSACTIONS_SORT_FIELDS = [
 ] as const;
 export const ALL_ACCOUNTS_VALUE = "__all_accounts__";
 export const ALL_CATEGORIES_VALUE = "__all_categories__";
-export const UNCATEGORIZED_VALUE = "__uncategorized__";
 export const PAYMENT_TYPE_OPTIONS = [
   "CARD",
   "TRANSFER",

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 import { readNoteField } from "@/lib/transactions/note";
 import { AddTransactionDialog } from "./components/add-transaction-dialog";
 import { BulkDeleteTransactionsDialog } from "./components/bulk-delete-transactions-dialog";
@@ -20,7 +21,6 @@ import {
   PAYMENT_TYPE_OPTIONS,
   type PaymentTypeOption,
   type TransactionRow,
-  UNCATEGORIZED_VALUE,
 } from "./transactions-manager.types";
 import { useTransactionsManager } from "./use-transactions-manager";
 
