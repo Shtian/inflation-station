@@ -241,3 +241,53 @@ test(
     );
   },
 );
+
+test(
+  "filters to uncategorized transactions and keeps the filter on reload",
+  { lock: INTEGRATED_DB_LOCK },
+  async ({ page }) => {
+    await layFixture({
+      accounts: [{ name: ACCOUNT }],
+      categories: [{ name: CATEGORY }],
+      transactions: [
+        {
+          account: ACCOUNT,
+          category: CATEGORY,
+          bookingDate: "2026-03-04",
+          amountNok: -249.9,
+          merchant: "Kaffeslabberas Gamlebyen",
+        },
+        {
+          account: ACCOUNT,
+          bookingDate: "2026-03-05",
+          amountNok: -120,
+          merchant: "Rimi Storgata",
+        },
+      ],
+    });
+
+    await openTransactions(page);
+    await expect(bodyRows(page)).toHaveCount(2);
+
+    const filtered = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/transactions?") &&
+        new URL(response.url()).searchParams.get("categoryId") ===
+          "__uncategorized__",
+    );
+    await page.getByLabel("Kategori", { exact: true }).click();
+    await page.getByRole("option", { name: "Ukategorisert" }).click();
+    await filtered;
+
+    await expect(page).toHaveURL(/[?&]categoryId=__uncategorized__(&|$)/);
+    await expect(bodyRows(page)).toHaveCount(1);
+    await expect(bodyRows(page).first()).toContainText("Rimi Storgata");
+
+    await reloadTransactions(page);
+    await expect(page.getByLabel("Kategori", { exact: true })).toHaveValue(
+      "Ukategorisert",
+    );
+    await expect(bodyRows(page)).toHaveCount(1);
+    await expect(bodyRows(page).first()).toContainText("Rimi Storgata");
+  },
+);

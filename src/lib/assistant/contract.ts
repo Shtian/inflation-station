@@ -1,6 +1,7 @@
 import type { InferUITools, UIMessage } from "ai";
 import { z } from "zod";
 import type { OnboardingDisabledReason } from "@/lib/onboarding/contract";
+import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 import type { createAssistantTools } from "./agent";
 import { SEARCH_LIMIT_MAX } from "./search";
 
@@ -14,7 +15,12 @@ export const summarizeSpendingInputSchema = z.object({
   from: isoDate,
   to: isoDate,
   groupBy: z.enum(["category", "merchant", "month", "account"]),
-  categoryIds: z.array(z.string()).optional(),
+  categoryIds: z
+    .array(z.string())
+    .optional()
+    .describe(
+      `Category ids from listCategories. Include "${UNCATEGORIZED_VALUE}" to match transactions with no category.`,
+    ),
   accountIds: z.array(z.string()).optional(),
   merchantQuery: z.string().optional(),
 });
@@ -22,7 +28,12 @@ export const summarizeSpendingInputSchema = z.object({
 export const searchTransactionsInputSchema = z.object({
   from: isoDate.optional(),
   to: isoDate.optional(),
-  categoryId: z.string().optional(),
+  categoryId: z
+    .string()
+    .optional()
+    .describe(
+      `A category id from listCategories, or "${UNCATEGORIZED_VALUE}" for transactions with no category.`,
+    ),
   accountId: z.string().optional(),
   query: z.string().optional(),
   limit: z.number().int().min(1).max(SEARCH_LIMIT_MAX).optional(),

@@ -192,6 +192,79 @@ describe("createAssistantQueries", () => {
       });
     });
 
+    it("sums only uncategorized spend for the uncategorized category id", async () => {
+      const summary = await queries.summarizeSpending({
+        from: "2026-09-01",
+        to: "2026-09-30",
+        groupBy: "category",
+        categoryIds: ["__uncategorized__"],
+      });
+
+      expect({
+        totalSpendNok: summary.totalSpendNok,
+        transactionCount: summary.transactionCount,
+        groups: summary.groups,
+      }).toEqual({
+        totalSpendNok: 200,
+        transactionCount: 1,
+        groups: [
+          {
+            key: null,
+            label: "Ukategorisert",
+            spendNok: 200,
+            transactionCount: 1,
+          },
+        ],
+      });
+    });
+
+    it("sums a real category together with uncategorized spend", async () => {
+      const summary = await queries.summarizeSpending({
+        from: "2026-09-01",
+        to: "2026-09-30",
+        groupBy: "category",
+        categoryIds: ["cat-travel", "__uncategorized__"],
+      });
+
+      expect({
+        totalSpendNok: summary.totalSpendNok,
+        transactionCount: summary.transactionCount,
+        groups: summary.groups,
+      }).toEqual({
+        totalSpendNok: 200.3,
+        transactionCount: 2,
+        groups: [
+          {
+            key: null,
+            label: "Ukategorisert",
+            spendNok: 200,
+            transactionCount: 1,
+          },
+          {
+            key: "cat-travel",
+            label: "Reise",
+            spendNok: 0.3,
+            transactionCount: 1,
+          },
+        ],
+      });
+    });
+
+    it("applies the merchant query on top of a mixed category filter", async () => {
+      const summary = await queries.summarizeSpending({
+        from: "2026-09-01",
+        to: "2026-09-30",
+        groupBy: "category",
+        categoryIds: ["cat-travel", "__uncategorized__"],
+        merchantQuery: "KIWI",
+      });
+
+      expect({
+        totalSpendNok: summary.totalSpendNok,
+        transactionCount: summary.transactionCount,
+      }).toEqual({ totalSpendNok: 200, transactionCount: 1 });
+    });
+
     it("matches the merchant query against the normalized merchant key", async () => {
       const summary = await queries.summarizeSpending({
         from: "2026-09-01",

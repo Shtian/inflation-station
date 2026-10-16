@@ -10,6 +10,7 @@ import type {
   AssistantUITools,
 } from "@/lib/assistant/contract";
 import { parseIsoDate } from "@/lib/iso-date";
+import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 
 export type TransactionLink = { href: string; label: string };
 
@@ -94,7 +95,7 @@ function formatDateRange(
 }
 
 function collectNames(message: AssistantUIMessage) {
-  const categories = new Map<string, string>();
+  const categories = new Map([[UNCATEGORIZED_VALUE, "Ukategorisert"]]);
   const accounts = new Map<string, string>();
   for (const part of message.parts) {
     if (

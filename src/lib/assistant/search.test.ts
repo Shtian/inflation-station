@@ -75,6 +75,22 @@ describe("createAssistantQueries", () => {
         { id: "sep-30", merchant: "" },
       ]);
     });
+
+    it("returns only uncategorized transactions for the uncategorized category id", async () => {
+      const result = await queries.searchTransactions({
+        from: "2026-08-01",
+        to: "2026-10-31",
+        categoryId: "__uncategorized__",
+      });
+
+      expect(result.total).toBe(1);
+      expect(
+        result.transactions.map(({ id, categoryName }) => ({
+          id,
+          categoryName,
+        })),
+      ).toEqual([{ id: "sep-15-uncategorized", categoryName: null }]);
+    });
   });
 });
 

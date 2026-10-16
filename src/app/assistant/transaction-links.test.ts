@@ -169,6 +169,23 @@ describe("deriveTransactionLinks", () => {
     ]);
   });
 
+  it("labels a search on uncategorized transactions as Ukategorisert", () => {
+    const message = assistantMessage(
+      searchTransactions({
+        from: "2026-09-01",
+        to: "2026-09-30",
+        categoryId: "__uncategorized__",
+      }),
+    );
+
+    expect(deriveTransactionLinks(message)).toEqual([
+      {
+        href: "/transactions?page=1&pageSize=25&dateFrom=2026-09-01&dateTo=2026-09-30&categoryId=__uncategorized__",
+        label: "Se transaksjonene · Ukategorisert · 1.–30. sep. 2026",
+      },
+    ]);
+  });
+
   it("links a spending summary narrowed to one category and one account", () => {
     const message = assistantMessage(
       listCategories([{ id: "cat-food", name: "Dagligvarer" }]),

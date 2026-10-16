@@ -1,5 +1,11 @@
 import { PaymentType, Prisma } from "@prisma/client";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import {
+  createTestDatabase,
+  type TestDatabase,
+  teardownTestDatabase,
+} from "../../../tests/support/prisma-test-db";
+import { UNCATEGORIZED_VALUE } from "./category-filter";
 import { getTransactionsPage } from "./list";
 
 function createTransactionsDbMock(total: number) {
@@ -115,7 +121,7 @@ describe("getTransactionsPage", () => {
 
     const expectedWhere = {
       accountId: "acc-1",
-      categoryId: "cat-2",
+      categoryId: { in: ["cat-2"] },
       bookingDate: {
         gte: new Date("2026-01-01T00:00:00.000Z"),
         lt: new Date("2026-02-01T00:00:00.000Z"),
@@ -297,5 +303,82 @@ describe("getTransactionsPage", () => {
         orderBy: [{ merchant: "desc" }, { id: "desc" }],
       }),
     );
+  });
+});
+
+describe("getTransactionsPage against a database", () => {
+  let db: TestDatabase;
+
+  beforeAll(async () => {
+    db = await createTestDatabase();
+    await db.client.account.create({ data: { id: "acc-1", name: "Konto" } });
+    await db.client.category.create({
+      data: { id: "cat-food", name: "Mat", kind: "EXPENSE" },
+    });
+    const bookings: Array<[string, string, string | null]> = [
+      ["tx-1", "2026-03-01", null],
+      ["tx-2", "2026-03-02", "cat-food"],
+      ["tx-3", "2026-03-03", null],
+      ["tx-4", "2026-03-04", "cat-food"],
+      ["tx-5", "2026-03-05", null],
+    ];
+    for (const [id, day, categoryId] of bookings) {
+      await db.client.transaction.create({
+        data: {
+          id,
+          accountId: "acc-1",
+          categoryId,
+          bookingDate: new Date(`${day}T00:00:00.000Z`),
+          amountNok: -10,
+          currency: "NOK",
+          normalizedMerchant: "shop",
+        },
+      });
+    }
+  });
+
+  afterAll(async () => {
+    await teardownTestDatabase(db);
+  });
+
+  it("selects only uncategorized rows for the uncategorized category filter", async () => {
+    const firstPage = await getTransactionsPage(db.client, {
+      categoryId: UNCATEGORIZED_VALUE,
+      page: 1,
+      pageSize: 2,
+    });
+    const secondPage = await getTransactionsPage(db.client, {
+      categoryId: UNCATEGORIZED_VALUE,
+      page: 2,
+      pageSize: 2,
+    });
+
+    expect(
+      [...firstPage.rows, ...secondPage.rows].map((row) => [
+        row.id,
+        row.categoryId,
+      ]),
+    ).toEqual([
+      ["tx-5", null],
+      ["tx-3", null],
+      ["tx-1", null],
+    ]);
+    expect(firstPage.pagination).toEqual({
+      total: 3,
+      page: 1,
+      pageSize: 2,
+      totalPages: 2,
+    });
+  });
+
+  it("still selects one real category by id", async () => {
+    const result = await getTransactionsPage(db.client, {
+      categoryId: "cat-food",
+      page: 1,
+      pageSize: 25,
+    });
+
+    expect(result.rows.map((row) => row.id)).toEqual(["tx-4", "tx-2"]);
+    expect(result.pagination.total).toBe(2);
   });
 });
