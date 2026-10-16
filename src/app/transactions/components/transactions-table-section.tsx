@@ -75,6 +75,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { formatNok } from "@/lib/format-nok";
+import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 import { cn } from "@/lib/utils";
 import {
   type Account,
@@ -251,6 +252,10 @@ export function TransactionsTableSection({
   const [hasHydratedColumnVisibility, setHasHydratedColumnVisibility] =
     useState(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const categoryFilterOptions = useMemo(
+    () => [{ id: UNCATEGORIZED_VALUE, name: "Ukategorisert" }, ...categories],
+    [categories],
+  );
 
   // Reset selection on filter/page/sort changes
   const resetKeyRef = useRef(
@@ -701,7 +706,7 @@ export function TransactionsTableSection({
             <CategoryCombobox
               id="transactions-category-filter"
               value={categoryId}
-              categories={categories}
+              categories={categoryFilterOptions}
               onValueChange={(value) => onCategoryFilterChange(value)}
               placeholder="Alle kategorier"
               emptyLabel="Ingen samsvarende kategorier."

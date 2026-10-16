@@ -93,6 +93,19 @@ describe("toTransactionsTableSearchParams", () => {
       "foo=bar&page=2&pageSize=10&sorting=bookingDate%3Adesc&globalQuery=rent&dateFrom=2026-02-01&accountId=acc-4",
     );
   });
+
+  it("round-trips the uncategorized category filter", () => {
+    const url = new URLSearchParams(
+      "foo=bar&page=1&pageSize=25&categoryId=__uncategorized__",
+    );
+
+    const state = parseTransactionsTableUrlState(url);
+
+    expect(state.categoryId).toBe("__uncategorized__");
+    expect(toTransactionsTableSearchParams(state, url).toString()).toBe(
+      "foo=bar&page=1&pageSize=25&categoryId=__uncategorized__",
+    );
+  });
 });
 
 describe("withFilterStateChange", () => {
