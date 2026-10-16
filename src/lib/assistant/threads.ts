@@ -97,7 +97,15 @@ export async function renameAssistantThread(
   id: string,
   title: string,
 ): Promise<void> {
-  await db.assistantThread.update({ where: { id }, data: { title } });
+  // The list is ordered by the last saved turn, so a rename keeps updatedAt.
+  const existing = await db.assistantThread.findUnique({
+    where: { id },
+    select: { updatedAt: true },
+  });
+  await db.assistantThread.update({
+    where: { id },
+    data: { title, updatedAt: existing?.updatedAt },
+  });
 }
 
 export async function deleteAssistantThread(

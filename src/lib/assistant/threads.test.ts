@@ -131,6 +131,22 @@ describe("assistant threads", () => {
     ).toEqual(["Første", "Andre"]);
   });
 
+  it("keeps a thread's place in the list when it is renamed", async () => {
+    await saveAssistantThreadMessages(db.client, "older", [
+      userMessage("u1", "Første"),
+    ]);
+    await tick();
+    await saveAssistantThreadMessages(db.client, "newer", [
+      userMessage("u2", "Andre"),
+    ]);
+    await tick();
+    await renameAssistantThread(db.client, "older", "Omdøpt");
+
+    expect(
+      (await listAssistantThreads(db.client)).map((thread) => thread.title),
+    ).toEqual(["Andre", "Omdøpt"]);
+  });
+
   it("deletes a thread so it is neither listed nor readable", async () => {
     await saveAssistantThreadMessages(db.client, "keep", [
       userMessage("u1", "Behold"),
