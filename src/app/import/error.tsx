@@ -10,6 +10,7 @@ type ImportErrorProps = {
 export default function ImportRouteError({ error, reset }: ImportErrorProps) {
   return (
     <RouteErrorState
+      error={error}
       title="Importen kunne ikke lastes inn"
       message={
         error.message ||

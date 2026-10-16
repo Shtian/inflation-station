@@ -13,6 +13,7 @@ export default function MonthlyReviewRouteError({
 }: MonthlyReviewRouteErrorProps) {
   return (
     <RouteErrorState
+      error={error}
       title="Kunne ikke laste inn tidslinjen for månedsoppsummering"
       message={
         error.message ||

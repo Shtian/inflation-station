@@ -13,6 +13,7 @@ export default function TransactionsRouteError({
 }: TransactionsErrorProps) {
   return (
     <RouteErrorState
+      error={error}
       title="Transaksjonene kunne ikke lastes inn"
       message={
         error.message ||
