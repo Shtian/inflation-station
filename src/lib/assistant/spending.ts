@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { toLocalIsoDate } from "@/lib/monthly-review/month-in-review";
+import { categoryFilterWhere } from "@/lib/transactions/category-filter";
 import { normalizeMerchantKey } from "@/lib/transactions/merchant";
 import { isTransfer } from "@/lib/transactions/transfer";
 import { toLocalDayBounds } from "./local-day";
@@ -95,9 +96,12 @@ export async function summarizeSpending(
   const transactions = await db.transaction.findMany({
     where: {
       bookingDate: { gte: start, lt: end },
-      ...(categoryIds.length > 0 ? { categoryId: { in: categoryIds } } : {}),
       ...(accountIds.length > 0 ? { accountId: { in: accountIds } } : {}),
-      ...(merchantQuery ? merchantMatch(merchantQuery) : {}),
+      // Both fragments may carry an OR, so they cannot share one object.
+      AND: [
+        categoryFilterWhere(categoryIds),
+        merchantQuery ? merchantMatch(merchantQuery) : {},
+      ],
     },
     select: SPEND_TRANSACTION_SELECT,
   });
