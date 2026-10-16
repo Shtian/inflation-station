@@ -1,8 +1,27 @@
 import { defineConfig, devices } from "@playwright/test";
 import { INTEGRATED_DATABASE_URL } from "./tests/support/integrated-database";
 
-const STUBBED_PORT = 3000;
-const INTEGRATED_PORT = 3001;
+/**
+ * Several worktrees of this repo run at once, and the stubbed entry reuses
+ * whatever server already holds its port. Without an override, a worktree
+ * whose neighbour holds 3000 tests the neighbour's code.
+ */
+function portFromEnv(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") {
+    return fallback;
+  }
+
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+    throw new Error(`${name} must be a TCP port, got "${raw}"`);
+  }
+
+  return port;
+}
+
+const STUBBED_PORT = portFromEnv("PLAYWRIGHT_STUBBED_PORT", 3000);
+const INTEGRATED_PORT = portFromEnv("PLAYWRIGHT_INTEGRATED_PORT", 3001);
 const INTEGRATED_DIST_DIR = ".next-integrated";
 
 // Three stubbed specs drive Server Actions, which POST to the page's own URL
