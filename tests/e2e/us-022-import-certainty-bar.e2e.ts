@@ -295,7 +295,7 @@ test("shows no Jev notice when Jev answered every row, even below the floor", as
   ).toHaveCount(0);
 });
 
-test("labels rule and history suggestions with their source instead of a certainty bar", async ({
+test("marks rule and history suggestions with source icons instead of a certainty bar", async ({
   page,
 }) => {
   await stubAccountsAndCategories(page);
@@ -325,15 +325,20 @@ test("labels rule and history suggestions with their source instead of a certain
     name: "Kategori for rad 7",
   });
 
-  await expect(ruleRow.getByText("Fra regel", { exact: true })).toBeVisible();
-  await expect(
-    historyRow.getByText("Fra historikk", { exact: true }),
-  ).toBeVisible();
+  const ruleIcon = ruleRow.getByLabel("Fra regel");
+  await expect(ruleIcon).toBeVisible();
+  await expect(historyRow.getByLabel("Fra historikk")).toBeVisible();
+  await expect(page.getByText("Fra regel", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Fra historikk", { exact: true })).toHaveCount(0);
+  await ruleIcon.hover();
+  await expect(page.getByRole("tooltip")).toHaveText(
+    "Kategorien kommer fra en av reglene dine",
+  );
   await expect(historyCategory).toHaveValue("Groceries");
   await expect(
     page.getByRole("img", { name: /AI-forslag på rad 7/i }),
   ).toHaveCount(0);
-  await expect(jevRow.getByText(/^Fra /)).toHaveCount(0);
+  await expect(jevRow.getByLabel(/^Fra /)).toHaveCount(0);
   await expect(
     page.getByRole("img", {
       name: /Sikkerhet for AI-forslag på rad 2: høy/i,
@@ -343,5 +348,5 @@ test("labels rule and history suggestions with their source instead of a certain
   await historyCategory.click();
   await page.getByRole("option", { name: "Transport", exact: true }).click();
   await expect(historyCategory).toHaveValue("Transport");
-  await expect(historyRow.getByText("Fra historikk")).toHaveCount(0);
+  await expect(historyRow.getByLabel("Fra historikk")).toHaveCount(0);
 });
