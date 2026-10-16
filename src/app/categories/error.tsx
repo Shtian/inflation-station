@@ -13,6 +13,7 @@ export default function CategoriesRouteError({
 }: CategoriesErrorProps) {
   return (
     <RouteErrorState
+      error={error}
       title="Kunne ikke laste inn kategorier"
       message={
         error.message ||

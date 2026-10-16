@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 import { PHASE_PRODUCTION_BUILD } from "next/constants";
 
@@ -19,6 +20,20 @@ process.env.NEXT_PUBLIC_BUILD_TIME = new Date().toISOString();
 const standalone = process.env.NEXT_OUTPUT !== "default";
 
 export default function nextConfig(phase: string): NextConfig {
+  return withSentryConfig(appConfig(phase), {
+    // SENTRY_ORG, SENTRY_PROJECT, and SENTRY_AUTH_TOKEN are read from the env.
+    // Source maps upload only when a token is present, so builds without
+    // Sentry stay quiet and offline.
+    sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+    release: { name: process.env.NEXT_PUBLIC_BUILD_SHA },
+    // Proxy browser events through the app so ad blockers don't drop them.
+    tunnelRoute: "/monitoring",
+    silent: !process.env.CI,
+    telemetry: false,
+  });
+}
+
+function appConfig(phase: string): NextConfig {
   return {
     output: standalone ? "standalone" : undefined,
     // Only the deployed standalone server updates itself. The standalone

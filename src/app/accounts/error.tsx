@@ -13,6 +13,7 @@ export default function AccountsRouteError({
 }: AccountsErrorProps) {
   return (
     <RouteErrorState
+      error={error}
       title="Kunne ikke laste inn kontoer"
       message={
         error.message ||

@@ -13,6 +13,7 @@ export default function AssistantRouteError({
 }: AssistantErrorProps) {
   return (
     <RouteErrorState
+      error={error}
       title="Chatten kunne ikke lastes inn"
       message={
         error.message ||

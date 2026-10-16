@@ -13,6 +13,7 @@ export default function MonthlyReviewSettingsRouteError({
 }: MonthlyReviewSettingsRouteErrorProps) {
   return (
     <RouteErrorState
+      error={error}
       title="Kunne ikke laste inn innstillingene for månedsoppsummering"
       message={
         error.message ||

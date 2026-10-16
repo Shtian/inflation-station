@@ -13,6 +13,7 @@ export default function OnboardingRouteError({
 }: OnboardingErrorProps) {
   return (
     <RouteErrorState
+      error={error}
       title="Oppsettsguiden kunne ikke lastes inn"
       message={
         error.message ||

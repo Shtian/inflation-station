@@ -78,6 +78,10 @@ The footer also has an Update button that does the same from the browser. It run
 
 To take a backup manually, run `scripts/backup-db.sh [output-dir]`. It is safe to run while the app is running.
 
+### Error Monitoring (Sentry)
+
+Sentry is optional and off unless `NEXT_PUBLIC_SENTRY_DSN` is set in `.env`. The DSN is baked into the build, so run `bash update.sh` after changing it. To get readable stack traces, also set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`; the build then uploads source maps. Only errors, stack traces, and a small sample of traces are sent. Request bodies, headers, cookies, AI prompts, and database values are not sent.
+
 ### Running Multiple Instances
 
 Each clone is a separate instance with its own database, so several people can run their own copy on the same machine. `ecosystem.config.js` runs the app from the folder it lives in and reads the pm2 name and port from that clone's `.env`.

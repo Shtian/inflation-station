@@ -1,10 +1,13 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { TriangleAlert } from "lucide-react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 type RouteErrorStateProps = {
   actionLabel?: string;
+  error: Error;
   message: string;
   onRetry: () => void;
   title: string;
@@ -12,10 +15,15 @@ type RouteErrorStateProps = {
 
 export function RouteErrorState({
   actionLabel = "Prøv igjen",
+  error,
   message,
   onRetry,
   title,
 }: RouteErrorStateProps) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   return (
     <main className="mx-auto flex w-full max-w-6xl items-center justify-center px-5 py-16 md:px-10">
       <div className="w-full max-w-lg rounded-lg border border-border bg-card p-6">
