@@ -177,6 +177,41 @@ describe("layFixture", () => {
     ).toEqual([{ name: "Savings" }]);
   });
 
+  test("replaces the previous fixture's assistant threads", async () => {
+    const question = {
+      id: "u1",
+      role: "user",
+      parts: [{ type: "text", text: "Hei" }],
+    };
+    await layFixture(
+      {
+        accounts: [],
+        transactions: [],
+        assistantThreads: [
+          { id: "old-thread", title: "Gammel", messages: [question] },
+        ],
+      },
+      db.databaseUrl,
+    );
+
+    await layFixture(
+      {
+        accounts: [],
+        transactions: [],
+        assistantThreads: [
+          { id: "new-thread", title: "Ny", messages: [question] },
+        ],
+      },
+      db.databaseUrl,
+    );
+
+    expect(
+      await db.client.assistantThread.findMany({
+        select: { id: true, title: true, messages: true },
+      }),
+    ).toEqual([{ id: "new-thread", title: "Ny", messages: [question] }]);
+  });
+
   test("fills in the columns a spec does not state", async () => {
     await layFixture(
       {
