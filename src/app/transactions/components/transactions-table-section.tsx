@@ -19,8 +19,6 @@ import {
   Columns3,
   Ellipsis,
   FileText,
-  Maximize2,
-  Minimize2,
   Pencil,
   Plus,
   Search,
@@ -30,6 +28,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { nb } from "react-day-picker/locale";
 import { CategoryBadge } from "@/components/category-badge";
 import { CategoryCombobox } from "@/components/category-combobox";
+import { TableWidthToggle } from "@/components/table-width-toggle";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -91,8 +90,6 @@ import {
 
 const COLUMN_VISIBILITY_STORAGE_KEY =
   "transactions-table-section-column-visibility";
-const TABLE_WIDTH_STORAGE_KEY = "transactions-table-width";
-
 const HIDEABLE_COLUMN_IDS = [
   "bookingDate",
   "merchant",
@@ -110,12 +107,6 @@ const COLUMN_LABELS: Record<string, string> = {
   category: "Kategori",
 };
 const columnHelper = createColumnHelper<TransactionRow>();
-
-type TableWidth = "contained" | "full";
-
-function parseTableWidth(value: string | null): TableWidth {
-  return value === "full" ? "full" : "contained";
-}
 
 type TransactionsTableSectionProps = {
   loading: boolean;
@@ -261,8 +252,6 @@ export function TransactionsTableSection({
   });
   const [hasHydratedColumnVisibility, setHasHydratedColumnVisibility] =
     useState(false);
-  const [tableWidth, setTableWidth] = useState<TableWidth>("contained");
-  const [hasHydratedTableWidth, setHasHydratedTableWidth] = useState(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const categoryFilterOptions = useMemo(
     () => [{ id: UNCATEGORIZED_VALUE, name: "Ukategorisert" }, ...categories],
@@ -329,21 +318,6 @@ export function TransactionsTableSection({
       JSON.stringify(columnVisibility),
     );
   }, [columnVisibility, hasHydratedColumnVisibility]);
-
-  useEffect(() => {
-    setTableWidth(
-      parseTableWidth(localStorage.getItem(TABLE_WIDTH_STORAGE_KEY)),
-    );
-    setHasHydratedTableWidth(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hasHydratedTableWidth) {
-      return;
-    }
-
-    localStorage.setItem(TABLE_WIDTH_STORAGE_KEY, tableWidth);
-  }, [tableWidth, hasHydratedTableWidth]);
 
   const sortableHeader = useCallback(
     (label: string, field: TransactionSorting["field"]) => {
@@ -577,11 +551,7 @@ export function TransactionsTableSection({
     dateTo.length > 0;
 
   return (
-    <section
-      className="space-y-2"
-      aria-live="polite"
-      data-table-width={tableWidth}
-    >
+    <section className="space-y-2" aria-live="polite">
       {/* Filters and Actions Card */}
       <div className="rounded-xl border border-border p-4">
         <div className="flex flex-wrap items-end gap-3">
@@ -786,38 +756,7 @@ export function TransactionsTableSection({
             </>
           )}
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon-sm"
-                    className="hidden xl:inline-flex"
-                    aria-label="Full bredde"
-                    aria-pressed={tableWidth === "full"}
-                    onClick={() =>
-                      setTableWidth((current) =>
-                        current === "full" ? "contained" : "full",
-                      )
-                    }
-                  >
-                    {tableWidth === "full" ? (
-                      <Minimize2 className="h-4 w-4" aria-hidden="true" />
-                    ) : (
-                      <Maximize2 className="h-4 w-4" aria-hidden="true" />
-                    )}
-                  </Button>
-                }
-              />
-              <TooltipContent side="top">
-                {tableWidth === "full"
-                  ? "Bruk standard bredde"
-                  : "Bruk full bredde"}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <TableWidthToggle storageKey="transactions-table-width" />
 
           <DropdownMenu>
             <DropdownMenuTrigger

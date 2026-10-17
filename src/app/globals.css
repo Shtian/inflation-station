@@ -5,6 +5,10 @@
 @source "../../node_modules/streamdown/dist/*.js";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant full-width (&:is(
+    main:has([data-table-width="full"]),
+    main:has([data-table-width="full"]) *
+  ));
 
 @theme inline {
   --font-sans: var(--font-jakarta-sans);

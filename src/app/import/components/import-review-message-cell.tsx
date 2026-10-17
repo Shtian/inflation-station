@@ -35,7 +35,9 @@ export function ImportReviewMessageCell({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="max-w-[20ch] truncate text-sm">{display}</span>
+      <span className="max-w-[20ch] truncate text-sm xl:full-width:max-w-[48ch]">
+        {display}
+      </span>
       {isPending ? (
         <Sparkles
           className="h-3.5 w-3.5 shrink-0 animate-pulse text-muted-foreground"
