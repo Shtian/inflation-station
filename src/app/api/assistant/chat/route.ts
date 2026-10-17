@@ -21,6 +21,7 @@ import {
   saveAssistantThreadMessages,
 } from "@/lib/assistant/threads";
 import { prisma } from "@/lib/prisma";
+import { setAiChatScope } from "@/lib/sentry/ai-chat";
 
 // The API key is read per request, so a key added after the build still
 // enables the chat.
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
   // question.
   await saveAssistantThreadMessages(prisma, id, messages);
 
+  setAiChatScope("assistant", id);
   const openai = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
   });

@@ -11,6 +11,7 @@ import {
 import type { OnboardingUIMessage } from "@/lib/onboarding/contract";
 import { loadSetupSnapshot } from "@/lib/onboarding/setup-store";
 import { prisma } from "@/lib/prisma";
+import { setAiChatScope } from "@/lib/sentry/ai-chat";
 
 function invalidMessages(message: string) {
   return NextResponse.json(
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
   }
   const messages = validation.data;
 
+  setAiChatScope("onboarding", (payload as { id?: unknown } | null)?.id);
   const openai = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
   });
