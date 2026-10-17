@@ -41,11 +41,20 @@ export function VersionInfo({
                   className="absolute top-1 right-1 size-1.5 rounded-full bg-brand"
                 />
               )}
-              <span className="sr-only">Versjonsinfo</span>
+              <span className="sr-only">
+                {availableSha === null
+                  ? "Versjonsinfo"
+                  : "Versjonsinfo, oppdatering tilgjengelig"}
+              </span>
             </Button>
           }
         />
-        <PopoverContent side="right" align="end" className="w-auto">
+        <PopoverContent
+          side="right"
+          sideOffset={16}
+          align="end"
+          className="w-auto"
+        >
           <p className="font-mono text-muted-foreground text-xs tabular-nums">
             <span className="text-brand/60">{sha}</span>
             <span className="mx-1.5 text-border">·</span>

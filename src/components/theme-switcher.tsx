@@ -78,7 +78,12 @@ export function ThemeSwitcher() {
           </Button>
         }
       />
-      <PopoverContent side="right" align="end" className="w-80 gap-4 p-3">
+      <PopoverContent
+        side="right"
+        sideOffset={16}
+        align="end"
+        className="w-80 gap-4 p-3"
+      >
         <fieldset>
           <legend className="mb-2 font-medium text-muted-foreground text-xs">
             Modus

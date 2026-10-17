@@ -3,6 +3,7 @@
 import {
   ArrowLeftRight,
   CalendarDays,
+  LayoutDashboard,
   type LucideIcon,
   Sparkles,
   Upload,
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/tooltip";
 
 const primaryLinks: { href: string; label: string; Icon: LucideIcon }[] = [
+  { href: "/", label: "Oversikt", Icon: LayoutDashboard },
   { href: "/transactions", label: "Transaksjoner", Icon: ArrowLeftRight },
   { href: "/import", label: "Import", Icon: Upload },
   { href: "/monthly-review", label: "Månedsoppsummering", Icon: CalendarDays },
@@ -24,7 +26,9 @@ const primaryLinks: { href: string; label: string; Icon: LucideIcon }[] = [
 ];
 
 function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return href === "/"
+    ? pathname === "/"
+    : pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function AppNavigation() {

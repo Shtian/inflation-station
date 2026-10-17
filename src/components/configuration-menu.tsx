@@ -50,7 +50,12 @@ export function ConfigurationMenu() {
           </Button>
         }
       />
-      <DropdownMenuContent side="right" align="end" className="w-72">
+      <DropdownMenuContent
+        side="right"
+        sideOffset={16}
+        align="end"
+        className="w-72"
+      >
         {configurationLinks.map((link) => (
           <DropdownMenuItem
             key={link.href}
