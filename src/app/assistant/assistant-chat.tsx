@@ -32,6 +32,7 @@ import {
   type AssistantDisabledReason,
   type AssistantUIMessage,
 } from "@/lib/assistant/contract";
+import { cn } from "@/lib/utils";
 import { deriveTransactionLinks } from "./transaction-links";
 
 const SUGGESTIONS = [
@@ -183,14 +184,19 @@ function AssistantConversation({ threadId, initialMessages }: ThreadProps) {
   return (
     <section
       aria-label="Samtale om forbruket ditt"
-      className="flex h-[70dvh] min-h-[28rem] flex-col overflow-hidden rounded-xl bg-card text-card-foreground text-sm ring-1 ring-foreground/10 lg:h-[calc(100dvh-14rem)]"
+      className="flex h-full min-h-0 flex-col overflow-hidden text-sm"
     >
-      <header className="flex items-center gap-1 border-border border-b px-4 py-2">
-        <h2 className="flex-1 font-semibold text-sm">Samtale</h2>
-      </header>
-
       <Conversation className="min-h-0">
-        <ConversationContent className="min-h-full gap-4 p-4">
+        <ConversationContent
+          className={cn(
+            "mx-auto min-h-full w-full max-w-3xl gap-6 px-6 pt-8 pb-4",
+            // Streamdown wraps tables in a bordered card with a bordered
+            // table inside; flatten it to plain rows on the chat surface.
+            "[&_[data-streamdown=table-wrapper]]:gap-0 [&_[data-streamdown=table-wrapper]]:rounded-none [&_[data-streamdown=table-wrapper]]:border-0 [&_[data-streamdown=table-wrapper]]:bg-transparent [&_[data-streamdown=table-wrapper]]:p-0",
+            "[&_[data-streamdown=table-wrapper]>div:last-child]:rounded-none [&_[data-streamdown=table-wrapper]>div:last-child]:border-0 [&_[data-streamdown=table-wrapper]>div:last-child]:bg-transparent",
+            "[&_[data-streamdown=table-cell]]:pl-0 [&_[data-streamdown=table-cell]]:tabular-nums [&_[data-streamdown=table-header-cell]]:pl-0 [&_[data-streamdown=table-header-cell]]:font-medium [&_[data-streamdown=table-header-cell]]:text-muted-foreground [&_[data-streamdown=table-header-cell]]:text-xs [&_[data-streamdown=table-header]]:bg-transparent",
+          )}
+        >
           {messages.length === 0 ? (
             <ConversationEmptyState className="flex-1 items-start justify-end gap-3 p-0 text-left">
               <p className="max-w-prose text-muted-foreground text-sm">
@@ -239,7 +245,7 @@ function AssistantConversation({ threadId, initialMessages }: ThreadProps) {
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="border-border border-t p-3">
+      <div className="mx-auto w-full max-w-3xl px-6 pt-2 pb-5">
         <PromptInput onSubmit={(message) => send(message.text)}>
           <PromptInputTextarea
             value={input}
@@ -269,12 +275,14 @@ function AssistantConversation({ threadId, initialMessages }: ThreadProps) {
   );
 }
 
+const STATE_COLUMN = "mx-auto w-full max-w-3xl px-6 pt-8";
+
 export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
   const { availability, reload } = useAvailability();
 
   if (availability.status === "loading") {
     return (
-      <p className="text-muted-foreground text-sm">
+      <p className={cn(STATE_COLUMN, "text-muted-foreground text-sm")}>
         Sjekker om chatten er tilgjengelig…
       </p>
     );
@@ -282,7 +290,12 @@ export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
 
   if (availability.status === "error") {
     return (
-      <div className="flex items-center gap-2 text-destructive text-sm">
+      <div
+        className={cn(
+          STATE_COLUMN,
+          "flex items-center gap-2 text-destructive text-sm",
+        )}
+      >
         <span>Kunne ikke sjekke om chatten er tilgjengelig.</span>
         <Button size="xs" variant="outline" onClick={() => void reload()}>
           Prøv igjen
@@ -293,7 +306,12 @@ export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
 
   if (availability.disabledReason === "key_missing") {
     return (
-      <div className="flex flex-col gap-6 text-sm">
+      <div
+        className={cn(
+          STATE_COLUMN,
+          "flex h-full flex-col gap-8 overflow-y-auto pb-8 text-sm",
+        )}
+      >
         <div className="flex flex-col gap-2">
           <h2 className="font-medium text-foreground">
             Chatten er ikke tilgjengelig
@@ -305,10 +323,7 @@ export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
           </p>
         </div>
         {initialMessages.length > 0 ? (
-          <section
-            aria-label="Lagret samtale"
-            className="flex flex-col gap-4 rounded-xl bg-card p-4 text-card-foreground ring-1 ring-foreground/10"
-          >
+          <section aria-label="Lagret samtale" className="flex flex-col gap-6">
             {initialMessages.map((message) => (
               <AssistantMessage
                 key={message.id}
