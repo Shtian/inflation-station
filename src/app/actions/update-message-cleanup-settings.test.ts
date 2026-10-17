@@ -130,9 +130,7 @@ describe("updateMessageCleanupSettingsAction", () => {
         reasoningEffort: "medium",
       },
     );
-    expect(revalidatePathMock).toHaveBeenCalledWith(
-      "/import/settings/message-cleanup",
-    );
+    expect(revalidatePathMock).toHaveBeenCalledWith("/settings");
     expect(result.data).toEqual({
       promptText: "Keep merchant names compact.",
       resolvedPrompt: "Keep merchant names compact.",

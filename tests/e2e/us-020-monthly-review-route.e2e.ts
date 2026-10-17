@@ -205,7 +205,7 @@ test("renders monthly review timeline cards with deterministic overview data", a
   ).toBeVisible();
 });
 
-test("opens monthly review settings from the header configuration menu", async ({
+test("edits monthly review settings reached from the sidebar settings link", async ({
   page,
 }) => {
   const promptUpdateRequests: Array<{ promptText?: string }> = [];
@@ -271,16 +271,38 @@ test("opens monthly review settings from the header configuration menu", async (
     });
   });
 
-  await page.goto("/monthly-review");
-  await page.getByRole("button", { name: "Konfigurasjon" }).click();
-  await page
-    .getByRole("menuitem", { name: /Innstillinger for månedsoppsummering/ })
-    .click();
+  await page.route("**/api/imports/message-cleanup-settings", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        promptText: "",
+        resolvedPrompt: "Trim transaction noise.",
+        usesDefaultPrompt: true,
+        modelId: null,
+        resolvedModelId: "gpt-5.4-mini",
+        usesDefaultModel: true,
+        availableModels,
+        availableModelsSource: "openai",
+        reasoningEffort: null,
+        resolvedReasoningEffort: "low",
+        usesDefaultReasoningEffort: true,
+        availableReasoningEfforts: [
+          { id: "low", label: "Lav", description: "Standard." },
+        ],
+      }),
+    });
+  });
 
+  await page.goto("/monthly-review");
+  await page.getByRole("link", { name: "Innstillinger", exact: true }).click();
+
+  await expect(page).toHaveURL(/\/settings$/);
+  const monthlyReviewSection = page.getByRole("region", {
+    name: "Månedsoppsummering",
+  });
   await expect(
-    page.getByRole("heading", {
-      name: "Innstillinger for månedsoppsummering",
-    }),
+    monthlyReviewSection.getByRole("heading", { name: "Månedsoppsummering" }),
   ).toBeVisible();
 
   const systemPromptTextbox = page.getByLabel(
@@ -291,7 +313,9 @@ test("opens monthly review settings from the header configuration menu", async (
   );
 
   await systemPromptTextbox.fill("Focus on anomalies and recurring spend.");
-  await page.getByRole("button", { name: "Lagre prompt" }).click();
+  await monthlyReviewSection
+    .getByRole("button", { name: "Lagre prompt" })
+    .click();
 
   await expect.poll(() => promptUpdateRequests.length).toBe(1);
   expect(promptUpdateRequests[0]).toEqual({
@@ -302,27 +326,16 @@ test("opens monthly review settings from the header configuration menu", async (
     page.locator("[data-sonner-toast]", { hasText: "Systemprompt lagret." }),
   ).toBeVisible();
 
-  await page
-    .getByRole("link", { name: "Tilbake til månedsoppsummering" })
-    .click();
+  await page.reload();
 
-  await expect(
-    page.getByRole("heading", { name: "Økonomisk tidslinje" }),
-  ).toBeVisible();
-
-  await page.getByRole("button", { name: "Konfigurasjon" }).click();
-  await page
-    .getByRole("menuitem", { name: /Innstillinger for månedsoppsummering/ })
-    .click();
-
-  await expect(
-    page.getByRole("heading", {
-      name: "Innstillinger for månedsoppsummering",
-    }),
-  ).toBeVisible();
+  await expect(systemPromptTextbox).toHaveValue(
+    "Focus on anomalies and recurring spend.",
+  );
 
   await systemPromptTextbox.fill("   ");
-  await page.getByRole("button", { name: "Lagre prompt" }).click();
+  await monthlyReviewSection
+    .getByRole("button", { name: "Lagre prompt" })
+    .click();
 
   await expect.poll(() => promptUpdateRequests.length).toBe(2);
   expect(promptUpdateRequests[1]).toEqual({
