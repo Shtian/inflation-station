@@ -11,7 +11,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import type { UpdateAvailability } from "@/lib/self-update/availability";
 import {
@@ -108,21 +107,16 @@ function UpdateLog({ log }: { log: string }) {
   );
 }
 
-export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
-  const [open, setOpen] = useState(false);
-  const [state, dispatch] = useReducer(
-    selfUpdateDialogReducer,
-    initialSelfUpdateDialogState,
-  );
-  const polling = isPolling(state);
-  // A tab opened before an update over SSH renders a stale sha, so a run
-  // started here compares against the sha the server reports at start.
-  const baselineSha = useRef(pageSha);
+export function useSelfUpdate(enabled: boolean) {
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [availability, setAvailability] = useState<UpdateAvailability>({
     kind: "unknown",
   });
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
     let cancelled = false;
     async function check() {
       const next = await fetchAvailability();
@@ -136,7 +130,7 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [enabled]);
 
   const availableSha =
     availability.kind === "available" ? availability.remoteSha : null;
@@ -146,9 +140,32 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
       return;
     }
     toast(`Ny versjon ${availableSha} er tilgjengelig`, {
-      action: { label: "Oppdater", onClick: () => setOpen(true) },
+      action: { label: "Oppdater", onClick: () => setDialogOpen(true) },
     });
   }, [availableSha]);
+
+  return { availability, availableSha, dialogOpen, setDialogOpen };
+}
+
+export function SelfUpdateDialog({
+  open,
+  onOpenChange,
+  pageSha,
+  availability,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  pageSha: string;
+  availability: UpdateAvailability;
+}) {
+  const [state, dispatch] = useReducer(
+    selfUpdateDialogReducer,
+    initialSelfUpdateDialogState,
+  );
+  const polling = isPolling(state);
+  // A tab opened before an update over SSH renders a stale sha, so a run
+  // started here compares against the sha the server reports at start.
+  const baselineSha = useRef(pageSha);
 
   useEffect(() => {
     if (!open) {
@@ -205,7 +222,7 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
   }
 
   function handleOpenChange(nextOpen: boolean) {
-    setOpen(nextOpen);
+    onOpenChange(nextOpen);
     if (!nextOpen) {
       dispatch({ type: "reset" });
     }
@@ -213,24 +230,6 @@ export function SelfUpdateButton({ pageSha }: { pageSha: string }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="xs"
-            className={
-              availableSha === null
-                ? "font-mono text-muted-foreground"
-                : "font-mono text-brand"
-            }
-          />
-        }
-      >
-        {availableSha === null ? null : (
-          <span aria-hidden className="size-1.5 rounded-full bg-brand" />
-        )}
-        {availableSha === null ? "Oppdater" : "Oppdatering tilgjengelig"}
-      </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Oppdater Inflation Station</DialogTitle>

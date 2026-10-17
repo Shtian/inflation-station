@@ -1,14 +1,11 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
-import Link from "next/link";
-import { AppNavigation } from "@/components/app-navigation";
-import { BuildInfoFooter } from "@/components/build-info-footer";
-import { ConfigurationMenu } from "@/components/configuration-menu";
+import { AppSidebar } from "@/components/app-sidebar";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Toaster } from "@/components/ui/sonner";
 import { resolveFeedbackDisabledReason } from "@/lib/feedback/agent";
+import { SIDEBAR_BOOT_SCRIPT } from "@/lib/sidebar-state";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/theme-palettes";
 import "./globals.css";
 
@@ -40,6 +37,10 @@ export default function RootLayout({
           // biome-ignore lint/security/noDangerouslySetInnerHtml: static script built from the palette registry, no user input
           dangerouslySetInnerHTML={{ __html: PALETTE_BOOT_SCRIPT }}
         />
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: static script built from the sidebar state constants, no user input
+          dangerouslySetInnerHTML={{ __html: SIDEBAR_BOOT_SCRIPT }}
+        />
       </head>
       <body
         className={`${jakartaSans.variable} ${geistMono.variable} font-sans antialiased`}
@@ -51,28 +52,15 @@ export default function RootLayout({
           disableTransitionOnChange
           storageKey="inflation-station-theme"
         >
-          <div className="flex min-h-screen flex-col">
-            <header className="relative z-nav-header border-border border-b bg-background/95 backdrop-blur">
-              <div className="mx-auto flex w-full max-w-6xl items-center gap-6 px-5 py-3 md:px-10">
-                <Link
-                  href="/"
-                  className="font-semibold text-brand text-sm tracking-tight"
-                >
-                  Inflation Station
-                </Link>
-                <AppNavigation />
-                <div className="flex items-center gap-2">
-                  <ConfigurationMenu />
-                  <ThemeSwitcher />
-                </div>
-              </div>
-            </header>
-            {children}
-            <Toaster richColors />
-            {resolveFeedbackDisabledReason() === null ? (
-              <FeedbackWidget />
-            ) : null}
-            <BuildInfoFooter />
+          <div className="flex min-h-screen">
+            <AppSidebar />
+            <div className="flex min-w-0 flex-1 flex-col">
+              {children}
+              <Toaster richColors />
+              {resolveFeedbackDisabledReason() === null ? (
+                <FeedbackWidget />
+              ) : null}
+            </div>
           </div>
         </ThemeProvider>
       </body>
