@@ -59,6 +59,7 @@ type ImportReviewCategoryCellProps = {
   certainty: JevCertaintySignal | null;
   suggestionSource: SuggestionSource | null;
   onCategoryChange: (rowId: string, categoryId: string) => void;
+  onCreateCategory: (name: string) => Promise<Category | null>;
 };
 
 export function ImportReviewCategoryCell({
@@ -69,6 +70,7 @@ export function ImportReviewCategoryCell({
   certainty,
   suggestionSource,
   onCategoryChange,
+  onCreateCategory,
 }: ImportReviewCategoryCellProps) {
   const isUncategorized = selectedCategoryId.length === 0;
   const sourceIndicator =
@@ -87,6 +89,7 @@ export function ImportReviewCategoryCell({
         ariaLabel={`Kategori for rad ${rowNumber}`}
         className={cn("w-[220px]", isUncategorized && "text-warning")}
         showClear
+        onCreateCategory={onCreateCategory}
       />
       {certainty != null && (
         <ImportReviewCertaintyBar

@@ -23,6 +23,7 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   type NoteField,
 } from "@/lib/transactions/note";
+import { parseAmountNok } from "../transaction-form";
 import {
   type Category,
   type EditFormState,
@@ -38,6 +39,10 @@ type EditTransactionDialogProps = {
   editSaving: boolean;
   onOpenChange: (nextOpen: boolean) => void;
   onCategoryChange: (value: string) => void;
+  onCreateCategory: (
+    name: string,
+    amountNok: number | null,
+  ) => Promise<{ id: string; name: string } | null>;
   onBookingDateChange: (value: string) => void;
   onMerchantChange: (value: string) => void;
   onAmountChange: (value: string) => void;
@@ -56,6 +61,7 @@ export function EditTransactionDialog({
   editSaving,
   onOpenChange,
   onCategoryChange,
+  onCreateCategory,
   onBookingDateChange,
   onMerchantChange,
   onAmountChange,
@@ -91,6 +97,9 @@ export function EditTransactionDialog({
                   categories={categories}
                   onValueChange={(value) =>
                     onCategoryChange(value || UNCATEGORIZED_VALUE)
+                  }
+                  onCreateCategory={(name) =>
+                    onCreateCategory(name, parseAmountNok(editForm.amountNok))
                   }
                   id="edit-category-id"
                   placeholder="Ukategorisert"

@@ -47,6 +47,11 @@ export function isFutureDate(dateStr: string): boolean {
   return dateStr > today;
 }
 
+export function parseAmountNok(value: string): number | null {
+  const amountNok = Number.parseFloat(value.replace(",", "."));
+  return Number.isFinite(amountNok) ? amountNok : null;
+}
+
 export function validateTransactionFields(
   form: EditFormState,
 ): TransactionFieldsValidationResult {
@@ -56,8 +61,8 @@ export function validateTransactionFields(
     return { valid: false, error: "Dato og brukersted må fylles ut." };
   }
 
-  const amountNok = Number.parseFloat(form.amountNok.replace(",", "."));
-  if (!Number.isFinite(amountNok)) {
+  const amountNok = parseAmountNok(form.amountNok);
+  if (amountNok === null) {
     return { valid: false, error: "Beløpet må være et gyldig tall." };
   }
 
