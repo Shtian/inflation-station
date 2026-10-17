@@ -17,6 +17,7 @@ import {
   createGithubIssue,
   GithubIssueError,
 } from "@/lib/feedback/github-issue";
+import { setAiChatScope } from "@/lib/sentry/ai-chat";
 
 function invalidMessages(message: string) {
   return NextResponse.json(
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
   }
   const messages = validation.data;
 
+  setAiChatScope("feedback", (payload as { id?: unknown } | null)?.id);
   const openai = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
   });

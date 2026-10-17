@@ -1,26 +1,43 @@
 import type { BrowserOptions, NodeOptions } from "@sentry/nextjs";
 
+const AI_CHAT_PATH = /\/api\/(assistant|feedback|onboarding)\/chat(?![\w-])/;
+
+const tracesSampler: NonNullable<NodeOptions["tracesSampler"]> = ({
+  name,
+  normalizedRequest,
+  inheritOrSampleWith,
+}) => {
+  if (AI_CHAT_PATH.test(`${name} ${normalizedRequest?.url ?? ""}`)) {
+    return 1.0;
+  }
+  return inheritOrSampleWith(
+    process.env.NODE_ENV === "development" ? 1.0 : 0.1,
+  );
+};
+
 // Shared by the browser and Node runtimes. Sentry stays off until a DSN is
 // configured, so local dev, tests, and instances without Sentry send nothing.
 //
-// Financial data must not leave the instance, so every payload category is
-// switched off: only error messages, stack traces, and source context are sent.
+// Financial data stays out of Sentry, so every payload category is switched
+// off except AI chats: their prompts, answers, and tool calls are sent so
+// Agent Tracing can show full transcripts.
 // Session replay is left out, and production traces are sampled at the docs'
-// recommended 10% to fit the free tier.
+// recommended 10% to fit the free tier. Chat requests are always traced, so
+// Sentry Conversations shows every turn of a chat rather than one in ten.
 export function getSentryOptions(): BrowserOptions & NodeOptions {
   const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
   return {
     dsn,
     enabled: Boolean(dsn),
     environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? "production",
-    tracesSampleRate: process.env.NODE_ENV === "development" ? 1.0 : 0.1,
+    tracesSampler,
     dataCollection: {
       userInfo: false,
       cookies: false,
       httpHeaders: false,
       httpBodies: [],
       urlQueryParams: false,
-      genAI: { inputs: false, outputs: false },
+      genAI: { inputs: true, outputs: true },
       databaseQueryData: false,
       stackFrameVariables: false,
     },
