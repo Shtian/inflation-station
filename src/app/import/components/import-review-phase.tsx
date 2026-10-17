@@ -67,6 +67,7 @@ type ImportReviewPhaseProps = {
   categoryDecisions: Record<string, string>;
   noteDecisions: Record<string, string>;
   categoryError: string | null;
+  createCategory: (name: string, amountNok: number) => Promise<Category | null>;
   editColumnMapping: () => void;
   importError: string | null;
   importLoading: boolean;
@@ -101,6 +102,7 @@ export function ImportReviewPhase({
   categoryDecisions,
   noteDecisions,
   categoryError,
+  createCategory,
   editColumnMapping,
   importError,
   importLoading,
@@ -394,6 +396,7 @@ export function ImportReviewPhase({
             rows={reviewRows}
             categories={reviewCategoryOptions}
             categoryDecisions={categoryDecisions}
+            createCategory={createCategory}
             noteDecisions={noteDecisions}
             noteValidationErrors={noteValidationErrors}
             resolvedMessages={resolvedMessages}

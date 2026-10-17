@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { saveAccountCsvColumnMappingAction } from "@/app/actions/save-account-csv-column-mapping";
+import { createCategoryInline } from "@/lib/categories/create-category-inline";
+import { inferCategoryKind } from "@/lib/categories/infer-category-kind";
 import type { JevOutcomeSummary } from "@/lib/categorization/jev-categorize";
 import {
   type ColumnMapping,
@@ -207,7 +209,7 @@ export function useImportWorkflow() {
     });
   }, []);
 
-  const loadCategories = useCallback(async () => {
+  const loadCategories = useCallback(async (): Promise<Category[]> => {
     setCategoryError(null);
 
     const response = await fetch("/api/categories");
@@ -221,13 +223,27 @@ export function useImportWorkflow() {
     ) {
       setCategoryError("Kunne ikke laste inn kategorier for gjennomgang.");
       setCategories([]);
-      return;
+      return [];
     }
 
-    setCategories(
-      Array.isArray(body.categories) ? (body.categories as Category[]) : [],
-    );
+    const nextCategories = Array.isArray(body.categories)
+      ? (body.categories as Category[])
+      : [];
+    setCategories(nextCategories);
+    return nextCategories;
   }, []);
+
+  const createCategory = useCallback(
+    (name: string, amountNok: number) =>
+      createCategoryInline({
+        name,
+        kind: inferCategoryKind(amountNok),
+        onCreated: (category) =>
+          setCategories((current) => [...current, category]),
+        reloadCategories: loadCategories,
+      }),
+    [loadCategories],
+  );
 
   useEffect(() => {
     void loadAccounts();
@@ -657,6 +673,7 @@ export function useImportWorkflow() {
     categoryError,
     closeMappingStep,
     confirmColumnMapping,
+    createCategory,
     editColumnMapping,
     fileInputRef,
     hasActiveAccounts,

@@ -100,6 +100,7 @@ type ImportReviewTableProps = {
   rows: ReviewRow[];
   categories: Category[];
   categoryDecisions: Record<string, string>;
+  createCategory: (name: string, amountNok: number) => Promise<Category | null>;
   noteDecisions: Record<string, string>;
   noteValidationErrors: Record<string, string>;
   resolvedMessages: Record<string, ResolvedRowMessage>;
@@ -115,6 +116,7 @@ export function ImportReviewTable({
   rows,
   categories,
   categoryDecisions,
+  createCategory,
   noteDecisions,
   noteValidationErrors,
   resolvedMessages,
@@ -227,6 +229,9 @@ export function ImportReviewTable({
                     rowNumber={row.rowNumber}
                     selectedCategoryId={selectedCategoryId}
                     categories={categories}
+                    onCreateCategory={(name) =>
+                      createCategory(name, row.amountNok)
+                    }
                     certainty={certainty}
                     suggestionSource={
                       suggestionStillSelected ? row.suggestionSource : null

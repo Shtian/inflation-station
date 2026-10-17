@@ -18,6 +18,7 @@ export function ImportUploader() {
     clearSelectedFile,
     closeMappingStep,
     confirmColumnMapping,
+    createCategory,
     editColumnMapping,
     fileInputRef,
     hasActiveAccounts,
@@ -101,6 +102,7 @@ export function ImportUploader() {
           categoryDecisions={categoryDecisions}
           noteDecisions={noteDecisions}
           categoryError={categoryError}
+          createCategory={createCategory}
           editColumnMapping={editColumnMapping}
           importError={importError}
           importLoading={importLoading}
