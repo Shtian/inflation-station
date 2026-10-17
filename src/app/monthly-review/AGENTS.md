@@ -7,6 +7,4 @@ Load this when working in `src/app/monthly-review`.
 - Add or reorder slides in the `MONTH_IN_REVIEW_SLIDES` registry in `[monthStart]/month-in-review.slides.tsx`. Each entry's `isAvailable(review)` drops slides without data and `world(review)` picks its color world from `month-in-review.worlds.ts`; keep both out of render conditionals.
 - AI generation happens only on the deck's finale slide: `Skriv en oppsummering`/`Skriv oppsummeringen på nytt`/`Prøv igjen` open a confirmation dialog before `POST /api/monthly-review/generate`, then the deck refetches the month.
 - Treat primary metric as `monthlyBalanceNok` (`totalIncomeNok - totalSpendNok`) with explicit spend/income companions.
-- Keep prompt settings UI state/feedback in `settings/monthly-review-settings-manager.tsx`.
-- In monthly review settings, emit save success confirmations via Sonner toasts and keep load/save failures as inline alerts.
-- During monthly review settings Field migrations, keep `SelectTrigger`/`Textarea` ids unchanged and pair them with `FieldLabel htmlFor` to preserve label wiring and selectors.
+- Prompt and model settings live on `/settings` in `src/app/settings/components/monthly-review-settings-section.tsx`; see `src/app/settings/AGENTS.md`.

@@ -271,7 +271,7 @@ Compact and quiet. A button reads as a tool, not a call to action.
 - **Error / Disabled:** `aria-invalid` draws a red stroke and a 20% red ring; disabled drops to 50% opacity on a denser wash.
 
 ### Navigation
-A single horizontal row in the sticky header: the ember wordmark, then flat text links (Transactions, Import, Monthly Review), then a **Configuration** trigger. The trigger opens a floating panel listing settings, each as a medium label over a two-line ash description. Hover and active states are muted-fill tone shifts.
+A left sidebar that collapses to icons. Icon-and-label links come in two groups split by a hairline: Overview, Transactions, Import, Monthly Review and Insights, then Accounts and Categories. The footer holds a **Settings** link to `/settings`, the theme switcher and build info. `/settings` stacks muted section headings over rounded bordered cards, one row per setting with a medium label and one-line ash description on the left and the control on the right; prompts stack full width under their label. Hover and active states are muted-fill tone shifts.
 
 ### Toasts
 Success and failure feedback for mutations goes through Sonner toasts, not inline text.

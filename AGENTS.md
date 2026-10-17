@@ -46,6 +46,7 @@ Single-context layout - CONTEXT.md + docs/adr/ at repo root (created lazily as n
 - `src/app/monthly-review/AGENTS.md`
 - `src/app/accounts/AGENTS.md`
 - `src/app/categories/AGENTS.md`
+- `src/app/settings/AGENTS.md`
 - `src/app/api/AGENTS.md`
 - `src/app/api/imports/AGENTS.md`
 - `src/app/api/transactions/AGENTS.md`
