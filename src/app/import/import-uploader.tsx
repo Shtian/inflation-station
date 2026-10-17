@@ -75,7 +75,7 @@ export function ImportUploader() {
     selectedAccountId;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
+    <main className="mx-auto w-full full-width:max-w-none max-w-6xl px-5 py-8 md:px-10">
       <h1 className="mb-6 font-semibold text-2xl text-foreground tracking-tight">
         Import
       </h1>

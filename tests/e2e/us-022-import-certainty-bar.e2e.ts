@@ -350,3 +350,36 @@ test("marks rule and history suggestions with source icons instead of a certaint
   await expect(historyCategory).toHaveValue("Transport");
   await expect(historyRow.getByLabel("Fra historikk")).toHaveCount(0);
 });
+
+test("widens the review table and relaxes message truncation with the full-width toggle", async ({
+  page,
+}) => {
+  await stubAccountsAndCategories(page);
+  await stubParse(page);
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await uploadAndParse(page);
+
+  const main = page.locator("main");
+  const fullWidthToggle = page.getByRole("button", { name: "Full bredde" });
+  const message = page.locator("span.truncate", {
+    hasText: /^high confidence merchant$/i,
+  });
+  const maxWidthPx = async () =>
+    Number.parseFloat(
+      await message.evaluate((node) => getComputedStyle(node).maxWidth),
+    );
+
+  await expect(fullWidthToggle).toHaveAttribute("aria-pressed", "false");
+  await expect(main).toHaveCSS("max-width", "1152px");
+  const containedMaxWidth = await maxWidthPx();
+
+  await fullWidthToggle.click();
+  await expect(fullWidthToggle).toHaveAttribute("aria-pressed", "true");
+  await expect(main).toHaveCSS("max-width", "none");
+  await expect.poll(maxWidthPx).toBeCloseTo((containedMaxWidth * 48) / 20, 1);
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("import-review-table-width"),
+    ),
+  ).toBe("full");
+});

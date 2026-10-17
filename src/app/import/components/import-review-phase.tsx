@@ -7,6 +7,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
+import { TableWidthToggle } from "@/components/table-width-toggle";
 import { Button } from "@/components/ui/button";
 import { formatNok } from "@/lib/format-nok";
 import type { CleanupDisabledReason } from "@/lib/import/message-cleanup/reasons";
@@ -185,6 +186,9 @@ export function ImportReviewPhase({
           </h2>
         </div>
         <div className="flex items-center gap-2">
+          {parseResult.review ? (
+            <TableWidthToggle storageKey="import-review-table-width" />
+          ) : null}
           <Button
             variant="outline"
             size="sm"
