@@ -62,11 +62,11 @@ export function VersionInfo({
           </p>
           {selfUpdateEnabled ? (
             <Button
-              variant="ghost"
+              variant="outline"
               size="xs"
               className={
                 availableSha === null
-                  ? "self-start font-mono text-muted-foreground"
+                  ? "self-start font-mono"
                   : "self-start font-mono text-brand"
               }
               onClick={openUpdateDialog}
