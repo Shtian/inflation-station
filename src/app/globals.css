@@ -54,10 +54,7 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  --z-index-nav-header: 40;
   --z-index-feedback: 45;
-  --z-index-nav-menu: 50;
-  --z-index-nav-indicator: 1;
 }
 
 :root,
