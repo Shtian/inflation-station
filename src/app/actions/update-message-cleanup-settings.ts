@@ -144,7 +144,7 @@ export async function updateMessageCleanupSettingsAction(
         reasoningEffort: resolvedReasoningEffort.id,
       });
 
-      revalidatePath("/import/settings/message-cleanup");
+      revalidatePath("/settings");
       return toResponse(result, chatModels);
     },
     fallbackError: {

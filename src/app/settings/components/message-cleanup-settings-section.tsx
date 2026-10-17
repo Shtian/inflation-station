@@ -1,26 +1,11 @@
 "use client";
 
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { updateMessageCleanupSettingsAction } from "@/app/actions/update-message-cleanup-settings";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -44,6 +29,11 @@ import {
   reasoningEffortEntrySchema,
   reasoningEffortSchema,
 } from "@/lib/monthly-review/reasoning-effort-registry";
+import {
+  SettingsRow,
+  SettingsSection,
+  SettingsStatus,
+} from "./settings-section";
 
 const messageCleanupSettingsResponseSchema =
   promptSettingsResponseSchema.extend({
@@ -53,7 +43,7 @@ const messageCleanupSettingsResponseSchema =
     availableReasoningEfforts: z.array(reasoningEffortEntrySchema),
   });
 
-export function MessageCleanupSettingsManager() {
+export function MessageCleanupSettingsSection() {
   const [promptText, setPromptText] = useState("");
   const [resolvedPrompt, setResolvedPrompt] = useState("");
   const [usesDefaultPrompt, setUsesDefaultPrompt] = useState(false);
@@ -230,185 +220,154 @@ export function MessageCleanupSettingsManager() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <Link
-          href="/import"
-          className={buttonVariants({ variant: "ghost", size: "sm" })}
-        >
-          <ArrowLeft aria-hidden />
-          Tilbake til import
-        </Link>
-        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Innstillinger for meldingsrydding
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Konfigurer modell og grunnleggende instruksjoner for meldingsrydding
-          ved import.
-        </p>
-      </div>
+    <SettingsSection title="Import">
+      {loading ? (
+        <SettingsStatus>Laster inn innstillinger…</SettingsStatus>
+      ) : (
+        <>
+          <SettingsRow
+            label="OpenAI-modell for meldingsrydding"
+            htmlFor="message-cleanup-openai-model"
+            description="Modellen som rydder meldingstekster ved import."
+          >
+            <Select
+              items={availableModels.map((modelId) => ({
+                value: modelId,
+                label: modelId,
+              }))}
+              value={selectedModelId}
+              onValueChange={(value) => {
+                if (value === null || !availableModels.includes(value)) {
+                  return;
+                }
 
-      <Card>
-        <CardHeader className="space-y-1">
-          <CardTitle>
-            <h2 className="text-lg">Systemprompt</h2>
-          </CardTitle>
-          <CardDescription>
-            La feltet stå tomt for å bruke standardprompten for rydding.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {loading ? (
-            <p className="text-muted-foreground text-sm">
-              Laster inn innstillinger…
+                void handleModelChange(value);
+              }}
+              disabled={saving}
+            >
+              <SelectTrigger
+                id="message-cleanup-openai-model"
+                className="w-full"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableModels.map((modelId) => (
+                  <SelectItem key={modelId} value={modelId}>
+                    {modelId}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {availableModelsSource === "unavailable" ? (
+              <p className="text-muted-foreground text-xs">
+                Kunne ikke laste inn modeller fra OpenAI. Viser bare den lagrede
+                modellen.
+              </p>
+            ) : null}
+            <p className="text-muted-foreground text-xs">
+              {usesDefaultModel
+                ? `Bruker standardmodellen ${resolvedModelId}.`
+                : `Bruker den lagrede modellen ${resolvedModelId}.`}
             </p>
-          ) : (
-            <>
-              <Field>
-                <FieldLabel htmlFor="message-cleanup-openai-model">
-                  OpenAI-modell for meldingsrydding
-                </FieldLabel>
-                <FieldContent>
-                  <Select
-                    items={availableModels.map((modelId) => ({
-                      value: modelId,
-                      label: modelId,
-                    }))}
-                    value={selectedModelId}
-                    onValueChange={(value) => {
-                      if (value === null || !availableModels.includes(value)) {
-                        return;
-                      }
+          </SettingsRow>
 
-                      void handleModelChange(value);
-                    }}
-                    disabled={saving}
-                  >
-                    <SelectTrigger id="message-cleanup-openai-model">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableModels.map((modelId) => (
-                        <SelectItem key={modelId} value={modelId}>
-                          {modelId}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {availableModelsSource === "unavailable" ? (
-                    <FieldDescription className="text-xs">
-                      Kunne ikke laste inn modeller fra OpenAI. Viser bare den
-                      lagrede modellen.
-                    </FieldDescription>
-                  ) : null}
-                </FieldContent>
-              </Field>
+          <SettingsRow
+            label="Resonneringsnivå for meldingsrydding"
+            htmlFor="message-cleanup-reasoning-effort"
+            description="Hvor grundig modellen tenker før den foreslår en ryddet melding."
+          >
+            <Select
+              items={availableReasoningEfforts.map((effort) => ({
+                value: effort.id,
+                label: effort.label,
+              }))}
+              value={selectedReasoningEffort}
+              onValueChange={(value) => {
+                if (value === null) return;
+                const nextReasoningEffort = getReasoningEffortById(value);
+                if (
+                  !availableReasoningEfforts.some(
+                    (effort) => effort.id === nextReasoningEffort.id,
+                  )
+                ) {
+                  return;
+                }
 
-              <p className="text-muted-foreground text-xs">
-                {usesDefaultModel
-                  ? `Bruker standardmodellen ${resolvedModelId}.`
-                  : `Bruker den lagrede modellen ${resolvedModelId}.`}
+                void handleReasoningEffortChange(nextReasoningEffort.id);
+              }}
+              disabled={saving}
+            >
+              <SelectTrigger
+                id="message-cleanup-reasoning-effort"
+                className="w-full"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableReasoningEfforts.map((effort) => (
+                  <SelectItem key={effort.id} value={effort.id}>
+                    {effort.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-muted-foreground text-xs">
+              {usesDefaultReasoningEffort
+                ? `Bruker standardnivået ${getReasoningEffortById(resolvedReasoningEffortState).label}.`
+                : `Bruker det lagrede nivået ${getReasoningEffortById(resolvedReasoningEffortState).label}.`}
+            </p>
+          </SettingsRow>
+
+          <SettingsRow
+            label="Systemprompt for meldingsrydding"
+            htmlFor="message-cleanup-system-prompt"
+            description="Grunninstruksjonene for rydding. La feltet stå tomt for å bruke standardprompten."
+            layout="stacked"
+          >
+            <Textarea
+              id="message-cleanup-system-prompt"
+              value={promptText}
+              onChange={(event) => {
+                setPromptText(event.target.value);
+              }}
+              rows={8}
+              placeholder="La stå tomt for å bruke standardprompten."
+            />
+
+            <p className="text-muted-foreground text-xs">
+              {usesDefaultPrompt
+                ? "Bruker standardprompten for rydding."
+                : "Bruker den lagrede egendefinerte prompten for rydding."}
+            </p>
+            {usesDefaultPrompt ? (
+              <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-xs">
+                {resolvedPrompt}
               </p>
+            ) : null}
 
-              <Field>
-                <FieldLabel htmlFor="message-cleanup-reasoning-effort">
-                  Resonneringsnivå for meldingsrydding
-                </FieldLabel>
-                <FieldContent>
-                  <Select
-                    items={availableReasoningEfforts.map((effort) => ({
-                      value: effort.id,
-                      label: effort.label,
-                    }))}
-                    value={selectedReasoningEffort}
-                    onValueChange={(value) => {
-                      if (value === null) return;
-                      const nextReasoningEffort = getReasoningEffortById(value);
-                      if (
-                        !availableReasoningEfforts.some(
-                          (effort) => effort.id === nextReasoningEffort.id,
-                        )
-                      ) {
-                        return;
-                      }
-
-                      void handleReasoningEffortChange(nextReasoningEffort.id);
-                    }}
-                    disabled={saving}
-                  >
-                    <SelectTrigger id="message-cleanup-reasoning-effort">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableReasoningEfforts.map((effort) => (
-                        <SelectItem key={effort.id} value={effort.id}>
-                          {effort.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FieldContent>
-              </Field>
-
-              <p className="text-muted-foreground text-xs">
-                {usesDefaultReasoningEffort
-                  ? `Bruker standardnivået ${getReasoningEffortById(resolvedReasoningEffortState).label}.`
-                  : `Bruker det lagrede nivået ${getReasoningEffortById(resolvedReasoningEffortState).label}.`}
+            {error ? (
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+              >
+                {error}
               </p>
+            ) : null}
 
-              <Field>
-                <FieldLabel htmlFor="message-cleanup-system-prompt">
-                  Systemprompt for meldingsrydding
-                </FieldLabel>
-                <FieldContent>
-                  <Textarea
-                    id="message-cleanup-system-prompt"
-                    value={promptText}
-                    onChange={(event) => {
-                      setPromptText(event.target.value);
-                    }}
-                    rows={8}
-                    placeholder="La stå tomt for å bruke standardprompten."
-                  />
-                </FieldContent>
-              </Field>
-
-              <div className="space-y-1">
-                <p className="text-muted-foreground text-xs">
-                  {usesDefaultPrompt
-                    ? "Bruker standardprompten for rydding."
-                    : "Bruker den lagrede egendefinerte prompten for rydding."}
-                </p>
-                {usesDefaultPrompt ? (
-                  <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-xs">
-                    {resolvedPrompt}
-                  </p>
-                ) : null}
-              </div>
-
-              {error ? (
-                <p
-                  role="alert"
-                  className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
-                >
-                  {error}
-                </p>
-              ) : null}
-
-              <div>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleSaveSystemPrompt}
-                  disabled={saving}
-                >
-                  {saving ? "Lagrer…" : "Lagre prompt"}
-                </Button>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            <div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={handleSaveSystemPrompt}
+                disabled={saving}
+              >
+                {saving ? "Lagrer…" : "Lagre prompt"}
+              </Button>
+            </div>
+          </SettingsRow>
+        </>
+      )}
+    </SettingsSection>
   );
 }

@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { AppNavigation } from "@/components/app-navigation";
+import { AppNavigation, SettingsNavLink } from "@/components/app-navigation";
 import { BuildInfo } from "@/components/build-info";
-import { ConfigurationMenu } from "@/components/configuration-menu";
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function AppSidebar() {
   return (
@@ -17,12 +17,16 @@ export function AppSidebar() {
           Inflation Station
         </Link>
       </div>
-      <AppNavigation />
-      <div className="mt-auto flex flex-col gap-1 md:in-data-[sidebar=expanded]:flex-row">
-        <ConfigurationMenu />
-        <ThemeSwitcher />
-        <BuildInfo />
-      </div>
+      <TooltipProvider>
+        <AppNavigation />
+        <div className="mt-auto flex flex-col gap-1">
+          <SettingsNavLink />
+          <div className="flex flex-col gap-1 md:in-data-[sidebar=expanded]:flex-row">
+            <ThemeSwitcher />
+            <BuildInfo />
+          </div>
+        </div>
+      </TooltipProvider>
     </aside>
   );
 }

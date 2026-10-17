@@ -104,7 +104,7 @@ export async function updateMonthlyReviewSystemPromptAction(
         modelId,
       });
 
-      revalidatePath("/monthly-review/settings");
+      revalidatePath("/settings");
       return toResponse(result, chatModels);
     },
     fallbackError: {

@@ -1,4 +1,27 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+
+async function stubMonthlyReviewSettings(page: Page) {
+  await page.route("**/api/monthly-review/system-prompt", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        promptText: "",
+        resolvedPrompt: "You are a financial review assistant.",
+        usesDefaultPrompt: true,
+        modelId: null,
+        resolvedModelId: "gpt-5.4-mini",
+        usesDefaultModel: true,
+        availableModels: ["gpt-5.4-mini"],
+        availableModelsSource: "openai",
+      }),
+    });
+  });
+}
+
+function importSection(page: Page) {
+  return page.getByRole("region", { name: "Import", exact: true });
+}
 
 test("submits message cleanup settings through a server action", async ({
   page,
@@ -59,7 +82,7 @@ test("submits message cleanup settings through a server action", async ({
     });
   });
 
-  await page.route("**/import/settings/message-cleanup", async (route) => {
+  await page.route("**/settings", async (route) => {
     const request = route.request();
     if (
       request.method() === "POST" &&
@@ -71,10 +94,11 @@ test("submits message cleanup settings through a server action", async ({
     await route.fallback();
   });
 
-  await page.goto("/import/settings/message-cleanup");
+  await stubMonthlyReviewSettings(page);
+  await page.goto("/settings");
 
   await expect(
-    page.getByRole("heading", { name: "Innstillinger for meldingsrydding" }),
+    page.getByRole("heading", { name: "Import", exact: true }),
   ).toBeVisible();
 
   const systemPromptTextbox = page.getByLabel(
@@ -91,14 +115,16 @@ test("submits message cleanup settings through a server action", async ({
   ).toHaveText("Lav");
 
   await systemPromptTextbox.fill("Keep merchant + location only.");
-  await page.getByRole("button", { name: "Lagre prompt" }).click();
+  await importSection(page)
+    .getByRole("button", { name: "Lagre prompt" })
+    .click();
 
   await expect.poll(() => serverActionRequestCount).toBe(1);
   await expect(
     page.locator("[data-sonner-toast]", { hasText: "Systemprompt lagret." }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Lagre prompt" }),
+    importSection(page).getByRole("button", { name: "Lagre prompt" }),
   ).toBeEnabled();
 
   await reasoningEffortCombobox.click();
@@ -171,7 +197,7 @@ test("shows stable save failure feedback when message cleanup action fails", asy
     });
   });
 
-  await page.route("**/import/settings/message-cleanup", async (route) => {
+  await page.route("**/settings", async (route) => {
     const request = route.request();
     if (
       request.method() === "POST" &&
@@ -189,12 +215,15 @@ test("shows stable save failure feedback when message cleanup action fails", asy
     await route.fallback();
   });
 
-  await page.goto("/import/settings/message-cleanup");
+  await stubMonthlyReviewSettings(page);
+  await page.goto("/settings");
 
   await page
     .getByLabel("Systemprompt for meldingsrydding")
     .fill("Keep merchant + location only.");
-  await page.getByRole("button", { name: "Lagre prompt" }).click();
+  await importSection(page)
+    .getByRole("button", { name: "Lagre prompt" })
+    .click();
 
   await expect.poll(() => serverActionRequestCount).toBe(1);
   await expect(
@@ -203,7 +232,7 @@ test("shows stable save failure feedback when message cleanup action fails", asy
     ),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Lagre prompt" }),
+    importSection(page).getByRole("button", { name: "Lagre prompt" }),
   ).toBeEnabled();
 });
 
@@ -231,7 +260,8 @@ test("explains when OpenAI models could not be loaded", async ({ page }) => {
     });
   });
 
-  await page.goto("/import/settings/message-cleanup");
+  await stubMonthlyReviewSettings(page);
+  await page.goto("/settings");
 
   const modelCombobox = page.getByRole("combobox", {
     name: "OpenAI-modell for meldingsrydding",

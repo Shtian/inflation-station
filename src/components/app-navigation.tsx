@@ -5,6 +5,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   type LucideIcon,
+  Settings,
   Sparkles,
   Upload,
 } from "lucide-react";
@@ -13,16 +14,23 @@ import { usePathname } from "next/navigation";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const primaryLinks: { href: string; label: string; Icon: LucideIcon }[] = [
-  { href: "/", label: "Oversikt", Icon: LayoutDashboard },
-  { href: "/transactions", label: "Transaksjoner", Icon: ArrowLeftRight },
-  { href: "/import", label: "Import", Icon: Upload },
-  { href: "/monthly-review", label: "Månedsoppsummering", Icon: CalendarDays },
-  { href: "/assistant", label: "Innsikt", Icon: Sparkles },
+type NavItem = { href: string; label: string; Icon: LucideIcon };
+
+const navGroups: NavItem[][] = [
+  [
+    { href: "/", label: "Oversikt", Icon: LayoutDashboard },
+    { href: "/transactions", label: "Transaksjoner", Icon: ArrowLeftRight },
+    { href: "/import", label: "Import", Icon: Upload },
+    {
+      href: "/monthly-review",
+      label: "Månedsoppsummering",
+      Icon: CalendarDays,
+    },
+    { href: "/assistant", label: "Innsikt", Icon: Sparkles },
+  ],
 ];
 
 function isActive(pathname: string, href: string) {
@@ -31,46 +39,57 @@ function isActive(pathname: string, href: string) {
     : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AppNavigation() {
+function NavLink({ href, label, Icon }: NavItem) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Hovedmeny">
-      <TooltipProvider>
-        <ul className="flex flex-col gap-1">
-          {primaryLinks.map(({ href, label, Icon }) => (
-            <li key={href}>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Link
-                      href={href}
-                      aria-current={
-                        isActive(pathname, href) ? "page" : undefined
-                      }
-                      className="flex h-8 items-center gap-3 rounded-lg px-2 font-medium text-muted-foreground text-sm outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
-                    />
-                  }
-                >
-                  <Icon
-                    aria-hidden
-                    className="size-4 shrink-0 in-aria-[current=page]:text-brand"
-                  />
-                  <span className="sr-only md:in-data-[sidebar=expanded]:not-sr-only">
-                    {label}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="md:in-data-[sidebar=expanded]:hidden"
-                >
-                  {label}
-                </TooltipContent>
-              </Tooltip>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Link
+            href={href}
+            aria-current={isActive(pathname, href) ? "page" : undefined}
+            className="flex h-8 items-center gap-3 rounded-lg px-2 font-medium text-muted-foreground text-sm outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
+          />
+        }
+      >
+        <Icon
+          aria-hidden
+          className="size-4 shrink-0 in-aria-[current=page]:text-brand"
+        />
+        <span className="sr-only md:in-data-[sidebar=expanded]:not-sr-only">
+          {label}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent
+        side="right"
+        className="md:in-data-[sidebar=expanded]:hidden"
+      >
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+export function SettingsNavLink() {
+  return <NavLink href="/settings" label="Innstillinger" Icon={Settings} />;
+}
+
+export function AppNavigation() {
+  return (
+    <nav aria-label="Hovedmeny" className="flex flex-col gap-3">
+      {navGroups.map((group) => (
+        <ul
+          key={group[0].href}
+          className="flex flex-col gap-1 border-sidebar-border not-first:border-t not-first:pt-3"
+        >
+          {group.map((item) => (
+            <li key={item.href}>
+              <NavLink {...item} />
             </li>
           ))}
         </ul>
-      </TooltipProvider>
+      ))}
     </nav>
   );
 }
