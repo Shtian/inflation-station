@@ -3,10 +3,12 @@
 import {
   ArrowLeftRight,
   CalendarDays,
+  Landmark,
   LayoutDashboard,
   type LucideIcon,
   Settings,
   Sparkles,
+  Tags,
   Upload,
 } from "lucide-react";
 import Link from "next/link";
@@ -30,6 +32,10 @@ const navGroups: NavItem[][] = [
       Icon: CalendarDays,
     },
     { href: "/assistant", label: "Innsikt", Icon: Sparkles },
+  ],
+  [
+    { href: "/accounts", label: "Kontoer", Icon: Landmark },
+    { href: "/categories", label: "Kategorier", Icon: Tags },
   ],
 ];
 
