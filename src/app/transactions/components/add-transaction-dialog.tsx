@@ -23,7 +23,7 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   type NoteField,
 } from "@/lib/transactions/note";
-import { isFutureDate } from "../transaction-form";
+import { isFutureDate, parseAmountNok } from "../transaction-form";
 import {
   type Account,
   type AddFormState,
@@ -42,6 +42,10 @@ type AddTransactionDialogProps = {
   onOpenChange: (nextOpen: boolean) => void;
   onAccountChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
+  onCreateCategory: (
+    name: string,
+    amountNok: number | null,
+  ) => Promise<{ id: string; name: string } | null>;
   onBookingDateChange: (value: string) => void;
   onMerchantChange: (value: string) => void;
   onAmountChange: (value: string) => void;
@@ -62,6 +66,7 @@ export function AddTransactionDialog({
   onOpenChange,
   onAccountChange,
   onCategoryChange,
+  onCreateCategory,
   onBookingDateChange,
   onMerchantChange,
   onAmountChange,
@@ -198,6 +203,9 @@ export function AddTransactionDialog({
                   categories={categories}
                   onValueChange={(value) =>
                     onCategoryChange(value || UNCATEGORIZED_VALUE)
+                  }
+                  onCreateCategory={(name) =>
+                    onCreateCategory(name, parseAmountNok(addForm.amountNok))
                   }
                   id="add-category-id"
                   placeholder="Ukategorisert"

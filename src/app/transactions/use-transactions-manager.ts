@@ -2,6 +2,8 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createCategoryInline } from "@/lib/categories/create-category-inline";
+import { inferCategoryKind } from "@/lib/categories/infer-category-kind";
 import type {
   Account,
   Category,
@@ -139,7 +141,7 @@ export function useTransactionsManager() {
     );
   }, []);
 
-  const loadCategories = useCallback(async () => {
+  const loadCategories = useCallback(async (): Promise<Category[]> => {
     const response = await fetch("/api/categories");
     const body = await response.json().catch(() => null);
 
@@ -151,23 +153,38 @@ export function useTransactionsManager() {
       !Array.isArray(body.categories)
     ) {
       setCategories([]);
-      return;
+      return [];
     }
 
-    setCategories(
-      (
-        body.categories as Array<{
-          id: string;
-          name: string;
-          accountId: string | null;
-        }>
-      ).map((next) => ({
-        id: next.id,
-        name: next.name,
-        accountId: next.accountId,
-      })),
-    );
+    const nextCategories = (
+      body.categories as Array<{
+        id: string;
+        name: string;
+        accountId: string | null;
+      }>
+    ).map((next) => ({
+      id: next.id,
+      name: next.name,
+      accountId: next.accountId,
+    }));
+    setCategories(nextCategories);
+    return nextCategories;
   }, []);
+
+  const createCategory = useCallback(
+    (name: string, amountNok: number | null) =>
+      createCategoryInline({
+        name,
+        kind: inferCategoryKind(amountNok),
+        onCreated: (category) =>
+          setCategories((current) => [
+            ...current,
+            { ...category, accountId: null },
+          ]),
+        reloadCategories: loadCategories,
+      }),
+    [loadCategories],
+  );
 
   const loadTransactions = useCallback(async () => {
     setLoading(true);
@@ -315,6 +332,7 @@ export function useTransactionsManager() {
   return {
     accounts,
     categories,
+    createCategory,
     accountId: tableState.accountId ?? "",
     categoryId: tableState.categoryId ?? "",
     globalQuery: globalQueryInput,

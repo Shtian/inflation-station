@@ -47,6 +47,7 @@ export function TransactionsManager() {
   const {
     accounts,
     categories,
+    createCategory,
     accountId,
     categoryId,
     globalQuery,
@@ -351,6 +352,7 @@ export function TransactionsManager() {
             current ? { ...current, accountId: value } : current,
           )
         }
+        onCreateCategory={createCategory}
         onCategoryChange={(value) =>
           setAddForm((current) =>
             current ? { ...current, categoryId: value } : current,
@@ -399,6 +401,7 @@ export function TransactionsManager() {
             closeEditDialog();
           }
         }}
+        onCreateCategory={createCategory}
         onCategoryChange={(value) =>
           setEditForm((current) =>
             current ? { ...current, categoryId: value } : current,
