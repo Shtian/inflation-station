@@ -44,13 +44,13 @@ export function ConfigurationMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         render={
-          <Button variant="outline" size="icon">
+          <Button variant="ghost" size="icon">
             <Settings className="h-[1.2rem] w-[1.2rem]" />
             <span className="sr-only">Konfigurasjon</span>
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="w-72">
+      <DropdownMenuContent side="right" align="end" className="w-72">
         {configurationLinks.map((link) => (
           <DropdownMenuItem
             key={link.href}
