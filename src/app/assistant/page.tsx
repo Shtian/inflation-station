@@ -1,5 +1,4 @@
 import { generateId } from "ai";
-import { Separator } from "@/components/ui/separator";
 import {
   assistantThreadIdSchema,
   getAssistantThread,
@@ -7,7 +6,11 @@ import {
 } from "@/lib/assistant/threads";
 import { prisma } from "@/lib/prisma";
 import { AssistantChat } from "./assistant-chat";
-import { AssistantThreadList } from "./assistant-thread-list";
+import {
+  AssistantThreadHeader,
+  AssistantThreadList,
+  NewThreadLink,
+} from "./assistant-thread-list";
 import { formatThreadDate } from "./thread-date";
 
 export const dynamic = "force-dynamic";
@@ -31,33 +34,40 @@ export default async function AssistantPage({
     requested.success ? getAssistantThread(prisma, threadId) : null,
   ]);
   const now = new Date();
+  const threadItems = threads.map((thread) => ({
+    id: thread.id,
+    title: thread.title,
+    updatedAtLabel: formatThreadDate(thread.updatedAt, now),
+  }));
+  const activeThreadId = activeThread?.id ?? null;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
-      <div className="space-y-1">
-        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-          Innsikt
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          Still spørsmål om forbruket ditt. Svarene bygger på transaksjonene du
-          har importert, og samtalene lagres slik at du kan fortsette senere.
-        </p>
-      </div>
-      <Separator className="my-6" />
-      <div className="grid gap-6 lg:grid-cols-[15rem_1fr]">
+    <main className="flex h-svh min-h-0 flex-col lg:flex-row">
+      <aside className="flex max-h-56 shrink-0 flex-col border-border border-b lg:max-h-none lg:w-72 lg:border-r lg:border-b-0">
+        <div className="flex h-14 shrink-0 items-center gap-2 pr-2 pl-4">
+          <h1 className="flex-1 font-semibold text-base text-foreground tracking-tight">
+            Innsikt
+          </h1>
+          <NewThreadLink />
+        </div>
         <AssistantThreadList
-          threads={threads.map((thread) => ({
-            id: thread.id,
-            title: thread.title,
-            updatedAtLabel: formatThreadDate(thread.updatedAt, now),
-          }))}
-          activeThreadId={activeThread?.id ?? null}
+          threads={threadItems}
+          activeThreadId={activeThreadId}
         />
-        <AssistantChat
-          threadId={threadId}
-          initialMessages={activeThread?.messages ?? []}
+      </aside>
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <AssistantThreadHeader
+          thread={
+            threadItems.find((thread) => thread.id === activeThreadId) ?? null
+          }
         />
-      </div>
+        <div className="min-h-0 flex-1">
+          <AssistantChat
+            threadId={threadId}
+            initialMessages={activeThread?.messages ?? []}
+          />
+        </div>
+      </section>
     </main>
   );
 }

@@ -188,104 +188,12 @@ function DeleteThreadDialog({
   );
 }
 
-export function AssistantThreadList({
-  threads,
-  activeThreadId,
-}: {
-  threads: AssistantThreadListItem[];
-  activeThreadId: string | null;
-}) {
+function useThreadEdits(activeThreadId: string | null) {
   const [edit, setEdit] = useState<ThreadEdit | null>(null);
   const close = () => setEdit(null);
 
-  return (
-    <nav
-      aria-label="Samtaler"
-      className="flex max-h-60 min-h-0 flex-col gap-2 lg:max-h-[calc(100dvh-14rem)]"
-    >
-      <Link
-        href="/assistant"
-        className={buttonVariants({
-          variant: "outline",
-          size: "sm",
-          className: "justify-start",
-        })}
-      >
-        <SquarePen aria-hidden />
-        Ny samtale
-      </Link>
-
-      {threads.length === 0 ? (
-        <p className="px-2 py-1 text-muted-foreground text-xs">
-          Ingen lagrede samtaler ennå
-        </p>
-      ) : (
-        <ScrollArea className="min-h-0 flex-1">
-          <ul className="flex flex-col gap-0.5">
-            {threads.map((thread) => {
-              const isActive = thread.id === activeThreadId;
-              return (
-                <li
-                  key={thread.id}
-                  className={cn(
-                    "group flex items-center gap-1 rounded-md pr-1 hover:bg-muted",
-                    isActive && "bg-muted",
-                  )}
-                >
-                  <Link
-                    href={`/assistant?thread=${thread.id}`}
-                    aria-current={isActive ? "page" : undefined}
-                    className="flex min-w-0 flex-1 flex-col px-2 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                  >
-                    <span
-                      className={cn(
-                        "truncate",
-                        isActive ? "font-medium text-foreground" : "",
-                      )}
-                    >
-                      {thread.title}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      {thread.updatedAtLabel}
-                    </span>
-                  </Link>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={`Valg for ${thread.title}`}
-                        >
-                          <MoreHorizontal aria-hidden />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => setEdit({ kind: "rename", thread })}
-                      >
-                        <Pencil aria-hidden />
-                        Gi nytt navn
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setEdit({ kind: "delete", thread })}
-                      >
-                        <Trash2 aria-hidden />
-                        Slett
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </li>
-              );
-            })}
-          </ul>
-        </ScrollArea>
-      )}
-
+  const dialogs = (
+    <>
       {edit?.kind === "rename" ? (
         <RenameThreadDialog
           key={edit.thread.id}
@@ -301,6 +209,151 @@ export function AssistantThreadList({
           onClose={close}
         />
       ) : null}
+    </>
+  );
+
+  return { setEdit, dialogs };
+}
+
+function ThreadActionsMenu({
+  thread,
+  label,
+  onEdit,
+  className,
+}: {
+  thread: AssistantThreadListItem;
+  label: string;
+  onEdit: (edit: ThreadEdit) => void;
+  className?: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={label}
+            className={className}
+          >
+            <MoreHorizontal aria-hidden />
+          </Button>
+        }
+      />
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => onEdit({ kind: "rename", thread })}>
+          <Pencil aria-hidden />
+          Gi nytt navn
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          onClick={() => onEdit({ kind: "delete", thread })}
+        >
+          <Trash2 aria-hidden />
+          Slett
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+export function NewThreadLink() {
+  return (
+    <Link
+      href="/assistant"
+      aria-label="Ny samtale"
+      title="Ny samtale"
+      className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+    >
+      <SquarePen aria-hidden />
+    </Link>
+  );
+}
+
+export function AssistantThreadList({
+  threads,
+  activeThreadId,
+}: {
+  threads: AssistantThreadListItem[];
+  activeThreadId: string | null;
+}) {
+  const { setEdit, dialogs } = useThreadEdits(activeThreadId);
+
+  return (
+    <nav aria-label="Samtaler" className="flex min-h-0 flex-1 flex-col">
+      {threads.length === 0 ? (
+        <p className="px-4 text-muted-foreground text-xs">
+          Ingen lagrede samtaler ennå
+        </p>
+      ) : (
+        <ScrollArea className="min-h-0 flex-1">
+          <ul className="flex flex-col gap-px px-2 pb-6">
+            {threads.map((thread) => {
+              const isActive = thread.id === activeThreadId;
+              return (
+                <li
+                  key={thread.id}
+                  className={cn(
+                    "group relative flex items-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
+                    isActive && "bg-muted text-foreground hover:bg-muted",
+                  )}
+                >
+                  <Link
+                    href={`/assistant?thread=${thread.id}`}
+                    aria-current={isActive ? "page" : undefined}
+                    className="flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2.5 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                  >
+                    <span className="min-w-0 flex-1 truncate">
+                      {thread.title}
+                    </span>
+                    <span className="shrink-0 text-muted-foreground text-xs tabular-nums group-focus-within:opacity-0 group-hover:opacity-0">
+                      {thread.updatedAtLabel}
+                    </span>
+                  </Link>
+                  <ThreadActionsMenu
+                    thread={thread}
+                    label={`Valg for ${thread.title}`}
+                    onEdit={setEdit}
+                    className="absolute right-1 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 data-[popup-open]:opacity-100"
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </ScrollArea>
+      )}
+      {dialogs}
     </nav>
+  );
+}
+
+export function AssistantThreadHeader({
+  thread,
+}: {
+  thread: AssistantThreadListItem | null;
+}) {
+  const { setEdit, dialogs } = useThreadEdits(thread?.id ?? null);
+
+  return (
+    <header className="flex h-14 shrink-0 items-center gap-1 px-6">
+      <h2
+        className={cn(
+          "min-w-0 flex-1 truncate font-medium text-sm",
+          !thread && "text-muted-foreground",
+        )}
+      >
+        {thread?.title ?? "Ny samtale"}
+      </h2>
+      {thread ? (
+        <ThreadActionsMenu
+          thread={thread}
+          label="Valg for samtalen"
+          onEdit={setEdit}
+        />
+      ) : null}
+      {dialogs}
+    </header>
   );
 }
