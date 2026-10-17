@@ -11,6 +11,7 @@ Load this when working in `src/app/transactions`.
 - Keep debounced `globalQuery` input state synced from parsed URL state (not every table-state change) so typing is not reset when other filters update.
 - Keep sortable column headers wired to `use-transactions-manager.ts` `sorting` state with a tri-state cycle (asc/desc/none) so sort intent stays URL-backed.
 - Persist transactions table column visibility in `sessionStorage` via TanStack `columnVisibility` state and only expose hideable data columns in the visibility menu.
+- Persist the full-width toggle in `localStorage` as `TableWidth` (`contained`/`full`) and expose it as `data-table-width` on the section root; `page.tsx` lifts the `max-w-6xl` cap with a `has-[[data-table-width=full]]` variant, so do not thread width state through props.
 - For server-driven pagination controls, drive TanStack `pagination` state from API metadata (`page`, `pageSize`, `totalPages`) with `manualPagination` and route page/page-size updates through manager callbacks.
 - Keep edit/delete dialog state local to this route and dialog markup in focused components under `components/*`.
 - In `components/edit-transaction-dialog.tsx`, use shared `Field` primitives for labeled controls while preserving existing control ids (`edit-*`) so label selectors and dialog interactions remain stable.

@@ -1025,3 +1025,57 @@ test("adds a transaction from the modal and counts note length the way validatio
   await expect.poll(() => lastPostPayload?.amountNok).toBe(-12.5);
   await expect.poll(() => lastPostPayload?.note).toBe("Weekly shop");
 });
+
+test("toggles the transactions table to full width and remembers it across reloads", async ({
+  page,
+}) => {
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [{ id: "acc-1", name: "Main Account", institution: "DNB" }],
+      }),
+    });
+  });
+
+  await page.route("**/api/categories", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ categories: [] }),
+    });
+  });
+
+  await page.route("**/api/transactions**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        rows: [],
+        pagination: { total: 0, page: 1, pageSize: 25, totalPages: 1 },
+      }),
+    });
+  });
+
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.goto("/transactions");
+
+  const main = page.locator("main");
+  const fullWidthToggle = page.getByRole("button", { name: "Full bredde" });
+
+  await expect(fullWidthToggle).toHaveAttribute("aria-pressed", "false");
+  await expect(main).toHaveCSS("max-width", "1152px");
+
+  await fullWidthToggle.click();
+  await expect(fullWidthToggle).toHaveAttribute("aria-pressed", "true");
+  await expect(main).toHaveCSS("max-width", "none");
+
+  await page.reload();
+  await expect(fullWidthToggle).toHaveAttribute("aria-pressed", "true");
+  await expect(main).toHaveCSS("max-width", "none");
+
+  await fullWidthToggle.click();
+  await expect(fullWidthToggle).toHaveAttribute("aria-pressed", "false");
+  await expect(main).toHaveCSS("max-width", "1152px");
+});
