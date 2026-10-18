@@ -222,6 +222,30 @@ describe("layFixture", () => {
     expect(await db.client.subscriptionDecision.count()).toBe(0);
   });
 
+  test("lays subscription decisions keyed like their merchant's transactions", async () => {
+    await layFixture(
+      {
+        accounts: [],
+        transactions: [],
+        subscriptionDecisions: [
+          { merchant: "SATS Norge", status: "ENDED", decidedOn: "2026-08-15" },
+        ],
+      },
+      db.databaseUrl,
+    );
+
+    const [decision] = await db.client.subscriptionDecision.findMany();
+    expect({
+      normalizedMerchant: decision.normalizedMerchant,
+      status: decision.status,
+      localDay: decision.updatedAt.toLocaleDateString("sv-SE"),
+    }).toEqual({
+      normalizedMerchant: "sats norge",
+      status: "ENDED",
+      localDay: "2026-08-15",
+    });
+  });
+
   test("fills in the columns a spec does not state", async () => {
     await layFixture(
       {

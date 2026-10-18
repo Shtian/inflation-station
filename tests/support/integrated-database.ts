@@ -1,7 +1,12 @@
 import { lstatSync, readlinkSync } from "node:fs";
 import path from "node:path";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import type { CategoryKind, PaymentType, Prisma } from "@prisma/client";
+import type {
+  CategoryKind,
+  PaymentType,
+  Prisma,
+  SubscriptionDecisionStatus,
+} from "@prisma/client";
 import { PrismaClient } from "@prisma/client";
 
 /**
@@ -61,6 +66,15 @@ export type FixtureAssistantThread = {
   messages: Prisma.InputJsonArray;
 };
 
+/** A subscription decision on every charge from one merchant. */
+export type FixtureSubscriptionDecision = {
+  /** Keyed the way transactions are, so the same `merchant` string matches. */
+  merchant: string;
+  status: SubscriptionDecisionStatus;
+  /** `YYYY-MM-DD`, the local day the decision was last set. */
+  decidedOn: string;
+};
+
 /**
  * The complete contents of the integrated database for one test.
  */
@@ -69,6 +83,7 @@ export type TransactionFixture = {
   categories?: readonly FixtureCategory[];
   transactions: readonly FixtureTransaction[];
   assistantThreads?: readonly FixtureAssistantThread[];
+  subscriptionDecisions?: readonly FixtureSubscriptionDecision[];
 };
 
 const FIXTURE_CURRENCY = "NOK";
@@ -186,6 +201,16 @@ export async function layFixture(
     for (const thread of fixture.assistantThreads ?? []) {
       await client.assistantThread.create({ data: thread });
     }
+
+    for (const decision of fixture.subscriptionDecisions ?? []) {
+      await client.subscriptionDecision.create({
+        data: {
+          normalizedMerchant: deriveSearchKey(decision.merchant),
+          status: decision.status,
+          updatedAt: toLocalNoon(decision.decidedOn),
+        },
+      });
+    }
   } finally {
     await client.$disconnect();
   }
@@ -272,6 +297,15 @@ function toUtcDay(bookingDate: string): Date {
   }
 
   return new Date(`${bookingDate}T00:00:00.000Z`);
+}
+
+function toLocalNoon(decidedOn: string): Date {
+  if (!ISO_DATE_PATTERN.test(decidedOn)) {
+    throw new Error(`Fixture decidedOn "${decidedOn}" is not YYYY-MM-DD.`);
+  }
+
+  // Noon keeps the local calendar day the app reads back clear of any UTC offset.
+  return new Date(`${decidedOn}T12:00:00`);
 }
 
 function deriveSearchKey(merchant: string): string {
