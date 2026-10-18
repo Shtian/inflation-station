@@ -212,6 +212,36 @@ describe("layFixture", () => {
     ).toEqual([{ id: "new-thread", title: "Ny", messages: [question] }]);
   });
 
+  test("clears subscription decisions left by an earlier test", async () => {
+    await db.client.subscriptionDecision.create({
+      data: { normalizedMerchant: "netflix", status: "CONFIRMED" },
+    });
+
+    await layFixture({ accounts: [], transactions: [] }, db.databaseUrl);
+
+    expect(await db.client.subscriptionDecision.count()).toBe(0);
+  });
+
+  test("lays subscription decisions keyed like their merchant's transactions", async () => {
+    await layFixture(
+      {
+        accounts: [],
+        transactions: [],
+        subscriptionDecisions: [{ merchant: "SATS Norge", status: "ENDED" }],
+      },
+      db.databaseUrl,
+    );
+
+    const [decision] = await db.client.subscriptionDecision.findMany();
+    expect({
+      normalizedMerchant: decision.normalizedMerchant,
+      status: decision.status,
+    }).toEqual({
+      normalizedMerchant: "sats norge",
+      status: "ENDED",
+    });
+  });
+
   test("fills in the columns a spec does not state", async () => {
     await layFixture(
       {

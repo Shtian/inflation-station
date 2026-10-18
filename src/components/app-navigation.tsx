@@ -6,6 +6,7 @@ import {
   Landmark,
   LayoutDashboard,
   type LucideIcon,
+  Repeat,
   Settings,
   Sparkles,
   Tags,
@@ -32,6 +33,7 @@ const navGroups: NavItem[][] = [
       Icon: CalendarDays,
     },
     { href: "/assistant", label: "Innsikt", Icon: Sparkles },
+    { href: "/subscriptions", label: "Faste trekk", Icon: Repeat },
   ],
   [
     { href: "/accounts", label: "Kontoer", Icon: Landmark },

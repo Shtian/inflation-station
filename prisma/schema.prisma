@@ -28,6 +28,12 @@ enum SuggestionSource {
   TRANSFER_MATCH
 }
 
+enum SubscriptionDecisionStatus {
+  CONFIRMED
+  DISMISSED
+  ENDED
+}
+
 enum MonthlyReviewStatus {
   GENERATING
   GENERATED
@@ -186,4 +192,11 @@ model AssistantThread {
   updatedAt DateTime @updatedAt
 
   @@index([updatedAt])
+}
+
+model SubscriptionDecision {
+  normalizedMerchant String                     @id
+  status             SubscriptionDecisionStatus
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
 }

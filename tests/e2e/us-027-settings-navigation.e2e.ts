@@ -58,6 +58,7 @@ test("sidebar lists primary routes in order and links to unified settings", asyn
     "Import",
     "Månedsoppsummering",
     "Innsikt",
+    "Faste trekk",
     "Kontoer",
     "Kategorier",
   ]);
