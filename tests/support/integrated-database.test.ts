@@ -212,6 +212,16 @@ describe("layFixture", () => {
     ).toEqual([{ id: "new-thread", title: "Ny", messages: [question] }]);
   });
 
+  test("clears subscription decisions left by an earlier test", async () => {
+    await db.client.subscriptionDecision.create({
+      data: { normalizedMerchant: "netflix", status: "CONFIRMED" },
+    });
+
+    await layFixture({ accounts: [], transactions: [] }, db.databaseUrl);
+
+    expect(await db.client.subscriptionDecision.count()).toBe(0);
+  });
+
   test("fills in the columns a spec does not state", async () => {
     await layFixture(
       {
