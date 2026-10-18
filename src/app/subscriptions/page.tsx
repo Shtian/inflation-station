@@ -2,14 +2,14 @@ import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { prisma } from "@/lib/prisma";
 import { loadSubscriptionReview } from "@/lib/subscriptions/load";
-import { ConfirmedSubscriptions } from "./components/confirmed-subscriptions";
-import { DismissedSubscriptions } from "./components/dismissed-subscriptions";
+import { hasMissedCharge } from "@/lib/subscriptions/review";
+import { SubscriptionDisclosure } from "./components/subscription-disclosure";
 import {
   EmptySectionText,
   SubscriptionSection,
 } from "./components/subscription-section";
+import { SubscriptionTable, untracked } from "./components/subscription-table";
 import { SubscriptionTotals } from "./components/subscription-totals";
-import { SuggestedSubscriptions } from "./components/suggested-subscriptions";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +38,18 @@ export default async function SubscriptionsPage() {
       <SubscriptionSection
         id="subscriptions-confirmed"
         title="Bekreftet"
-        description="Faste trekk du har bekreftet. Vi varsler når prisen endrer seg eller et trekk uteblir."
+        description="Faste trekk du har bekreftet. Prisendringer og trekk som uteblir blir markert her på siden."
       >
         {review.confirmed.length > 0 ? (
-          <ConfirmedSubscriptions subscriptions={review.confirmed} />
+          <SubscriptionTable
+            rows={review.confirmed.map((subscription) => ({
+              ...subscription,
+              // Clearing a lapsed subscription would hide it everywhere, so it can only be ended.
+              actions: hasMissedCharge(subscription.alerts)
+                ? ["END"]
+                : ["UNCONFIRM"],
+            }))}
+          />
         ) : (
           <EmptySectionText>
             Ingen bekreftede faste trekk ennå. Bekreft et forslag nedenfor.
@@ -57,16 +65,49 @@ export default async function SubscriptionsPage() {
         description="Brukersteder som har trukket omtrent samme beløp minst tre ganger med fast mellomrom."
       >
         {review.suggested.length > 0 ? (
-          <SuggestedSubscriptions candidates={review.suggested} />
+          <SubscriptionTable
+            rows={review.suggested.map((candidate) => ({
+              ...untracked(candidate),
+              actions: ["CONFIRM", "DISMISS"],
+            }))}
+          />
         ) : (
           <EmptySectionText>Ingen nye forslag.</EmptySectionText>
         )}
       </SubscriptionSection>
 
-      {review.dismissed.length > 0 ? (
+      {review.ended.length > 0 || review.dismissed.length > 0 ? (
         <>
           <Separator />
-          <DismissedSubscriptions candidates={review.dismissed} />
+          <div className="space-y-4">
+            {review.ended.length > 0 ? (
+              <SubscriptionDisclosure
+                title="Avsluttet"
+                count={review.ended.length}
+              >
+                <SubscriptionTable
+                  ended
+                  rows={review.ended.map((subscription) => ({
+                    ...subscription,
+                    actions: ["RECONFIRM"],
+                  }))}
+                />
+              </SubscriptionDisclosure>
+            ) : null}
+            {review.dismissed.length > 0 ? (
+              <SubscriptionDisclosure
+                title="Avviste"
+                count={review.dismissed.length}
+              >
+                <SubscriptionTable
+                  rows={review.dismissed.map((candidate) => ({
+                    ...untracked(candidate),
+                    actions: ["RESTORE"],
+                  }))}
+                />
+              </SubscriptionDisclosure>
+            ) : null}
+          </div>
         </>
       ) : null}
     </main>
