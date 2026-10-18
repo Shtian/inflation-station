@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { format } from "date-fns";
 import { detectRecurringCharges } from "./detect";
 import type { IsoDay } from "./model";
 import { reviewSubscriptions, type SubscriptionReview } from "./review";
@@ -20,7 +21,7 @@ export async function loadSubscriptionReview(
       },
     }),
     db.subscriptionDecision.findMany({
-      select: { normalizedMerchant: true, status: true },
+      select: { normalizedMerchant: true, status: true, updatedAt: true },
     }),
   ]);
 
@@ -34,7 +35,13 @@ export async function loadSubscriptionReview(
 
   return reviewSubscriptions(
     candidates,
-    new Map(decisions.map((row) => [row.normalizedMerchant, row.status])),
+    new Map(
+      decisions.map((row) => [
+        row.normalizedMerchant,
+        // Local calendar day, like the `today` the page passes in.
+        { status: row.status, decidedOn: format(row.updatedAt, "yyyy-MM-dd") },
+      ]),
+    ),
     today,
   );
 }

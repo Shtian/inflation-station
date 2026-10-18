@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { SubscriptionAlert } from "@/lib/subscriptions/model";
-import type { ConfirmedSubscription } from "@/lib/subscriptions/review";
+import type { TrackedSubscription } from "@/lib/subscriptions/review";
 import {
   CADENCE_LABELS,
   describeAlert,
@@ -25,12 +25,13 @@ const ALERT_STYLES: Record<
 > = {
   PRICE_CHANGE: { variant: "secondary", Icon: TrendingUp },
   MISSED_CHARGE: { variant: "destructive", Icon: CalendarX },
+  CHARGED_AFTER_END: { variant: "destructive", Icon: CalendarX },
 };
 
 export function ConfirmedSubscriptions({
   subscriptions,
 }: {
-  subscriptions: ConfirmedSubscription[];
+  subscriptions: TrackedSubscription[];
 }) {
   return (
     <div className="overflow-x-auto rounded-md border border-border">
@@ -57,7 +58,7 @@ export function ConfirmedSubscriptions({
                     return (
                       <Badge key={alert.kind} variant={variant}>
                         <Icon aria-hidden />
-                        {describeAlert(alert)}
+                        {describeAlert(alert, candidate)}
                       </Badge>
                     );
                   })}

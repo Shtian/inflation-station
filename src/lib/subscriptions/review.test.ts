@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { Cadence, RecurringCandidate } from "./model";
+import type {
+  Cadence,
+  RecurringCandidate,
+  SubscriptionDecisionStatus,
+} from "./model";
 import { reviewSubscriptions, type SubscriptionDecisions } from "./review";
 
 function candidate(
@@ -42,17 +46,23 @@ function monthly(merchant: string, amounts = [129, 129, 129], index = 0) {
   );
 }
 
+function decisions(
+  statuses: Record<string, SubscriptionDecisionStatus>,
+  decidedOn = "2026-06-15",
+): SubscriptionDecisions {
+  return new Map(
+    Object.entries(statuses).map(([merchant, status]) => [
+      merchant,
+      { status, decidedOn },
+    ]),
+  );
+}
+
 const keysOf = (candidates: RecurringCandidate[]) =>
   candidates.map((entry) => entry.key);
 
 describe("reviewSubscriptions", () => {
   it("partitions candidates by the decision on their merchant", () => {
-    const decisions: SubscriptionDecisions = new Map([
-      ["netflix", "CONFIRMED"],
-      ["apple", "CONFIRMED"],
-      ["spotify", "DISMISSED"],
-    ]);
-
     const review = reviewSubscriptions(
       [
         monthly("apple", [49, 49, 49], 0),
@@ -60,17 +70,25 @@ describe("reviewSubscriptions", () => {
         monthly("hbo"),
         monthly("netflix"),
         monthly("spotify"),
+        monthly("viaplay"),
       ],
-      decisions,
+      decisions({
+        netflix: "CONFIRMED",
+        apple: "CONFIRMED",
+        spotify: "DISMISSED",
+        viaplay: "ENDED",
+      }),
       "2026-09-15",
     );
 
     expect({
       confirmed: review.confirmed.map((entry) => entry.candidate.key),
+      ended: review.ended.map((entry) => entry.candidate.key),
       suggested: keysOf(review.suggested),
       dismissed: keysOf(review.dismissed),
     }).toEqual({
       confirmed: ["apple|MONTHLY|0", "apple|MONTHLY|1", "netflix|MONTHLY|0"],
+      ended: ["viaplay|MONTHLY|0"],
       suggested: ["hbo|MONTHLY|0"],
       dismissed: ["spotify|MONTHLY|0"],
     });
@@ -89,14 +107,15 @@ describe("reviewSubscriptions", () => {
         ),
         monthly("hbo", [119, 119, 119]),
       ],
-      new Map([
-        ["netflix", "CONFIRMED"],
-        ["forsikring", "CONFIRMED"],
-      ]),
+      decisions({ netflix: "CONFIRMED", forsikring: "CONFIRMED" }),
       "2026-09-15",
     );
 
-    expect(review.totals).toEqual({ yearlyNok: 2748, monthlyNok: 229 });
+    expect(review.totals).toEqual({
+      yearlyNok: 2748,
+      monthlyNok: 229,
+      excluded: [],
+    });
   });
 
   it("totals nothing when no subscription is confirmed", () => {
@@ -107,7 +126,7 @@ describe("reviewSubscriptions", () => {
     );
 
     expect([review.totals, keysOf(review.suggested)]).toEqual([
-      { yearlyNok: 0, monthlyNok: 0 },
+      { yearlyNok: 0, monthlyNok: 0, excluded: [] },
       ["hbo|MONTHLY|0"],
     ]);
   });
@@ -120,12 +139,12 @@ describe("reviewSubscriptions", () => {
         monthly("strom", [2000, 2000, 2015]),
         monthly("leie", [2000, 2000, 2021]),
       ],
-      new Map([
-        ["spotify", "CONFIRMED"],
-        ["hbo", "CONFIRMED"],
-        ["strom", "CONFIRMED"],
-        ["leie", "CONFIRMED"],
-      ]),
+      decisions({
+        spotify: "CONFIRMED",
+        hbo: "CONFIRMED",
+        strom: "CONFIRMED",
+        leie: "CONFIRMED",
+      }),
       "2026-09-15",
     );
 
@@ -163,7 +182,7 @@ describe("reviewSubscriptions", () => {
   });
 
   it("flags a missed monthly charge only after the 7-day grace window", () => {
-    const confirmed = new Map([["netflix", "CONFIRMED"] as const]);
+    const confirmed = decisions({ netflix: "CONFIRMED" });
     const alertsOn = (today: string) =>
       reviewSubscriptions([monthly("netflix")], confirmed, today).confirmed[0]
         .alerts;
@@ -182,7 +201,7 @@ describe("reviewSubscriptions", () => {
       ["2024-03-01", "2025-03-01", "2026-03-01"],
       "2027-03-01",
     );
-    const confirmed = new Map([["forsikring", "CONFIRMED"] as const]);
+    const confirmed = decisions({ forsikring: "CONFIRMED" });
     const alertsOn = (today: string) =>
       reviewSubscriptions([insurance], confirmed, today).confirmed[0].alerts;
 
@@ -198,5 +217,73 @@ describe("reviewSubscriptions", () => {
 
     expect(suggestedOn("2026-10-08")).toEqual(["hbo|MONTHLY|0"]);
     expect(suggestedOn("2026-10-09")).toEqual([]);
+  });
+
+  it("leaves a confirmed subscription with a missed charge out of the totals", () => {
+    const review = reviewSubscriptions(
+      [
+        monthly("netflix", [129, 129, 129]),
+        candidate(
+          "sats",
+          "MONTHLY",
+          [449, 449, 449],
+          ["2026-06-29", "2026-07-29", "2026-08-29"],
+          "2026-09-29",
+        ),
+      ],
+      decisions({ netflix: "CONFIRMED", sats: "CONFIRMED" }),
+      "2026-10-08",
+    );
+
+    expect({
+      yearlyNok: review.totals.yearlyNok,
+      monthlyNok: review.totals.monthlyNok,
+      excluded: keysOf(review.totals.excluded),
+    }).toEqual({
+      yearlyNok: 1548,
+      monthlyNok: 129,
+      excluded: ["sats|MONTHLY|0"],
+    });
+  });
+
+  it("never counts an ended subscription in the totals", () => {
+    const review = reviewSubscriptions(
+      [monthly("netflix", [129, 129, 129]), monthly("viaplay", [99, 99, 99])],
+      decisions({ netflix: "CONFIRMED", viaplay: "ENDED" }),
+      "2026-09-15",
+    );
+
+    expect(review.totals).toEqual({
+      yearlyNok: 1548,
+      monthlyNok: 129,
+      excluded: [],
+    });
+  });
+
+  it("flags a charge that lands after the subscription was ended", () => {
+    const alertsWhenEndedOn = (decidedOn: string) =>
+      reviewSubscriptions(
+        [monthly("viaplay")],
+        decisions({ viaplay: "ENDED" }, decidedOn),
+        "2026-09-15",
+      ).ended[0].alerts;
+
+    expect(alertsWhenEndedOn("2026-08-15")).toEqual([
+      { kind: "CHARGED_AFTER_END", chargedOn: "2026-09-01" },
+    ]);
+    expect(alertsWhenEndedOn("2026-09-01")).toEqual([]);
+  });
+
+  it("keeps an ended subscription listed after its charges lapse", () => {
+    const review = reviewSubscriptions(
+      [monthly("viaplay"), monthly("hbo")],
+      decisions({ viaplay: "ENDED", hbo: "DISMISSED" }, "2026-09-10"),
+      "2026-12-01",
+    );
+
+    expect({
+      ended: review.ended.map((entry) => [entry.candidate.key, entry.alerts]),
+      dismissed: keysOf(review.dismissed),
+    }).toEqual({ ended: [["viaplay|MONTHLY|0", []]], dismissed: [] });
   });
 });

@@ -64,7 +64,8 @@ export type RecurringCandidate = {
 
 export type SubscriptionAlert =
   | { kind: "PRICE_CHANGE"; fromNok: number; toNok: number; changedOn: IsoDay }
-  | { kind: "MISSED_CHARGE"; expectedOn: IsoDay; daysOverdue: number };
+  | { kind: "MISSED_CHARGE"; expectedOn: IsoDay; daysOverdue: number }
+  | { kind: "CHARGED_AFTER_END"; chargedOn: IsoDay };
 
 export function daysBetween(from: IsoDay, to: IsoDay): number {
   return differenceInCalendarDays(parseISO(to), parseISO(from));
