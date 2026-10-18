@@ -17,7 +17,7 @@ describe("loadSubscriptionReview", () => {
     await teardownTestDatabase(db);
   });
 
-  it("dates each decision by its last update", async () => {
+  it("reviews stored charges against stored decisions", async () => {
     const account = await db.client.account.create({
       data: { name: "Brukskonto" },
     });
@@ -37,29 +37,30 @@ describe("loadSubscriptionReview", () => {
     }
     await db.client.subscriptionDecision.createMany({
       data: [
-        {
-          normalizedMerchant: "viaplay",
-          status: "ENDED",
-          updatedAt: new Date(2026, 7, 15, 12),
-        },
-        {
-          normalizedMerchant: "hbo",
-          status: "ENDED",
-          updatedAt: new Date(2026, 8, 5, 12),
-        },
+        { normalizedMerchant: "viaplay", status: "ENDED" },
+        { normalizedMerchant: "hbo", status: "CONFIRMED" },
       ],
     });
 
     const review = await loadSubscriptionReview(db.client, "2026-09-15");
 
-    expect(
-      review.ended.map(({ candidate, alerts }) => [
+    expect({
+      confirmed: review.confirmed.map(({ candidate }) => [
+        candidate.normalizedMerchant,
+        candidate.currentAmountNok,
+        candidate.lastChargeDate,
+      ]),
+      ended: review.ended.map(({ candidate, alerts }) => [
         candidate.normalizedMerchant,
         alerts,
       ]),
-    ).toEqual([
-      ["hbo", []],
-      ["viaplay", [{ kind: "CHARGED_AFTER_END", chargedOn: "2026-09-01" }]],
-    ]);
+      yearlyNok: review.totals.yearlyNok,
+    }).toEqual({
+      confirmed: [["hbo", 99, "2026-09-01"]],
+      ended: [
+        ["viaplay", [{ kind: "CHARGED_AFTER_END", chargedOn: "2026-09-01" }]],
+      ],
+      yearlyNok: 1188,
+    });
   });
 });

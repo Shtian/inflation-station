@@ -26,13 +26,11 @@ export type SubscriptionReview = {
   };
 };
 
-export type SubscriptionDecision = {
-  status: SubscriptionDecisionStatus;
-  decidedOn: IsoDay;
-};
-
 /** Decision per `normalizedMerchant`; one decision covers every candidate at that merchant. */
-export type SubscriptionDecisions = ReadonlyMap<string, SubscriptionDecision>;
+export type SubscriptionDecisions = ReadonlyMap<
+  string,
+  SubscriptionDecisionStatus
+>;
 
 const PRICE_TOLERANCE_NOK = 1;
 const PRICE_TOLERANCE_RATIO = 0.01;
@@ -49,7 +47,7 @@ export function reviewSubscriptions(
 
   for (const candidate of candidates) {
     const decision = decisions.get(candidate.normalizedMerchant);
-    switch (decision?.status) {
+    switch (decision) {
       case "CONFIRMED":
         confirmed.push({
           candidate,
@@ -59,7 +57,7 @@ export function reviewSubscriptions(
       case "ENDED":
         ended.push({
           candidate,
-          alerts: endedAlerts(candidate, decision.decidedOn),
+          alerts: endedAlerts(candidate, today),
         });
         break;
       case "DISMISSED":
@@ -130,11 +128,15 @@ function confirmedAlerts(
   return alerts;
 }
 
+/**
+ * A subscription is ended once its charges lapse, so being back on schedule
+ * means a new charge arrived after the user ended it.
+ */
 function endedAlerts(
   candidate: RecurringCandidate,
-  decidedOn: IsoDay,
+  today: IsoDay,
 ): SubscriptionAlert[] {
-  return daysBetween(decidedOn, candidate.lastChargeDate) > 0
+  return overdueDays(candidate, today) === null
     ? [{ kind: "CHARGED_AFTER_END", chargedOn: candidate.lastChargeDate }]
     : [];
 }

@@ -48,14 +48,8 @@ function monthly(merchant: string, amounts = [129, 129, 129], index = 0) {
 
 function decisions(
   statuses: Record<string, SubscriptionDecisionStatus>,
-  decidedOn = "2026-06-15",
 ): SubscriptionDecisions {
-  return new Map(
-    Object.entries(statuses).map(([merchant, status]) => [
-      merchant,
-      { status, decidedOn },
-    ]),
-  );
+  return new Map(Object.entries(statuses));
 }
 
 const keysOf = (candidates: RecurringCandidate[]) =>
@@ -260,24 +254,22 @@ describe("reviewSubscriptions", () => {
     });
   });
 
-  it("flags a charge that lands after the subscription was ended", () => {
-    const alertsWhenEndedOn = (decidedOn: string) =>
-      reviewSubscriptions(
-        [monthly("viaplay")],
-        decisions({ viaplay: "ENDED" }, decidedOn),
-        "2026-09-15",
-      ).ended[0].alerts;
+  it("flags an ended subscription that is charging on schedule again", () => {
+    const review = reviewSubscriptions(
+      [monthly("viaplay")],
+      decisions({ viaplay: "ENDED" }),
+      "2026-09-15",
+    );
 
-    expect(alertsWhenEndedOn("2026-08-15")).toEqual([
+    expect(review.ended[0].alerts).toEqual([
       { kind: "CHARGED_AFTER_END", chargedOn: "2026-09-01" },
     ]);
-    expect(alertsWhenEndedOn("2026-09-01")).toEqual([]);
   });
 
   it("keeps an ended subscription listed after its charges lapse", () => {
     const review = reviewSubscriptions(
       [monthly("viaplay"), monthly("hbo")],
-      decisions({ viaplay: "ENDED", hbo: "DISMISSED" }, "2026-09-10"),
+      decisions({ viaplay: "ENDED", hbo: "DISMISSED" }),
       "2026-12-01",
     );
 

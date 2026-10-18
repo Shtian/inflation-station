@@ -99,7 +99,6 @@ test(
   "ends a confirmed subscription whose charge is overdue, and undoes it",
   { lock: INTEGRATED_DB_LOCK },
   async ({ page }) => {
-    const decidedOn = format(subMonths(new Date(), 4), "yyyy-MM-dd");
     await layFixture({
       accounts: [{ name: "Brukskonto" }],
       transactions: [
@@ -107,8 +106,8 @@ test(
         ...monthlyCharges("SATS", [449, 449, 449], LAPSED_LAST_CHARGE),
       ],
       subscriptionDecisions: [
-        { merchant: "Netflix", status: "CONFIRMED", decidedOn },
-        { merchant: "SATS", status: "CONFIRMED", decidedOn },
+        { merchant: "Netflix", status: "CONFIRMED" },
+        { merchant: "SATS", status: "CONFIRMED" },
       ],
     });
 

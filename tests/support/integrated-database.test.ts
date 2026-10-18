@@ -227,9 +227,7 @@ describe("layFixture", () => {
       {
         accounts: [],
         transactions: [],
-        subscriptionDecisions: [
-          { merchant: "SATS Norge", status: "ENDED", decidedOn: "2026-08-15" },
-        ],
+        subscriptionDecisions: [{ merchant: "SATS Norge", status: "ENDED" }],
       },
       db.databaseUrl,
     );
@@ -238,11 +236,9 @@ describe("layFixture", () => {
     expect({
       normalizedMerchant: decision.normalizedMerchant,
       status: decision.status,
-      localDay: decision.updatedAt.toLocaleDateString("sv-SE"),
     }).toEqual({
       normalizedMerchant: "sats norge",
       status: "ENDED",
-      localDay: "2026-08-15",
     });
   });
 

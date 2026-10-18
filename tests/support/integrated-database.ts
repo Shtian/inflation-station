@@ -71,8 +71,6 @@ export type FixtureSubscriptionDecision = {
   /** Keyed the way transactions are, so the same `merchant` string matches. */
   merchant: string;
   status: SubscriptionDecisionStatus;
-  /** `YYYY-MM-DD`, the local day the decision was last set. */
-  decidedOn: string;
 };
 
 /**
@@ -207,7 +205,6 @@ export async function layFixture(
         data: {
           normalizedMerchant: deriveSearchKey(decision.merchant),
           status: decision.status,
-          updatedAt: toLocalNoon(decision.decidedOn),
         },
       });
     }
@@ -297,15 +294,6 @@ function toUtcDay(bookingDate: string): Date {
   }
 
   return new Date(`${bookingDate}T00:00:00.000Z`);
-}
-
-function toLocalNoon(decidedOn: string): Date {
-  if (!ISO_DATE_PATTERN.test(decidedOn)) {
-    throw new Error(`Fixture decidedOn "${decidedOn}" is not YYYY-MM-DD.`);
-  }
-
-  // Noon keeps the local calendar day the app reads back clear of any UTC offset.
-  return new Date(`${decidedOn}T12:00:00`);
 }
 
 function deriveSearchKey(merchant: string): string {
