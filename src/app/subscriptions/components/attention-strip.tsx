@@ -27,7 +27,7 @@ export function AttentionStrip({
   return (
     <section
       aria-labelledby="subscriptions-attention"
-      className="rounded-lg bg-warning/10 px-4 py-3"
+      className="rounded-md border border-border px-4 py-3"
     >
       <h2
         id="subscriptions-attention"
@@ -36,7 +36,7 @@ export function AttentionStrip({
         <TriangleAlert aria-hidden className="size-4" />
         Trenger oppmerksomhet
       </h2>
-      <ul className="mt-1 divide-y divide-warning/15">
+      <ul className="mt-1 divide-y divide-border">
         {entries.map(({ candidate, alert }) => {
           const impact = describeYearlyImpact(alert, candidate);
           const action = ALERT_ACTIONS[alert.kind];
