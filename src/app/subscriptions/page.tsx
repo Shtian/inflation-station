@@ -3,6 +3,7 @@ import { Separator } from "@/components/ui/separator";
 import { prisma } from "@/lib/prisma";
 import { loadSubscriptionReview } from "@/lib/subscriptions/load";
 import { hasMissedCharge } from "@/lib/subscriptions/review";
+import { AttentionStrip } from "./components/attention-strip";
 import { SubscriptionDisclosure } from "./components/subscription-disclosure";
 import {
   EmptySectionText,
@@ -34,6 +35,8 @@ export default async function SubscriptionsPage() {
       {review.confirmed.length > 0 ? (
         <SubscriptionTotals totals={review.totals} />
       ) : null}
+
+      <AttentionStrip subscriptions={[...review.confirmed, ...review.ended]} />
 
       <SubscriptionSection
         id="subscriptions-confirmed"
