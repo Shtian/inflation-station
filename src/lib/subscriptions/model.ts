@@ -8,7 +8,7 @@ import {
 
 export type Cadence = "MONTHLY" | "YEARLY";
 
-export type SubscriptionDecisionStatus = "CONFIRMED" | "DISMISSED";
+export type SubscriptionDecisionStatus = "CONFIRMED" | "DISMISSED" | "ENDED";
 
 type DayBand = readonly [min: number, max: number];
 

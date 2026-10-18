@@ -42,6 +42,19 @@ describe("setSubscriptionDecisionAction", () => {
     expect(revalidatePathMock.mock.calls).toEqual([["/subscriptions"]]);
   });
 
+  it("stores an ended decision", async () => {
+    const result = await setSubscriptionDecisionAction({
+      normalizedMerchant: "sats",
+      status: "ENDED",
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      data: { normalizedMerchant: "sats", status: "ENDED" },
+    });
+    expect(setMock.mock.calls[0].slice(1)).toEqual(["sats", "ENDED"]);
+  });
+
   it.each([
     ["an unknown status", { normalizedMerchant: "netflix", status: "MAYBE" }],
     ["an empty merchant", { normalizedMerchant: "", status: "CONFIRMED" }],

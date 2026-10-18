@@ -7,6 +7,7 @@ export const subscriptionMerchantSchema = z.string().min(1).max(500);
 export const subscriptionDecisionStatusSchema = z.enum([
   "CONFIRMED",
   "DISMISSED",
+  "ENDED",
 ]);
 
 export async function setSubscriptionDecision(

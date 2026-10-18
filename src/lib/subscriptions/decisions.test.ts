@@ -38,6 +38,23 @@ describe("subscription decisions", () => {
     ]);
   });
 
+  it("moves a confirmed decision to ended and back", async () => {
+    await setSubscriptionDecision(db.client, "netflix", "ENDED");
+    const ended = await stored();
+    await setSubscriptionDecision(db.client, "netflix", "CONFIRMED");
+
+    expect([ended, await stored()]).toEqual([
+      [
+        { normalizedMerchant: "netflix", status: "ENDED" },
+        { normalizedMerchant: "spotify", status: "DISMISSED" },
+      ],
+      [
+        { normalizedMerchant: "netflix", status: "CONFIRMED" },
+        { normalizedMerchant: "spotify", status: "DISMISSED" },
+      ],
+    ]);
+  });
+
   it("clears a decision and tolerates clearing it again", async () => {
     await clearSubscriptionDecision(db.client, "spotify");
     await clearSubscriptionDecision(db.client, "spotify");
