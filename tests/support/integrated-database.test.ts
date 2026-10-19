@@ -222,6 +222,62 @@ describe("layFixture", () => {
     expect(await db.client.subscriptionDecision.count()).toBe(0);
   });
 
+  test("clears trips left by an earlier test", async () => {
+    await db.client.trip.create({
+      data: {
+        name: "Lisboa",
+        startDate: new Date("2026-05-01T00:00:00.000Z"),
+        endDate: new Date("2026-05-05T00:00:00.000Z"),
+      },
+    });
+
+    await layFixture({ accounts: [], transactions: [] }, db.databaseUrl);
+
+    expect(await db.client.trip.count()).toBe(0);
+  });
+
+  test("lays trips and tags the transactions that name them", async () => {
+    await layFixture(
+      {
+        accounts: [{ name: "Checking" }],
+        trips: [
+          { name: "Lisboa", startDate: "2026-05-01", endDate: "2026-05-05" },
+        ],
+        transactions: [
+          {
+            account: "Checking",
+            bookingDate: "2026-03-10",
+            amountNok: -2400,
+            merchant: "Norwegian",
+            trip: "Lisboa",
+          },
+          {
+            account: "Checking",
+            bookingDate: "2026-05-02",
+            amountNok: -600,
+            merchant: "Time Out",
+          },
+        ],
+      },
+      db.databaseUrl,
+    );
+
+    const rows = await db.client.transaction.findMany({
+      select: {
+        merchant: true,
+        trip: { select: { name: true, endDate: true } },
+      },
+      orderBy: { bookingDate: "asc" },
+    });
+    expect(rows).toEqual([
+      {
+        merchant: "Norwegian",
+        trip: { name: "Lisboa", endDate: new Date("2026-05-05T00:00:00.000Z") },
+      },
+      { merchant: "Time Out", trip: null },
+    ]);
+  });
+
   test("lays subscription decisions keyed like their merchant's transactions", async () => {
     await layFixture(
       {
