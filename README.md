@@ -74,6 +74,8 @@ bash update.sh
 
 The script installs dependencies, backs up the database (to `<database dir>/backups`), runs migrations, rebuilds, and restarts pm2 automatically. The currently running build is displayed in the app footer.
 
+pm2 runs the build from `.releases/current`, a link to the latest release. The script only switches that link after a build succeeds, so a failed build leaves the running site untouched. The previous release is kept until the next deploy.
+
 The footer also has an Update button that does the same from the browser. It runs `git pull --ff-only` and then `update.sh`, and skips the rebuild and restart when the pull brings nothing new. Output goes to `.update/update.log`. The button only appears in the standalone production build that `update.sh` produces.
 
 To take a backup manually, run `scripts/backup-db.sh [output-dir]`. It is safe to run while the app is running.
@@ -81,6 +83,8 @@ To take a backup manually, run `scripts/backup-db.sh [output-dir]`. It is safe t
 ### Error Monitoring (Sentry)
 
 Sentry is optional and off unless `NEXT_PUBLIC_SENTRY_DSN` is set in `.env`. The DSN is baked into the build, so run `bash update.sh` after changing it. To get readable stack traces, also set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`; the build then uploads source maps. Errors, stack traces, a small sample of traces, and every AI chat are sent. AI calls include their prompts, answers, and tool results, which can contain transaction data, so Sentry's Agent Tracing shows full conversations. Request bodies, headers, cookies, and database values are not sent.
+
+`update.sh` also reports a failed deploy to Sentry as one event, such as "Deploy failed at build (exit 137)", with the last 50 lines of the failed step's output. A failed migration sends only the step and the exit code, because migration errors can contain database values.
 
 ### Running Multiple Instances
 
