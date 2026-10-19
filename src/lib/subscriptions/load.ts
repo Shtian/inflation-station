@@ -1,12 +1,13 @@
 import type { PrismaClient } from "@prisma/client";
 import { detectRecurringCharges } from "./detect";
 import type { IsoDay } from "./model";
-import { reviewSubscriptions, type SubscriptionReview } from "./review";
+import {
+  recurringMerchants,
+  reviewSubscriptions,
+  type SubscriptionReview,
+} from "./review";
 
-export async function loadSubscriptionReview(
-  db: PrismaClient,
-  today: IsoDay,
-): Promise<SubscriptionReview> {
+async function loadDetection(db: PrismaClient) {
   const [transactions, decisions] = await Promise.all([
     db.transaction.findMany({
       where: { amountNok: { lt: 0 } },
@@ -24,17 +25,31 @@ export async function loadSubscriptionReview(
     }),
   ]);
 
-  const candidates = detectRecurringCharges(
-    transactions.map((transaction) => ({
-      ...transaction,
-      bookingDate: transaction.bookingDate.toISOString().slice(0, 10),
-      amountNok: transaction.amountNok.toNumber(),
-    })),
-  );
+  return {
+    candidates: detectRecurringCharges(
+      transactions.map((transaction) => ({
+        ...transaction,
+        bookingDate: transaction.bookingDate.toISOString().slice(0, 10),
+        amountNok: transaction.amountNok.toNumber(),
+      })),
+    ),
+    decisions: new Map(
+      decisions.map((row) => [row.normalizedMerchant, row.status]),
+    ),
+  };
+}
 
-  return reviewSubscriptions(
-    candidates,
-    new Map(decisions.map((row) => [row.normalizedMerchant, row.status])),
-    today,
-  );
+export async function loadSubscriptionReview(
+  db: PrismaClient,
+  today: IsoDay,
+): Promise<SubscriptionReview> {
+  const { candidates, decisions } = await loadDetection(db);
+  return reviewSubscriptions(candidates, decisions, today);
+}
+
+export async function loadRecurringMerchants(
+  db: PrismaClient,
+): Promise<Set<string>> {
+  const { candidates, decisions } = await loadDetection(db);
+  return recurringMerchants(candidates, decisions);
 }

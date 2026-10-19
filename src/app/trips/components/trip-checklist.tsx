@@ -58,6 +58,45 @@ export function TripChecklist({
     });
   }
 
+  const oneOff = candidates.filter((candidate) => !candidate.recurring);
+  const recurring = candidates.filter((candidate) => candidate.recurring);
+
+  function renderRow(candidate: TripCandidate) {
+    const otherTrip =
+      candidate.trip && candidate.trip.id !== tripId ? candidate.trip : null;
+    return (
+      <TableRow key={candidate.id}>
+        <TableCell>
+          <Checkbox
+            aria-label={`Ta med ${candidate.merchant} ${formatDay(candidate.bookingDate)}`}
+            checked={checked.has(candidate.id)}
+            onCheckedChange={(next) => toggle(candidate.id, next)}
+            disabled={saving}
+          />
+        </TableCell>
+        <TableCell className="tabular-nums">
+          {formatDay(candidate.bookingDate)}
+        </TableCell>
+        <TableCell>
+          <div className="truncate">{candidate.merchant}</div>
+          {otherTrip ? (
+            <div className="truncate text-muted-foreground text-xs">
+              Tilhører «{otherTrip.name}»
+            </div>
+          ) : null}
+        </TableCell>
+        <TableCell>
+          <CategoryBadge
+            label={candidate.category?.name ?? UNCATEGORIZED_CATEGORY_NAME}
+          />
+        </TableCell>
+        <TableCell className="text-right tabular-nums">
+          {formatAmount(candidate.amountNok)}
+        </TableCell>
+      </TableRow>
+    );
+  }
+
   function handleSave() {
     startSaving(async () => {
       try {
@@ -96,45 +135,18 @@ export function TripChecklist({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {candidates.map((candidate) => {
-              const otherTrip =
-                candidate.trip && candidate.trip.id !== tripId
-                  ? candidate.trip
-                  : null;
-              return (
-                <TableRow key={candidate.id}>
-                  <TableCell>
-                    <Checkbox
-                      aria-label={`Ta med ${candidate.merchant} ${formatDay(candidate.bookingDate)}`}
-                      checked={checked.has(candidate.id)}
-                      onCheckedChange={(next) => toggle(candidate.id, next)}
-                      disabled={saving}
-                    />
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {formatDay(candidate.bookingDate)}
-                  </TableCell>
-                  <TableCell>
-                    <div className="truncate">{candidate.merchant}</div>
-                    {otherTrip ? (
-                      <div className="truncate text-muted-foreground text-xs">
-                        Tilhører «{otherTrip.name}»
-                      </div>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <CategoryBadge
-                      label={
-                        candidate.category?.name ?? UNCATEGORIZED_CATEGORY_NAME
-                      }
-                    />
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatAmount(candidate.amountNok)}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {oneOff.map(renderRow)}
+            {recurring.length > 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={5} className="pt-4">
+                  <div className="font-medium text-sm">Faste utgifter</div>
+                  <div className="text-muted-foreground text-xs">
+                    Faste trekk betales vanligvis enten du reiser eller ikke.
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : null}
+            {recurring.map(renderRow)}
           </TableBody>
         </Table>
       </div>

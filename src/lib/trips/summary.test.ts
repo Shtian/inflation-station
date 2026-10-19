@@ -22,7 +22,15 @@ function row(
   category: TripTransaction["category"],
   trip: TripTransaction["trip"] = { id: "lisboa", name: "Lisboa" },
 ): TripTransaction {
-  return { id, bookingDate, amountNok, merchant: id, category, trip };
+  return {
+    id,
+    bookingDate,
+    amountNok,
+    merchant: id,
+    normalizedMerchant: id,
+    category,
+    trip,
+  };
 }
 
 const travel = { name: "Reise", kind: "EXPENSE" } as const;
@@ -148,6 +156,7 @@ describe("toTripListItem", () => {
 
 describe("toTripCandidate", () => {
   const other = { id: "roma", name: "Roma" };
+  const noRecurring = new Set<string>();
 
   it.each([
     ["already on this trip, even income", salary, 500, LISBOA, true],
@@ -168,6 +177,7 @@ describe("toTripCandidate", () => {
         trip && { id: trip.id, name: trip.name },
       ),
       "suggest",
+      noRecurring,
     );
 
     expect(candidate.defaultChecked).toBe(expected);
@@ -178,7 +188,9 @@ describe("toTripCandidate", () => {
       row("member", "2026-05-02", -100, travel),
       row("left-out-rent", "2026-05-01", -12000, lodging, null),
       row("uncategorized", "2026-05-02", -50, null, null),
-    ].map((transaction) => toTripCandidate("lisboa", transaction, "stored"));
+    ].map((transaction) =>
+      toTripCandidate("lisboa", transaction, "stored", new Set()),
+    );
 
     expect(
       candidates.map((candidate) => [candidate.id, candidate.defaultChecked]),
@@ -187,6 +199,34 @@ describe("toTripCandidate", () => {
       ["left-out-rent", false],
       ["uncategorized", false],
     ]);
+  });
+
+  it("leaves untagged bills from a recurring merchant unchecked unless already on the trip", () => {
+    const recurringMerchants = new Set(["fjordkraft"]);
+    const suggested = [
+      row("fjordkraft", "2026-05-03", -900, lodging, null),
+      row("middag", "2026-05-02", -650, dining, null),
+    ].map((transaction) =>
+      toTripCandidate("lisboa", transaction, "suggest", recurringMerchants),
+    );
+    const stored = toTripCandidate(
+      "lisboa",
+      row("fjordkraft", "2026-05-03", -900, lodging),
+      "stored",
+      recurringMerchants,
+    );
+
+    expect(
+      suggested.map(({ id, defaultChecked, recurring }) => ({
+        id,
+        defaultChecked,
+        recurring,
+      })),
+    ).toEqual([
+      { id: "fjordkraft", defaultChecked: false, recurring: true },
+      { id: "middag", defaultChecked: true, recurring: false },
+    ]);
+    expect([stored.defaultChecked, stored.recurring]).toEqual([true, true]);
   });
 });
 
@@ -200,7 +240,9 @@ describe("membershipChangeFor", () => {
       row("moved", "2026-05-01", -1, travel, roma),
       row("left-alone", "2026-05-01", -1, travel, null),
       row("other-trip-unchecked", "2026-05-01", -1, travel, roma),
-    ].map((transaction) => toTripCandidate("lisboa", transaction, "stored"));
+    ].map((transaction) =>
+      toTripCandidate("lisboa", transaction, "stored", new Set()),
+    );
 
     expect(
       membershipChangeFor(

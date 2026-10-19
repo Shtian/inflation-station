@@ -90,6 +90,29 @@ export function reviewSubscriptions(
   };
 }
 
+/**
+ * Merchants that recur, for callers that ask "is this a fixed bill?" rather
+ * than "what is active today". Takes raw candidates, not the review, so a
+ * lapsed charge still counts for an old date range.
+ */
+export function recurringMerchants(
+  candidates: readonly RecurringCandidate[],
+  decisions: SubscriptionDecisions,
+): Set<string> {
+  const merchants = new Set<string>();
+  for (const { normalizedMerchant } of candidates) {
+    if (decisions.get(normalizedMerchant) !== "DISMISSED") {
+      merchants.add(normalizedMerchant);
+    }
+  }
+  for (const [normalizedMerchant, status] of decisions) {
+    if (status !== "DISMISSED") {
+      merchants.add(normalizedMerchant);
+    }
+  }
+  return merchants;
+}
+
 export function hasMissedCharge(alerts: readonly SubscriptionAlert[]): boolean {
   return alerts.some((alert) => alert.kind === "MISSED_CHARGE");
 }

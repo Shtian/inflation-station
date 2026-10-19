@@ -148,6 +148,45 @@ describe("trip reads (real database)", () => {
     expect(await loadTripPage(db.client, "gone", null)).toBeNull();
   });
 
+  it("leaves a recurring bill unchecked on a new trip and marks it recurring", async () => {
+    await category("Strøm", "EXPENSE");
+    await category("Restaurant", "EXPENSE");
+    const lisboa = await trip("Lisboa", "2026-05-01", "2026-05-05");
+    for (const [id, date] of [
+      ["strom-mars", "2026-03-03"],
+      ["strom-april", "2026-04-03"],
+      ["strom-mai", "2026-05-03"],
+    ]) {
+      await transaction({
+        id,
+        date,
+        amount: -900,
+        merchant: "Fjordkraft",
+        category: "Strøm",
+      });
+    }
+    await transaction({
+      id: "middag",
+      date: "2026-05-02",
+      amount: -600,
+      merchant: "Time Out",
+      category: "Restaurant",
+    });
+
+    const page = await loadTripPage(db.client, lisboa.id, null);
+
+    expect(
+      page?.inRange.map(({ id, defaultChecked, recurring }) => ({
+        id,
+        defaultChecked,
+        recurring,
+      })),
+    ).toEqual([
+      { id: "strom-mai", defaultChecked: false, recurring: true },
+      { id: "middag", defaultChecked: true, recurring: false },
+    ]);
+  });
+
   it("searches by text, date and amount within a krone, never listing members", async () => {
     await category("Reise", "EXPENSE");
     const lisboa = await trip("Lisboa", "2026-05-01", "2026-05-05");

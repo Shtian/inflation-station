@@ -20,6 +20,7 @@ export type TripTransaction = {
   /** Signed: spend is negative, refunds and income are positive. */
   amountNok: number;
   merchant: string;
+  normalizedMerchant: string;
   category: { name: string; kind: CategoryKind } | null;
   trip: { id: string; name: string } | null;
 };
@@ -50,7 +51,11 @@ export type TripSummary = Trip &
 
 export type TripListItem = Trip & TripTotals & { transactionCount: number };
 
-export type TripCandidate = TripTransaction & { defaultChecked: boolean };
+export type TripCandidate = TripTransaction & {
+  defaultChecked: boolean;
+  /** The merchant is a recurring charge from "Faste trekk", paid whether or not you travel. */
+  recurring: boolean;
+};
 
 /** The only membership mutation. `remove` only clears rows still on `tripId`. */
 export type TripMembershipChange = {
@@ -143,9 +148,13 @@ function isCheckedByDefault(
   tripId: string,
   transaction: TripTransaction,
   mode: CandidateMode,
+  recurring: boolean,
 ): boolean {
   if (transaction.trip || mode === "stored") {
     return transaction.trip?.id === tripId;
+  }
+  if (recurring) {
+    return false;
   }
   if (!transaction.category) {
     return transaction.amountNok < 0;
@@ -157,10 +166,13 @@ export function toTripCandidate(
   tripId: string,
   transaction: TripTransaction,
   mode: CandidateMode,
+  recurringMerchants: ReadonlySet<string>,
 ): TripCandidate {
+  const recurring = recurringMerchants.has(transaction.normalizedMerchant);
   return {
     ...transaction,
-    defaultChecked: isCheckedByDefault(tripId, transaction, mode),
+    defaultChecked: isCheckedByDefault(tripId, transaction, mode, recurring),
+    recurring,
   };
 }
 

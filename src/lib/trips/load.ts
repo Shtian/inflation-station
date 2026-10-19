@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { parseIsoDate } from "@/lib/iso-date";
+import { loadRecurringMerchants } from "@/lib/subscriptions/load";
 import { transactionTextWhere } from "@/lib/transactions/list";
 import {
   type IsoDay,
@@ -93,6 +94,7 @@ function toTripTransaction(
     bookingDate: toIsoDay(record.bookingDate),
     amountNok: record.amountNok.toNumber(),
     merchant: record.merchant ?? record.normalizedMerchant,
+    normalizedMerchant: record.normalizedMerchant,
     category: record.category,
     trip: record.trip,
   };
@@ -212,7 +214,7 @@ export async function loadTripPage(
   }
 
   const trip = toTrip(record);
-  const [inRange, searchHits] = await Promise.all([
+  const [inRange, searchHits, recurringMerchants] = await Promise.all([
     db.transaction.findMany({
       where: bookedWithin(trip.startDate, trip.endDate),
       select: TRIP_TRANSACTION_SELECT,
@@ -226,6 +228,7 @@ export async function loadTripPage(
           take: SEARCH_LIMIT + 1,
         })
       : null,
+    loadRecurringMerchants(db),
   ]);
 
   const inRangeMode = record.transactions.length === 0 ? "suggest" : "stored";
@@ -233,7 +236,12 @@ export async function loadTripPage(
   return {
     summary: summarizeTrip(trip, record.transactions.map(toTripTransaction)),
     inRange: inRange.map((row) =>
-      toTripCandidate(tripId, toTripTransaction(row), inRangeMode),
+      toTripCandidate(
+        tripId,
+        toTripTransaction(row),
+        inRangeMode,
+        recurringMerchants,
+      ),
     ),
     search:
       search && searchHits
@@ -242,7 +250,12 @@ export async function loadTripPage(
             results: searchHits
               .slice(0, SEARCH_LIMIT)
               .map((hit) =>
-                toTripCandidate(tripId, toTripTransaction(hit), "stored"),
+                toTripCandidate(
+                  tripId,
+                  toTripTransaction(hit),
+                  "stored",
+                  recurringMerchants,
+                ),
               ),
             truncated: searchHits.length > SEARCH_LIMIT,
           }
