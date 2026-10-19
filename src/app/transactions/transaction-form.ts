@@ -1,6 +1,9 @@
 import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 import { readNoteField } from "@/lib/transactions/note";
-import type { AddFormState, EditFormState } from "./transactions-manager.types";
+import type {
+  AddFormState,
+  TransactionFieldsForm,
+} from "./transactions-manager.types";
 
 type ValidTransactionFields = {
   valid: true;
@@ -53,7 +56,7 @@ export function parseAmountNok(value: string): number | null {
 }
 
 export function validateTransactionFields(
-  form: EditFormState,
+  form: TransactionFieldsForm,
 ): TransactionFieldsValidationResult {
   const bookingDate = form.bookingDate.trim();
   const merchant = form.merchant.trim();

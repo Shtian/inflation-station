@@ -6,9 +6,9 @@ import {
   validateAddForm,
   validateTransactionFields,
 } from "./transaction-form";
-import type { EditFormState } from "./transactions-manager.types";
+import type { TransactionFieldsForm } from "./transactions-manager.types";
 
-function baseFields(): EditFormState {
+function baseFields(): TransactionFieldsForm {
   return {
     categoryId: "__uncategorized__",
     bookingDate: "2026-03-29",

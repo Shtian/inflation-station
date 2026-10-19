@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { formatTripRange } from "@/app/trips/format";
 import { CategoryCombobox } from "@/components/category-combobox";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +24,7 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   type NoteField,
 } from "@/lib/transactions/note";
+import type { TripOption } from "@/lib/trips/load";
 import { parseAmountNok } from "../transaction-form";
 import {
   type Category,
@@ -33,12 +35,14 @@ import {
 type EditTransactionDialogProps = {
   open: boolean;
   categories: Category[];
+  trips: TripOption[];
   editForm: EditFormState | null;
   editError: string | null;
   note: NoteField;
   editSaving: boolean;
   onOpenChange: (nextOpen: boolean) => void;
   onCategoryChange: (value: string) => void;
+  onTripChange: (value: string | null) => void;
   onCreateCategory: (
     name: string,
     amountNok: number | null,
@@ -55,12 +59,14 @@ type EditTransactionDialogProps = {
 export function EditTransactionDialog({
   open,
   categories,
+  trips,
   editForm,
   editError,
   note,
   editSaving,
   onOpenChange,
   onCategoryChange,
+  onTripChange,
   onCreateCategory,
   onBookingDateChange,
   onMerchantChange,
@@ -104,6 +110,26 @@ export function EditTransactionDialog({
                   id="edit-category-id"
                   placeholder="Ukategorisert"
                   emptyLabel="Ingen samsvarende kategorier."
+                  disabled={editSaving}
+                  showClear
+                  container={dialogContentRef}
+                />
+              </FieldContent>
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="edit-trip-id">Tur</FieldLabel>
+              <FieldContent>
+                <CategoryCombobox
+                  value={editForm.tripId ?? ""}
+                  categories={trips.map((trip) => ({
+                    id: trip.id,
+                    name: `${trip.name} (${formatTripRange(trip.startDate, trip.endDate)})`,
+                  }))}
+                  onValueChange={(value) => onTripChange(value || null)}
+                  id="edit-trip-id"
+                  placeholder="Ingen tur"
+                  emptyLabel="Fant ingen turer."
                   disabled={editSaving}
                   showClear
                   container={dialogContentRef}
