@@ -24,9 +24,9 @@ import {
   describeMembershipChange,
   describePendingChange,
   describeSelection,
-  formatAmount,
   formatDay,
 } from "../format";
+import { TransactionAmount } from "./trip-amount";
 
 type TripChecklistProps = {
   tripId: string;
@@ -107,8 +107,8 @@ export function TripChecklist({
             label={candidate.category?.name ?? UNCATEGORIZED_CATEGORY_NAME}
           />
         </TableCell>
-        <TableCell className="text-right tabular-nums">
-          {formatAmount(candidate.amountNok)}
+        <TableCell className="text-right">
+          <TransactionAmount amountNok={candidate.amountNok} />
         </TableCell>
       </TableRow>
     );

@@ -4,6 +4,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { TripSearchQuery } from "@/lib/trips/load";
+import { TripDatePicker } from "./trip-date-picker";
 
 /** A GET form, so the search lives in the URL and survives reload and back. */
 export function TripSearchForm({
@@ -32,19 +33,17 @@ export function TripSearchForm({
       </Field>
       <Field>
         <FieldLabel htmlFor="trip-search-fra">Fra</FieldLabel>
-        <Input
+        <TripDatePicker
           id="trip-search-fra"
           name="fra"
-          type="date"
           defaultValue={query?.from ?? ""}
         />
       </Field>
       <Field>
         <FieldLabel htmlFor="trip-search-til">Til</FieldLabel>
-        <Input
+        <TripDatePicker
           id="trip-search-til"
           name="til"
-          type="date"
           defaultValue={query?.to ?? ""}
         />
       </Field>

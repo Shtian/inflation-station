@@ -8,9 +8,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UNCATEGORIZED_CATEGORY_NAME } from "@/lib/category-color";
+import { isTransfer } from "@/lib/transactions/transfer";
 import type { TripTransaction } from "@/lib/trips/summary";
-import { formatAmount, formatDay } from "../format";
+import { formatDay } from "../format";
 import { RemoveFromTripButton } from "./remove-from-trip-button";
+import { TransactionAmount } from "./trip-amount";
 
 export function TripTransactions({
   tripId,
@@ -48,7 +50,14 @@ export function TripTransactions({
               <TableCell className="tabular-nums">
                 {formatDay(transaction.bookingDate)}
               </TableCell>
-              <TableCell className="truncate">{transaction.merchant}</TableCell>
+              <TableCell>
+                <div className="truncate">{transaction.merchant}</div>
+                {isTransfer(transaction) ? (
+                  <div className="truncate text-muted-foreground text-xs">
+                    Ikke med i totalen
+                  </div>
+                ) : null}
+              </TableCell>
               <TableCell>
                 <CategoryBadge
                   label={
@@ -56,8 +65,8 @@ export function TripTransactions({
                   }
                 />
               </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatAmount(transaction.amountNok)}
+              <TableCell className="text-right">
+                <TransactionAmount amountNok={transaction.amountNok} />
               </TableCell>
               <TableCell className="text-right">
                 <RemoveFromTripButton

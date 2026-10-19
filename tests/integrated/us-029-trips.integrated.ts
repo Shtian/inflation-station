@@ -20,10 +20,19 @@ function toast(page: Page, text: string) {
   return page.locator("[data-sonner-toast]", { hasText: text });
 }
 
+async function pickDay(page: Page, field: string, day: RegExp) {
+  await page.getByLabel(field).click();
+  const calendar = page.locator('[data-slot="popover-content"][data-open]');
+  await calendar.getByRole("button", { name: day }).click();
+  await expect(calendar).toHaveCount(0);
+}
+
 test(
   "creates a trip, tags the trip's spending and a booking made weeks before, and sums it up",
   { lock: INTEGRATED_DB_LOCK },
   async ({ page }) => {
+    // The calendars open on the current month, so pin the clock inside the trip's month.
+    await page.clock.setFixedTime(new Date("2026-05-15T12:00:00"));
     await layFixture({
       accounts: [{ name: ACCOUNT }],
       categories: [
@@ -49,9 +58,15 @@ test(
 
     await page.getByRole("button", { name: "Ny tur" }).click();
     const dialog = page.getByRole("dialog", { name: "Ny tur" });
+    await dialog.getByRole("button", { name: "Opprett tur" }).click();
+    await expect(dialog.getByText("Velg en startdato.")).toBeVisible();
+    await expect(dialog.getByText("Velg en sluttdato.")).toBeVisible();
+
     await dialog.getByLabel("Navn").fill("Lisboa");
-    await dialog.getByLabel("Startdato").fill("2026-05-01");
-    await dialog.getByLabel("Sluttdato").fill("2026-05-05");
+    await pickDay(page, "Startdato", /\b1\. mai 2026/);
+    await pickDay(page, "Sluttdato", /\b5\. mai 2026/);
+    await expect(dialog.getByLabel("Startdato")).toHaveText("01.05.2026");
+    await expect(dialog.getByLabel("Sluttdato")).toHaveText("05.05.2026");
     await dialog.getByRole("button", { name: "Opprett tur" }).click();
 
     await expect(toast(page, "Turen er opprettet.")).toBeVisible();
@@ -167,6 +182,48 @@ test(
     await expect(during.locator('[data-slot="table-body"] tr')).toHaveText([
       /Time Out Market/,
     ]);
+  },
+);
+
+test(
+  "lists a transfer on the trip but leaves it out of Totalt",
+  { lock: INTEGRATED_DB_LOCK },
+  async ({ page }) => {
+    await layFixture({
+      accounts: [{ name: ACCOUNT }],
+      categories: [
+        { name: "Restaurant" },
+        { name: "Overføring", kind: "TRANSFER" },
+      ],
+      trips: [
+        { name: "Lisboa", startDate: "2026-05-01", endDate: "2026-05-05" },
+      ],
+      transactions: [
+        {
+          ...spend("2026-05-02", -650, "Time Out Market", "Restaurant"),
+          trip: "Lisboa",
+        },
+        {
+          ...spend("2026-05-03", -5000, "Til sparekonto", "Overføring"),
+          trip: "Lisboa",
+        },
+      ],
+    });
+
+    await page.goto("/trips");
+    await page.getByRole("link", { name: "Lisboa" }).click();
+
+    const rows = page
+      .getByRole("table", { name: "Under turen" })
+      .locator('[data-slot="table-body"] tr');
+    await expect(rows).toHaveText([/Time Out Market/, /Til sparekonto/]);
+    await expect(rows.filter({ hasText: "Til sparekonto" })).toContainText(
+      "Ikke med i totalen",
+    );
+    await expect(rows.filter({ hasText: "Time Out Market" })).not.toContainText(
+      "Ikke med i totalen",
+    );
+    await expect(page.getByRole("definition").first()).toHaveText(/^650\skr$/);
   },
 );
 

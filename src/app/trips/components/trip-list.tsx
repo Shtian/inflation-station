@@ -49,10 +49,10 @@ export function TripList({ trips }: { trips: TripListItem[] }) {
               </TableCell>
               {trip.transactionCount > 0 ? (
                 <>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-right font-mono tabular-nums">
                     {formatAmount(trip.costNok)}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-right font-mono tabular-nums">
                     {formatAmount(trip.perDayNok)}
                   </TableCell>
                 </>

@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import type { Trip } from "@/lib/trips/summary";
+import { TripDatePicker } from "./trip-date-picker";
 
 type FieldName = "name" | "startDate" | "endDate";
 type FieldErrors = Partial<Record<FieldName, string[]>>;
@@ -94,11 +95,15 @@ export function TripFormDialog({ trip, trigger }: TripFormDialogProps) {
     });
   }
 
-  const fields: { name: FieldName; label: string; type: string }[] = [
-    { name: "name", label: "Navn", type: "text" },
-    { name: "startDate", label: "Startdato", type: "date" },
-    { name: "endDate", label: "Sluttdato", type: "date" },
+  const fields: { name: FieldName; label: string }[] = [
+    { name: "name", label: "Navn" },
+    { name: "startDate", label: "Startdato" },
+    { name: "endDate", label: "Sluttdato" },
   ];
+
+  function setField(name: FieldName, value: string) {
+    setForm((current) => ({ ...current, [name]: value }));
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -122,20 +127,27 @@ export function TripFormDialog({ trip, trigger }: TripFormDialogProps) {
                 {field.label}
               </FieldLabel>
               <FieldContent>
-                <Input
-                  id={`trip-${field.name}`}
-                  type={field.type}
-                  value={form[field.name]}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      [field.name]: event.target.value,
-                    }))
-                  }
-                  aria-invalid={Boolean(fieldErrors[field.name])}
-                  disabled={saving}
-                  required
-                />
+                {field.name === "name" ? (
+                  <Input
+                    id="trip-name"
+                    value={form.name}
+                    onChange={(event) => setField("name", event.target.value)}
+                    aria-invalid={Boolean(fieldErrors.name)}
+                    disabled={saving}
+                    required
+                  />
+                ) : (
+                  <TripDatePicker
+                    id={`trip-${field.name}`}
+                    value={form[field.name]}
+                    onValueChange={(value) => setField(field.name, value)}
+                    defaultMonth={
+                      field.name === "endDate" ? form.startDate : undefined
+                    }
+                    aria-invalid={Boolean(fieldErrors[field.name])}
+                    disabled={saving}
+                  />
+                )}
                 <FieldError
                   errors={fieldErrors[field.name]?.map((message) => ({
                     message,

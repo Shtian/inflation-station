@@ -54,7 +54,7 @@ export function DeleteTripButton({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={deleting}>Avbryt</AlertDialogCancel>
           <AlertDialogAction
-            className="bg-destructive text-white hover:bg-destructive/90"
+            variant="destructive"
             onClick={handleConfirm}
             disabled={deleting}
           >

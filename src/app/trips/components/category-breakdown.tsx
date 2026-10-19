@@ -7,7 +7,7 @@ export function CategoryBreakdown({ items }: { items: CategoryCost[] }) {
   const largest = Math.max(...items.map((item) => item.costNok), 0);
 
   return (
-    <ul aria-label="Kostnad per kategori" className="space-y-2.5">
+    <ul aria-label="Kostnad per kategori" className="max-w-2xl space-y-2.5">
       {items.map((item) => (
         <li
           key={item.categoryName}
@@ -28,7 +28,7 @@ export function CategoryBreakdown({ items }: { items: CategoryCost[] }) {
               }}
             />
           </div>
-          <span className="text-right text-sm tabular-nums">
+          <span className="text-right font-mono text-sm tabular-nums">
             {formatAmount(item.costNok)}
           </span>
         </li>

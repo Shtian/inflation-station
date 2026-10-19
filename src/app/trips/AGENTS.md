@@ -10,3 +10,5 @@ Load this when working in `src/app/trips`.
 - The "Søk" search is a GET form (`q`, `fra`, `til`, `belop`), parsed once by `parseTripSearch`. Keep it in the URL; do not add a client fetch or API route for it.
 - Checklists are keyed by their rows' membership so they remount from stored state after a change elsewhere on the page.
 - User-facing copy and number/date formatting live in `format.ts`. `formatTripRange` is also used by the "Tur" field in the transaction edit dialog.
+- Signed transaction amounts render through `TransactionAmount` (`components/trip-amount.tsx`), mono and green when positive like `/transactions`. Cost figures are positive-means-spend, so they get `font-mono tabular-nums` but never green.
+- Every trips date field uses `TripDatePicker` (`components/trip-date-picker.tsx`). Pass `value`/`onValueChange` in the dialog, `name`/`defaultValue` in the GET search form.
