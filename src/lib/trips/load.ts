@@ -51,12 +51,15 @@ export type TripSearchQuery = {
 
 export type TripPageData = {
   summary: TripSummary;
-  /** Every row booked inside the trip's dates, newest first, members included. */
+  /**
+   * Every row booked inside the trip's dates, newest first, members included.
+   * Pre-checked by suggestion only while the trip has no members.
+   */
   inRange: TripCandidate[];
   /**
    * `null` when the URL carries no search. Never lists rows already on the
-   * trip. Hits start unchecked: a text search spans every date, so the
-   * in-range pre-check rule would tag unrelated rows.
+   * trip. Hits start unchecked: a text search spans every date, so a
+   * suggestion would tag unrelated rows.
    */
   search: {
     query: TripSearchQuery;
@@ -225,23 +228,22 @@ export async function loadTripPage(
       : null,
   ]);
 
-  const toCandidate = (
-    candidate: Prisma.TransactionGetPayload<{
-      select: typeof TRIP_TRANSACTION_SELECT;
-    }>,
-  ) => toTripCandidate(tripId, toTripTransaction(candidate));
+  const inRangeMode = record.transactions.length === 0 ? "suggest" : "stored";
 
   return {
     summary: summarizeTrip(trip, record.transactions.map(toTripTransaction)),
-    inRange: inRange.map(toCandidate),
+    inRange: inRange.map((row) =>
+      toTripCandidate(tripId, toTripTransaction(row), inRangeMode),
+    ),
     search:
       search && searchHits
         ? {
             query: search,
-            results: searchHits.slice(0, SEARCH_LIMIT).map((hit) => ({
-              ...toCandidate(hit),
-              defaultChecked: false,
-            })),
+            results: searchHits
+              .slice(0, SEARCH_LIMIT)
+              .map((hit) =>
+                toTripCandidate(tripId, toTripTransaction(hit), "stored"),
+              ),
             truncated: searchHits.length > SEARCH_LIMIT,
           }
         : null,

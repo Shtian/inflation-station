@@ -72,6 +72,10 @@ test(
     await checkbox("Utleier AS").click();
     await page.getByRole("button", { name: "Lagre utvalg" }).click();
     await expect(toast(page, "2 lagt til i turen.")).toBeVisible();
+    await expect(checkbox("Utleier AS")).not.toBeChecked();
+    await expect(
+      page.getByRole("button", { name: "Lagre utvalg" }),
+    ).toBeDisabled();
 
     await page.getByLabel("Brukersted, notat eller kategori").fill("norwegian");
     await page.getByRole("button", { name: "Søk", exact: true }).click();

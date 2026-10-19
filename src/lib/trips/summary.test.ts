@@ -157,7 +157,7 @@ describe("toTripCandidate", () => {
     ["untagged transfer", transfer, -100, null, false],
     ["untagged uncategorized spend", null, -100, null, true],
     ["untagged uncategorized refund", null, 100, null, false],
-  ] as const)("%s -> checked: %s", (_label, category, amountNok, trip, expected) => {
+  ] as const)("suggesting, %s -> checked: %s", (_label, category, amountNok, trip, expected) => {
     const candidate = toTripCandidate(
       "lisboa",
       row(
@@ -167,9 +167,26 @@ describe("toTripCandidate", () => {
         category,
         trip && { id: trip.id, name: trip.name },
       ),
+      "suggest",
     );
 
     expect(candidate.defaultChecked).toBe(expected);
+  });
+
+  it("shows stored membership once the trip is curated, so left-out spending stays out", () => {
+    const candidates = [
+      row("member", "2026-05-02", -100, travel),
+      row("left-out-rent", "2026-05-01", -12000, lodging, null),
+      row("uncategorized", "2026-05-02", -50, null, null),
+    ].map((transaction) => toTripCandidate("lisboa", transaction, "stored"));
+
+    expect(
+      candidates.map((candidate) => [candidate.id, candidate.defaultChecked]),
+    ).toEqual([
+      ["member", true],
+      ["left-out-rent", false],
+      ["uncategorized", false],
+    ]);
   });
 });
 
@@ -183,7 +200,7 @@ describe("membershipChangeFor", () => {
       row("moved", "2026-05-01", -1, travel, roma),
       row("left-alone", "2026-05-01", -1, travel, null),
       row("other-trip-unchecked", "2026-05-01", -1, travel, roma),
-    ].map((transaction) => toTripCandidate("lisboa", transaction));
+    ].map((transaction) => toTripCandidate("lisboa", transaction, "stored"));
 
     expect(
       membershipChangeFor(

@@ -1,0 +1,166 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - complementary [ref=f1e3]:
+      - generic [ref=f1e4]:
+        - button "Skjul meny" [expanded] [ref=f1e5]
+        - link "Inflation Station" [ref=f1e6] [cursor=pointer]:
+          - /url: /
+      - navigation "Hovedmeny" [ref=f1e7]:
+        - list [ref=f1e8]:
+          - listitem [ref=f1e9]:
+            - link "Oversikt" [ref=f1e10] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f1e17]:
+            - link "Transaksjoner" [ref=f1e18] [cursor=pointer]:
+              - /url: /transactions
+          - listitem [ref=f1e23]:
+            - link "Import" [ref=f1e24] [cursor=pointer]:
+              - /url: /import
+          - listitem [ref=f1e29]:
+            - link "Månedsoppsummering" [ref=f1e30] [cursor=pointer]:
+              - /url: /monthly-review
+          - listitem [ref=f1e34]:
+            - link "Innsikt" [ref=f1e35] [cursor=pointer]:
+              - /url: /assistant
+          - listitem [ref=f1e40]:
+            - link "Faste trekk" [ref=f1e41] [cursor=pointer]:
+              - /url: /subscriptions
+          - listitem [ref=f1e48]:
+            - link "Turer" [ref=f1e49] [cursor=pointer]:
+              - /url: /trips
+        - list [ref=f1e53]:
+          - listitem [ref=f1e54]:
+            - link "Kontoer" [ref=f1e55] [cursor=pointer]:
+              - /url: /accounts
+          - listitem [ref=f1e59]:
+            - link "Kategorier" [ref=f1e60] [cursor=pointer]:
+              - /url: /categories
+      - generic [ref=f1e66]:
+        - link "Innstillinger" [ref=f1e67] [cursor=pointer]:
+          - /url: /settings
+        - generic [ref=f1e72]:
+          - button "Bytt tema" [ref=f1e73]
+          - button "Versjonsinfo" [ref=f1e75]
+    - generic [ref=f1e77]:
+      - main [ref=f1e78]:
+        - generic [ref=f1e79]:
+          - link "Turer" [ref=f1e80] [cursor=pointer]:
+            - /url: /trips
+          - generic [ref=f1e83]:
+            - generic [ref=f1e84]:
+              - heading "Lisboa" [level=1] [ref=f1e85]
+              - paragraph [ref=f1e86]: 20.–24. sep. 2026 · 5 dager
+            - generic [ref=f1e87]:
+              - button "Rediger" [ref=f1e88]
+              - button "Slett" [ref=f1e89]
+        - generic "Kostnad" [ref=f1e90]:
+          - generic [ref=f1e91]:
+            - term [ref=f1e92]: Totalt
+            - definition [ref=f1e93]: 8 023,50 kr
+          - generic [ref=f1e94]:
+            - term [ref=f1e95]: Per dag
+            - definition [ref=f1e96]: 1 604,70 kr
+          - generic [ref=f1e97]:
+            - term [ref=f1e98]: Transaksjoner
+            - definition [ref=f1e99]: "6"
+        - list "Kostnad per kategori" [ref=f1e100]:
+          - listitem [ref=f1e101]:
+            - generic [ref=f1e102]: Transport
+            - generic [ref=f1e105]: 3 694 kr
+          - listitem [ref=f1e106]:
+            - generic [ref=f1e107]: Ukategorisert
+            - generic [ref=f1e110]: 3 600 kr
+          - listitem [ref=f1e111]:
+            - generic [ref=f1e112]: Restaurant & Takeaway
+            - generic [ref=f1e115]: 729,50 kr
+        - separator [ref=f1e116]
+        - region [ref=f1e117]:
+          - generic [ref=f1e118]:
+            - heading "Transaksjoner i perioden" [level=2] [ref=f1e119]
+            - paragraph [ref=f1e120]: Utgifter er krysset av på forhånd. Fjern det som ikke hørte til turen, som husleie.
+          - button "Velg blant 5 transaksjoner" [ref=f1e122]
+        - region [ref=f1e125]:
+          - generic [ref=f1e126]:
+            - heading "Legg til transaksjoner" [level=2] [ref=f1e127]
+            - paragraph [ref=f1e128]: Finn bestillinger utenfor turens datoer, som fly, hotell og leiebil.
+          - generic [ref=f1e129]:
+            - group [ref=f1e130]:
+              - generic [ref=f1e131]: Brukersted, notat eller kategori
+              - searchbox "Brukersted, notat eller kategori" [ref=f1e132]
+            - group [ref=f1e133]:
+              - generic [ref=f1e134]: Fra
+              - textbox "Fra" [ref=f1e135]
+            - group [ref=f1e136]:
+              - generic [ref=f1e137]: Til
+              - textbox "Til" [ref=f1e138]
+            - group [ref=f1e139]:
+              - generic [ref=f1e140]: Beløp
+              - textbox "Beløp" [ref=f1e141]
+            - button "Søk" [ref=f1e143]
+        - separator [ref=f1e144]
+        - region [ref=f1e145]:
+          - heading "Før turen" [level=2] [ref=f1e147]
+          - table "Før turen" [ref=f1e150]:
+            - rowgroup [ref=f1e157]:
+              - row [ref=f1e158]:
+                - columnheader "Dato" [ref=f1e159]
+                - columnheader "Brukersted" [ref=f1e160]
+                - columnheader "Kategori" [ref=f1e161]
+                - columnheader "Beløp" [ref=f1e162]
+                - columnheader "Handlinger" [ref=f1e163]
+            - rowgroup [ref=f1e165]:
+              - row [ref=f1e166]:
+                - cell "14. aug. 2026" [ref=f1e167]
+                - cell "Norwegian Air Shuttle" [ref=f1e168]
+                - cell "Transport" [ref=f1e169]
+                - cell "−3 480 kr" [ref=f1e171]
+                - cell [ref=f1e172]:
+                  - button "Fjern Norwegian Air Shuttle fra turen" [ref=f1e173]: Fjern
+              - row [ref=f1e174]:
+                - cell "30. aug. 2026" [ref=f1e175]
+                - cell "Booking.com Hotel" [ref=f1e176]
+                - cell "Ukategorisert" [ref=f1e177]
+                - cell "−4 200 kr" [ref=f1e179]
+                - cell [ref=f1e180]:
+                  - button "Fjern Booking.com Hotel fra turen" [ref=f1e181]: Fjern
+        - region [ref=f1e182]:
+          - heading "Under turen" [level=2] [ref=f1e184]
+          - table "Under turen" [ref=f1e187]:
+            - rowgroup [ref=f1e194]:
+              - row [ref=f1e195]:
+                - columnheader "Dato" [ref=f1e196]
+                - columnheader "Brukersted" [ref=f1e197]
+                - columnheader "Kategori" [ref=f1e198]
+                - columnheader "Beløp" [ref=f1e199]
+                - columnheader "Handlinger" [ref=f1e200]
+            - rowgroup [ref=f1e202]:
+              - row [ref=f1e203]:
+                - cell "21. sep. 2026" [ref=f1e204]
+                - cell "Time Out Market Lisboa" [ref=f1e205]
+                - cell "Restaurant & Takeaway" [ref=f1e206]
+                - cell "−642,50 kr" [ref=f1e208]
+                - cell [ref=f1e209]:
+                  - button "Fjern Time Out Market Lisboa fra turen" [ref=f1e210]: Fjern
+              - row [ref=f1e211]:
+                - cell "22. sep. 2026" [ref=f1e212]
+                - cell "Pastéis de Belém" [ref=f1e213]
+                - cell "Restaurant & Takeaway" [ref=f1e214]
+                - cell "−87 kr" [ref=f1e216]
+                - cell [ref=f1e217]:
+                  - button "Fjern Pastéis de Belém fra turen" [ref=f1e218]: Fjern
+              - row [ref=f1e219]:
+                - cell "22. sep. 2026" [ref=f1e220]
+                - cell "Uber Lisboa" [ref=f1e221]
+                - cell "Transport" [ref=f1e222]
+                - cell "−214 kr" [ref=f1e224]
+                - cell [ref=f1e225]:
+                  - button "Fjern Uber Lisboa fra turen" [ref=f1e226]: Fjern
+              - row [ref=f1e227]:
+                - cell "28. sep. 2026" [ref=f1e228]
+                - cell "Booking.com Hotel" [ref=f1e229]
+                - cell "Ukategorisert" [ref=f1e230]
+                - cell "600 kr" [ref=f1e232]
+                - cell [ref=f1e233]:
+                  - button "Fjern Booking.com Hotel fra turen" [ref=f1e234]: Fjern
+      - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f1e240] [cursor=pointer]

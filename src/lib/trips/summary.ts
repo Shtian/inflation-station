@@ -133,12 +133,19 @@ export function toTripListItem(
   };
 }
 
+/**
+ * `suggest` pre-checks likely trip spending for a trip nobody has curated yet.
+ * `stored` shows membership as saved, so rows the user left out stay out.
+ */
+export type CandidateMode = "suggest" | "stored";
+
 function isCheckedByDefault(
   tripId: string,
   transaction: TripTransaction,
+  mode: CandidateMode,
 ): boolean {
-  if (transaction.trip) {
-    return transaction.trip.id === tripId;
+  if (transaction.trip || mode === "stored") {
+    return transaction.trip?.id === tripId;
   }
   if (!transaction.category) {
     return transaction.amountNok < 0;
@@ -149,10 +156,11 @@ function isCheckedByDefault(
 export function toTripCandidate(
   tripId: string,
   transaction: TripTransaction,
+  mode: CandidateMode,
 ): TripCandidate {
   return {
     ...transaction,
-    defaultChecked: isCheckedByDefault(tripId, transaction),
+    defaultChecked: isCheckedByDefault(tripId, transaction, mode),
   };
 }
 

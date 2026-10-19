@@ -105,7 +105,7 @@ export default async function TripPage({
       <TripSection
         id="trip-in-range"
         title="Transaksjoner i perioden"
-        description="Utgifter er krysset av på forhånd. Fjern det som ikke hørte til turen, som husleie."
+        description="På en ny tur er utgiftene krysset av på forhånd. Fjern det som ikke hørte til turen, som husleie."
       >
         {inRange.length > 0 ? (
           <TripDisclosure
