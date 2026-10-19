@@ -54,6 +54,7 @@ async function clearAll() {
   await prisma.importReviewRow.deleteMany();
   await prisma.importReviewSession.deleteMany();
   await prisma.transaction.deleteMany();
+  await prisma.trip.deleteMany();
   await prisma.categoryRule.deleteMany();
   await prisma.category.deleteMany();
   await prisma.account.deleteMany();
