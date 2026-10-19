@@ -1,0 +1,57 @@
+import Link from "next/link";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import type { TripListItem } from "@/lib/trips/summary";
+import { formatAmount, formatDays, formatTripRange } from "../format";
+
+export function TripList({ trips }: { trips: TripListItem[] }) {
+  return (
+    <div className="rounded-md border border-border">
+      <Table aria-label="Turer" className="min-w-2xl table-fixed">
+        <colgroup>
+          <col />
+          <col className="w-56" />
+          <col className="w-24" />
+          <col className="w-36" />
+        </colgroup>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Tur</TableHead>
+            <TableHead>Datoer</TableHead>
+            <TableHead className="text-right">Dager</TableHead>
+            <TableHead className="text-right">Kostnad</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {trips.map((trip) => (
+            <TableRow key={trip.id}>
+              <TableCell className="truncate font-medium">
+                <Link
+                  href={`/trips/${trip.id}`}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {trip.name}
+                </Link>
+              </TableCell>
+              <TableCell className="tabular-nums">
+                {formatTripRange(trip.startDate, trip.endDate)}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {formatDays(trip.days)}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {formatAmount(trip.costNok)}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

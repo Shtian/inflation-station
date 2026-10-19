@@ -53,7 +53,11 @@ export type TripPageData = {
   summary: TripSummary;
   /** Every row booked inside the trip's dates, newest first, members included. */
   inRange: TripCandidate[];
-  /** `null` when the URL carries no search. Never lists rows already on the trip. */
+  /**
+   * `null` when the URL carries no search. Never lists rows already on the
+   * trip. Hits start unchecked: a text search spans every date, so the
+   * in-range pre-check rule would tag unrelated rows.
+   */
   search: {
     query: TripSearchQuery;
     results: TripCandidate[];
@@ -234,7 +238,10 @@ export async function loadTripPage(
       search && searchHits
         ? {
             query: search,
-            results: searchHits.slice(0, SEARCH_LIMIT).map(toCandidate),
+            results: searchHits.slice(0, SEARCH_LIMIT).map((hit) => ({
+              ...toCandidate(hit),
+              defaultChecked: false,
+            })),
             truncated: searchHits.length > SEARCH_LIMIT,
           }
         : null,

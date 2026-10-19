@@ -180,9 +180,11 @@ describe("trip reads (real database)", () => {
       amountNok: 2400,
     });
 
-    expect(page?.search?.results.map((row) => row.id)).toEqual([
-      "fly-retur",
-      "fly",
+    expect(
+      page?.search?.results.map((row) => [row.id, row.defaultChecked]),
+    ).toEqual([
+      ["fly-retur", false],
+      ["fly", false],
     ]);
     expect(page?.search?.truncated).toBe(false);
 
