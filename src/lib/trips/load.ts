@@ -41,7 +41,7 @@ const NEWEST_FIRST = [
   { id: "desc" },
 ] satisfies Prisma.TransactionOrderByWithRelationInput[];
 
-/** The "Legg til transaksjoner" search, parsed from the URL params q, fra, til and belop. */
+/** The "Søk" tab's search, parsed from the URL params q, fra, til and belop. */
 export type TripSearchQuery = {
   text: string | null;
   from: IsoDay | null;
@@ -53,8 +53,9 @@ export type TripSearchQuery = {
 export type TripPageData = {
   summary: TripSummary;
   /**
-   * Every row booked inside the trip's dates, newest first, members included.
-   * Pre-checked by suggestion only while the trip has no members.
+   * Rows booked inside the trip's dates that are not on the trip, newest
+   * first. Pre-checked by suggestion only while the trip has no members;
+   * otherwise every row starts unchecked.
    */
   inRange: TripCandidate[];
   /**
@@ -146,12 +147,16 @@ export function parseTripSearch(
   return Object.values(query).every((value) => value === null) ? null : query;
 }
 
+function notOnTrip(tripId: string): Prisma.TransactionWhereInput {
+  return { OR: [{ tripId: null }, { tripId: { not: tripId } }] };
+}
+
 function searchWhere(
   tripId: string,
   query: TripSearchQuery,
 ): Prisma.TransactionWhereInput {
   const conditions: Prisma.TransactionWhereInput[] = [
-    { OR: [{ tripId: null }, { tripId: { not: tripId } }] },
+    notOnTrip(tripId),
     bookedWithin(query.from, query.to),
   ];
 
@@ -216,7 +221,9 @@ export async function loadTripPage(
   const trip = toTrip(record);
   const [inRange, searchHits, recurringMerchants] = await Promise.all([
     db.transaction.findMany({
-      where: bookedWithin(trip.startDate, trip.endDate),
+      where: {
+        AND: [notOnTrip(tripId), bookedWithin(trip.startDate, trip.endDate)],
+      },
       select: TRIP_TRANSACTION_SELECT,
       orderBy: NEWEST_FIRST,
     }),

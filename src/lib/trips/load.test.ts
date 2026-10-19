@@ -91,7 +91,7 @@ describe("trip reads (real database)", () => {
     });
   }
 
-  it("suggests in-range spending for an empty trip, then shows stored membership", async () => {
+  it("suggests in-range spending for an empty trip, then lists only non-members unchecked", async () => {
     await category("Restaurant", "EXPENSE");
     await category("Lønn", "INCOME");
     const lisboa = await trip("Lisboa", "2026-05-01", "2026-05-05");
@@ -106,6 +106,13 @@ describe("trip reads (real database)", () => {
       date: "2026-05-02",
       amount: -600,
       merchant: "Time Out",
+      category: "Restaurant",
+    });
+    await transaction({
+      id: "kaffe",
+      date: "2026-05-03",
+      amount: -45,
+      merchant: "Pastelaria",
       category: "Restaurant",
     });
     await transaction({
@@ -125,24 +132,25 @@ describe("trip reads (real database)", () => {
     const empty = await loadTripPage(db.client, lisboa.id, null);
     expect(empty?.inRange.map((row) => [row.id, row.defaultChecked])).toEqual([
       ["lonn", false],
+      ["kaffe", true],
       ["middag", true],
     ]);
     expect(empty?.search).toBeNull();
 
-    await db.client.transaction.update({
-      where: { id: "fly" },
+    await db.client.transaction.updateMany({
+      where: { id: { in: ["fly", "middag"] } },
       data: { tripId: lisboa.id },
     });
     const curated = await loadTripPage(db.client, lisboa.id, null);
 
-    expect(curated?.summary.costNok).toBe(2400);
+    expect(curated?.summary.costNok).toBe(3000);
     expect(curated?.summary.beforeTrip.map((row) => row.merchant)).toEqual([
       "Norwegian",
     ]);
     expect(curated?.inRange.map((row) => [row.id, row.defaultChecked])).toEqual(
       [
         ["lonn", false],
-        ["middag", false],
+        ["kaffe", false],
       ],
     );
     expect(await loadTripPage(db.client, "gone", null)).toBeNull();

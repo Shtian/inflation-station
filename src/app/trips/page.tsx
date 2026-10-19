@@ -35,9 +35,15 @@ export default async function TripsPage() {
       {trips.length > 0 ? (
         <TripList trips={trips} />
       ) : (
-        <EmptySectionText>
-          Ingen turer ennå. Opprett en tur og velg transaksjonene som hører til.
-        </EmptySectionText>
+        <div className="space-y-3">
+          <EmptySectionText>
+            Ingen turer ennå. Opprett en tur og velg transaksjonene som hører
+            til.
+          </EmptySectionText>
+          <TripFormDialog
+            trigger={<Button variant="outline">Opprett en tur</Button>}
+          />
+        </div>
       )}
     </main>
   );

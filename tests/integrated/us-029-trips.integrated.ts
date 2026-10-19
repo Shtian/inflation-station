@@ -43,6 +43,9 @@ test(
 
     await page.goto("/trips");
     await expect(page.getByText("Ingen turer ennå.")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Opprett en tur" }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Ny tur" }).click();
     const dialog = page.getByRole("dialog", { name: "Ny tur" });
@@ -75,10 +78,13 @@ test(
     await page.getByRole("button", { name: "Lagre utvalg" }).click();
     await expect(toast(page, "2 lagt til i turen.")).toBeVisible();
     await expect(checkbox("Utleier AS")).not.toBeChecked();
+    await expect(checkbox("Time Out Market")).toHaveCount(0);
+    await expect(checkbox("Pastelaria Batalha")).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Lagre utvalg" }),
     ).toBeDisabled();
 
+    await page.getByRole("tab", { name: "Søk" }).click();
     await page.getByLabel("Brukersted, notat eller kategori").fill("norwegian");
     await page.getByRole("button", { name: "Søk", exact: true }).click();
     const results = page.getByRole("table", { name: "Søkeresultater" });
@@ -113,7 +119,54 @@ test(
       page
         .getByRole("table", { name: "Turer" })
         .locator('[data-slot="table-body"] tr'),
-    ).toHaveText([/^Lisboa1\.\s?–\s?5\. mai 20265 dager3\s400\skr$/]);
+    ).toHaveText([/^Lisboa1\.\s?–\s?5\. mai 20265 dager3\s400\skr680\skr$/]);
+  },
+);
+
+test(
+  "removes a member with Fjern, brings it back with Angre, and marks a trip with no members",
+  { lock: INTEGRATED_DB_LOCK },
+  async ({ page }) => {
+    await layFixture({
+      accounts: [{ name: ACCOUNT }],
+      trips: [
+        { name: "Lisboa", startDate: "2026-05-01", endDate: "2026-05-05" },
+        { name: "Bergen", startDate: "2026-06-01", endDate: "2026-06-02" },
+      ],
+      transactions: [
+        { ...spend("2026-05-02", -650, "Time Out Market"), trip: "Lisboa" },
+      ],
+    });
+
+    await page.goto("/trips");
+    const rows = page
+      .getByRole("table", { name: "Turer" })
+      .locator('[data-slot="table-body"] tr');
+    await expect(rows.filter({ hasText: "Bergen" })).toHaveText(
+      /Ingen transaksjoner ennå$/,
+    );
+
+    await page.getByRole("link", { name: "Lisboa" }).click();
+    const during = page.getByRole("table", { name: "Under turen" });
+    await expect(during.locator('[data-slot="table-body"] tr')).toHaveText([
+      /Time Out Market/,
+    ]);
+
+    await page
+      .getByRole("button", { name: "Fjern Time Out Market fra turen" })
+      .click();
+    const removed = toast(page, "1 fjernet fra turen.");
+    await expect(removed).toBeVisible();
+    await expect(during).toHaveCount(0);
+    await expect(
+      page.getByText("Ingen transaksjoner på turen ennå. Velg dem under."),
+    ).toBeVisible();
+
+    await removed.getByRole("button", { name: "Angre" }).click();
+    await expect(toast(page, "1 lagt til i turen.")).toBeVisible();
+    await expect(during.locator('[data-slot="table-body"] tr')).toHaveText([
+      /Time Out Market/,
+    ]);
   },
 );
 

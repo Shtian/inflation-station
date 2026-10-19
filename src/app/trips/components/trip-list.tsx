@@ -13,12 +13,13 @@ import { formatAmount, formatDays, formatTripRange } from "../format";
 export function TripList({ trips }: { trips: TripListItem[] }) {
   return (
     <div className="rounded-md border border-border">
-      <Table aria-label="Turer" className="min-w-2xl table-fixed">
+      <Table aria-label="Turer" className="min-w-3xl table-fixed">
         <colgroup>
           <col />
           <col className="w-56" />
           <col className="w-24" />
-          <col className="w-36" />
+          <col className="w-32" />
+          <col className="w-28" />
         </colgroup>
         <TableHeader>
           <TableRow>
@@ -26,6 +27,7 @@ export function TripList({ trips }: { trips: TripListItem[] }) {
             <TableHead>Datoer</TableHead>
             <TableHead className="text-right">Dager</TableHead>
             <TableHead className="text-right">Kostnad</TableHead>
+            <TableHead className="text-right">Per dag</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -45,9 +47,23 @@ export function TripList({ trips }: { trips: TripListItem[] }) {
               <TableCell className="text-right tabular-nums">
                 {formatDays(trip.days)}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatAmount(trip.costNok)}
-              </TableCell>
+              {trip.transactionCount > 0 ? (
+                <>
+                  <TableCell className="text-right tabular-nums">
+                    {formatAmount(trip.costNok)}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatAmount(trip.perDayNok)}
+                  </TableCell>
+                </>
+              ) : (
+                <TableCell
+                  colSpan={2}
+                  className="text-right text-muted-foreground"
+                >
+                  Ingen transaksjoner ennå
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

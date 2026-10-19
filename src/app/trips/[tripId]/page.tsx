@@ -9,7 +9,7 @@ import type { TripCandidate } from "@/lib/trips/summary";
 import { CategoryBreakdown } from "../components/category-breakdown";
 import { DeleteTripButton } from "../components/delete-trip-button";
 import { TripChecklist } from "../components/trip-checklist";
-import { TripDisclosure } from "../components/trip-disclosure";
+import { TripEditTabs } from "../components/trip-edit-tabs";
 import { TripFormDialog } from "../components/trip-form-dialog";
 import { TripSearchForm } from "../components/trip-search-form";
 import { EmptySectionText, TripSection } from "../components/trip-section";
@@ -78,19 +78,19 @@ export default async function TripPage({
       <dl aria-label="Kostnad" className="flex flex-wrap gap-x-10 gap-y-4">
         <div className="space-y-1">
           <dt className="text-muted-foreground text-sm">Totalt</dt>
-          <dd className="font-semibold text-2xl text-foreground tabular-nums tracking-tight">
+          <dd className="font-semibold text-foreground text-lg tabular-nums tracking-tight">
             {formatAmount(summary.costNok)}
           </dd>
         </div>
         <div className="space-y-1">
           <dt className="text-muted-foreground text-sm">Per dag</dt>
-          <dd className="font-semibold text-2xl text-foreground tabular-nums tracking-tight">
+          <dd className="font-semibold text-foreground text-lg tabular-nums tracking-tight">
             {formatAmount(summary.perDayNok)}
           </dd>
         </div>
         <div className="space-y-1">
           <dt className="text-muted-foreground text-sm">Transaksjoner</dt>
-          <dd className="font-semibold text-2xl text-foreground tabular-nums tracking-tight">
+          <dd className="font-semibold text-foreground text-lg tabular-nums tracking-tight">
             {memberCount}
           </dd>
         </div>
@@ -100,90 +100,104 @@ export default async function TripPage({
         <CategoryBreakdown items={summary.byCategory} />
       ) : null}
 
+      {memberCount > 0 ? (
+        <>
+          <TripSection id="trip-before" title="Før turen">
+            {summary.beforeTrip.length > 0 ? (
+              <TripTransactions
+                tripId={summary.id}
+                label="Før turen"
+                transactions={summary.beforeTrip}
+              />
+            ) : (
+              <EmptySectionText>Ingen bestillinger før turen.</EmptySectionText>
+            )}
+          </TripSection>
+
+          <TripSection id="trip-during" title="Under turen">
+            {summary.duringTrip.length > 0 ? (
+              <TripTransactions
+                tripId={summary.id}
+                label="Under turen"
+                transactions={summary.duringTrip}
+              />
+            ) : (
+              <EmptySectionText>
+                Ingen transaksjoner under turen.
+              </EmptySectionText>
+            )}
+          </TripSection>
+        </>
+      ) : (
+        <EmptySectionText>
+          Ingen transaksjoner på turen ennå. Velg dem under.
+        </EmptySectionText>
+      )}
+
       <Separator />
 
-      <TripSection
-        id="trip-in-range"
-        title="Transaksjoner i perioden"
-        description="På en ny tur er utgiftene krysset av på forhånd. Fjern det som ikke hørte til turen, som husleie."
-      >
-        {inRange.length > 0 ? (
-          <TripDisclosure
-            title={`Velg blant ${inRange.length} ${inRange.length === 1 ? "transaksjon" : "transaksjoner"}`}
-            defaultOpen={memberCount === 0}
-          >
-            <TripChecklist
-              key={membershipKey(inRange)}
-              tripId={summary.id}
-              candidates={inRange}
-              label="Transaksjoner i perioden"
-              submitLabel="Lagre utvalg"
-            />
-          </TripDisclosure>
-        ) : (
-          <EmptySectionText>
-            Ingen transaksjoner i perioden ennå.
-          </EmptySectionText>
-        )}
-      </TripSection>
-
-      <TripSection
-        id="trip-search"
-        title="Legg til transaksjoner"
-        description="Finn bestillinger utenfor turens datoer, som fly, hotell og leiebil."
-      >
-        <TripSearchForm
-          key={JSON.stringify(search?.query ?? null)}
-          tripId={summary.id}
-          query={search?.query ?? null}
-        />
-        {search ? (
-          search.results.length > 0 ? (
-            <>
-              <TripChecklist
-                key={membershipKey(search.results)}
-                tripId={summary.id}
-                candidates={search.results}
-                label="Søkeresultater"
-                submitLabel="Legg til valgte"
-              />
-              {search.truncated ? (
+      <TripSection id="trip-edit" title="Rediger utvalg">
+        <TripEditTabs
+          initialTab={search ? "search" : "in-range"}
+          inRange={
+            inRange.length > 0 ? (
+              <>
                 <EmptySectionText>
-                  Viser de {search.results.length} nyeste treffene. Snevre inn
-                  søket for å se flere.
+                  {memberCount === 0
+                    ? "På en ny tur er utgiftene krysset av på forhånd. Fjern det som ikke hørte til turen."
+                    : "Transaksjoner i perioden som ikke er på turen. Kryss av for å legge dem til."}
                 </EmptySectionText>
+                <TripChecklist
+                  key={membershipKey(inRange)}
+                  tripId={summary.id}
+                  candidates={inRange}
+                  label="Transaksjoner i perioden"
+                  submitLabel="Lagre utvalg"
+                />
+              </>
+            ) : (
+              <EmptySectionText>
+                {memberCount === 0
+                  ? "Ingen transaksjoner i perioden ennå."
+                  : "Alle transaksjoner i perioden er på turen."}
+              </EmptySectionText>
+            )
+          }
+          search={
+            <>
+              <EmptySectionText>
+                Finn bestillinger utenfor turens datoer, som fly, hotell og
+                leiebil.
+              </EmptySectionText>
+              <TripSearchForm
+                key={JSON.stringify(search?.query ?? null)}
+                tripId={summary.id}
+                query={search?.query ?? null}
+              />
+              {search ? (
+                search.results.length > 0 ? (
+                  <>
+                    <TripChecklist
+                      key={membershipKey(search.results)}
+                      tripId={summary.id}
+                      candidates={search.results}
+                      label="Søkeresultater"
+                      submitLabel="Legg til valgte"
+                    />
+                    {search.truncated ? (
+                      <EmptySectionText>
+                        Viser de {search.results.length} nyeste treffene. Snevre
+                        inn søket for å se flere.
+                      </EmptySectionText>
+                    ) : null}
+                  </>
+                ) : (
+                  <EmptySectionText>Ingen treff.</EmptySectionText>
+                )
               ) : null}
             </>
-          ) : (
-            <EmptySectionText>Ingen treff.</EmptySectionText>
-          )
-        ) : null}
-      </TripSection>
-
-      <Separator />
-
-      <TripSection id="trip-before" title="Før turen">
-        {summary.beforeTrip.length > 0 ? (
-          <TripTransactions
-            tripId={summary.id}
-            label="Før turen"
-            transactions={summary.beforeTrip}
-          />
-        ) : (
-          <EmptySectionText>Ingen bestillinger før turen.</EmptySectionText>
-        )}
-      </TripSection>
-
-      <TripSection id="trip-during" title="Under turen">
-        {summary.duringTrip.length > 0 ? (
-          <TripTransactions
-            tripId={summary.id}
-            label="Under turen"
-            transactions={summary.duringTrip}
-          />
-        ) : (
-          <EmptySectionText>Ingen transaksjoner under turen.</EmptySectionText>
-        )}
+          }
+        />
       </TripSection>
     </main>
   );
