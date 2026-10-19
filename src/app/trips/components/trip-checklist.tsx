@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { UNCATEGORIZED_CATEGORY_NAME } from "@/lib/category-color";
 import {
+  MAX_TRIP_MEMBERSHIP_IDS,
   membershipChangeFor,
   type TripCandidate,
   tripCostNok,
@@ -25,6 +26,8 @@ import {
   describePendingChange,
   describeSelection,
   formatDay,
+  TRIP_SELECT_UP_TO_LABEL,
+  TRIP_SELECTION_LIMIT_MESSAGE,
 } from "../format";
 import { TransactionAmount } from "./trip-amount";
 
@@ -49,10 +52,12 @@ export function TripChecklist({
       new Set(
         candidates
           .filter((candidate) => candidate.defaultChecked)
+          .slice(0, MAX_TRIP_MEMBERSHIP_IDS)
           .map((candidate) => candidate.id),
       ),
   );
   const [saving, startSaving] = useTransition();
+  const atLimit = checked.size >= MAX_TRIP_MEMBERSHIP_IDS;
   const change = membershipChangeFor(tripId, candidates, checked);
   const unchanged = change.add.length + change.remove.length === 0;
   const checkedCandidates = candidates.filter((candidate) =>
@@ -67,6 +72,7 @@ export function TripChecklist({
     setChecked((current) => {
       const next = new Set(current);
       if (nextChecked) {
+        if (current.size >= MAX_TRIP_MEMBERSHIP_IDS) return current;
         next.add(id);
       } else {
         next.delete(id);
@@ -88,7 +94,7 @@ export function TripChecklist({
             aria-label={`Ta med ${candidate.merchant} ${formatDay(candidate.bookingDate)}`}
             checked={checked.has(candidate.id)}
             onCheckedChange={(next) => toggle(candidate.id, next)}
-            disabled={saving}
+            disabled={saving || (atLimit && !checked.has(candidate.id))}
           />
         </TableCell>
         <TableCell className="tabular-nums">
@@ -173,11 +179,23 @@ export function TripChecklist({
             variant="ghost"
             size="sm"
             onClick={() =>
-              setChecked(new Set(candidates.map((candidate) => candidate.id)))
+              setChecked(
+                new Set(
+                  candidates
+                    .slice(0, MAX_TRIP_MEMBERSHIP_IDS)
+                    .map((candidate) => candidate.id),
+                ),
+              )
             }
-            disabled={saving || checkedCandidates.length === candidates.length}
+            disabled={
+              saving ||
+              atLimit ||
+              checkedCandidates.length === candidates.length
+            }
           >
-            Velg alle
+            {candidates.length > MAX_TRIP_MEMBERSHIP_IDS
+              ? TRIP_SELECT_UP_TO_LABEL
+              : "Velg alle"}
           </Button>
           <Button
             variant="ghost"
@@ -208,6 +226,11 @@ export function TripChecklist({
           </Button>
         </div>
       </div>
+      {atLimit ? (
+        <p aria-live="polite" className="text-muted-foreground text-sm">
+          {TRIP_SELECTION_LIMIT_MESSAGE}
+        </p>
+      ) : null}
     </div>
   );
 }

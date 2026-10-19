@@ -1,30 +1,45 @@
 "use client";
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type EditTab = "in-range" | "search";
 
-/**
- * Controlled, because a search submit re-renders the page with a new initial
- * tab; an uncontrolled Tabs would warn about its default value changing.
- * Panels stay mounted so switching tabs keeps unsaved checks and search terms.
- */
 export function TripEditTabs({
   initialTab,
+  navigationKey,
   inRange,
   search,
 }: {
   initialTab: EditTab;
+  navigationKey: string;
   inRange: ReactNode;
   search: ReactNode;
 }) {
-  const [tab, setTab] = useState(initialTab);
+  const [selection, setSelection] = useState({
+    navigationKey,
+    tab: initialTab,
+  });
+  if (selection.navigationKey !== navigationKey) {
+    setSelection({ navigationKey, tab: initialTab });
+  }
+
+  useEffect(() => {
+    // History can traverse away and back before the server props change.
+    const resetSelection = () =>
+      setSelection({ navigationKey, tab: initialTab });
+    window.addEventListener("popstate", resetSelection);
+    return () => window.removeEventListener("popstate", resetSelection);
+  }, [initialTab, navigationKey]);
 
   return (
     <Tabs
-      value={tab}
-      onValueChange={(value) => setTab(value as EditTab)}
+      value={selection.tab}
+      onValueChange={(value) => {
+        if (value === "in-range" || value === "search") {
+          setSelection({ navigationKey, tab: value });
+        }
+      }}
       className="space-y-3"
     >
       <TabsList variant="line">

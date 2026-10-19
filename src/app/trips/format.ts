@@ -1,6 +1,9 @@
 import { formatNok } from "@/lib/format-nok";
 import { parseIsoDate } from "@/lib/iso-date";
-import type { IsoDay } from "@/lib/trips/summary";
+import { type IsoDay, MAX_TRIP_MEMBERSHIP_IDS } from "@/lib/trips/summary";
+
+export const TRIP_SELECTION_LIMIT_MESSAGE = `Du kan legge til opptil ${MAX_TRIP_MEMBERSHIP_IDS} transaksjoner om gangen.`;
+export const TRIP_SELECT_UP_TO_LABEL = `Velg opptil ${MAX_TRIP_MEMBERSHIP_IDS}`;
 
 const dayFormatter = new Intl.DateTimeFormat("nb-NO", {
   day: "numeric",

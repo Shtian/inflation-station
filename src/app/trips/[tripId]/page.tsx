@@ -78,13 +78,13 @@ export default async function TripPage({
       <dl aria-label="Kostnad" className="flex flex-wrap gap-x-10 gap-y-4">
         <div className="space-y-1">
           <dt className="text-muted-foreground text-sm">Totalt</dt>
-          <dd className="font-semibold text-foreground text-lg tabular-nums tracking-tight">
+          <dd className="font-mono font-semibold text-foreground text-lg tabular-nums tracking-tight">
             {formatAmount(summary.costNok)}
           </dd>
         </div>
         <div className="space-y-1">
           <dt className="text-muted-foreground text-sm">Per dag</dt>
-          <dd className="font-semibold text-foreground text-lg tabular-nums tracking-tight">
+          <dd className="font-mono font-semibold text-foreground text-lg tabular-nums tracking-tight">
             {formatAmount(summary.perDayNok)}
           </dd>
         </div>
@@ -139,6 +139,7 @@ export default async function TripPage({
       <TripSection id="trip-edit" title="Rediger utvalg">
         <TripEditTabs
           initialTab={search ? "search" : "in-range"}
+          navigationKey={JSON.stringify(search?.query ?? null)}
           inRange={
             inRange.length > 0 ? (
               <>

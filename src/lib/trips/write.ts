@@ -1,9 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { parseIsoDate } from "@/lib/iso-date";
-import type { TripMembershipChange } from "./summary";
-
-const MAX_MEMBERSHIP_IDS = 500;
+import { MAX_TRIP_MEMBERSHIP_IDS, type TripMembershipChange } from "./summary";
 
 export const tripIdSchema = z.string().trim().min(1);
 
@@ -39,7 +37,7 @@ export type TripInput = z.infer<typeof tripInputSchema>;
 
 const membershipIdsSchema = z
   .array(tripIdSchema)
-  .max(MAX_MEMBERSHIP_IDS)
+  .max(MAX_TRIP_MEMBERSHIP_IDS)
   .transform((ids) => [...new Set(ids)]);
 
 export const tripMembershipChangeSchema = z

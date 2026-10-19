@@ -2,6 +2,8 @@ import type { CategoryKind } from "@prisma/client";
 import { UNCATEGORIZED_CATEGORY_NAME } from "@/lib/category-color";
 import { isTransfer } from "@/lib/transactions/transfer";
 
+export const MAX_TRIP_MEMBERSHIP_IDS = 500;
+
 /** `YYYY-MM-DD`, a UTC calendar day. */
 export type IsoDay = string;
 

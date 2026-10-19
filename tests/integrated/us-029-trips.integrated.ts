@@ -28,6 +28,135 @@ async function pickDay(page: Page, field: string, day: RegExp) {
 }
 
 test(
+  "follows search history while manual tab changes preserve unsaved selections",
+  { lock: INTEGRATED_DB_LOCK },
+  async ({ page }) => {
+    await layFixture({
+      accounts: [{ name: ACCOUNT }],
+      trips: [
+        { name: "Lisboa", startDate: "2026-05-01", endDate: "2026-05-05" },
+      ],
+      transactions: [
+        spend("2026-03-10", -2400, "Norwegian Air"),
+        spend("2026-05-02", -650, "Time Out Market"),
+      ],
+    });
+
+    await page.goto("/trips");
+    await page.getByRole("link", { name: "Lisboa" }).click();
+    await expect(page).toHaveURL(/\/trips\/[^/?]+$/);
+    const tripUrl = page.url();
+    const inRangeTab = page.getByRole("tab", { name: "I perioden" });
+    const searchTab = page.getByRole("tab", { name: "Søk" });
+    await searchTab.click();
+    await page.getByLabel("Brukersted, notat eller kategori").fill("Norwegian");
+    await page.getByRole("button", { name: "Søk", exact: true }).click();
+    await expect(page).toHaveURL(/q=Norwegian/);
+    await expect(searchTab).toHaveAttribute("aria-selected", "true");
+
+    const result = page.getByRole("checkbox", {
+      name: /^Ta med Norwegian Air/,
+    });
+    await result.check();
+    await inRangeTab.click();
+    const inRangeCheck = page.getByRole("checkbox", {
+      name: /^Ta med Time Out Market/,
+    });
+    await inRangeCheck.uncheck();
+    await searchTab.click();
+    await expect(result).toBeChecked();
+    await inRangeTab.click();
+    await expect(inRangeCheck).not.toBeChecked();
+
+    await searchTab.click();
+    await page
+      .getByLabel("Brukersted, notat eller kategori")
+      .fill(" Norwegian ");
+    await page.getByRole("button", { name: "Søk", exact: true }).click();
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get("q") === " Norwegian ",
+    );
+    await expect(result).toBeVisible();
+    await inRangeTab.click();
+    await page.goBack();
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get("q") === "Norwegian",
+    );
+    await expect(searchTab).toHaveAttribute("aria-selected", "true");
+    await expect(result).toBeVisible();
+    await inRangeTab.click();
+
+    await page.goBack();
+    await expect(page).toHaveURL(tripUrl);
+    await expect(inRangeTab).toHaveAttribute("aria-selected", "true");
+    await page.goForward();
+    await expect(page).toHaveURL(/q=Norwegian/);
+    await expect(searchTab).toHaveAttribute("aria-selected", "true");
+    await expect(result).toBeVisible();
+  },
+);
+
+test(
+  "caps suggested, bulk, and manual selection at 500 and saves the capped selection",
+  { lock: INTEGRATED_DB_LOCK },
+  async ({ page }) => {
+    await layFixture({
+      accounts: [{ name: ACCOUNT }],
+      trips: [
+        { name: "Lisboa", startDate: "2026-05-01", endDate: "2026-05-05" },
+      ],
+      transactions: Array.from({ length: 501 }, (_, index) =>
+        spend("2026-05-02", -1, `Butikk ${index}`),
+      ),
+    });
+
+    await page.goto("/trips");
+    await page.getByRole("link", { name: "Lisboa" }).click();
+    const candidates = page.getByRole("table", {
+      name: "Transaksjoner i perioden",
+    });
+    await expect(candidates.getByRole("checkbox")).toHaveCount(501);
+    await expect(
+      candidates.getByRole("checkbox", { checked: true }),
+    ).toHaveCount(500);
+    await page.getByRole("button", { name: "Velg ingen" }).click();
+    await expect(
+      candidates.getByRole("checkbox", { checked: true }),
+    ).toHaveCount(0);
+    await page.getByRole("button", { name: "Velg opptil 500" }).click();
+    await expect(
+      candidates.getByRole("checkbox", { checked: true }),
+    ).toHaveCount(500);
+    await expect(
+      page.getByText("Du kan legge til opptil 500 transaksjoner om gangen."),
+    ).toBeVisible();
+    const remaining = candidates.getByRole("checkbox", { checked: false });
+    await expect(remaining).toHaveCount(1);
+    await expect(remaining).toBeDisabled();
+    await candidates.getByRole("checkbox", { checked: true }).first().uncheck();
+    await expect(
+      candidates.getByRole("checkbox", { checked: true }),
+    ).toHaveCount(499);
+    await candidates.getByRole("checkbox", { checked: false }).last().check();
+    await expect(
+      candidates.getByRole("checkbox", { checked: true }),
+    ).toHaveCount(500);
+    await page.getByRole("button", { name: "Lagre utvalg" }).click();
+    await expect(toast(page, "500 lagt til i turen.")).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("definition")).toHaveText([
+      /^500\skr$/,
+      /^100\skr$/,
+      "500",
+    ]);
+    await expect(
+      page.getByRole("table", { name: "Under turen" }).getByRole("row"),
+    ).toHaveCount(501);
+    await expect(candidates.getByRole("checkbox")).toHaveCount(1);
+  },
+);
+
+test(
   "creates a trip, tags the trip's spending and a booking made weeks before, and sums it up",
   { lock: INTEGRATED_DB_LOCK },
   async ({ page }) => {
