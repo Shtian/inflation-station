@@ -17,7 +17,7 @@
     "test:watch": "vitest",
     "eval:jev": "tsx scripts/eval-jev.ts",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed",
+    "db:seed": "prisma generate && prisma migrate deploy && prisma db seed",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:reset": "prisma migrate reset --force"
   },
