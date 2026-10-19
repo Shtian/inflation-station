@@ -13,7 +13,7 @@ module.exports = {
   apps: [
     {
       name: env.PM2_APP_NAME || "inflation-station",
-      script: ".next/standalone/server.js",
+      script: ".releases/current/server.js",
       interpreter: "node",
       cwd: __dirname,
       env_file: ".env",

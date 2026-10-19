@@ -37,7 +37,7 @@ function appConfig(phase: string): NextConfig {
   return {
     output: standalone ? "standalone" : undefined,
     // Only the deployed standalone server updates itself. The standalone
-    // server chdirs into .next/standalone, so the checkout root is baked in.
+    // server chdirs into its release directory, so the checkout root is baked in.
     env:
       standalone && phase === PHASE_PRODUCTION_BUILD
         ? { SELF_UPDATE_ROOT: process.cwd() }

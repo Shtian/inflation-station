@@ -57,3 +57,6 @@ next-env.d.ts
 
 # self-update run state (lock, log, exit code)
 /.update/
+
+# deployed standalone builds that pm2 runs (see update.sh)
+/.releases/
