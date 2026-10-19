@@ -4,7 +4,11 @@ import type {
   RecurringCandidate,
   SubscriptionDecisionStatus,
 } from "./model";
-import { reviewSubscriptions, type SubscriptionDecisions } from "./review";
+import {
+  recurringMerchants,
+  reviewSubscriptions,
+  type SubscriptionDecisions,
+} from "./review";
 
 function candidate(
   normalizedMerchant: string,
@@ -277,5 +281,27 @@ describe("reviewSubscriptions", () => {
       ended: review.ended.map((entry) => [entry.candidate.key, entry.alerts]),
       dismissed: keysOf(review.dismissed),
     }).toEqual({ ended: [["viaplay|MONTHLY|0", []]], dismissed: [] });
+  });
+});
+
+describe("recurringMerchants", () => {
+  it("keeps detected and decided-recurring merchants, dropping only dismissed ones", () => {
+    const merchants = recurringMerchants(
+      [monthly("netflix"), monthly("telenor"), monthly("fjordkraft")],
+      decisions({
+        telenor: "DISMISSED",
+        fjordkraft: "ENDED",
+        hbo: "CONFIRMED",
+        viaplay: "ENDED",
+        storytel: "DISMISSED",
+      }),
+    );
+
+    expect([...merchants].sort()).toEqual([
+      "fjordkraft",
+      "hbo",
+      "netflix",
+      "viaplay",
+    ]);
   });
 });

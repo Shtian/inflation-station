@@ -48,6 +48,7 @@ Single-context layout - CONTEXT.md + docs/adr/ at repo root (created lazily as n
 - `src/app/categories/AGENTS.md`
 - `src/app/settings/AGENTS.md`
 - `src/app/subscriptions/AGENTS.md`
+- `src/app/trips/AGENTS.md`
 - `src/app/api/AGENTS.md`
 - `src/app/api/imports/AGENTS.md`
 - `src/app/api/transactions/AGENTS.md`
@@ -58,6 +59,7 @@ Single-context layout - CONTEXT.md + docs/adr/ at repo root (created lazily as n
 - `src/lib/monthly-review/AGENTS.md`
 - `src/lib/dashboard/AGENTS.md`
 - `src/lib/subscriptions/AGENTS.md`
+- `src/lib/trips/AGENTS.md`
 - `src/components/AGENTS.md`
 - `src/components/ui/AGENTS.md`
 - `tests/AGENTS.md`

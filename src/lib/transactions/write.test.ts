@@ -10,6 +10,7 @@ import { getTransactionsPage } from "./list";
 import { MAX_TRANSACTION_NOTE_LENGTH_MESSAGE } from "./note";
 import {
   createTransaction,
+  findMissingUpdateReference,
   parseTransactionCreatePayload,
   parseTransactionUpdatePayload,
   updateTransaction,
@@ -558,6 +559,93 @@ describe("transaction writes (real database)", () => {
     ).toBeNull();
   });
 
+  it("sets, preserves and clears the trip, and the list row carries it", async () => {
+    const account = await seedAccount();
+    const trip = await db.client.trip.create({
+      data: {
+        name: "Lisboa",
+        startDate: new Date("2026-05-01T00:00:00.000Z"),
+        endDate: new Date("2026-05-05T00:00:00.000Z"),
+      },
+    });
+    const created = await createTransaction(
+      db.client,
+      createIntent({ ...VALID_CREATE_PAYLOAD, accountId: account.id }),
+    );
+
+    async function listedTripId() {
+      const page = await getTransactionsPage(db.client, {
+        page: 1,
+        pageSize: 25,
+      });
+      return page.rows.find((row) => row.id === created.id)?.tripId;
+    }
+
+    expect(await listedTripId()).toBeNull();
+
+    await updateTransaction(db.client, {
+      transactionId: created.id,
+      updates: updateIntent({ tripId: trip.id }),
+    });
+    expect(await listedTripId()).toBe(trip.id);
+
+    await updateTransaction(db.client, {
+      transactionId: created.id,
+      updates: updateIntent({ note: "fly" }),
+    });
+    expect(await listedTripId()).toBe(trip.id);
+
+    await updateTransaction(db.client, {
+      transactionId: created.id,
+      updates: updateIntent({ tripId: null }),
+    });
+    expect(await listedTripId()).toBeNull();
+  });
+
+  it("names the trip as the missing reference only when the written trip is gone", async () => {
+    const account = await seedAccount();
+    const trip = await db.client.trip.create({
+      data: {
+        name: "Lisboa",
+        startDate: new Date("2026-05-01T00:00:00.000Z"),
+        endDate: new Date("2026-05-05T00:00:00.000Z"),
+      },
+    });
+    const created = await createTransaction(
+      db.client,
+      createIntent({ ...VALID_CREATE_PAYLOAD, accountId: account.id }),
+    );
+    const badTrip = updateIntent({ tripId: "no-such-trip" });
+
+    await expect(
+      updateTransaction(db.client, {
+        transactionId: created.id,
+        updates: badTrip,
+      }),
+    ).rejects.toMatchObject({ code: "P2003" });
+    expect(await findMissingUpdateReference(db.client, badTrip)).toBe("trip");
+
+    const badCategory = updateIntent({
+      tripId: trip.id,
+      categoryId: "no-such-category",
+    });
+    await expect(
+      updateTransaction(db.client, {
+        transactionId: created.id,
+        updates: badCategory,
+      }),
+    ).rejects.toMatchObject({ code: "P2003" });
+    expect(await findMissingUpdateReference(db.client, badCategory)).toBe(
+      "category",
+    );
+    expect(
+      await findMissingUpdateReference(
+        db.client,
+        updateIntent({ tripId: null, categoryId: "no-such-category" }),
+      ),
+    ).toBe("category");
+  });
+
   it("write functions return only the persisted id, unlike the list row shape", async () => {
     const account = await seedAccount();
     const created = await createTransaction(
@@ -595,6 +683,7 @@ describe("transaction writes (real database)", () => {
       "normalizedMerchant",
       "note",
       "paymentType",
+      "tripId",
       "updatedAt",
     ]);
     expect(listed.rows[0].id).toBe(created.id);

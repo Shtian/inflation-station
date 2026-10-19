@@ -81,12 +81,29 @@ model Transaction {
   merchant         String?
   paymentType      PaymentType                @default(OTHER)
   note             String?
+  tripId           String?
+  trip             Trip?                      @relation(fields: [tripId], references: [id], onDelete: SetNull)
   suggestions      CategorizationSuggestion[]
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
 
   @@index([accountId, bookingDate])
   @@index([categoryId])
+  @@index([tripId])
+}
+
+model Trip {
+  id           String        @id @default(cuid())
+  name         String
+  /// Midnight UTC, same convention as Transaction.bookingDate.
+  startDate    DateTime
+  /// Midnight UTC, inclusive, never before startDate.
+  endDate      DateTime
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([startDate])
 }
 
 model CategoryRule {

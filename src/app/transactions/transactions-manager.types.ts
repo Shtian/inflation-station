@@ -51,7 +51,7 @@ export type TransactionSorting = {
 };
 export type PaymentTypeOption = (typeof PAYMENT_TYPE_OPTIONS)[number];
 
-export type EditFormState = {
+export type TransactionFieldsForm = {
   categoryId: string;
   bookingDate: string;
   amountNok: string;
@@ -60,4 +60,6 @@ export type EditFormState = {
   note: string;
 };
 
-export type AddFormState = EditFormState & { accountId: string };
+export type EditFormState = TransactionFieldsForm & { tripId: string | null };
+
+export type AddFormState = TransactionFieldsForm & { accountId: string };

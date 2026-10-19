@@ -56,6 +56,15 @@ export type FixtureTransaction = {
   paymentType?: PaymentType;
   /** Omitted leaves the row without a note. */
   note?: string;
+  /** `name` of a trip declared in the same fixture. Omitted leaves the row off every trip. */
+  trip?: string;
+};
+
+/** A trip the fixture creates. Days are `YYYY-MM-DD`, stored as midnight UTC. */
+export type FixtureTrip = {
+  name: string;
+  startDate: string;
+  endDate: string;
 };
 
 /** A saved assistant conversation, stored exactly as stated. */
@@ -79,6 +88,7 @@ export type FixtureSubscriptionDecision = {
 export type TransactionFixture = {
   accounts: readonly FixtureAccount[];
   categories?: readonly FixtureCategory[];
+  trips?: readonly FixtureTrip[];
   transactions: readonly FixtureTransaction[];
   assistantThreads?: readonly FixtureAssistantThread[];
   subscriptionDecisions?: readonly FixtureSubscriptionDecision[];
@@ -190,9 +200,25 @@ export async function layFixture(
       categoryIds.set(category.name, created.id);
     }
 
+    const tripIds = new Map<string, string>();
+    for (const trip of fixture.trips ?? []) {
+      const created = await client.trip.create({
+        data: {
+          name: trip.name,
+          startDate: toUtcDay(trip.startDate),
+          endDate: toUtcDay(trip.endDate),
+        },
+      });
+      tripIds.set(trip.name, created.id);
+    }
+
     for (const transaction of fixture.transactions) {
       await client.transaction.create({
-        data: toTransactionData(transaction, accountIds, categoryIds),
+        data: toTransactionData(transaction, {
+          accountIds,
+          categoryIds,
+          tripIds,
+        }),
       });
     }
 
@@ -235,6 +261,7 @@ async function truncateAll(client: PrismaClient): Promise<void> {
     client.importReviewRow.deleteMany(),
     client.importReviewSession.deleteMany(),
     client.transaction.deleteMany(),
+    client.trip.deleteMany(),
     client.categoryRule.deleteMany(),
     client.category.deleteMany(),
     client.account.deleteMany(),
@@ -248,8 +275,14 @@ async function truncateAll(client: PrismaClient): Promise<void> {
 
 function toTransactionData(
   transaction: FixtureTransaction,
-  accountIds: ReadonlyMap<string, string>,
-  categoryIds: ReadonlyMap<string, string>,
+  {
+    accountIds,
+    categoryIds,
+    tripIds,
+  }: Record<
+    "accountIds" | "categoryIds" | "tripIds",
+    ReadonlyMap<string, string>
+  >,
 ): Prisma.TransactionUncheckedCreateInput {
   return {
     accountId: resolveName(accountIds, transaction.account, "account"),
@@ -265,13 +298,17 @@ function toTransactionData(
       transaction.searchKey ?? deriveSearchKey(transaction.merchant),
     paymentType: transaction.paymentType,
     note: transaction.note ?? null,
+    tripId:
+      transaction.trip === undefined
+        ? null
+        : resolveName(tripIds, transaction.trip, "trip"),
   };
 }
 
 function resolveName(
   ids: ReadonlyMap<string, string>,
   name: string,
-  kind: "account" | "category",
+  kind: "account" | "category" | "trip",
 ): string {
   const id = ids.get(name);
 

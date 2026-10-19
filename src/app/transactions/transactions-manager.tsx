@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 import { readNoteField } from "@/lib/transactions/note";
+import type { TripOption } from "@/lib/trips/load";
 import { AddTransactionDialog } from "./components/add-transaction-dialog";
 import { BulkDeleteTransactionsDialog } from "./components/bulk-delete-transactions-dialog";
 import { DeleteTransactionDialog } from "./components/delete-transaction-dialog";
@@ -40,10 +41,11 @@ function toEditFormState(row: TransactionRow): EditFormState {
     merchant: row.merchant ?? row.normalizedMerchant,
     paymentType: toPaymentTypeOption(row.paymentType),
     note: row.note ?? "",
+    tripId: row.tripId ?? null,
   };
 }
 
-export function TransactionsManager() {
+export function TransactionsManager({ trips }: { trips: TripOption[] }) {
   const {
     accounts,
     categories,
@@ -212,6 +214,7 @@ export function TransactionsManager() {
         merchant: validation.merchant,
         paymentType: editForm.paymentType,
         note: validation.note,
+        tripId: editForm.tripId,
       }),
     });
 
@@ -392,6 +395,7 @@ export function TransactionsManager() {
       <EditTransactionDialog
         open={editingTransaction !== null}
         categories={categories}
+        trips={trips}
         editForm={editForm}
         editError={editError}
         note={editNote}
@@ -405,6 +409,11 @@ export function TransactionsManager() {
         onCategoryChange={(value) =>
           setEditForm((current) =>
             current ? { ...current, categoryId: value } : current,
+          )
+        }
+        onTripChange={(value) =>
+          setEditForm((current) =>
+            current ? { ...current, tripId: value } : current,
           )
         }
         onBookingDateChange={(value) =>

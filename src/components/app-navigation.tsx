@@ -6,6 +6,7 @@ import {
   Landmark,
   LayoutDashboard,
   type LucideIcon,
+  Plane,
   Repeat,
   Settings,
   Sparkles,
@@ -34,6 +35,7 @@ const navGroups: NavItem[][] = [
     },
     { href: "/assistant", label: "Innsikt", Icon: Sparkles },
     { href: "/subscriptions", label: "Faste trekk", Icon: Repeat },
+    { href: "/trips", label: "Turer", Icon: Plane },
   ],
   [
     { href: "/accounts", label: "Kontoer", Icon: Landmark },

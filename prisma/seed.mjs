@@ -54,6 +54,7 @@ async function clearAll() {
   await prisma.importReviewRow.deleteMany();
   await prisma.importReviewSession.deleteMany();
   await prisma.transaction.deleteMany();
+  await prisma.trip.deleteMany();
   await prisma.categoryRule.deleteMany();
   await prisma.category.deleteMany();
   await prisma.account.deleteMany();
@@ -129,6 +130,7 @@ async function main() {
       hint: "Lading og vask av elbilen men ikke billånet. Recharge elbil-lading, Fortum lading, Bilvask Shellstasjon, Parkering",
     },
     { name: "Underholdning", kind: "EXPENSE" },
+    { name: "Reise", kind: "EXPENSE" },
     { name: "Spareoverføring", kind: "TRANSFER" },
     {
       name: "Kredittkortbetaling",
@@ -226,6 +228,92 @@ async function main() {
 
   // --- Transactions by month ---
   const months = getPreviousMonths(3);
+  const tripDefs = [
+    {
+      name: "Lisboa",
+      startDate: monthDate(months[1], 12),
+      endDate: monthDate(months[1], 17),
+      purchases: [
+        {
+          month: 0,
+          day: 20,
+          account: creditCard,
+          merchant: "Norwegian fly til Lisboa",
+          amount: -2890,
+          category: "Reise",
+        },
+        {
+          month: 1,
+          day: 5,
+          account: creditCard,
+          merchant: "Hotel Lisboa Plaza",
+          amount: -5400,
+          category: "Reise",
+        },
+        {
+          month: 1,
+          day: 12,
+          account: checking,
+          merchant: "Metro Lisboa",
+          amount: -185,
+          category: "Transport",
+        },
+        {
+          month: 1,
+          day: 14,
+          account: creditCard,
+          merchant: "Time Out Market Lisboa",
+          amount: -680,
+          category: "Restaurant & Takeaway",
+        },
+      ],
+    },
+    {
+      name: "Bergen",
+      startDate: monthDate(months[2], 21),
+      endDate: monthDate(months[2], 23),
+      purchases: [
+        {
+          month: 1,
+          day: 24,
+          account: creditCard,
+          merchant: "Vy tog til Bergen",
+          amount: -1198,
+          category: "Transport",
+        },
+        {
+          month: 2,
+          day: 21,
+          account: creditCard,
+          merchant: "Hotel Norge Bergen",
+          amount: -3200,
+          category: "Reise",
+        },
+        {
+          month: 2,
+          day: 22,
+          account: checking,
+          merchant: "Bryggeloftet Bergen",
+          amount: -945,
+          category: "Restaurant & Takeaway",
+        },
+        {
+          month: 2,
+          day: 23,
+          account: creditCard,
+          merchant: "Fløibanen Bergen",
+          amount: -180,
+          category: "Underholdning",
+        },
+      ],
+    },
+  ];
+  const trips = await Promise.all(
+    tripDefs.map(async ({ purchases, ...data }) => ({
+      ...(await prisma.trip.create({ data })),
+      purchases,
+    })),
+  );
   console.log(
     `Creating transactions for months: ${months.map((m) => m.toISOString().slice(0, 7)).join(", ")}...`,
   );
@@ -797,6 +885,24 @@ async function main() {
       );
     }
 
+    for (const trip of trips) {
+      for (const purchase of trip.purchases) {
+        if (purchase.month !== mi) continue;
+        const tx = await addTx(
+          purchase.account,
+          purchase.merchant,
+          purchase.amount,
+          "CARD",
+          purchase.day,
+          categories[purchase.category],
+        );
+        await prisma.transaction.update({
+          where: { id: tx.id },
+          data: { tripId: trip.id },
+        });
+      }
+    }
+
     // The card bill pays off whatever was spent on the card this month.
     await addTx(
       checking,
@@ -828,6 +934,9 @@ async function main() {
     `  Months seeded: ${months.length} (${months.map((m) => m.toISOString().slice(0, 7)).join(", ")})`,
   );
   console.log(`  Monthly reviews: ${months.length}`);
+  console.log(
+    `  Trips: ${trips.length} (${trips.map((trip) => trip.name).join(", ")})`,
+  );
 }
 
 main()

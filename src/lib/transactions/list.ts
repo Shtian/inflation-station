@@ -8,10 +8,6 @@ import {
   toTransactionRow,
 } from "./row";
 
-type StringContainsFilter = {
-  contains: string;
-};
-
 type TransactionListDbClient = {
   transaction: {
     count(args: { where: Prisma.TransactionWhereInput }): Promise<number>;
@@ -81,6 +77,34 @@ function getOrderBy(
   }
 }
 
+/**
+ * The free-text match behind the `/transactions` search, shared with the trip
+ * search so one query finds the same rows in both places. `null` for a blank
+ * query.
+ */
+export function transactionTextWhere(
+  query: string,
+): { OR: Prisma.TransactionWhereInput[] } | null {
+  const normalizedQuery = query.trim();
+  if (!normalizedQuery) {
+    return null;
+  }
+
+  const containsQuery = { contains: normalizedQuery };
+  const merchantKey = normalizeMerchantKey(normalizedQuery);
+
+  return {
+    OR: [
+      ...(merchantKey.length > 0
+        ? [{ normalizedMerchant: { contains: merchantKey } }]
+        : []),
+      { merchant: containsQuery },
+      { note: containsQuery },
+      { category: { is: { name: containsQuery } } },
+    ],
+  };
+}
+
 export async function getTransactionsPage(
   db: TransactionListDbClient,
   filters: TransactionsListFilters,
@@ -97,31 +121,9 @@ export async function getTransactionsPage(
     };
   }
 
-  const normalizedQuery = filters.query?.trim();
-  if (normalizedQuery) {
-    const containsQuery: StringContainsFilter = {
-      contains: normalizedQuery,
-    };
-    const merchantKey = normalizeMerchantKey(normalizedQuery);
-
-    where.OR = [
-      ...(merchantKey.length > 0
-        ? [{ normalizedMerchant: { contains: merchantKey } }]
-        : []),
-      {
-        merchant: containsQuery,
-      },
-      {
-        note: containsQuery,
-      },
-      {
-        category: {
-          is: {
-            name: containsQuery,
-          },
-        },
-      },
-    ];
+  const textWhere = transactionTextWhere(filters.query ?? "");
+  if (textWhere) {
+    where.OR = textWhere.OR;
   }
 
   const skip = (filters.page - 1) * filters.pageSize;

@@ -1,0 +1,67 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e2]:
+    - complementary [ref=f2e3]:
+      - generic [ref=f2e4]:
+        - button "Skjul meny" [expanded] [ref=f2e5]
+        - link "Inflation Station" [ref=f2e6] [cursor=pointer]:
+          - /url: /
+      - navigation "Hovedmeny" [ref=f2e7]:
+        - list [ref=f2e8]:
+          - listitem [ref=f2e9]:
+            - link "Oversikt" [ref=f2e10] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=f2e17]:
+            - link "Transaksjoner" [ref=f2e18] [cursor=pointer]:
+              - /url: /transactions
+          - listitem [ref=f2e23]:
+            - link "Import" [ref=f2e24] [cursor=pointer]:
+              - /url: /import
+          - listitem [ref=f2e29]:
+            - link "Månedsoppsummering" [ref=f2e30] [cursor=pointer]:
+              - /url: /monthly-review
+          - listitem [ref=f2e34]:
+            - link "Innsikt" [ref=f2e35] [cursor=pointer]:
+              - /url: /assistant
+          - listitem [ref=f2e40]:
+            - link "Faste trekk" [ref=f2e41] [cursor=pointer]:
+              - /url: /subscriptions
+          - listitem [ref=f2e48]:
+            - link "Turer" [ref=f2e49] [cursor=pointer]:
+              - /url: /trips
+        - list [ref=f2e53]:
+          - listitem [ref=f2e54]:
+            - link "Kontoer" [ref=f2e55] [cursor=pointer]:
+              - /url: /accounts
+          - listitem [ref=f2e59]:
+            - link "Kategorier" [ref=f2e60] [cursor=pointer]:
+              - /url: /categories
+      - generic [ref=f2e66]:
+        - link "Innstillinger" [ref=f2e67] [cursor=pointer]:
+          - /url: /settings
+        - generic [ref=f2e72]:
+          - button "Bytt tema" [ref=f2e73]
+          - button "Versjonsinfo" [ref=f2e75]
+    - generic [ref=f2e77]:
+      - main [ref=f2e78]:
+        - generic [ref=f2e79]:
+          - generic [ref=f2e80]:
+            - heading "Turer" [level=1] [ref=f2e81]
+            - paragraph [ref=f2e82]: Hva reisene kostet, med bestillinger gjort før avreise.
+          - button "Ny tur" [ref=f2e83]
+        - table "Turer" [ref=f2e86]:
+          - rowgroup [ref=f2e92]:
+            - row [ref=f2e93]:
+              - columnheader "Tur" [ref=f2e94]
+              - columnheader "Datoer" [ref=f2e95]
+              - columnheader "Dager" [ref=f2e96]
+              - columnheader "Kostnad" [ref=f2e97]
+          - rowgroup [ref=f2e98]:
+            - row [ref=f2e99]:
+              - cell [ref=f2e100]:
+                - link "Lisboa" [ref=f2e101] [cursor=pointer]:
+                  - /url: /trips/cmverpc6p00005j6dqce6bktt
+              - cell "20.–24. sep. 2026" [ref=f2e102]
+              - cell "5 dager" [ref=f2e103]
+              - cell "8 023,50 kr" [ref=f2e104]
+      - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=f2e110] [cursor=pointer]

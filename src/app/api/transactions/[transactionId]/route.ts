@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { deleteTransaction } from "@/lib/transactions/delete";
 import {
+  findMissingUpdateReference,
   parseTransactionUpdatePayload,
   updateTransaction,
 } from "@/lib/transactions/write";
@@ -78,6 +79,13 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       "code" in error &&
       error.code === "P2003"
     ) {
+      if ((await findMissingUpdateReference(prisma, parsed.data)) === "trip") {
+        return NextResponse.json(
+          { error: "TRIP_NOT_FOUND", message: "Fant ikke den valgte turen." },
+          { status: 404 },
+        );
+      }
+
       return NextResponse.json(
         {
           error: "CATEGORY_NOT_FOUND",
