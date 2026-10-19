@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   describeMembershipChange,
+  describePendingChange,
+  describeSelection,
   formatAmount,
   formatDays,
   formatTripRange,
@@ -48,5 +50,22 @@ describe("trip formatting", () => {
       "1 fjernet fra turen.",
       "Ingen endringer.",
     ]);
+  });
+
+  it("sums up the checked rows with their cost", () => {
+    expect(describeSelection(4, 1988.65)).toMatch(/^4 valgt · 1\s988,65\skr$/);
+    expect(describeSelection(2, 1000)).toMatch(/^2 valgt · 1\s000\skr$/);
+    expect(describeSelection(0, 0)).toMatch(/^0 valgt · 0\skr$/);
+  });
+
+  it("shows what saving would add and remove", () => {
+    expect(
+      [
+        { add: 2, remove: 1 },
+        { add: 2, remove: 0 },
+        { add: 0, remove: 1 },
+        { add: 0, remove: 0 },
+      ].map(describePendingChange),
+    ).toEqual(["+2 / −1", "+2", "−1", ""]);
   });
 });

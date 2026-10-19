@@ -44,6 +44,35 @@ describe("trip schemas", () => {
     });
   });
 
+  it("asks for a missing date instead of a format, and keeps the format error for a bad one", () => {
+    const empty = tripInputSchema.safeParse({
+      name: "Lisboa",
+      startDate: "",
+      endDate: " ",
+    });
+    const missingEnd = tripInputSchema.safeParse({
+      name: "Lisboa",
+      startDate: "2026-05-01",
+      endDate: "",
+    });
+    const malformed = tripInputSchema.safeParse({
+      name: "Lisboa",
+      startDate: "2026-05-01",
+      endDate: "2026-13-40",
+    });
+
+    expect(empty.success ? null : empty.error.flatten().fieldErrors).toEqual({
+      startDate: ["Velg en startdato."],
+      endDate: ["Velg en sluttdato."],
+    });
+    expect(
+      missingEnd.success ? null : missingEnd.error.flatten().fieldErrors,
+    ).toEqual({ endDate: ["Velg en sluttdato."] });
+    expect(
+      malformed.success ? null : malformed.error.flatten().fieldErrors,
+    ).toEqual({ endDate: ["Datoen må ha formatet ÅÅÅÅ-MM-DD."] });
+  });
+
   it("dedupes ids and rejects a change that adds and removes the same row", () => {
     expect(
       tripMembershipChangeSchema.parse({

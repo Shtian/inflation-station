@@ -48,3 +48,19 @@ export function describeMembershipChange({
   }
   return "Ingen endringer.";
 }
+
+export function describeSelection(count: number, costNok: number): string {
+  return `${count} valgt · ${formatAmount(costNok)}`;
+}
+
+export function describePendingChange({
+  add,
+  remove,
+}: {
+  add: number;
+  remove: number;
+}): string {
+  return [add > 0 ? `+${add}` : "", remove > 0 ? `−${remove}` : ""]
+    .filter(Boolean)
+    .join(" / ");
+}

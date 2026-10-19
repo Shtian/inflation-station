@@ -83,6 +83,13 @@ function byBookingDate(a: TripTransaction, b: TripTransaction): number {
   return a.bookingDate.localeCompare(b.bookingDate) || a.id.localeCompare(b.id);
 }
 
+/** Net cost of the non-transfer rows, positive means money out. */
+export function tripCostNok(rows: readonly TripTransaction[]): number {
+  return roundOre(
+    rows.reduce((sum, row) => (isTransfer(row) ? sum : sum - row.amountNok), 0),
+  );
+}
+
 export function summarizeTrip(
   trip: Trip,
   members: readonly TripTransaction[],
@@ -99,9 +106,7 @@ export function summarizeTrip(
     );
   }
 
-  const costNok = roundOre(
-    counted.reduce((sum, member) => sum - member.amountNok, 0),
-  );
+  const costNok = tripCostNok(members);
   const sorted = [...members].sort(byBookingDate);
 
   return {

@@ -15,8 +15,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UNCATEGORIZED_CATEGORY_NAME } from "@/lib/category-color";
-import { membershipChangeFor, type TripCandidate } from "@/lib/trips/summary";
-import { describeMembershipChange, formatAmount, formatDay } from "../format";
+import {
+  membershipChangeFor,
+  type TripCandidate,
+  tripCostNok,
+} from "@/lib/trips/summary";
+import {
+  describeMembershipChange,
+  describePendingChange,
+  describeSelection,
+  formatAmount,
+  formatDay,
+} from "../format";
 
 type TripChecklistProps = {
   tripId: string;
@@ -45,6 +55,13 @@ export function TripChecklist({
   const [saving, startSaving] = useTransition();
   const change = membershipChangeFor(tripId, candidates, checked);
   const unchanged = change.add.length + change.remove.length === 0;
+  const checkedCandidates = candidates.filter((candidate) =>
+    checked.has(candidate.id),
+  );
+  const pendingChange = describePendingChange({
+    add: change.add.length,
+    remove: change.remove.length,
+  });
 
   function toggle(id: string, nextChecked: boolean) {
     setChecked((current) => {
@@ -150,10 +167,46 @@ export function TripChecklist({
           </TableBody>
         </Table>
       </div>
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving || unchanged}>
-          {saving ? "Lagrer…" : submitLabel}
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              setChecked(new Set(candidates.map((candidate) => candidate.id)))
+            }
+            disabled={saving || checkedCandidates.length === candidates.length}
+          >
+            Velg alle
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setChecked(new Set())}
+            disabled={saving || checkedCandidates.length === 0}
+          >
+            Velg ingen
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <p
+            aria-live="polite"
+            className="flex gap-2 text-muted-foreground text-sm tabular-nums"
+          >
+            <span>
+              {describeSelection(
+                checkedCandidates.length,
+                tripCostNok(checkedCandidates),
+              )}
+            </span>
+            {pendingChange ? (
+              <span className="text-foreground">{pendingChange}</span>
+            ) : null}
+          </p>
+          <Button onClick={handleSave} disabled={saving || unchanged}>
+            {saving ? "Lagrer…" : submitLabel}
+          </Button>
+        </div>
       </div>
     </div>
   );

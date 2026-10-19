@@ -70,6 +70,8 @@ test(
     await expect(checkbox("Arbeidsgiver")).not.toBeChecked();
 
     await checkbox("Utleier AS").click();
+    await expect(page.getByText(/^2 valgt · 1\s000\skr$/)).toBeVisible();
+    await expect(page.getByText("+2", { exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Lagre utvalg" }).click();
     await expect(toast(page, "2 lagt til i turen.")).toBeVisible();
     await expect(checkbox("Utleier AS")).not.toBeChecked();

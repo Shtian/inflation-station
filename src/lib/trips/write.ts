@@ -7,13 +7,18 @@ const MAX_MEMBERSHIP_IDS = 500;
 
 export const tripIdSchema = z.string().trim().min(1);
 
-const tripDaySchema = z
-  .string()
-  .trim()
-  .refine((value) => parseIsoDate(value) !== null, {
-    message: "Datoen må ha formatet ÅÅÅÅ-MM-DD.",
-  })
-  .transform((value) => parseIsoDate(value) as Date);
+// `abort` stops at the first problem, so a missing or malformed day gets one message and the range check below never sees it.
+function tripDaySchema(missingMessage: string) {
+  return z
+    .string()
+    .trim()
+    .min(1, { message: missingMessage, abort: true })
+    .refine((value) => parseIsoDate(value) !== null, {
+      message: "Datoen må ha formatet ÅÅÅÅ-MM-DD.",
+      abort: true,
+    })
+    .transform((value) => parseIsoDate(value) as Date);
+}
 
 export const tripInputSchema = z
   .object({
@@ -22,8 +27,8 @@ export const tripInputSchema = z
       .trim()
       .min(1, "Gi turen et navn.")
       .max(80, "Navnet kan ha maks 80 tegn."),
-    startDate: tripDaySchema,
-    endDate: tripDaySchema,
+    startDate: tripDaySchema("Velg en startdato."),
+    endDate: tripDaySchema("Velg en sluttdato."),
   })
   .refine((trip) => trip.endDate >= trip.startDate, {
     message: "Sluttdato kan ikke være før startdato.",

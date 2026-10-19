@@ -6,6 +6,7 @@ import {
   type TripTransaction,
   toTripCandidate,
   toTripListItem,
+  tripCostNok,
 } from "./summary";
 
 const LISBOA: Trip = {
@@ -136,6 +137,13 @@ describe("summarizeTrip", () => {
       beforeTrip: [],
       duringTrip: [],
     });
+  });
+});
+
+describe("tripCostNok", () => {
+  it("nets refunds and skips transfers, reading nothing as 0 rather than -0", () => {
+    expect(tripCostNok(MEMBERS)).toBe(6000);
+    expect(Object.is(tripCostNok([]), 0)).toBe(true);
   });
 });
 
