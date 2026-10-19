@@ -6,11 +6,13 @@ const {
   prismaMock,
   parseTransactionUpdatePayloadMock,
   updateTransactionMock,
+  findMissingUpdateReferenceMock,
   deleteTransactionMock,
 } = vi.hoisted(() => ({
   prismaMock: { _tag: "prisma-mock" },
   parseTransactionUpdatePayloadMock: vi.fn(),
   updateTransactionMock: vi.fn(),
+  findMissingUpdateReferenceMock: vi.fn(),
   deleteTransactionMock: vi.fn(),
 }));
 
@@ -21,6 +23,7 @@ vi.mock("@/lib/prisma", () => ({
 vi.mock("@/lib/transactions/write", () => ({
   parseTransactionUpdatePayload: parseTransactionUpdatePayloadMock,
   updateTransaction: updateTransactionMock,
+  findMissingUpdateReference: findMissingUpdateReferenceMock,
 }));
 
 vi.mock("@/lib/transactions/delete", () => ({
@@ -31,6 +34,8 @@ describe("PATCH /api/transactions/[transactionId]", () => {
   beforeEach(() => {
     parseTransactionUpdatePayloadMock.mockReset();
     updateTransactionMock.mockReset();
+    findMissingUpdateReferenceMock.mockReset();
+    findMissingUpdateReferenceMock.mockResolvedValue("category");
   });
 
   it("returns 400 when transactionId route param is invalid", async () => {
@@ -139,6 +144,32 @@ describe("PATCH /api/transactions/[transactionId]", () => {
 
     expect(response.status).toBe(status);
     await expect(response.json()).resolves.toEqual({ error, message });
+  });
+
+  it("maps a foreign-key failure on a missing trip to 404 TRIP_NOT_FOUND", async () => {
+    parseTransactionUpdatePayloadMock.mockReturnValue({
+      success: true,
+      data: { tripId: "gone" },
+    });
+    updateTransactionMock.mockRejectedValue({ code: "P2003" });
+    findMissingUpdateReferenceMock.mockResolvedValue("trip");
+
+    const response = await PATCH(
+      new Request("http://localhost", {
+        method: "PATCH",
+        body: JSON.stringify({ tripId: "gone" }),
+        headers: { "Content-Type": "application/json" },
+      }),
+      {
+        params: Promise.resolve({ transactionId: "tx-1" }),
+      },
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: "TRIP_NOT_FOUND",
+      message: "Fant ikke den valgte turen.",
+    });
   });
 
   it("rethrows unknown update errors", async () => {

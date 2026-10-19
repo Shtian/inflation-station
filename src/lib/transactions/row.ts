@@ -21,6 +21,7 @@ export const TRANSACTION_ROW_SELECT = {
   merchant: true,
   paymentType: true,
   note: true,
+  tripId: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.TransactionSelect;
@@ -43,6 +44,7 @@ export type TransactionRow = {
   merchant: string | null;
   paymentType: PaymentType;
   note: string | null;
+  tripId: string | null;
   /** ISO-8601 instant. */
   createdAt: string;
   /** ISO-8601 instant. */
@@ -63,6 +65,7 @@ export function toTransactionRow(record: TransactionRowRecord): TransactionRow {
     merchant: record.merchant,
     paymentType: record.paymentType,
     note: record.note,
+    tripId: record.tripId,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };

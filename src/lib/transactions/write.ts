@@ -1,4 +1,4 @@
-import { PaymentType, type Prisma } from "@prisma/client";
+import { PaymentType, type Prisma, type PrismaClient } from "@prisma/client";
 import { z } from "zod";
 import { parseIsoDate } from "../iso-date";
 import { toMerchantColumns } from "./merchant";
@@ -65,6 +65,7 @@ const MUTABLE_FIELD_KEYS = [
   "merchant",
   "paymentType",
   "note",
+  "tripId",
 ] as const;
 
 const transactionCreateSchema = z
@@ -87,6 +88,7 @@ const transactionUpdateSchema = z
     merchant: merchantSchema.optional(),
     paymentType: z.nativeEnum(PaymentType).optional(),
     note: noteTextSchema.nullable().optional(),
+    tripId: z.string().trim().min(1).nullable().optional(),
     id: z.never().optional(),
     accountId: z.never().optional(),
     createdAt: z.never().optional(),
@@ -151,8 +153,31 @@ export async function updateTransaction(
       amountNok: params.updates.amountNok,
       paymentType: params.updates.paymentType,
       note: params.updates.note,
+      tripId: params.updates.tripId,
       ...params.updates.merchant,
     },
     select: TRANSACTION_WRITE_SELECT,
   });
+}
+
+export type MissingUpdateReference = "trip" | "category";
+
+/**
+ * SQLite reports a foreign-key failure (P2003) without naming the column, so
+ * after one the caller asks which reference the update wrote that is gone.
+ */
+export async function findMissingUpdateReference(
+  db: Pick<PrismaClient, "trip">,
+  updates: Pick<TransactionUpdateIntent, "tripId">,
+): Promise<MissingUpdateReference> {
+  if (typeof updates.tripId !== "string") {
+    return "category";
+  }
+
+  const trip = await db.trip.findUnique({
+    where: { id: updates.tripId },
+    select: { id: true },
+  });
+
+  return trip ? "category" : "trip";
 }
