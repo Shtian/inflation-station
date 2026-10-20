@@ -137,6 +137,12 @@ test("updates dashboard charts when account and date filters change", async ({
 
   await expect(page.getByRole("heading", { name: "Oversikt" })).toBeVisible();
   await expect(
+    page.getByRole("heading", { name: "Forbruk per kategori" }),
+  ).toBeVisible();
+  await expect(page.getByRole("row", { name: /Food/ })).toBeVisible();
+
+  await page.getByRole("tab", { name: "Flyt", exact: true }).click();
+  await expect(
     page.getByRole("heading", { name: "Netto kontantstrøm" }),
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Inn og ut" })).toBeVisible();
@@ -148,13 +154,7 @@ test("updates dashboard charts when account and date filters change", async ({
   await expect(flowLegend.getByText("Inn", { exact: true })).toBeVisible();
   await expect(flowLegend.getByText("Ut", { exact: true })).toBeVisible();
   await expect(page.getByText(/200,00/).first()).toBeVisible();
-  await page.getByRole("tab", { name: "Kategori", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Forbruk per kategori" }),
-  ).toBeVisible();
-  await expect(page.getByText(/Food:\s/)).toBeVisible();
 
-  await page.getByRole("tab", { name: "Flyt", exact: true }).click();
   await page.getByRole("combobox", { name: "Kontofilter" }).click();
   await page
     .getByRole("option", { name: "Savings Account", exact: true })
@@ -167,5 +167,103 @@ test("updates dashboard charts when account and date filters change", async ({
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText(/960,00/).first()).toBeVisible();
   await page.getByRole("tab", { name: "Kategori", exact: true }).click();
-  await expect(page.getByText(/Utilities:\s/)).toBeVisible();
+  await expect(page.getByRole("row", { name: /Utilities/ })).toBeVisible();
+});
+
+test("hides a category from the totals and shows it again", async ({
+  page,
+}) => {
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [
+          {
+            id: "acc-1",
+            name: "Main Account",
+            institution: "DNB",
+            isActive: true,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/dashboard/analytics**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        filters: {
+          accountId: null,
+          startDate: "2026-01-01",
+          endDate: "2026-01-31",
+        },
+        netCashflow: [],
+        inflowOutflow: [],
+        categoryBreakdown: [
+          {
+            categoryId: "cat-car",
+            categoryName: "Car",
+            spendNok: 6000,
+            transactionCount: 1,
+          },
+          {
+            categoryId: "cat-food",
+            categoryName: "Food",
+            spendNok: 3000,
+            transactionCount: 12,
+          },
+          {
+            categoryId: "cat-transport",
+            categoryName: "Transport",
+            spendNok: 1000,
+            transactionCount: 4,
+          },
+        ],
+        accountTrend: [],
+      }),
+    });
+  });
+
+  await page.goto("/");
+
+  const carRow = page.getByRole("row", { name: /Car/ });
+  await expect(page.getByText(/10\s000\skr brukt i perioden/)).toBeVisible();
+  await expect(carRow).toBeVisible();
+
+  await carRow.hover();
+  await page.getByRole("button", { name: "Skjul Car" }).click();
+
+  await expect(carRow).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Vis Car" })).toBeVisible();
+  await expect(page.getByText(/4\s000\skr brukt i perioden/)).toBeVisible();
+  await expect(
+    page.getByText(/1 kategori skjult \(6\s000\skr\)/),
+  ).toBeVisible();
+  await expect(page.getByRole("row", { name: /Food.*75\s%/ })).toBeVisible();
+
+  await page.getByRole("button", { name: "Vis Car" }).click();
+
+  await expect(carRow).toBeVisible();
+  await expect(page.getByRole("button", { name: "Vis Car" })).toHaveCount(0);
+  await expect(page.getByText(/10\s000\skr brukt i perioden/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Andelskart" }).click();
+  await page.getByRole("button", { name: "Skjul Transport" }).click();
+
+  await expect(
+    page.getByRole("button", { name: "Skjul Transport" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText(/1 kategori skjult \(1\s000\skr\)/),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Vis alle" }).click();
+
+  await expect(
+    page.getByRole("button", { name: "Skjul Transport" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Vis alle" })).toHaveCount(0);
 });

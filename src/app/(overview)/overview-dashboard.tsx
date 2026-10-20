@@ -196,11 +196,19 @@ export function OverviewDashboard() {
 
       <Separator className="my-4" />
 
-      <Tabs defaultValue="flow" className="space-y-4">
+      <Tabs defaultValue="category" className="space-y-4">
         <TabsList variant="line">
-          <TabsTrigger value="flow">Flyt</TabsTrigger>
           <TabsTrigger value="category">Kategori</TabsTrigger>
+          <TabsTrigger value="flow">Flyt</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="category" className="space-y-4">
+          <CategorySpendBreakdownCard
+            isLoading={dashboardLoading}
+            categoryBreakdown={dashboardData?.categoryBreakdown}
+            filterKey={`${dashboardAccountId}|${dashboardStartDate}|${dashboardEndDate}`}
+          />
+        </TabsContent>
 
         <TabsContent value="flow" className="space-y-4">
           <NetCashflowCard
@@ -214,13 +222,6 @@ export function OverviewDashboard() {
           <AccountStateTrendCard
             isLoading={dashboardLoading}
             accountTrend={dashboardData?.accountTrend}
-          />
-        </TabsContent>
-
-        <TabsContent value="category" className="space-y-4">
-          <CategorySpendBreakdownCard
-            isLoading={dashboardLoading}
-            categoryBreakdown={dashboardData?.categoryBreakdown}
           />
         </TabsContent>
       </Tabs>
