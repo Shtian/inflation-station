@@ -240,8 +240,8 @@ describe("POST /api/assistant/chat options", () => {
     vi.unstubAllEnvs();
   });
 
-  function reasoningEffortSent(mock: MockLanguageModelV3) {
-    return mock.doStreamCalls[0]?.providerOptions?.openai?.reasoningEffort;
+  function openAIOptionsSent(mock: MockLanguageModelV3) {
+    return mock.doStreamCalls[0]?.providerOptions?.openai;
   }
 
   it("answers with the chosen model and reasoning effort", async () => {
@@ -259,7 +259,10 @@ describe("POST /api/assistant/chat options", () => {
     await response.text();
 
     expect(responsesModelIds).toEqual(["gpt-5.4"]);
-    expect(reasoningEffortSent(mock)).toBe("high");
+    expect(openAIOptionsSent(mock)).toEqual({
+      reasoningEffort: "high",
+      forceReasoning: true,
+    });
   });
 
   it("tells the client when the model rejects the reasoning effort", async () => {
@@ -309,7 +312,10 @@ describe("POST /api/assistant/chat options", () => {
     await response.text();
 
     expect(responsesModelIds).toEqual(["gpt-6-luna"]);
-    expect(reasoningEffortSent(mock)).toBe("none");
+    expect(openAIOptionsSent(mock)).toEqual({
+      reasoningEffort: "none",
+      forceReasoning: true,
+    });
   });
 
   it("accepts the default model even when OpenAI does not list it", async () => {
