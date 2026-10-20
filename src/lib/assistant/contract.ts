@@ -1,11 +1,60 @@
 import type { InferUITools, UIMessage } from "ai";
 import { z } from "zod";
+import {
+  REASONING_EFFORTS,
+  type ReasoningEffort,
+} from "@/lib/monthly-review/reasoning-effort-registry";
 import type { OnboardingDisabledReason } from "@/lib/onboarding/contract";
 import { UNCATEGORIZED_VALUE } from "@/lib/transactions/category-filter";
 import type { createAssistantTools } from "./agent";
 import { SEARCH_LIMIT_MAX } from "./search";
 
 export const ASSISTANT_CHAT_ENDPOINT = "/api/assistant/chat";
+
+export const DEFAULT_ASSISTANT_REASONING_EFFORT: ReasoningEffort = "none";
+
+export const assistantChatOptionsSchema = z.object({
+  modelId: z.string().trim().min(1),
+  reasoningEffort: z.enum(
+    REASONING_EFFORTS.map((effort) => effort.id) as [
+      ReasoningEffort,
+      ...ReasoningEffort[],
+    ],
+  ),
+});
+
+export type AssistantChatOptions = z.infer<typeof assistantChatOptionsSchema>;
+
+export function readStoredAssistantChatOptions(
+  stored: string | null,
+  models: { availableModels: readonly string[]; defaultModelId: string },
+): AssistantChatOptions {
+  const fallback: AssistantChatOptions = {
+    modelId: models.defaultModelId,
+    reasoningEffort: DEFAULT_ASSISTANT_REASONING_EFFORT,
+  };
+  if (stored === null) {
+    return fallback;
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(stored);
+  } catch {
+    return fallback;
+  }
+  const parsed = assistantChatOptionsSchema.safeParse(raw);
+  if (!parsed.success) {
+    return fallback;
+  }
+
+  return {
+    modelId: models.availableModels.includes(parsed.data.modelId)
+      ? parsed.data.modelId
+      : models.defaultModelId,
+    reasoningEffort: parsed.data.reasoningEffort,
+  };
+}
 
 const isoDate = z
   .string()
@@ -52,3 +101,9 @@ export type AssistantUITools = InferUITools<
 export type AssistantUIMessage = UIMessage<never, never, AssistantUITools>;
 
 export type AssistantDisabledReason = OnboardingDisabledReason;
+
+export type AssistantChatAvailability = {
+  disabledReason: AssistantDisabledReason | null;
+  availableModels: string[];
+  defaultModelId: string;
+};
