@@ -3,10 +3,14 @@ import { MockLanguageModelV3 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "./route";
 
-const { saveMock, model } = vi.hoisted(() => ({
-  saveMock: vi.fn(),
-  model: { current: undefined as unknown },
-}));
+const { saveMock, model, responsesModelIds, listChatModelsMock } = vi.hoisted(
+  () => ({
+    saveMock: vi.fn(),
+    model: { current: undefined as unknown },
+    responsesModelIds: [] as string[],
+    listChatModelsMock: vi.fn(),
+  }),
+);
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
@@ -16,7 +20,17 @@ vi.mock("@/lib/assistant/threads", async (importOriginal) => ({
 }));
 
 vi.mock("@ai-sdk/openai", () => ({
-  createOpenAI: () => ({ chat: () => model.current }),
+  createOpenAI: () => ({
+    responses: (modelId: string) => {
+      responsesModelIds.push(modelId);
+      return model.current;
+    },
+  }),
+}));
+
+vi.mock("@/lib/openai/chat-models", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/openai/chat-models")>()),
+  listChatModels: listChatModelsMock,
 }));
 
 const QUESTION = {
@@ -196,22 +210,140 @@ describe("POST /api/assistant/chat", () => {
   });
 });
 
-describe("GET /api/assistant/chat", () => {
+describe("POST /api/assistant/chat options", () => {
+  beforeEach(() => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    saveMock.mockReset();
+    responsesModelIds.length = 0;
+    listChatModelsMock.mockResolvedValue({
+      source: "openai",
+      ids: ["gpt-6", "gpt-5.4"],
+    });
+  });
+
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
-  it("reports the chat as available when a key is set", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
+  function reasoningEffortSent(mock: MockLanguageModelV3) {
+    return mock.doStreamCalls[0]?.providerOptions?.openai?.reasoningEffort;
+  }
 
-    await expect(GET().json()).resolves.toEqual({ disabledReason: null });
+  it("answers with the chosen model and reasoning effort", async () => {
+    const mock = answeringModel("Mest på dagligvarer.");
+    model.current = mock;
+
+    const response = await post(
+      JSON.stringify({
+        id: "thread-1",
+        messages: [QUESTION],
+        modelId: "gpt-5.4",
+        reasoningEffort: "high",
+      }),
+    );
+    await response.text();
+
+    expect(responsesModelIds).toEqual(["gpt-5.4"]);
+    expect(reasoningEffortSent(mock)).toBe("high");
   });
 
-  it("reports key_missing when the key is blank", async () => {
+  it("answers with the default model and no reasoning when options are missing", async () => {
+    const mock = answeringModel("Mest på dagligvarer.");
+    model.current = mock;
+
+    const response = await post(
+      JSON.stringify({ id: "thread-1", messages: [QUESTION] }),
+    );
+    await response.text();
+
+    expect(responsesModelIds).toEqual(["gpt-6-luna"]);
+    expect(reasoningEffortSent(mock)).toBe("none");
+  });
+
+  it("accepts the default model even when OpenAI does not list it", async () => {
+    const mock = answeringModel("Mest på dagligvarer.");
+    model.current = mock;
+
+    const response = await post(
+      JSON.stringify({
+        id: "thread-1",
+        messages: [QUESTION],
+        modelId: "gpt-6-luna",
+        reasoningEffort: "low",
+      }),
+    );
+    await response.text();
+
+    expect(response.status).toBe(200);
+    expect(responsesModelIds).toEqual(["gpt-6-luna"]);
+  });
+
+  it("answers 400 for an unknown reasoning effort", async () => {
+    const response = await post(
+      JSON.stringify({
+        id: "thread-1",
+        messages: [QUESTION],
+        reasoningEffort: "max",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_ASSISTANT_OPTIONS",
+      message: "Modellen eller tenkenivået er ikke gyldig.",
+    });
+    expect(saveMock).not.toHaveBeenCalled();
+  });
+
+  it("answers 400 for a model OpenAI does not offer", async () => {
+    const response = await post(
+      JSON.stringify({
+        id: "thread-1",
+        messages: [QUESTION],
+        modelId: "gpt-3.5-turbo",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_ASSISTANT_OPTIONS",
+      message: "Modellen gpt-3.5-turbo er ikke tilgjengelig.",
+    });
+    expect(responsesModelIds).toEqual([]);
+  });
+});
+
+describe("GET /api/assistant/chat", () => {
+  beforeEach(() => {
+    listChatModelsMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("offers OpenAI's chat models with the default first when a key is set", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    listChatModelsMock.mockResolvedValue({
+      source: "openai",
+      ids: ["gpt-6", "gpt-5.4"],
+    });
+
+    await expect((await GET()).json()).resolves.toEqual({
+      disabledReason: null,
+      availableModels: ["gpt-6-luna", "gpt-6", "gpt-5.4"],
+      defaultModelId: "gpt-6-luna",
+    });
+  });
+
+  it("reports key_missing and offers only the default when the key is blank", async () => {
     vi.stubEnv("OPENAI_API_KEY", " ");
 
-    await expect(GET().json()).resolves.toEqual({
+    await expect((await GET()).json()).resolves.toEqual({
       disabledReason: "key_missing",
+      availableModels: ["gpt-6-luna"],
+      defaultModelId: "gpt-6-luna",
     });
+    expect(listChatModelsMock).not.toHaveBeenCalled();
   });
 });
