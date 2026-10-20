@@ -89,6 +89,9 @@ function describeChatError(error: Error): string {
   if (error.message.includes("INVALID_ASSISTANT_OPTIONS")) {
     return "Modellen eller tenkenivået er ikke gyldig. Velg på nytt.";
   }
+  if (error.message.includes("UNSUPPORTED_REASONING_EFFORT")) {
+    return "Modellen støtter ikke dette tenkenivået. Velg et annet.";
+  }
   return "Fikk ikke svar fra chatten.";
 }
 

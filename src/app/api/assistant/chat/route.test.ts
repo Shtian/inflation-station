@@ -1,4 +1,4 @@
-import { simulateReadableStream } from "ai";
+import { APICallError, simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GET, POST } from "./route";
@@ -245,6 +245,43 @@ describe("POST /api/assistant/chat options", () => {
 
     expect(responsesModelIds).toEqual(["gpt-5.4"]);
     expect(reasoningEffortSent(mock)).toBe("high");
+  });
+
+  it("tells the client when the model rejects the reasoning effort", async () => {
+    model.current = new MockLanguageModelV3({
+      doStream: async () => {
+        throw new APICallError({
+          message:
+            "Unsupported value: 'none' is not supported with the 'o3' model.",
+          url: "https://api.openai.com/v1/responses",
+          requestBodyValues: {},
+          statusCode: 400,
+          responseBody: JSON.stringify({
+            error: {
+              message:
+                "Unsupported value: 'none' is not supported with the 'o3' model.",
+              type: "invalid_request_error",
+              param: "reasoning.effort",
+              code: "unsupported_value",
+            },
+          }),
+        });
+      },
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const response = await post(
+      JSON.stringify({
+        id: "thread-1",
+        messages: [QUESTION],
+        modelId: "gpt-6-luna",
+        reasoningEffort: "none",
+      }),
+    );
+
+    expect(await response.text()).toContain(
+      '"errorText":"UNSUPPORTED_REASONING_EFFORT"',
+    );
   });
 
   it("answers with the default model and no reasoning when options are missing", async () => {

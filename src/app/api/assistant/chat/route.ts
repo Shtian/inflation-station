@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import {
+  APICallError,
   consumeStream,
   convertToModelMessages,
   createUIMessageStreamResponse,
@@ -9,6 +10,7 @@ import {
   streamText,
 } from "ai";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import {
   ASSISTANT_AGENT_MODEL,
   buildAssistantSystemPrompt,
@@ -42,6 +44,26 @@ function invalidMessages(message: string) {
     { error: "INVALID_ASSISTANT_MESSAGES", message },
     { status: 400 },
   );
+}
+
+// Which efforts a model takes varies and OpenAI's model list does not say, so
+// the rejection is the only signal the client can act on.
+const openAIErrorBodySchema = z.object({
+  error: z.object({ param: z.string().nullish() }),
+});
+
+function rejectsReasoningEffort(error: unknown): boolean {
+  if (!APICallError.isInstance(error) || !error.responseBody) {
+    return false;
+  }
+  try {
+    const body = openAIErrorBodySchema.safeParse(
+      JSON.parse(error.responseBody),
+    );
+    return body.success && body.data.error.param === "reasoning.effort";
+  } catch {
+    return false;
+  }
 }
 
 function invalidOptions(message: string) {
@@ -156,7 +178,9 @@ export async function POST(request: Request) {
     },
     onError: (error) => {
       console.error("Assistant chat failed", error);
-      return "Spør fikk et problem.";
+      return rejectsReasoningEffort(error)
+        ? "UNSUPPORTED_REASONING_EFFORT"
+        : "Spør fikk et problem.";
     },
   });
   // Cancelling a response body aborts the stream it reads, which would save a
