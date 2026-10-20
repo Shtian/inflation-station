@@ -102,8 +102,14 @@ export type AssistantUIMessage = UIMessage<never, never, AssistantUITools>;
 
 export type AssistantDisabledReason = OnboardingDisabledReason;
 
-export type AssistantChatAvailability = {
-  disabledReason: AssistantDisabledReason | null;
-  availableModels: string[];
-  defaultModelId: string;
-};
+export const assistantChatAvailabilitySchema = z.object({
+  disabledReason: (
+    z.literal("key_missing") satisfies z.ZodType<AssistantDisabledReason>
+  ).nullable(),
+  availableModels: z.array(z.string()),
+  defaultModelId: z.string(),
+});
+
+export type AssistantChatAvailability = z.infer<
+  typeof assistantChatAvailabilitySchema
+>;

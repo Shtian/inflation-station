@@ -22,13 +22,25 @@ async function stubAssistant(
   {
     disabledReason,
     toolChunks = [],
-  }: { disabledReason: "key_missing" | null; toolChunks?: unknown[] },
+    onPost,
+  }: {
+    disabledReason: "key_missing" | null;
+    toolChunks?: unknown[];
+    onPost?: (body: Record<string, unknown>) => void;
+  },
 ) {
   await page.route("**/api/assistant/chat", async (route) => {
     if (route.request().method() === "GET") {
-      await route.fulfill({ json: { disabledReason } });
+      await route.fulfill({
+        json: {
+          disabledReason,
+          availableModels: ["gpt-6-luna", "gpt-6"],
+          defaultModelId: "gpt-6-luna",
+        },
+      });
       return;
     }
+    onPost?.(route.request().postDataJSON());
     await route.fulfill({
       status: 200,
       headers: {
@@ -85,6 +97,53 @@ test("streams an answer to an example question into the conversation", async ({
   await expect(conversation.getByText(QUESTION)).toBeVisible();
   await expect(conversation.getByText(ANSWER)).toBeVisible();
   await expect(page.getByRole("button", { name: QUESTION })).toHaveCount(0);
+});
+
+test("sends the chosen model and thinking level and keeps them after a reload", async ({
+  page,
+}) => {
+  const postedBodies: Record<string, unknown>[] = [];
+  await stubAssistant(page, {
+    disabledReason: null,
+    onPost: (body) => postedBodies.push(body),
+  });
+
+  await page.goto("/assistant");
+
+  const modelPicker = page.getByRole("combobox", { name: "Velg modell" });
+  const effortPicker = page.getByRole("combobox", { name: "Velg tenkenivå" });
+  await expect(modelPicker.locator("[data-slot=select-value]")).toHaveText(
+    "gpt-6-luna",
+  );
+  await expect(effortPicker.locator("[data-slot=select-value]")).toHaveText(
+    "Ingen",
+  );
+
+  await modelPicker.click();
+  await page.getByRole("option", { name: "gpt-6", exact: true }).click();
+  await effortPicker.click();
+  await page.getByRole("option", { name: "Høy", exact: true }).click();
+  await page.getByRole("button", { name: QUESTION }).click();
+
+  await expect(
+    page
+      .getByRole("region", { name: "Samtale om forbruket ditt" })
+      .getByText(ANSWER),
+  ).toBeVisible();
+  expect(postedBodies).toHaveLength(1);
+  expect(postedBodies[0]).toMatchObject({
+    modelId: "gpt-6",
+    reasoningEffort: "high",
+  });
+
+  await page.reload();
+
+  await expect(modelPicker.locator("[data-slot=select-value]")).toHaveText(
+    "gpt-6",
+  );
+  await expect(effortPicker.locator("[data-slot=select-value]")).toHaveText(
+    "Høy",
+  );
 });
 
 async function holdAssistantStream(page: Page) {

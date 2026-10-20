@@ -20,6 +20,11 @@ import {
 import {
   PromptInput,
   PromptInputFooter,
+  PromptInputSelect,
+  PromptInputSelectContent,
+  PromptInputSelectItem,
+  PromptInputSelectTrigger,
+  PromptInputSelectValue,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
@@ -29,9 +34,13 @@ import { Button } from "@/components/ui/button";
 import { getAssistantChatStatus } from "@/lib/assistant/chat-status";
 import {
   ASSISTANT_CHAT_ENDPOINT,
-  type AssistantDisabledReason,
+  type AssistantChatAvailability,
+  type AssistantChatOptions,
   type AssistantUIMessage,
+  assistantChatAvailabilitySchema,
+  readStoredAssistantChatOptions,
 } from "@/lib/assistant/contract";
+import { REASONING_EFFORTS } from "@/lib/monthly-review/reasoning-effort-registry";
 import { cn } from "@/lib/utils";
 import { deriveTransactionLinks } from "./transaction-links";
 
@@ -41,15 +50,22 @@ const SUGGESTIONS = [
   "Hva var de største kjøpene mine de siste 30 dagene?",
 ];
 
+const CHAT_OPTIONS_STORAGE_KEY = "assistant-chat-options";
+
+const REASONING_EFFORT_ITEMS = REASONING_EFFORTS.map((effort) => ({
+  value: effort.id,
+  label: effort.label,
+}));
+
 type Availability =
   | { status: "loading" }
   | { status: "error" }
-  | { status: "ready"; disabledReason: AssistantDisabledReason | null };
+  | ({ status: "ready" } & AssistantChatAvailability);
 
 const transport = new DefaultChatTransport<AssistantUIMessage>({
   api: ASSISTANT_CHAT_ENDPOINT,
-  prepareSendMessagesRequest: ({ id, messages }) => ({
-    body: { id, messages },
+  prepareSendMessagesRequest: ({ id, messages, body }) => ({
+    body: { ...body, id, messages },
   }),
 });
 
@@ -58,12 +74,20 @@ type ThreadProps = {
   initialMessages: AssistantUIMessage[];
 };
 
+type ModelChoices = Pick<
+  AssistantChatAvailability,
+  "availableModels" | "defaultModelId"
+>;
+
 function describeChatError(error: Error): string {
   if (error.message.includes("ASSISTANT_UNAVAILABLE")) {
     return "Chatten er ikke tilgjengelig på denne serveren akkurat nå.";
   }
   if (error.message.includes("INVALID_ASSISTANT_MESSAGES")) {
     return "Samtalen kunne ikke leses. Start en ny samtale.";
+  }
+  if (error.message.includes("INVALID_ASSISTANT_OPTIONS")) {
+    return "Modellen eller tenkenivået er ikke gyldig. Velg på nytt.";
   }
   return "Fikk ikke svar fra chatten.";
 }
@@ -77,12 +101,12 @@ function useAvailability() {
     setAvailability({ status: "loading" });
     try {
       const response = await fetch(ASSISTANT_CHAT_ENDPOINT);
-      const body = (await response.json()) as {
-        disabledReason?: AssistantDisabledReason | null;
-      };
+      const body = assistantChatAvailabilitySchema.safeParse(
+        await response.json(),
+      );
       setAvailability(
-        response.ok && body.disabledReason !== undefined
-          ? { status: "ready", disabledReason: body.disabledReason }
+        response.ok && body.success
+          ? { status: "ready", ...body.data }
           : { status: "error" },
       );
     } catch {
@@ -152,9 +176,98 @@ function AssistantMessage({
   );
 }
 
-function AssistantConversation({ threadId, initialMessages }: ThreadProps) {
+function useChatOptions({ availableModels, defaultModelId }: ModelChoices) {
+  // The conversation mounts only after the availability fetch, so this never
+  // runs in the server render.
+  const [options, setOptions] = useState<AssistantChatOptions>(() =>
+    readStoredAssistantChatOptions(
+      window.localStorage.getItem(CHAT_OPTIONS_STORAGE_KEY),
+      { availableModels, defaultModelId },
+    ),
+  );
+
+  function updateOptions(change: Partial<AssistantChatOptions>) {
+    const next = { ...options, ...change };
+    setOptions(next);
+    window.localStorage.setItem(CHAT_OPTIONS_STORAGE_KEY, JSON.stringify(next));
+  }
+
+  return { options, updateOptions };
+}
+
+function ChatOptionsPicker({
+  availableModels,
+  options,
+  onChange,
+}: {
+  availableModels: string[];
+  options: AssistantChatOptions;
+  onChange: (change: Partial<AssistantChatOptions>) => void;
+}) {
+  return (
+    <>
+      <PromptInputSelect
+        items={availableModels.map((modelId) => ({
+          value: modelId,
+          label: modelId,
+        }))}
+        value={options.modelId}
+        onValueChange={(value) => {
+          if (typeof value === "string" && availableModels.includes(value)) {
+            onChange({ modelId: value });
+          }
+        }}
+      >
+        <PromptInputSelectTrigger size="sm" aria-label="Velg modell">
+          <PromptInputSelectValue />
+        </PromptInputSelectTrigger>
+        <PromptInputSelectContent>
+          {availableModels.map((modelId) => (
+            <PromptInputSelectItem key={modelId} value={modelId}>
+              {modelId}
+            </PromptInputSelectItem>
+          ))}
+        </PromptInputSelectContent>
+      </PromptInputSelect>
+      <PromptInputSelect
+        items={REASONING_EFFORT_ITEMS}
+        value={options.reasoningEffort}
+        onValueChange={(value) => {
+          const effort = REASONING_EFFORT_ITEMS.find(
+            (item) => item.value === value,
+          );
+          if (effort) {
+            onChange({ reasoningEffort: effort.value });
+          }
+        }}
+      >
+        <PromptInputSelectTrigger size="sm" aria-label="Velg tenkenivå">
+          <PromptInputSelectValue />
+        </PromptInputSelectTrigger>
+        <PromptInputSelectContent>
+          {REASONING_EFFORT_ITEMS.map((effort) => (
+            <PromptInputSelectItem key={effort.value} value={effort.value}>
+              {effort.label}
+            </PromptInputSelectItem>
+          ))}
+        </PromptInputSelectContent>
+      </PromptInputSelect>
+    </>
+  );
+}
+
+function AssistantConversation({
+  threadId,
+  initialMessages,
+  availableModels,
+  defaultModelId,
+}: ThreadProps & ModelChoices) {
   const router = useRouter();
   const [input, setInput] = useState("");
+  const { options, updateOptions } = useChatOptions({
+    availableModels,
+    defaultModelId,
+  });
 
   const { messages, sendMessage, status, error, stop, regenerate } =
     useChat<AssistantUIMessage>({
@@ -177,7 +290,7 @@ function AssistantConversation({ threadId, initialMessages }: ThreadProps) {
     ) {
       window.history.replaceState(null, "", `?thread=${threadId}`);
     }
-    void sendMessage({ text });
+    void sendMessage({ text }, { body: options });
     setInput("");
   }
 
@@ -234,7 +347,7 @@ function AssistantConversation({ threadId, initialMessages }: ThreadProps) {
               <Button
                 size="xs"
                 variant="outline"
-                onClick={() => void regenerate()}
+                onClick={() => void regenerate({ body: options })}
               >
                 <RotateCcw />
                 Prøv igjen
@@ -261,7 +374,13 @@ function AssistantConversation({ threadId, initialMessages }: ThreadProps) {
             className="max-h-32 min-h-12"
           />
           <PromptInputFooter>
-            <PromptInputTools />
+            <PromptInputTools>
+              <ChatOptionsPicker
+                availableModels={availableModels}
+                options={options}
+                onChange={updateOptions}
+              />
+            </PromptInputTools>
             <PromptInputSubmit
               status={busy ? status : undefined}
               onStop={() => void stop()}
@@ -342,6 +461,8 @@ export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
       key={threadId}
       threadId={threadId}
       initialMessages={initialMessages}
+      availableModels={availability.availableModels}
+      defaultModelId={availability.defaultModelId}
     />
   );
 }
