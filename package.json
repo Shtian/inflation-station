@@ -22,7 +22,7 @@
     "db:reset": "prisma migrate reset --force"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.30",
+    "@ai-sdk/openai": "^3.0.130",
     "@ai-sdk/react": "^3.0.306",
     "@base-ui/react": "^1.2.0",
     "@prisma/adapter-better-sqlite3": "^7.4.0",

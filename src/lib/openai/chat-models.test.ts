@@ -325,6 +325,24 @@ describe("listChatModels", () => {
     await expect(listChatModels()).resolves.toEqual({ source: "unavailable" });
   });
 
+  it("applies each caller's selector to the cached models", async () => {
+    stubFetch(() => Response.json(modelsResponse));
+    const listChatModels = await listChatModelsFresh();
+    await listChatModels();
+
+    stubFetch(() => Promise.reject(new TypeError("fetch failed")));
+    await expect(
+      listChatModels((models) =>
+        models
+          .filter((model) => model.id.startsWith("gpt-6"))
+          .map((model) => model.id),
+      ),
+    ).resolves.toEqual({
+      source: "openai",
+      ids: ["gpt-6.1-sol", "gpt-6-luna", "gpt-6-astra"],
+    });
+  });
+
   it("is unavailable when OpenAI answers with a non-2xx status, and retries next time", async () => {
     stubFetch(() => Response.json({ error: "nope" }, { status: 401 }));
     const listChatModels = await listChatModelsFresh();
