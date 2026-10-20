@@ -40,14 +40,14 @@ test("renders overview dashboard sections at /", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Oversikt" })).toBeVisible();
   await expect(
+    page.getByRole("heading", { name: "Forbruk per kategori" }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "Flyt", exact: true }).click();
+  await expect(
     page.getByRole("heading", { name: "Netto kontantstrøm" }),
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "Inn og ut" })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Kontoutvikling" }),
-  ).toBeVisible();
-  await page.getByRole("tab", { name: "Kategori", exact: true }).click();
-  await expect(
-    page.getByRole("heading", { name: "Forbruk per kategori" }),
   ).toBeVisible();
 });
