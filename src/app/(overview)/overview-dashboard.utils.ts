@@ -15,6 +15,30 @@ export function formatCompactNok(value: number) {
   }).format(value);
 }
 
+export function formatWholeNok(value: number) {
+  return formatNok(value, { whole: true });
+}
+
+export function formatPercent(ratio: number, fractionDigits = 0) {
+  return new Intl.NumberFormat("nb-NO", {
+    style: "percent",
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(ratio);
+}
+
+const nameListFormatter = new Intl.ListFormat("nb-NO", {
+  type: "conjunction",
+});
+
+export function formatNameList(names: string[]) {
+  return nameListFormatter.format(names);
+}
+
+export function formatCount(count: number, singular: string, plural: string) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 export function formatTooltipNok(value: unknown) {
   if (typeof value === "number") {
     return formatNok(value);
