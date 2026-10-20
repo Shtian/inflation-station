@@ -23,6 +23,7 @@ import {
   assistantChatOptionsSchema,
   DEFAULT_ASSISTANT_REASONING_EFFORT,
 } from "@/lib/assistant/contract";
+import { selectAssistantModelIds } from "@/lib/assistant/models";
 import {
   assistantThreadIdSchema,
   saveAssistantThreadMessages,
@@ -76,7 +77,9 @@ function invalidOptions(message: string) {
 export async function GET() {
   const disabledReason = resolveAssistantDisabledReason();
   const { availableModels } = toSelectableChatModels(
-    disabledReason ? { source: "unavailable" } : await listChatModels(),
+    disabledReason
+      ? { source: "unavailable" }
+      : await listChatModels(selectAssistantModelIds),
     {
       resolvedModelId: ASSISTANT_AGENT_MODEL,
       defaultModelId: ASSISTANT_AGENT_MODEL,
@@ -129,7 +132,7 @@ export async function POST(request: Request) {
   // GET always offers the default, even when OpenAI's list leaves it out.
   if (
     modelId !== ASSISTANT_AGENT_MODEL &&
-    !acceptsChatModel(await listChatModels(), modelId)
+    !acceptsChatModel(await listChatModels(selectAssistantModelIds), modelId)
   ) {
     return invalidOptions(`Modellen ${modelId} er ikke tilgjengelig.`);
   }

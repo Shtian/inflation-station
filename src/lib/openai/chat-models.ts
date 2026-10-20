@@ -64,11 +64,18 @@ export function selectChatModelIds(
     .map((model) => model.id);
 }
 
-let cachedList: { ids: string[]; expiresAt: number } | null = null;
+export type ChatModelSelector = (
+  models: readonly OpenAIModel[],
+  today: Date,
+) => string[];
 
-export async function listChatModels(): Promise<ChatModelList> {
+let cachedList: { models: OpenAIModel[]; expiresAt: number } | null = null;
+
+export async function listChatModels(
+  select: ChatModelSelector = selectChatModelIds,
+): Promise<ChatModelList> {
   if (cachedList && cachedList.expiresAt > Date.now()) {
-    return { source: "openai", ids: cachedList.ids };
+    return { source: "openai", ids: select(cachedList.models, new Date()) };
   }
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -90,9 +97,9 @@ export async function listChatModels(): Promise<ChatModelList> {
       return { source: "unavailable" };
     }
 
-    const ids = selectChatModelIds(parsed.data.data, new Date());
-    cachedList = { ids, expiresAt: Date.now() + MODEL_LIST_TTL_MS };
-    return { source: "openai", ids };
+    const models = parsed.data.data;
+    cachedList = { models, expiresAt: Date.now() + MODEL_LIST_TTL_MS };
+    return { source: "openai", ids: select(models, new Date()) };
   } catch {
     return { source: "unavailable" };
   }

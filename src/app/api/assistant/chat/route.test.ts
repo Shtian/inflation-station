@@ -1,6 +1,7 @@
 import { APICallError, simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { selectAssistantModelIds } from "@/lib/assistant/models";
 import { GET, POST } from "./route";
 
 const { saveMock, model, responsesModelIds, listChatModelsMock } = vi.hoisted(
@@ -13,6 +14,23 @@ const { saveMock, model, responsesModelIds, listChatModelsMock } = vi.hoisted(
 );
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+
+function listOpenAIModels(select: typeof selectAssistantModelIds) {
+  const now = new Date();
+  const daysAgo = (days: number) =>
+    Math.floor(now.getTime() / 1000) - days * 24 * 60 * 60;
+  return Promise.resolve({
+    source: "openai",
+    ids: select(
+      [
+        { id: "gpt-6", created: daysAgo(10), shutdown_date: null },
+        { id: "gpt-6-pro", created: daysAgo(10), shutdown_date: null },
+        { id: "gpt-5.4", created: daysAgo(100), shutdown_date: null },
+      ],
+      now,
+    ),
+  });
+}
 
 vi.mock("@/lib/assistant/threads", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/assistant/threads")>()),
@@ -215,10 +233,7 @@ describe("POST /api/assistant/chat options", () => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
     saveMock.mockReset();
     responsesModelIds.length = 0;
-    listChatModelsMock.mockResolvedValue({
-      source: "openai",
-      ids: ["gpt-6", "gpt-5.4"],
-    });
+    listChatModelsMock.mockImplementation(listOpenAIModels);
   });
 
   afterEach(() => {
@@ -348,6 +363,22 @@ describe("POST /api/assistant/chat options", () => {
     });
     expect(responsesModelIds).toEqual([]);
   });
+
+  it("answers 400 for an OpenAI model the assistant leaves out", async () => {
+    const response = await post(
+      JSON.stringify({
+        id: "thread-1",
+        messages: [QUESTION],
+        modelId: "gpt-6-pro",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_ASSISTANT_OPTIONS",
+      message: "Modellen gpt-6-pro er ikke tilgjengelig.",
+    });
+  });
 });
 
 describe("GET /api/assistant/chat", () => {
@@ -359,12 +390,9 @@ describe("GET /api/assistant/chat", () => {
     vi.unstubAllEnvs();
   });
 
-  it("offers OpenAI's chat models with the default first when a key is set", async () => {
+  it("offers the assistant's OpenAI models with the default first when a key is set", async () => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
-    listChatModelsMock.mockResolvedValue({
-      source: "openai",
-      ids: ["gpt-6", "gpt-5.4"],
-    });
+    listChatModelsMock.mockImplementation(listOpenAIModels);
 
     await expect((await GET()).json()).resolves.toEqual({
       disabledReason: null,
