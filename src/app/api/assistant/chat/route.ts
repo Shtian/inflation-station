@@ -166,9 +166,9 @@ export async function POST(request: Request) {
     // their ids, a retry after a tool error, and the answer.
     stopWhen: stepCountIs(6),
     maxRetries: 0,
-    // The SDK only knows o-series and gpt-5 as reasoning models and silently
-    // drops the effort for newer ones such as gpt-6-luna.
-    providerOptions: { openai: { reasoningEffort, forceReasoning: true } },
+    // The Responses API keeps conversations on OpenAI unless told not to, and
+    // the app already saves its own threads.
+    providerOptions: { openai: { reasoningEffort, store: false } },
   });
 
   const stream = result.toUIMessageStream({

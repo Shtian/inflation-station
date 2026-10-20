@@ -261,7 +261,7 @@ describe("POST /api/assistant/chat options", () => {
     expect(responsesModelIds).toEqual(["gpt-5.4"]);
     expect(openAIOptionsSent(mock)).toEqual({
       reasoningEffort: "high",
-      forceReasoning: true,
+      store: false,
     });
   });
 
@@ -314,7 +314,7 @@ describe("POST /api/assistant/chat options", () => {
     expect(responsesModelIds).toEqual(["gpt-6-luna"]);
     expect(openAIOptionsSent(mock)).toEqual({
       reasoningEffort: "none",
-      forceReasoning: true,
+      store: false,
     });
   });
 
