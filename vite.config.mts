@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import path from "node:path";
 import babel from "@rolldown/plugin-babel";
+import { sentryTanstackStart } from "@sentry/tanstackstart-react/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
@@ -73,6 +74,17 @@ export default defineConfig(({ mode }) => {
       react(),
       babel({ presets: [reactCompilerPreset()] }),
       nitro(),
+      // Source maps upload only when a token is present, so builds without
+      // Sentry stay quiet and offline.
+      sentryTanstackStart({
+        authToken: env.SENTRY_AUTH_TOKEN,
+        org: env.SENTRY_ORG,
+        project: env.SENTRY_PROJECT,
+        sourcemaps: { disable: !env.SENTRY_AUTH_TOKEN },
+        release: { name: buildSha },
+        silent: !process.env.CI,
+        telemetry: false,
+      }),
     ],
   };
 });

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/tanstackstart-react";
 import {
   createRouter,
   parseSearchWith,
@@ -10,7 +11,7 @@ import {
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
-  return createRouter({
+  const router = createRouter({
     routeTree,
     scrollRestoration: true,
     // Plain query strings like Next's `searchParams`: no JSON-quoting, so `?belop=120` stays as typed.
@@ -21,4 +22,12 @@ export function getRouter() {
     defaultPendingComponent: DefaultRoutePending,
     defaultErrorComponent: DefaultRouteError,
   });
+
+  if (!router.isServer) {
+    Sentry.addIntegration(
+      Sentry.tanstackRouterBrowserTracingIntegration(router),
+    );
+  }
+
+  return router;
 }
