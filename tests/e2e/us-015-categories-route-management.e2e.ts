@@ -280,13 +280,7 @@ test("manages categories and category rules from /categories", async ({
     timeout: 15_000,
   });
 
-  await page
-    .getByRole("row", { name: /Commute/i })
-    .getByRole("button", { name: "Handlinger for kategorien Commute" })
-    .click();
-  await page.getByRole("menuitem", { name: "Rediger" }).click();
-  await page
-    .getByRole("dialog")
+  await (await openEditDialog(page, "Commute"))
     .getByLabel("Klassifiseringshint (anbefalt)")
     .fill("Recurring transport top-ups");
   await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();
@@ -461,12 +455,7 @@ test("flags categories without a classifier hint on /categories", async ({
     groceriesRow.getByText("Mangler hint", { exact: true }),
   ).toHaveCount(0);
 
-  await foodRow
-    .getByRole("button", { name: "Handlinger for kategorien Food" })
-    .click();
-  await page.getByRole("menuitem", { name: "Rediger" }).click();
-  await page
-    .getByRole("dialog")
+  await (await openEditDialog(page, "Food"))
     .getByLabel("Klassifiseringshint (anbefalt)")
     .fill("Restaurants and takeaway: Foodora, Wolt");
   await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();
@@ -483,12 +472,7 @@ test("flags categories without a classifier hint on /categories", async ({
     timeout: 15_000,
   });
 
-  await foodRow
-    .getByRole("button", { name: "Handlinger for kategorien Food" })
-    .click();
-  await page.getByRole("menuitem", { name: "Rediger" }).click();
-  await page
-    .getByRole("dialog")
+  await (await openEditDialog(page, "Food"))
     .getByLabel("Klassifiseringshint (anbefalt)")
     .fill("");
   await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();
@@ -565,7 +549,11 @@ async function openEditDialog(page: Page, categoryName: string) {
     .getByRole("button", { name: `Handlinger for kategorien ${categoryName}` })
     .click();
   await page.getByRole("menuitem", { name: "Rediger" }).click();
-  return page.getByRole("dialog");
+  const dialog = page.getByRole("dialog");
+  // The dialog moves focus to its first field a frame after opening. Typing
+  // before then sends the keystrokes into the name field instead.
+  await expect(dialog.getByLabel("Kategorinavn")).toBeFocused();
+  return dialog;
 }
 
 test("prefills an empty classifier hint from the category's merchant history", async ({
