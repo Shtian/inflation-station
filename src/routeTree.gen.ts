@@ -15,6 +15,7 @@ import { Route as ApiAccountsRouteImport } from './routes/api/accounts'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
 import { Route as ApiCategoryRulesRouteImport } from './routes/api/category-rules'
 import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
+import { Route as ImportIndexRouteImport } from './routes/import/index'
 import { Route as TripsIndexRouteImport } from './routes/trips/index'
 import { Route as TripsTripIdRouteImport } from './routes/trips/$tripId'
 import { Route as ApiAccountsAccountIdRouteImport } from './routes/api/accounts/$accountId'
@@ -67,6 +68,11 @@ const ApiCategoryRulesRoute = ApiCategoryRulesRouteImport.update({
 const ApiTransactionsRoute = ApiTransactionsRouteImport.update({
   id: '/api/transactions',
   path: '/api/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportIndexRoute = ImportIndexRouteImport.update({
+  id: '/import/',
+  path: '/import/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TripsIndexRoute = TripsIndexRouteImport.update({
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/import/': typeof ImportIndexRoute
   '/trips/': typeof TripsIndexRoute
   '/api/accounts/$accountId': typeof ApiAccountsAccountIdRoute
   '/api/assistant/chat': typeof ApiAssistantChatRoute
@@ -233,6 +240,7 @@ export interface FileRoutesByTo {
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/import': typeof ImportIndexRoute
   '/trips': typeof TripsIndexRoute
   '/api/accounts/$accountId': typeof ApiAccountsAccountIdRoute
   '/api/assistant/chat': typeof ApiAssistantChatRoute
@@ -265,6 +273,7 @@ export interface FileRoutesById {
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/import/': typeof ImportIndexRoute
   '/trips/': typeof TripsIndexRoute
   '/api/accounts/$accountId': typeof ApiAccountsAccountIdRoute
   '/api/assistant/chat': typeof ApiAssistantChatRoute
@@ -298,6 +307,7 @@ export interface FileRouteTypes {
     | '/api/category-rules'
     | '/api/transactions'
     | '/trips/$tripId'
+    | '/import/'
     | '/trips/'
     | '/api/accounts/$accountId'
     | '/api/assistant/chat'
@@ -329,6 +339,7 @@ export interface FileRouteTypes {
     | '/api/category-rules'
     | '/api/transactions'
     | '/trips/$tripId'
+    | '/import'
     | '/trips'
     | '/api/accounts/$accountId'
     | '/api/assistant/chat'
@@ -360,6 +371,7 @@ export interface FileRouteTypes {
     | '/api/category-rules'
     | '/api/transactions'
     | '/trips/$tripId'
+    | '/import/'
     | '/trips/'
     | '/api/accounts/$accountId'
     | '/api/assistant/chat'
@@ -392,6 +404,7 @@ export interface RootRouteChildren {
   ApiCategoryRulesRoute: typeof ApiCategoryRulesRouteWithChildren
   ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
   TripsTripIdRoute: typeof TripsTripIdRoute
+  ImportIndexRoute: typeof ImportIndexRoute
   TripsIndexRoute: typeof TripsIndexRoute
   ApiAssistantChatRoute: typeof ApiAssistantChatRoute
   ApiCategorizationReviewRoute: typeof ApiCategorizationReviewRoute
@@ -452,6 +465,13 @@ declare module '@tanstack/react-router' {
       path: '/api/transactions'
       fullPath: '/api/transactions'
       preLoaderRoute: typeof ApiTransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/import/': {
+      id: '/import/'
+      path: '/import'
+      fullPath: '/import/'
+      preLoaderRoute: typeof ImportIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/trips/': {
@@ -691,6 +711,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCategoryRulesRoute: ApiCategoryRulesRouteWithChildren,
   ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
   TripsTripIdRoute: TripsTripIdRoute,
+  ImportIndexRoute: ImportIndexRoute,
   TripsIndexRoute: TripsIndexRoute,
   ApiAssistantChatRoute: ApiAssistantChatRoute,
   ApiCategorizationReviewRoute: ApiCategorizationReviewRoute,
