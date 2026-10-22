@@ -60,6 +60,7 @@ export const Route = createFileRoute("/api/accounts")({
           throw error;
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

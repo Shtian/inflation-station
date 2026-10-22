@@ -61,6 +61,7 @@ export const Route = createFileRoute("/api/categorization/review")({
           throw error;
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

@@ -106,6 +106,7 @@ export const Route = createFileRoute("/api/imports/cleanup")({
 
         return Response.json({ index: chunkIndex, status: "ok", suggestions });
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

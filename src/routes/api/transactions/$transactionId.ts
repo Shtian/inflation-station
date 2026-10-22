@@ -139,6 +139,7 @@ export const Route = createFileRoute("/api/transactions/$transactionId")({
           throw error;
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

@@ -74,6 +74,7 @@ export const Route = createFileRoute("/api/imports/message-cleanup-settings")({
           );
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

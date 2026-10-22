@@ -59,6 +59,7 @@ export const Route = createFileRoute("/api/monthly-review/timeline")({
           );
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

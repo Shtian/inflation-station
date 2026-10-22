@@ -161,6 +161,7 @@ export const Route = createFileRoute("/api/imports/submit")({
           throw error;
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

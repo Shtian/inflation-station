@@ -29,6 +29,7 @@ export const Route = createFileRoute("/api/category-rules/$ruleId")({
           throw error;
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

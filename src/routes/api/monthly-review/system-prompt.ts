@@ -148,6 +148,7 @@ export const Route = createFileRoute("/api/monthly-review/system-prompt")({
           );
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

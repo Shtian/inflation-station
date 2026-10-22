@@ -85,6 +85,7 @@ export const Route = createFileRoute("/api/category-rules")({
           throw error;
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

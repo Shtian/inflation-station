@@ -95,6 +95,7 @@ export const Route = createFileRoute("/api/categories/$categoryId")({
           throw error;
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

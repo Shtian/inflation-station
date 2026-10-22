@@ -375,6 +375,7 @@ export const Route = createFileRoute("/api/imports/parse")({
           columnMapping: payload.columnMapping,
         });
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

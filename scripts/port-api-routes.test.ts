@@ -52,6 +52,7 @@ DELETE: async ({ params }) => {
   await prisma.categoryRule.delete({ where: { id: ruleId } });
   return Response.json({ ok: true });
 },
+ANY: async () => new Response(null, { status: 405 }),
 },
 },
 });
@@ -85,6 +86,7 @@ POST: async ({ request }) => {
   const payload = await request.json();
   return Response.json(payload, { status: 201 });
 },
+ANY: async () => new Response(null, { status: 405 }),
 },
 },
 });
@@ -114,6 +116,7 @@ handlers: {
 GET: async () => {
   return Response.json(await readStatus());
 },
+ANY: async () => new Response(null, { status: 405 }),
 },
 },
 });
@@ -140,6 +143,7 @@ handlers: {
 DELETE: async ({ request }) => {
   return Response.json({ message: formatPayloadErrorMessage("x", request) });
 },
+ANY: async () => new Response(null, { status: 405 }),
 },
 },
 });
@@ -172,6 +176,7 @@ handlers: {
 GET: async () => {
   return Response.json({ sha: import.meta.env.VITE_BUILD_SHA ?? "unknown" });
 },
+ANY: async () => new Response(null, { status: 405 }),
 },
 },
 });

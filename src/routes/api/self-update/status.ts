@@ -20,6 +20,7 @@ export const Route = createFileRoute("/api/self-update/status")({
           ),
         );
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

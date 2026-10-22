@@ -46,6 +46,7 @@ export const Route = createFileRoute("/api/categories/$categoryId/hint-guess")({
             );
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

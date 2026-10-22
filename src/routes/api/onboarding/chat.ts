@@ -71,6 +71,7 @@ export const Route = createFileRoute("/api/onboarding/chat")({
           },
         });
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

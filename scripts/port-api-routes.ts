@@ -420,6 +420,7 @@ export const Route = createFileRoute(${JSON.stringify(routeId)})({
 server: {
 handlers: {
 ${handlerEntries.join("\n")}
+ANY: async () => new Response(null, { status: 405 }),
 },
 },
 });

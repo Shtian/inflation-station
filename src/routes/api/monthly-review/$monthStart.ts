@@ -36,6 +36,7 @@ export const Route = createFileRoute("/api/monthly-review/$monthStart")({
           );
         }
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

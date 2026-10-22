@@ -98,6 +98,7 @@ export const Route = createFileRoute("/api/feedback/chat")({
           },
         });
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

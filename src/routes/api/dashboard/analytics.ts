@@ -57,6 +57,7 @@ export const Route = createFileRoute("/api/dashboard/analytics")({
 
         return Response.json(analytics);
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

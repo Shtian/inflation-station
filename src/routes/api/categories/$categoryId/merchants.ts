@@ -18,6 +18,7 @@ export const Route = createFileRoute("/api/categories/$categoryId/merchants")({
 
         return Response.json({ history });
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });

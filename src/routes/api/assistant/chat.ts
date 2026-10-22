@@ -197,6 +197,7 @@ export const Route = createFileRoute("/api/assistant/chat")({
 
         return createUIMessageStreamResponse({ stream: clientStream });
       },
+      ANY: async () => new Response(null, { status: 405 }),
     },
   },
 });
