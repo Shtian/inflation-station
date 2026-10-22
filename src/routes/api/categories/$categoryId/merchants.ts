@@ -6,10 +6,8 @@ export const Route = createFileRoute("/api/categories/$categoryId/merchants")({
   server: {
     handlers: {
       GET: async ({ params }) => {
-        const history = await getCategoryMerchantHistory(
-          prisma,
-          params.categoryId,
-        );
+        const { categoryId } = params;
+        const history = await getCategoryMerchantHistory(prisma, categoryId);
 
         if (history === null) {
           return Response.json(
