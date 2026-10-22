@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import type { ReactNode } from "react";
+import faviconUrl from "@/app/favicon.ico?url";
 import appCss from "@/app/globals.css?url";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -36,6 +37,7 @@ export const Route = createRootRoute({
       },
     ],
     links: [
+      { rel: "icon", href: faviconUrl },
       { rel: "stylesheet", href: fontsCss },
       { rel: "stylesheet", href: appCss },
     ],
