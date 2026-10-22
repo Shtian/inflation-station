@@ -2,15 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteAssistantThreadAction } from "./delete-assistant-thread";
 import { renameAssistantThreadAction } from "./rename-assistant-thread";
 
-const { renameMock, deleteMock, revalidatePathMock } = vi.hoisted(() => ({
+const { renameMock, deleteMock } = vi.hoisted(() => ({
   renameMock: vi.fn(),
   deleteMock: vi.fn(),
-  revalidatePathMock: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({ prisma: { _tag: "prisma-mock" } }));
-
-vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
 
 vi.mock("@/lib/assistant/threads", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/assistant/threads")>()),
@@ -21,11 +18,10 @@ vi.mock("@/lib/assistant/threads", async (importOriginal) => ({
 beforeEach(() => {
   renameMock.mockReset().mockResolvedValue(undefined);
   deleteMock.mockReset().mockResolvedValue(undefined);
-  revalidatePathMock.mockReset();
 });
 
 describe("renameAssistantThreadAction", () => {
-  it("stores the trimmed title and refreshes the assistant page", async () => {
+  it("stores the trimmed title", async () => {
     const result = await renameAssistantThreadAction({
       id: "thread-1",
       title: "  Forbruk i høst  ",
@@ -39,7 +35,6 @@ describe("renameAssistantThreadAction", () => {
       "thread-1",
       "Forbruk i høst",
     ]);
-    expect(revalidatePathMock.mock.calls).toEqual([["/assistant"]]);
   });
 
   it.each([
@@ -73,12 +68,11 @@ describe("renameAssistantThreadAction", () => {
 });
 
 describe("deleteAssistantThreadAction", () => {
-  it("deletes the thread and refreshes the assistant page", async () => {
+  it("deletes the thread", async () => {
     const result = await deleteAssistantThreadAction({ id: "thread-1" });
 
     expect(result).toEqual({ ok: true, data: { id: "thread-1" } });
     expect(deleteMock.mock.calls[0].slice(1)).toEqual(["thread-1"]);
-    expect(revalidatePathMock.mock.calls).toEqual([["/assistant"]]);
   });
 
   it("rejects an unsafe id without deleting", async () => {

@@ -1,6 +1,3 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   assistantThreadIdSchema,
@@ -43,7 +40,6 @@ export async function deleteAssistantThreadAction(
   return executeServerMutation({
     execute: async () => {
       await deleteAssistantThread(prisma, id);
-      revalidatePath("/assistant");
       return { id };
     },
     mapError: (error) =>

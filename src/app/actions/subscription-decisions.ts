@@ -1,6 +1,3 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import {
@@ -58,7 +55,6 @@ export async function setSubscriptionDecisionAction(
   return executeServerMutation({
     execute: async () => {
       await setSubscriptionDecision(prisma, normalizedMerchant, status);
-      revalidatePath("/subscriptions");
       return { normalizedMerchant, status };
     },
     fallbackError: {
@@ -91,7 +87,6 @@ export async function clearSubscriptionDecisionAction(
   return executeServerMutation({
     execute: async () => {
       await clearSubscriptionDecision(prisma, normalizedMerchant);
-      revalidatePath("/subscriptions");
       return { normalizedMerchant };
     },
     fallbackError: {
