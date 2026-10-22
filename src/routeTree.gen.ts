@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MonitoringRouteImport } from './routes/monitoring'
+import { Route as AccountsIndexRouteImport } from './routes/accounts/index'
 import { Route as ApiAccountsRouteImport } from './routes/api/accounts'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
 import { Route as ApiCategoryRulesRouteImport } from './routes/api/category-rules'
@@ -49,6 +50,11 @@ const IndexRoute = IndexRouteImport.update({
 const MonitoringRoute = MonitoringRouteImport.update({
   id: '/monitoring',
   path: '/monitoring',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountsIndexRoute = AccountsIndexRouteImport.update({
+  id: '/accounts/',
+  path: '/accounts/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAccountsRoute = ApiAccountsRouteImport.update({
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/accounts/': typeof AccountsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
   '/trips/': typeof TripsIndexRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/accounts': typeof AccountsIndexRoute
   '/categories': typeof CategoriesIndexRoute
   '/import': typeof ImportIndexRoute
   '/trips': typeof TripsIndexRoute
@@ -281,6 +289,7 @@ export interface FileRoutesById {
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/accounts/': typeof AccountsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
   '/trips/': typeof TripsIndexRoute
@@ -316,6 +325,7 @@ export interface FileRouteTypes {
     | '/api/category-rules'
     | '/api/transactions'
     | '/trips/$tripId'
+    | '/accounts/'
     | '/categories/'
     | '/import/'
     | '/trips/'
@@ -349,6 +359,7 @@ export interface FileRouteTypes {
     | '/api/category-rules'
     | '/api/transactions'
     | '/trips/$tripId'
+    | '/accounts'
     | '/categories'
     | '/import'
     | '/trips'
@@ -382,6 +393,7 @@ export interface FileRouteTypes {
     | '/api/category-rules'
     | '/api/transactions'
     | '/trips/$tripId'
+    | '/accounts/'
     | '/categories/'
     | '/import/'
     | '/trips/'
@@ -416,6 +428,7 @@ export interface RootRouteChildren {
   ApiCategoryRulesRoute: typeof ApiCategoryRulesRouteWithChildren
   ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
   TripsTripIdRoute: typeof TripsTripIdRoute
+  AccountsIndexRoute: typeof AccountsIndexRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
   ImportIndexRoute: typeof ImportIndexRoute
   TripsIndexRoute: typeof TripsIndexRoute
@@ -450,6 +463,13 @@ declare module '@tanstack/react-router' {
       path: '/monitoring'
       fullPath: '/monitoring'
       preLoaderRoute: typeof MonitoringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accounts/': {
+      id: '/accounts/'
+      path: '/accounts'
+      fullPath: '/accounts/'
+      preLoaderRoute: typeof AccountsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/accounts': {
@@ -731,6 +751,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCategoryRulesRoute: ApiCategoryRulesRouteWithChildren,
   ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
   TripsTripIdRoute: TripsTripIdRoute,
+  AccountsIndexRoute: AccountsIndexRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
   ImportIndexRoute: ImportIndexRoute,
   TripsIndexRoute: TripsIndexRoute,
