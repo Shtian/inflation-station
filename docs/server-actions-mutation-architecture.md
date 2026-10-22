@@ -19,7 +19,6 @@ Use this pattern for low-risk mutation migrations from `/api/*` routes to Server
   - `executeServerMutation` for consistent typed fallback error mapping.
 - Reused by:
   - `src/app/actions/update-message-cleanup-settings.ts`
-  - `src/app/actions/update-monthly-review-system-prompt.ts`
 
 ## Authorization Guardrail
 
@@ -30,4 +29,3 @@ The current app is local-first and has no user-session authorization layer in th
 | Current route mutation | Current behavior contract | Planned server action equivalent | Revalidation target |
 | --- | --- | --- | --- |
 | `PUT /api/imports/message-cleanup-settings` | Validates `{ promptText, modelId? }`, rejects unknown model ids, returns settings view payload, returns `INVALID_MESSAGE_CLEANUP_SETTINGS_PAYLOAD`, `INVALID_MESSAGE_CLEANUP_MODEL_ID`, `MESSAGE_CLEANUP_SETTINGS_UPDATE_FAILED` | `updateMessageCleanupSettingsAction(input)` in `src/app/actions/update-message-cleanup-settings.ts` with same payload shape and error codes | `/settings` |
-| `PUT /api/monthly-review/system-prompt` | Validates `{ promptText, modelId? }`, rejects unknown model ids, returns settings payload, returns `INVALID_MONTHLY_REVIEW_SYSTEM_PROMPT_PAYLOAD`, `INVALID_MONTHLY_REVIEW_MODEL_ID`, `MONTHLY_REVIEW_SYSTEM_PROMPT_UPDATE_FAILED` | `updateMonthlyReviewSystemPromptAction(input)` in `src/app/actions/update-monthly-review-system-prompt.ts` with same payload shape and error codes | `/settings` |
