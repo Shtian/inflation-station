@@ -2,7 +2,11 @@
 
 import { Info } from "lucide-react";
 import { useState } from "react";
-import { SelfUpdateDialog, useSelfUpdate } from "@/components/self-update";
+import {
+  SelfUpdateDialog,
+  type StartSelfUpdate,
+  useSelfUpdate,
+} from "@/components/self-update";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -13,15 +17,16 @@ import {
 export function VersionInfo({
   sha,
   formattedTime,
-  selfUpdateEnabled,
+  startSelfUpdate,
 }: {
   sha: string;
   formattedTime: string;
-  selfUpdateEnabled: boolean;
+  /** Omitted where this server cannot update itself. */
+  startSelfUpdate?: StartSelfUpdate;
 }) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const { availability, availableSha, dialogOpen, setDialogOpen } =
-    useSelfUpdate(selfUpdateEnabled);
+    useSelfUpdate(startSelfUpdate !== undefined);
 
   function openUpdateDialog() {
     setPopoverOpen(false);
@@ -60,7 +65,7 @@ export function VersionInfo({
             <span className="mx-1.5 text-border">·</span>
             <span>{formattedTime}</span>
           </p>
-          {selfUpdateEnabled ? (
+          {startSelfUpdate ? (
             <Button
               variant="outline"
               size="xs"
@@ -79,12 +84,13 @@ export function VersionInfo({
           ) : null}
         </PopoverContent>
       </Popover>
-      {selfUpdateEnabled ? (
+      {startSelfUpdate ? (
         <SelfUpdateDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           pageSha={sha}
           availability={availability}
+          startSelfUpdate={startSelfUpdate}
         />
       ) : null}
     </>
