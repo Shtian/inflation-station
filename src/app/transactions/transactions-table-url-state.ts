@@ -87,6 +87,10 @@ function parsePageSize(value: string | null): number {
     : DEFAULT_PAGE_SIZE;
 }
 
+export function formatSortingParam(sorting: TransactionSorting): string {
+  return `${sorting.field}:${sorting.direction}`;
+}
+
 function applyTableStateToSearchParams(
   searchParams: URLSearchParams,
   state: TransactionsTableUrlState,
@@ -99,10 +103,7 @@ function applyTableStateToSearchParams(
   searchParams.set("pageSize", String(state.pageSize));
 
   if (state.sorting) {
-    searchParams.set(
-      "sorting",
-      `${state.sorting.field}:${state.sorting.direction}`,
-    );
+    searchParams.set("sorting", formatSortingParam(state.sorting));
   }
   if (state.globalQuery) {
     searchParams.set("globalQuery", state.globalQuery);

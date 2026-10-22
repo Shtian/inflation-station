@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import { createCategoryInline } from "@/lib/categories/create-category-inline";
 import { inferCategoryKind } from "@/lib/categories/infer-category-kind";
 import type {
@@ -12,8 +12,6 @@ import type {
 } from "./transactions-manager.types";
 import {
   areTransactionsTableUrlStatesEqual,
-  parseTransactionsTableUrlState,
-  toTransactionsTableSearchParams,
   withFilterStateChange,
 } from "./transactions-table-url-state";
 
@@ -45,20 +43,13 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export function useTransactionsManager() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const parsedUrlState = useMemo(
-    () =>
-      parseTransactionsTableUrlState(
-        new URLSearchParams(searchParams.toString()),
-      ),
-    [searchParams],
-  );
+  const urlState = useSearch({ from: "/transactions/" });
+  const navigate = useNavigate({ from: "/transactions/" });
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [tableState, setTableState] = useState(parsedUrlState);
+  const [tableState, setTableState] = useState(urlState);
   const [globalQueryInput, setGlobalQueryInput] = useState(
-    parsedUrlState.globalQuery ?? "",
+    urlState.globalQuery ?? "",
   );
   const debouncedGlobalQueryInput = useDebouncedValue(globalQueryInput, 250);
   const [loading, setLoading] = useState(true);
@@ -69,15 +60,15 @@ export function useTransactionsManager() {
 
   useEffect(() => {
     setTableState((current) =>
-      areTransactionsTableUrlStatesEqual(current, parsedUrlState)
+      areTransactionsTableUrlStatesEqual(current, urlState)
         ? current
-        : parsedUrlState,
+        : urlState,
     );
-  }, [parsedUrlState]);
+  }, [urlState]);
 
   useEffect(() => {
-    setGlobalQueryInput(parsedUrlState.globalQuery ?? "");
-  }, [parsedUrlState.globalQuery]);
+    setGlobalQueryInput(urlState.globalQuery ?? "");
+  }, [urlState.globalQuery]);
 
   useEffect(() => {
     const trimmed = debouncedGlobalQueryInput.trim();
@@ -95,28 +86,12 @@ export function useTransactionsManager() {
   }, [debouncedGlobalQueryInput]);
 
   useEffect(() => {
-    const nextParams = toTransactionsTableSearchParams(
-      tableState,
-      new URLSearchParams(searchParams.toString()),
-    );
-    const nextQuery = nextParams.toString();
-    const currentQuery = searchParams.toString();
-
-    if (nextQuery === currentQuery) {
+    if (areTransactionsTableUrlStatesEqual(tableState, urlState)) {
       return;
     }
 
-    // `router.replace` silently no-ops here once /transactions has been loaded
-    // from its static prerender, leaving the URL frozen while the table moves
-    // on. Table state is pure client state anyway - every row comes from
-    // /api/transactions - so rewrite the query directly and skip the round
-    // trip. Next keeps useSearchParams in sync with history writes.
-    window.history.replaceState(
-      null,
-      "",
-      nextQuery.length > 0 ? `${pathname}?${nextQuery}` : pathname,
-    );
-  }, [pathname, searchParams, tableState]);
+    void navigate({ search: tableState, replace: true });
+  }, [navigate, tableState, urlState]);
 
   const loadAccounts = useCallback(async () => {
     const response = await fetch("/api/accounts");
