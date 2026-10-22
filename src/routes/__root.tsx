@@ -33,7 +33,21 @@ export const Route = createRootRoute({
   }),
   component: Outlet,
   shellComponent: RootDocument,
+  notFoundComponent: NotFound,
 });
+
+function NotFound() {
+  return (
+    <main className="mx-auto w-full max-w-6xl space-y-2 px-5 py-8 md:px-10">
+      <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+        Fant ikke siden
+      </h1>
+      <p className="text-muted-foreground text-sm">
+        Siden finnes ikke, eller den er ikke flyttet til denne serveren ennå.
+      </p>
+    </main>
+  );
+}
 
 function RootDocument({ children }: { children: ReactNode }) {
   return (
