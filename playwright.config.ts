@@ -20,10 +20,29 @@ function portFromEnv(name: string, fallback: number): number {
   return port;
 }
 
+const APP_SERVERS = ["next", "start"] as const;
+type AppServer = (typeof APP_SERVERS)[number];
+
+/** Which app the suites run against while Next and TanStack Start live side by side. */
+function appServerFromEnv(name: string): AppServer {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") {
+    return "next";
+  }
+
+  const server = APP_SERVERS.find((candidate) => candidate === raw);
+  if (server === undefined) {
+    throw new Error(
+      `${name} must be one of ${APP_SERVERS.join(", ")}, got "${raw}"`,
+    );
+  }
+
+  return server;
+}
+
+const APP_SERVER = appServerFromEnv("PLAYWRIGHT_SERVER");
 const STUBBED_PORT = portFromEnv("PLAYWRIGHT_STUBBED_PORT", 3000);
 const INTEGRATED_PORT = portFromEnv("PLAYWRIGHT_INTEGRATED_PORT", 3001);
-const INTEGRATED_DIST_DIR = ".next-integrated";
-
 // Three stubbed specs drive Server Actions, which POST to the page's own URL
 // rather than to `/api/*`, so `page.route` cannot intercept them and they reach
 // whichever database their server is pointed at. Giving that server one of its
@@ -32,6 +51,54 @@ const STUBBED_DATABASE_URL = "file:./prisma/stubbed.db";
 
 const STUBBED_PROJECT = "stubbed";
 const INTEGRATED_PROJECT = "integrated";
+
+type Project = typeof STUBBED_PROJECT | typeof INTEGRATED_PROJECT;
+type ServerLaunch = { command: string; env: Record<string, string> };
+
+function integratedOnly(
+  project: Project,
+  env: Record<string, string>,
+): Record<string, string> {
+  return project === INTEGRATED_PROJECT ? env : {};
+}
+
+/**
+ * In CI a prebuilt production server starts in ~1s and serves every route
+ * immediately; a dev server would recompile each route on first visit and
+ * dominate the run. CI builds once and runs both production servers off that
+ * one build; locally each suite gets a dev server of its own.
+ */
+const LAUNCHERS: Record<
+  AppServer,
+  Record<"dev" | "prod", (port: number, project: Project) => ServerLaunch>
+> = {
+  next: {
+    // `next dev` refuses to start a second time from the same directory, so
+    // the integrated dev server needs a build directory of its own.
+    dev: (port, project) => ({
+      command: `pnpm dev --port ${port}`,
+      env: integratedOnly(project, { NEXT_DIST_DIR: ".next-integrated" }),
+    }),
+    prod: (port) => ({ command: `pnpm start --port ${port}`, env: {} }),
+  },
+  start: {
+    // Two Vite dev servers from one checkout would share, and overwrite, one
+    // dep-optimizer cache.
+    dev: (port, project) => ({
+      command: `pnpm start:dev --host 127.0.0.1 --port ${port} --strictPort`,
+      env: integratedOnly(project, {
+        START_CACHE_DIR: "node_modules/.vite-integrated",
+      }),
+    }),
+    // Nitro's production server takes its address from the env.
+    prod: (port) => ({
+      command: "pnpm start:serve",
+      env: { PORT: String(port), HOST: "127.0.0.1" },
+    }),
+  },
+};
+
+const launchServer = LAUNCHERS[APP_SERVER][process.env.CI ? "prod" : "dev"];
 
 /**
  * Playwright starts every `webServer` entry before it filters by `--project`,
@@ -71,36 +138,25 @@ function selectedProjects(): readonly string[] {
   return selected;
 }
 
+const stubbedLaunch = launchServer(STUBBED_PORT, STUBBED_PROJECT);
 const stubbedServer = {
-  // In CI a prebuilt production server starts in ~1s and serves every route
-  // immediately; `next dev` would recompile each route on first visit and
-  // dominate the run.
-  command: process.env.CI
-    ? `pnpm db:migrate:deploy && pnpm start --port ${STUBBED_PORT}`
-    : `pnpm db:migrate:deploy && pnpm dev --port ${STUBBED_PORT}`,
+  command: `pnpm db:migrate:deploy && ${stubbedLaunch.command}`,
   port: STUBBED_PORT,
-  env: { DATABASE_URL: STUBBED_DATABASE_URL },
+  env: { DATABASE_URL: STUBBED_DATABASE_URL, ...stubbedLaunch.env },
   // Reusing a dev server the developer already had running is the point of
   // this entry. That server has its own DATABASE_URL, so the `env` above only
   // applies when Playwright starts the server itself.
   reuseExistingServer: !process.env.CI,
 };
 
+const integratedLaunch = launchServer(INTEGRATED_PORT, INTEGRATED_PROJECT);
 const integratedServer = {
   // The migration is chained into the command because Playwright starts
   // `webServer` before `globalSetup` and before project dependencies: nothing
   // else runs early enough to prepare a file this server opens at boot.
-  command: process.env.CI
-    ? `pnpm db:migrate:deploy && pnpm start --port ${INTEGRATED_PORT}`
-    : `pnpm db:migrate:deploy && pnpm dev --port ${INTEGRATED_PORT}`,
+  command: `pnpm db:migrate:deploy && ${integratedLaunch.command}`,
   port: INTEGRATED_PORT,
-  env: {
-    DATABASE_URL: INTEGRATED_DATABASE_URL,
-    // Only outside CI. CI builds once and runs `next start` for both servers
-    // off that one `.next`; locally the second server is a `next dev` and
-    // needs a build directory of its own.
-    ...(process.env.CI ? {} : { NEXT_DIST_DIR: INTEGRATED_DIST_DIR }),
-  },
+  env: { DATABASE_URL: INTEGRATED_DATABASE_URL, ...integratedLaunch.env },
   reuseExistingServer: false,
   timeout: 180_000,
 };
@@ -112,7 +168,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  // GitHub-hosted runners have 4 vCPUs and two are busy serving Next, so leave
+  // GitHub-hosted runners have 4 vCPUs and two are busy serving the app, so leave
   // headroom rather than using the default 50%.
   workers: process.env.CI ? 2 : undefined,
   use: {
