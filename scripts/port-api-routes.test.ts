@@ -154,6 +154,30 @@ DELETE: async ({ request }) => {
     ]);
   });
 
+  it("reads NEXT_PUBLIC_* build values from their VITE_* defines", () => {
+    const source = `import { NextResponse } from "next/server";
+
+export async function GET() {
+  return NextResponse.json({ sha: process.env.NEXT_PUBLIC_BUILD_SHA ?? "unknown" });
+}
+`;
+
+    expect(
+      transformRoute(source, "/api/self-update/status"),
+    ).toBe(`import { createFileRoute } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/api/self-update/status")({
+server: {
+handlers: {
+GET: async () => {
+  return Response.json({ sha: import.meta.env.VITE_BUILD_SHA ?? "unknown" });
+},
+},
+},
+});
+`);
+  });
+
   it("throws on NextResponse usage it cannot port", () => {
     const source = `import { NextResponse } from "next/server";
 

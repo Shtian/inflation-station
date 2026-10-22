@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/self-update/availability")({
         return Response.json(
           await getUpdateAvailability(
             root,
-            process.env.NEXT_PUBLIC_BUILD_SHA ?? "unknown",
+            import.meta.env.VITE_BUILD_SHA ?? "unknown",
           ),
         );
       },

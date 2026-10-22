@@ -361,6 +361,23 @@ export function transformRoute(source: string, routeId: string): string {
       fail(routeId, `unsupported next import at line ${lineOf(node)}`);
     }
 
+    // Next inlines NEXT_PUBLIC_* at build time; Start's build defines the same values as VITE_*.
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      node.name.text.startsWith("NEXT_PUBLIC_") &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === "env" &&
+      ts.isIdentifier(node.expression.expression) &&
+      node.expression.expression.text === "process"
+    ) {
+      edits.push({
+        start: node.getStart(),
+        end: node.end,
+        text: `import.meta.env.VITE_${node.name.text.slice("NEXT_PUBLIC_".length)}`,
+      });
+      return;
+    }
+
     if (
       handler?.parameters[1] &&
       ts.isAwaitExpression(node) &&

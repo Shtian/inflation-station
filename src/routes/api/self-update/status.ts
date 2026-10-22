@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/self-update/status")({
         return Response.json(
           await readSelfUpdateStatus(
             root,
-            process.env.NEXT_PUBLIC_BUILD_SHA ?? "unknown",
+            import.meta.env.VITE_BUILD_SHA ?? "unknown",
           ),
         );
       },
