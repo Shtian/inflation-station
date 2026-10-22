@@ -60,3 +60,8 @@ next-env.d.ts
 
 # deployed standalone builds that pm2 runs (see update.sh)
 /.releases/
+
+# TanStack Start / Nitro build output
+/.output/
+/.nitro/
+/.tanstack/
