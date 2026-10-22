@@ -3,6 +3,10 @@ import {
   parseSearchWith,
   stringifySearchWith,
 } from "@tanstack/react-router";
+import {
+  DefaultRouteError,
+  DefaultRoutePending,
+} from "./routes/-shell/route-states";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
@@ -14,5 +18,7 @@ export function getRouter() {
     stringifySearch: stringifySearchWith(JSON.stringify),
     // Pages read live SQLite data, so a revisit waits for fresh loader data instead of showing the cached copy first.
     defaultStaleReloadMode: "blocking",
+    defaultPendingComponent: DefaultRoutePending,
+    defaultErrorComponent: DefaultRouteError,
   });
 }
