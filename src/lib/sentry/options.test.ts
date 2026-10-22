@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { getSentryOptions } from "./options";
 
 function sample(name: string, url?: string, parentSampled?: boolean) {
-  const tracesSampler = getSentryOptions().tracesSampler;
+  const tracesSampler = getSentryOptions({
+    dsn: undefined,
+    environment: undefined,
+  }).tracesSampler;
   if (!tracesSampler) throw new Error("tracesSampler is not configured");
   return tracesSampler({
     name,
