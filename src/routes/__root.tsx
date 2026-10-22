@@ -1,20 +1,30 @@
-/// <reference types="vite/client" />
 import {
   createRootRoute,
   HeadContent,
   Outlet,
   Scripts,
 } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import type { ReactNode } from "react";
+import faviconUrl from "@/app/favicon.ico?url";
 import appCss from "@/app/globals.css?url";
+import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { resolveFeedbackDisabledReason } from "@/lib/feedback/agent";
 import { SIDEBAR_BOOT_SCRIPT } from "@/lib/sidebar-state";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/theme-palettes";
 import { AppSidebar } from "./-shell/app-sidebar";
 import fontsCss from "./-shell/fonts.css?url";
 
+const getShellFlags = createServerFn({ method: "GET" }).handler(() => ({
+  feedbackEnabled: resolveFeedbackDisabledReason() === null,
+}));
+
 export const Route = createRootRoute({
+  loader: () => getShellFlags(),
+  // Server env only changes on restart, so client navigations reuse the first answer.
+  staleTime: Number.POSITIVE_INFINITY,
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -27,6 +37,7 @@ export const Route = createRootRoute({
       },
     ],
     links: [
+      { rel: "icon", href: faviconUrl },
       { rel: "stylesheet", href: fontsCss },
       { rel: "stylesheet", href: appCss },
     ],
@@ -50,6 +61,8 @@ function NotFound() {
 }
 
 function RootDocument({ children }: { children: ReactNode }) {
+  const { feedbackEnabled } = Route.useLoaderData();
+
   return (
     <html lang="nb" suppressHydrationWarning>
       <head>
@@ -76,6 +89,7 @@ function RootDocument({ children }: { children: ReactNode }) {
             <div className="flex min-w-0 flex-1 flex-col">
               {children}
               <Toaster richColors />
+              {feedbackEnabled ? <FeedbackWidget /> : null}
             </div>
           </div>
         </ThemeProvider>

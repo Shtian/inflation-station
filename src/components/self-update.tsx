@@ -2,7 +2,6 @@
 
 import { useEffect, useReducer, useRef, useState } from "react";
 import { toast } from "sonner";
-import { startSelfUpdateAction } from "@/app/actions/start-self-update";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +19,11 @@ import {
   type SelfUpdateDialogState,
   selfUpdateDialogReducer,
 } from "@/lib/self-update/dialog-state";
+import type { MutationActionResult } from "@/lib/server-actions/mutation-result";
+
+export type StartSelfUpdate = () => Promise<
+  MutationActionResult<{ sha: string }>
+>;
 
 const POLL_INTERVAL_MS = 2000;
 const RELOAD_DELAY_MS = 1500;
@@ -152,11 +156,13 @@ export function SelfUpdateDialog({
   onOpenChange,
   pageSha,
   availability,
+  startSelfUpdate,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   pageSha: string;
   availability: UpdateAvailability;
+  startSelfUpdate: StartSelfUpdate;
 }) {
   const [state, dispatch] = useReducer(
     selfUpdateDialogReducer,
@@ -204,7 +210,7 @@ export function SelfUpdateDialog({
   async function start() {
     dispatch({ type: "start" });
     try {
-      const result = await startSelfUpdateAction();
+      const result = await startSelfUpdate();
       if (result.ok) {
         baselineSha.current = result.data.sha;
       }

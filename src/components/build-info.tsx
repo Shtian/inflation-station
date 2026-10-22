@@ -1,3 +1,4 @@
+import { startSelfUpdateAction } from "@/app/actions/start-self-update";
 import { VersionInfo } from "@/components/version-info";
 
 export function BuildInfo() {
@@ -16,7 +17,9 @@ export function BuildInfo() {
     <VersionInfo
       sha={sha}
       formattedTime={formattedTime}
-      selfUpdateEnabled={Boolean(process.env.SELF_UPDATE_ROOT)}
+      startSelfUpdate={
+        process.env.SELF_UPDATE_ROOT ? startSelfUpdateAction : undefined
+      }
     />
   );
 }

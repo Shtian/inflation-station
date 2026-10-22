@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MonitoringRouteImport } from './routes/monitoring'
 import { Route as TripsIndexRouteImport } from './routes/trips/index'
 import { Route as TripsTripIdRouteImport } from './routes/trips/$tripId'
 import { Route as ApiCategoriesCategoryIdMerchantsRouteImport } from './routes/api/categories/$categoryId/merchants'
@@ -17,6 +18,11 @@ import { Route as ApiCategoriesCategoryIdMerchantsRouteImport } from './routes/a
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonitoringRoute = MonitoringRouteImport.update({
+  id: '/monitoring',
+  path: '/monitoring',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TripsIndexRoute = TripsIndexRouteImport.update({
@@ -38,12 +44,14 @@ const ApiCategoriesCategoryIdMerchantsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/monitoring': typeof MonitoringRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/': typeof TripsIndexRoute
   '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/monitoring': typeof MonitoringRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/trips': typeof TripsIndexRoute
   '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
@@ -51,6 +59,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/monitoring': typeof MonitoringRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/': typeof TripsIndexRoute
   '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
@@ -58,13 +67,22 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/trips/$tripId' | '/trips/' | '/api/categories/$categoryId/merchants'
+    | '/'
+    | '/monitoring'
+    | '/trips/$tripId'
+    | '/trips/'
+    | '/api/categories/$categoryId/merchants'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/trips/$tripId' | '/trips' | '/api/categories/$categoryId/merchants'
+    | '/'
+    | '/monitoring'
+    | '/trips/$tripId'
+    | '/trips'
+    | '/api/categories/$categoryId/merchants'
   id:
     | '__root__'
     | '/'
+    | '/monitoring'
     | '/trips/$tripId'
     | '/trips/'
     | '/api/categories/$categoryId/merchants'
@@ -72,6 +90,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  MonitoringRoute: typeof MonitoringRoute
   TripsTripIdRoute: typeof TripsTripIdRoute
   TripsIndexRoute: typeof TripsIndexRoute
   ApiCategoriesCategoryIdMerchantsRoute: typeof ApiCategoriesCategoryIdMerchantsRoute
@@ -84,6 +103,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monitoring': {
+      id: '/monitoring'
+      path: '/monitoring'
+      fullPath: '/monitoring'
+      preLoaderRoute: typeof MonitoringRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/trips/': {
@@ -112,6 +138,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  MonitoringRoute: MonitoringRoute,
   TripsTripIdRoute: TripsTripIdRoute,
   TripsIndexRoute: TripsIndexRoute,
   ApiCategoriesCategoryIdMerchantsRoute: ApiCategoriesCategoryIdMerchantsRoute,
@@ -121,10 +148,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

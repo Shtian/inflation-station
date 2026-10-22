@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/nextjs";
+import * as Sentry from "@sentry/core";
 
 const CHAT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const AGENT_TAG = "ai.agent";

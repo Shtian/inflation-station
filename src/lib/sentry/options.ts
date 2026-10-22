@@ -1,8 +1,8 @@
-import type { BrowserOptions, NodeOptions } from "@sentry/nextjs";
+import type { Options } from "@sentry/core";
 
 const AI_CHAT_PATH = /\/api\/(assistant|feedback|onboarding)\/chat(?![\w-])/;
 
-const tracesSampler: NonNullable<NodeOptions["tracesSampler"]> = ({
+const tracesSampler: NonNullable<Options["tracesSampler"]> = ({
   name,
   normalizedRequest,
   inheritOrSampleWith,
@@ -24,12 +24,20 @@ const tracesSampler: NonNullable<NodeOptions["tracesSampler"]> = ({
 // Session replay is left out, and production traces are sampled at the docs'
 // recommended 10% to fit the free tier. Chat requests are always traced, so
 // Sentry Conversations shows every turn of a chat rather than one in ten.
-export function getSentryOptions(): BrowserOptions & NodeOptions {
-  const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+//
+// Each app passes its own build-time env (NEXT_PUBLIC_* or VITE_*), since a
+// Vite client bundle has no `process.env`.
+export function getSentryOptions({
+  dsn,
+  environment,
+}: {
+  dsn: string | undefined;
+  environment: string | undefined;
+}) {
   return {
     dsn,
     enabled: Boolean(dsn),
-    environment: process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? "production",
+    environment: environment || "production",
     tracesSampler,
     dataCollection: {
       userInfo: false,
@@ -41,5 +49,5 @@ export function getSentryOptions(): BrowserOptions & NodeOptions {
       databaseQueryData: false,
       stackFrameVariables: false,
     },
-  };
+  } satisfies Options;
 }

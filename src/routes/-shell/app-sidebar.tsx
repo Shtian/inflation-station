@@ -20,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { BuildInfo } from "./build-info";
 
 type NavItem = { href: string; label: string; Icon: LucideIcon };
 
@@ -81,7 +82,7 @@ function NavLink({ href, label, Icon }: NavItem) {
   );
 }
 
-/** Start copy of `@/components/app-sidebar`, without BuildInfo (its self-update dialog calls a Next server action). */
+/** Start copy of `@/components/app-sidebar`. */
 export function AppSidebar() {
   return (
     <aside className="sticky top-0 flex h-svh w-14 shrink-0 flex-col gap-4 overflow-hidden border-sidebar-border border-r bg-sidebar px-3 py-3 text-sidebar-foreground transition-[width] motion-reduce:transition-none md:in-data-[sidebar=expanded]:w-56">
@@ -113,6 +114,7 @@ export function AppSidebar() {
           <NavLink href="/settings" label="Innstillinger" Icon={Settings} />
           <div className="flex flex-col gap-1 md:in-data-[sidebar=expanded]:flex-row">
             <ThemeSwitcher />
+            <BuildInfo />
           </div>
         </div>
       </TooltipProvider>
