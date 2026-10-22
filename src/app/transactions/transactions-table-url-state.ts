@@ -151,23 +151,6 @@ export function toTransactionsTableSearchParams(
   return nextSearchParams;
 }
 
-export function areTransactionsTableUrlStatesEqual(
-  left: TransactionsTableUrlState,
-  right: TransactionsTableUrlState,
-) {
-  return (
-    left.page === right.page &&
-    left.pageSize === right.pageSize &&
-    left.sorting?.field === right.sorting?.field &&
-    left.sorting?.direction === right.sorting?.direction &&
-    left.globalQuery === right.globalQuery &&
-    left.dateFrom === right.dateFrom &&
-    left.dateTo === right.dateTo &&
-    left.accountId === right.accountId &&
-    left.categoryId === right.categoryId
-  );
-}
-
 export function withFilterStateChange(
   current: TransactionsTableUrlState,
   updates: Partial<Omit<TransactionsTableUrlState, "page">>,

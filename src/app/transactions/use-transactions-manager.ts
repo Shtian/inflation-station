@@ -11,7 +11,7 @@ import type {
   TransactionsResponse,
 } from "./transactions-manager.types";
 import {
-  areTransactionsTableUrlStatesEqual,
+  type TransactionsTableUrlState,
   withFilterStateChange,
 } from "./transactions-table-url-state";
 
@@ -43,13 +43,20 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export function useTransactionsManager() {
-  const urlState = useSearch({ from: "/transactions/" });
+  const tableState = useSearch({ from: "/transactions/" });
   const navigate = useNavigate({ from: "/transactions/" });
+  const setTableState = useCallback(
+    (
+      update: (current: TransactionsTableUrlState) => TransactionsTableUrlState,
+    ) => {
+      void navigate({ search: update, replace: true });
+    },
+    [navigate],
+  );
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [tableState, setTableState] = useState(urlState);
   const [globalQueryInput, setGlobalQueryInput] = useState(
-    urlState.globalQuery ?? "",
+    tableState.globalQuery ?? "",
   );
   const debouncedGlobalQueryInput = useDebouncedValue(globalQueryInput, 250);
   const [loading, setLoading] = useState(true);
@@ -59,16 +66,8 @@ export function useTransactionsManager() {
   );
 
   useEffect(() => {
-    setTableState((current) =>
-      areTransactionsTableUrlStatesEqual(current, urlState)
-        ? current
-        : urlState,
-    );
-  }, [urlState]);
-
-  useEffect(() => {
-    setGlobalQueryInput(urlState.globalQuery ?? "");
-  }, [urlState.globalQuery]);
+    setGlobalQueryInput(tableState.globalQuery ?? "");
+  }, [tableState.globalQuery]);
 
   useEffect(() => {
     const trimmed = debouncedGlobalQueryInput.trim();
@@ -83,15 +82,7 @@ export function useTransactionsManager() {
         globalQuery: nextGlobalQuery,
       });
     });
-  }, [debouncedGlobalQueryInput]);
-
-  useEffect(() => {
-    if (areTransactionsTableUrlStatesEqual(tableState, urlState)) {
-      return;
-    }
-
-    void navigate({ search: tableState, replace: true });
-  }, [navigate, tableState, urlState]);
+  }, [debouncedGlobalQueryInput, setTableState]);
 
   const loadAccounts = useCallback(async () => {
     const response = await fetch("/api/accounts");
@@ -221,7 +212,7 @@ export function useTransactionsManager() {
 
     setTransactions(parsed);
     setLoading(false);
-  }, [tableState]);
+  }, [tableState, setTableState]);
 
   useEffect(() => {
     void loadAccounts();
@@ -244,54 +235,69 @@ export function useTransactionsManager() {
         page: clamped,
       }));
     },
-    [transactions?.pagination.totalPages],
+    [transactions?.pagination.totalPages, setTableState],
   );
 
-  const setAccountFilter = useCallback((nextAccountId: string) => {
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        accountId: nextAccountId || undefined,
-      }),
-    );
-  }, []);
+  const setAccountFilter = useCallback(
+    (nextAccountId: string) => {
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          accountId: nextAccountId || undefined,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
-  const setPageSizeFilter = useCallback((nextPageSize: number) => {
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        pageSize: nextPageSize,
-      }),
-    );
-  }, []);
+  const setPageSizeFilter = useCallback(
+    (nextPageSize: number) => {
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          pageSize: nextPageSize,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
   const setGlobalQueryFilter = useCallback((nextGlobalQuery: string) => {
     setGlobalQueryInput(nextGlobalQuery);
   }, []);
 
-  const setDateFromFilter = useCallback((nextDateFrom: string) => {
-    const trimmed = nextDateFrom.trim();
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        dateFrom: trimmed.length > 0 ? trimmed : undefined,
-      }),
-    );
-  }, []);
+  const setDateFromFilter = useCallback(
+    (nextDateFrom: string) => {
+      const trimmed = nextDateFrom.trim();
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          dateFrom: trimmed.length > 0 ? trimmed : undefined,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
-  const setDateToFilter = useCallback((nextDateTo: string) => {
-    const trimmed = nextDateTo.trim();
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        dateTo: trimmed.length > 0 ? trimmed : undefined,
-      }),
-    );
-  }, []);
+  const setDateToFilter = useCallback(
+    (nextDateTo: string) => {
+      const trimmed = nextDateTo.trim();
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          dateTo: trimmed.length > 0 ? trimmed : undefined,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
-  const setCategoryFilter = useCallback((nextCategoryId: string) => {
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        categoryId: nextCategoryId || undefined,
-      }),
-    );
-  }, []);
+  const setCategoryFilter = useCallback(
+    (nextCategoryId: string) => {
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          categoryId: nextCategoryId || undefined,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
   const setSorting = useCallback(
     (nextSorting: TransactionSorting | undefined) => {
@@ -301,7 +307,7 @@ export function useTransactionsManager() {
         }),
       );
     },
-    [],
+    [setTableState],
   );
 
   return {
