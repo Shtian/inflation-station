@@ -12,8 +12,7 @@ type RouteParams = {
   params: Promise<unknown>;
 };
 
-async function parseTransactionId(params: Promise<unknown>) {
-  const routeParams = await params;
+function parseTransactionId(routeParams: unknown) {
   return typeof routeParams === "object" &&
     routeParams !== null &&
     "transactionId" in routeParams &&
@@ -23,7 +22,7 @@ async function parseTransactionId(params: Promise<unknown>) {
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
-  const transactionId = await parseTransactionId(params);
+  const transactionId = parseTransactionId(await params);
 
   if (!transactionId) {
     return NextResponse.json(
@@ -100,7 +99,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(_request: Request, { params }: RouteParams) {
-  const transactionId = await parseTransactionId(params);
+  const transactionId = parseTransactionId(await params);
 
   if (!transactionId) {
     return NextResponse.json(
