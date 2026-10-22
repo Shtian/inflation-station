@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TripsIndexRouteImport } from './routes/trips/index'
 import { Route as TripsTripIdRouteImport } from './routes/trips/$tripId'
+import { Route as ApiCategoriesCategoryIdMerchantsRouteImport } from './routes/api/categories/$categoryId/merchants'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,52 @@ const TripsTripIdRoute = TripsTripIdRouteImport.update({
   path: '/trips/$tripId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCategoriesCategoryIdMerchantsRoute =
+  ApiCategoriesCategoryIdMerchantsRouteImport.update({
+    id: '/api/categories/$categoryId/merchants',
+    path: '/api/categories/$categoryId/merchants',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/': typeof TripsIndexRoute
+  '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/trips': typeof TripsIndexRoute
+  '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/trips/': typeof TripsIndexRoute
+  '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/trips/$tripId' | '/trips/'
+  fullPaths:
+    '/' | '/trips/$tripId' | '/trips/' | '/api/categories/$categoryId/merchants'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/trips/$tripId' | '/trips'
-  id: '__root__' | '/' | '/trips/$tripId' | '/trips/'
+  to:
+    '/' | '/trips/$tripId' | '/trips' | '/api/categories/$categoryId/merchants'
+  id:
+    | '__root__'
+    | '/'
+    | '/trips/$tripId'
+    | '/trips/'
+    | '/api/categories/$categoryId/merchants'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TripsTripIdRoute: typeof TripsTripIdRoute
   TripsIndexRoute: typeof TripsIndexRoute
+  ApiCategoriesCategoryIdMerchantsRoute: typeof ApiCategoriesCategoryIdMerchantsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +100,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripsTripIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/categories/$categoryId/merchants': {
+      id: '/api/categories/$categoryId/merchants'
+      path: '/api/categories/$categoryId/merchants'
+      fullPath: '/api/categories/$categoryId/merchants'
+      preLoaderRoute: typeof ApiCategoriesCategoryIdMerchantsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +114,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TripsTripIdRoute: TripsTripIdRoute,
   TripsIndexRoute: TripsIndexRoute,
+  ApiCategoriesCategoryIdMerchantsRoute: ApiCategoriesCategoryIdMerchantsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
