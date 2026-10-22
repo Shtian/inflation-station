@@ -1,12 +1,12 @@
 "use client";
 
+import { useRouter as useStartRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { MoreHorizontal, Pencil, SquarePen, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { deleteAssistantThreadAction } from "@/app/actions/delete-assistant-thread";
-import { renameAssistantThreadAction } from "@/app/actions/rename-assistant-thread";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +38,10 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ASSISTANT_THREAD_TITLE_MAX_LENGTH } from "@/lib/assistant/threads";
 import { cn } from "@/lib/utils";
+import {
+  deleteAssistantThreadFn,
+  renameAssistantThreadFn,
+} from "@/routes/assistant/-server";
 
 export type AssistantThreadListItem = {
   id: string;
@@ -70,6 +74,8 @@ function RenameThreadDialog({
   thread: AssistantThreadListItem;
   onClose: () => void;
 }) {
+  const startRouter = useStartRouter();
+  const renameAssistantThread = useServerFn(renameAssistantThreadFn);
   const [title, setTitle] = useState(thread.title);
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
@@ -77,14 +83,14 @@ function RenameThreadDialog({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     startSaving(async () => {
-      const result = await renameAssistantThreadAction({
-        id: thread.id,
-        title,
+      const result = await renameAssistantThread({
+        data: { id: thread.id, title },
       });
       if (!result.ok) {
         setError(result.error.message);
         return;
       }
+      await startRouter.invalidate();
       toast.success("Samtalen fikk nytt navn");
       onClose();
     });
@@ -143,16 +149,19 @@ function DeleteThreadDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const startRouter = useStartRouter();
+  const deleteAssistantThread = useServerFn(deleteAssistantThreadFn);
   const [error, setError] = useState<string | null>(null);
   const [deleting, startDeleting] = useTransition();
 
   function confirm() {
     startDeleting(async () => {
-      const result = await deleteAssistantThreadAction({ id: thread.id });
+      const result = await deleteAssistantThread({ data: { id: thread.id } });
       if (!result.ok) {
         setError(result.error.message);
         return;
       }
+      await startRouter.invalidate();
       toast.success("Samtalen ble slettet");
       onClose();
       if (isActive) {

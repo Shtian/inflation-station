@@ -1,10 +1,10 @@
 "use client";
 
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
+import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { updateMessageCleanupSettingsAction } from "@/app/actions/update-message-cleanup-settings";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -29,6 +29,7 @@ import {
   reasoningEffortEntrySchema,
   reasoningEffortSchema,
 } from "@/lib/monthly-review/reasoning-effort-registry";
+import { updateMessageCleanupSettingsFn } from "@/routes/settings/-server";
 import {
   SettingsRow,
   SettingsSection,
@@ -44,6 +45,9 @@ const messageCleanupSettingsResponseSchema =
   });
 
 export function MessageCleanupSettingsSection() {
+  const updateMessageCleanupSettings = useServerFn(
+    updateMessageCleanupSettingsFn,
+  );
   const [promptText, setPromptText] = useState("");
   const [resolvedPrompt, setResolvedPrompt] = useState("");
   const [usesDefaultPrompt, setUsesDefaultPrompt] = useState(false);
@@ -132,12 +136,14 @@ export function MessageCleanupSettingsSection() {
     setSaving(true);
     setError(null);
 
-    let result: Awaited<ReturnType<typeof updateMessageCleanupSettingsAction>>;
+    let result: Awaited<ReturnType<typeof updateMessageCleanupSettings>>;
     try {
-      result = await updateMessageCleanupSettingsAction({
-        promptText: params.promptText,
-        modelId: params.modelId,
-        reasoningEffort: params.reasoningEffort,
+      result = await updateMessageCleanupSettings({
+        data: {
+          promptText: params.promptText,
+          modelId: params.modelId,
+          reasoningEffort: params.reasoningEffort,
+        },
       });
     } catch {
       setSaving(false);
