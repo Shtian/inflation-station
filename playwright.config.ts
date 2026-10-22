@@ -55,18 +55,19 @@ const INTEGRATED_PROJECT = "integrated";
 type Project = typeof STUBBED_PROJECT | typeof INTEGRATED_PROJECT;
 type ServerLaunch = { command: string; env: Record<string, string> };
 
-function integratedOnly(
-  project: Project,
-  env: Record<string, string>,
-): Record<string, string> {
-  return project === INTEGRATED_PROJECT ? env : {};
+// Nitro's production server takes its address from the env.
+function serveStartOutput(port: number): ServerLaunch {
+  return {
+    command: "pnpm start:serve",
+    env: { PORT: String(port), HOST: "127.0.0.1" },
+  };
 }
 
 /**
  * In CI a prebuilt production server starts in ~1s and serves every route
  * immediately; a dev server would recompile each route on first visit and
  * dominate the run. CI builds once and runs both production servers off that
- * one build; locally each suite gets a dev server of its own.
+ * one build; locally each Next suite gets a dev server of its own.
  */
 const LAUNCHERS: Record<
   AppServer,
@@ -75,26 +76,21 @@ const LAUNCHERS: Record<
   next: {
     // `next dev` refuses to start a second time from the same directory, so
     // the integrated dev server needs a build directory of its own.
-    dev: (port, project) => ({
+    dev: (port, project): ServerLaunch => ({
       command: `pnpm dev --port ${port}`,
-      env: integratedOnly(project, { NEXT_DIST_DIR: ".next-integrated" }),
+      env:
+        project === INTEGRATED_PROJECT
+          ? { NEXT_DIST_DIR: ".next-integrated" }
+          : {},
     }),
     prod: (port) => ({ command: `pnpm start --port ${port}`, env: {} }),
   },
   start: {
-    // Two Vite dev servers from one checkout would share, and overwrite, one
-    // dep-optimizer cache.
-    dev: (port, project) => ({
-      command: `pnpm start:dev --host 127.0.0.1 --port ${port} --strictPort`,
-      env: integratedOnly(project, {
-        START_CACHE_DIR: "node_modules/.vite-integrated",
-      }),
-    }),
-    // Nitro's production server takes its address from the env.
-    prod: (port) => ({
-      command: "pnpm start:serve",
-      env: { PORT: String(port), HOST: "127.0.0.1" },
-    }),
+    // Start's dev client hydrates through a dynamic import that the `load`
+    // event does not wait for, so specs would click before React attaches.
+    // Both modes serve the prebuilt output; run `pnpm start:build` first.
+    dev: serveStartOutput,
+    prod: serveStartOutput,
   },
 };
 

@@ -62,9 +62,6 @@ export default defineConfig(({ mode }) => {
         env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? "",
       ),
     },
-    // Two dev servers from one checkout (the stubbed and integrated E2E
-    // servers) would otherwise share and overwrite one dep-optimizer cache.
-    cacheDir: process.env.START_CACHE_DIR,
     resolve: {
       alias: { "@": path.resolve(import.meta.dirname, "src") },
     },
