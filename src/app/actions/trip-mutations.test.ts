@@ -5,15 +5,14 @@ import {
   teardownTestDatabase,
 } from "../../../tests/support/prisma-test-db";
 import {
-  createTripAction,
-  deleteTripAction,
-  setTripMembershipAction,
-  updateTripAction,
-} from "./trips";
+  createTripMutation,
+  deleteTripMutation,
+  setTripMembershipMutation,
+  updateTripMutation,
+} from "./trip-mutations";
 
-const { holder, revalidatePathMock } = vi.hoisted(() => ({
+const { holder } = vi.hoisted(() => ({
   holder: { db: null as TestDatabase | null },
-  revalidatePathMock: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -22,11 +21,8 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
-
 beforeEach(async () => {
   holder.db = await createTestDatabase();
-  revalidatePathMock.mockReset();
 });
 
 afterEach(async () => {
@@ -40,7 +36,7 @@ function db() {
 }
 
 async function createLisboa() {
-  const result = await createTripAction({
+  const result = await createTripMutation({
     name: "Lisboa",
     startDate: "2026-05-01",
     endDate: "2026-05-05",
@@ -51,20 +47,16 @@ async function createLisboa() {
   return result.data.id;
 }
 
-describe("trip actions", () => {
-  it("creates a trip and refreshes the trip pages and the transactions page", async () => {
+describe("trip mutations", () => {
+  it("creates a trip", async () => {
     const id = await createLisboa();
 
     const stored = await db().trip.findUniqueOrThrow({ where: { id } });
     expect(stored.name).toBe("Lisboa");
-    expect(revalidatePathMock.mock.calls).toEqual([
-      ["/trips", "layout"],
-      ["/transactions"],
-    ]);
   });
 
   it("returns field errors for an end date before the start date", async () => {
-    const result = await createTripAction({
+    const result = await createTripMutation({
       name: "Lisboa",
       startDate: "2026-05-05",
       endDate: "2026-05-01",
@@ -87,7 +79,7 @@ describe("trip actions", () => {
   it("renames a trip", async () => {
     const id = await createLisboa();
 
-    const result = await updateTripAction({
+    const result = await updateTripMutation({
       tripId: id,
       name: "Porto",
       startDate: "2026-05-01",
@@ -104,17 +96,18 @@ describe("trip actions", () => {
     [
       "update",
       () =>
-        updateTripAction({
+        updateTripMutation({
           tripId: "gone",
           name: "Porto",
           startDate: "2026-05-01",
           endDate: "2026-05-03",
         }),
     ],
-    ["delete", () => deleteTripAction({ tripId: "gone" })],
+    ["delete", () => deleteTripMutation({ tripId: "gone" })],
     [
       "membership",
-      () => setTripMembershipAction({ tripId: "gone", add: ["x"], remove: [] }),
+      () =>
+        setTripMembershipMutation({ tripId: "gone", add: ["x"], remove: [] }),
     ],
   ])("answers TRIP_NOT_FOUND to a %s of a missing trip", async (_label, run) => {
     expect(await run()).toEqual({
@@ -138,10 +131,10 @@ describe("trip actions", () => {
     });
 
     expect(
-      await setTripMembershipAction({ tripId: id, add: ["fly"], remove: [] }),
+      await setTripMembershipMutation({ tripId: id, add: ["fly"], remove: [] }),
     ).toEqual({ ok: true, data: { added: 1, removed: 0 } });
     expect(
-      await setTripMembershipAction({ tripId: id, add: [], remove: ["fly"] }),
+      await setTripMembershipMutation({ tripId: id, add: [], remove: ["fly"] }),
     ).toEqual({ ok: true, data: { added: 0, removed: 1 } });
     expect(
       (await db().transaction.findUniqueOrThrow({ where: { id: "fly" } }))
@@ -150,7 +143,7 @@ describe("trip actions", () => {
   });
 
   it("rejects an empty membership change", async () => {
-    const result = await setTripMembershipAction({
+    const result = await setTripMembershipMutation({
       tripId: "t",
       add: [],
       remove: [],
@@ -162,7 +155,7 @@ describe("trip actions", () => {
   it("deletes a trip", async () => {
     const id = await createLisboa();
 
-    expect(await deleteTripAction({ tripId: id })).toEqual({
+    expect(await deleteTripMutation({ tripId: id })).toEqual({
       ok: true,
       data: { id },
     });
