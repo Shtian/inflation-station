@@ -195,7 +195,8 @@ export function CategorySpendBreakdownCard({
                     <Button
                       key={value}
                       size="xs"
-                      variant={sort === value ? "secondary" : "ghost"}
+                      variant="outline"
+                      className="text-muted-foreground aria-pressed:bg-muted aria-pressed:text-foreground dark:aria-pressed:bg-input/60"
                       aria-pressed={sort === value}
                       onClick={() => setSort(value)}
                     >
