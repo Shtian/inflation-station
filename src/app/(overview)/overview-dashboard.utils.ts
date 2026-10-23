@@ -1,6 +1,10 @@
 import { formatNok } from "@/lib/format-nok";
 import { parseIsoDate } from "@/lib/iso-date";
-import type { DashboardRangePreset } from "./overview-dashboard.types";
+import type {
+  DashboardDateRange,
+  DashboardPeriod,
+  DashboardRollingPreset,
+} from "./overview-dashboard.types";
 
 export { formatNok };
 export const ALL_ACCOUNTS_VALUE = "__all_accounts__";
@@ -83,23 +87,100 @@ export function fromDateInputValue(value: string) {
   return parseIsoDate(value) ?? undefined;
 }
 
-export function getPresetRange(
-  preset: Exclude<DashboardRangePreset, "custom">,
-) {
-  const endDate = new Date();
-  endDate.setHours(0, 0, 0, 0);
-  const startDate = new Date(endDate);
+const ROLLING_PRESETS: readonly DashboardRollingPreset[] = [
+  "30d",
+  "90d",
+  "ytd",
+];
+const MONTH_PARAM = /^(\d{4})-(\d{2})$/;
+const CUSTOM_SEPARATOR = "..";
 
-  if (preset === "30d") {
-    startDate.setDate(startDate.getDate() - 29);
-  } else if (preset === "90d") {
-    startDate.setDate(startDate.getDate() - 89);
-  } else {
-    startDate.setMonth(0, 1);
+function pad(value: number, length = 2) {
+  return String(value).padStart(length, "0");
+}
+
+function formatMonthParam(year: number, month: number) {
+  return `${pad(year, 4)}-${pad(month)}`;
+}
+
+export function resolveDashboardPeriod(
+  period: DashboardPeriod,
+  today: Date,
+): DashboardDateRange {
+  switch (period.kind) {
+    case "month": {
+      const prefix = formatMonthParam(period.year, period.month);
+      const lastDay = new Date(
+        Date.UTC(period.year, period.month, 0),
+      ).getUTCDate();
+      return {
+        startDate: `${prefix}-01`,
+        endDate: `${prefix}-${pad(lastDay)}`,
+      };
+    }
+    case "rolling": {
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const day = today.getDate();
+      const start =
+        period.preset === "ytd"
+          ? new Date(year, 0, 1)
+          : new Date(year, month, day - (period.preset === "30d" ? 29 : 89));
+      return {
+        startDate: toDateInputValue(start),
+        endDate: toDateInputValue(new Date(year, month, day)),
+      };
+    }
+    case "custom":
+      return { startDate: period.startDate, endDate: period.endDate };
+  }
+}
+
+export function previousMonth(today: Date): DashboardPeriod {
+  const month = today.getMonth();
+  return month === 0
+    ? { kind: "month", year: today.getFullYear() - 1, month: 12 }
+    : { kind: "month", year: today.getFullYear(), month };
+}
+
+export function formatDashboardPeriod(period: DashboardPeriod) {
+  switch (period.kind) {
+    case "month":
+      return formatMonthParam(period.year, period.month);
+    case "rolling":
+      return period.preset;
+    case "custom":
+      return `${period.startDate}${CUSTOM_SEPARATOR}${period.endDate}`;
+  }
+}
+
+export function parseDashboardPeriod(value: unknown): DashboardPeriod | null {
+  if (typeof value !== "string") {
+    return null;
   }
 
-  return {
-    startDate: toDateInputValue(startDate),
-    endDate: toDateInputValue(endDate),
-  };
+  const preset = ROLLING_PRESETS.find((candidate) => candidate === value);
+  if (preset) {
+    return { kind: "rolling", preset };
+  }
+
+  const monthMatch = MONTH_PARAM.exec(value);
+  if (monthMatch) {
+    const year = Number.parseInt(monthMatch[1], 10);
+    const month = Number.parseInt(monthMatch[2], 10);
+    return month >= 1 && month <= 12 ? { kind: "month", year, month } : null;
+  }
+
+  const [startDate, endDate, ...rest] = value.split(CUSTOM_SEPARATOR);
+  if (
+    rest.length > 0 ||
+    endDate === undefined ||
+    !parseIsoDate(startDate) ||
+    !parseIsoDate(endDate) ||
+    startDate > endDate
+  ) {
+    return null;
+  }
+
+  return { kind: "custom", startDate, endDate };
 }

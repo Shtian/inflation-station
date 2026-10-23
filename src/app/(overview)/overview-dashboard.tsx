@@ -1,16 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
-import type { DateRange } from "react-day-picker";
-import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
-import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -20,46 +10,27 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import { AccountStateTrendCard } from "./components/account-state-trend-card";
 import { CategorySpendBreakdownCard } from "./components/category-spend-breakdown-card";
+import { DashboardPeriodFilter } from "./components/dashboard-period-filter";
 import { InflowOutflowCard } from "./components/inflow-outflow-card";
 import { NetCashflowCard } from "./components/net-cashflow-card";
-import {
-  ALL_ACCOUNTS_VALUE,
-  formatFullDate,
-  fromDateInputValue,
-} from "./overview-dashboard.utils";
+import { ALL_ACCOUNTS_VALUE, formatFullDate } from "./overview-dashboard.utils";
 import { useOverviewDashboard } from "./use-overview-dashboard";
 
 export function OverviewDashboard() {
   const {
     accounts,
     dashboardAccountId,
-    dashboardRangePreset,
-    dashboardStartDate,
-    dashboardEndDate,
+    period,
+    dashboardRange,
+    today,
     dashboardLoading,
     dashboardError,
     dashboardData,
-    customDatePopoverOpen,
     setDashboardAccountId,
-    setDashboardRangePreset,
-    setCustomDatePopoverOpen,
-    setDashboardPreset,
-    setCustomDateRange,
+    selectPeriod,
   } = useOverviewDashboard();
-
-  const selectedCustomRange = useMemo<DateRange | undefined>(() => {
-    const from = fromDateInputValue(dashboardStartDate);
-    const to = fromDateInputValue(dashboardEndDate);
-
-    if (!from && !to) {
-      return undefined;
-    }
-
-    return { from, to };
-  }, [dashboardEndDate, dashboardStartDate]);
 
   return (
     <div className="space-y-4">
@@ -75,114 +46,56 @@ export function OverviewDashboard() {
 
       <Separator className="my-4" />
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label
-            htmlFor="dashboard-account-filter"
-            className="block text-sm font-medium text-foreground"
-          >
-            Kontofilter
-          </Label>
-          <Select
-            items={[
-              { value: ALL_ACCOUNTS_VALUE, label: "Alle kontoer" },
-              ...accounts.map((account) => ({
-                value: account.id,
-                label: account.name,
-              })),
-            ]}
-            value={dashboardAccountId || ALL_ACCOUNTS_VALUE}
-            onValueChange={(value) => {
-              if (value === null) return;
-              setDashboardAccountId(value === ALL_ACCOUNTS_VALUE ? "" : value);
-            }}
-          >
-            <SelectTrigger id="dashboard-account-filter" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_ACCOUNTS_VALUE}>Alle kontoer</SelectItem>
-              {accounts.map((account) => (
-                <SelectItem key={account.id} value={account.id}>
-                  {account.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="space-y-3">
+        <div className="grid items-start gap-4 md:grid-cols-[minmax(0,14rem)_1fr]">
+          <div className="space-y-2">
+            <Label
+              htmlFor="dashboard-account-filter"
+              className="flex h-8 text-sm font-medium text-foreground"
+            >
+              Kontofilter
+            </Label>
+            <Select
+              items={[
+                { value: ALL_ACCOUNTS_VALUE, label: "Alle kontoer" },
+                ...accounts.map((account) => ({
+                  value: account.id,
+                  label: account.name,
+                })),
+              ]}
+              value={dashboardAccountId || ALL_ACCOUNTS_VALUE}
+              onValueChange={(value) => {
+                if (value === null) return;
+                setDashboardAccountId(
+                  value === ALL_ACCOUNTS_VALUE ? "" : value,
+                );
+              }}
+            >
+              <SelectTrigger id="dashboard-account-filter" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_ACCOUNTS_VALUE}>Alle kontoer</SelectItem>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="space-y-2">
-          <p
-            id="date-range-label"
-            className="text-sm font-medium text-foreground"
-          >
-            Datoperiode
-          </p>
-          <ButtonGroup role="group" aria-labelledby="date-range-label">
-            <Button
-              variant={dashboardRangePreset === "30d" ? "default" : "outline"}
-              onClick={() => setDashboardPreset("30d")}
-              aria-pressed={dashboardRangePreset === "30d"}
-            >
-              Siste 30 dager
-            </Button>
-            <Button
-              variant={dashboardRangePreset === "90d" ? "default" : "outline"}
-              onClick={() => setDashboardPreset("90d")}
-              aria-pressed={dashboardRangePreset === "90d"}
-            >
-              Siste 90 dager
-            </Button>
-            <Button
-              variant={dashboardRangePreset === "ytd" ? "default" : "outline"}
-              onClick={() => setDashboardPreset("ytd")}
-              aria-pressed={dashboardRangePreset === "ytd"}
-            >
-              Hittil i år
-            </Button>
-            <Popover
-              open={customDatePopoverOpen}
-              onOpenChange={setCustomDatePopoverOpen}
-            >
-              <PopoverTrigger
-                render={
-                  <Button
-                    variant={
-                      dashboardRangePreset === "custom" ? "default" : "outline"
-                    }
-                    onClick={() => setDashboardRangePreset("custom")}
-                    aria-pressed={dashboardRangePreset === "custom"}
-                  >
-                    Egendefinert
-                  </Button>
-                }
-              />
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="range"
-                  selected={selectedCustomRange}
-                  defaultMonth={selectedCustomRange?.from}
-                  numberOfMonths={2}
-                  onSelect={(range) => {
-                    if (!range?.from) {
-                      return;
-                    }
-                    setCustomDateRange(range);
-                  }}
-                />
-              </PopoverContent>
-            </Popover>
-          </ButtonGroup>
-          <p
-            className={cn(
-              "text-xs text-muted-foreground",
-              dashboardRangePreset !== "custom" && "hidden",
-            )}
-          >
-            {formatFullDate(dashboardStartDate)} -{" "}
-            {formatFullDate(dashboardEndDate)}
-          </p>
+          <DashboardPeriodFilter
+            period={period}
+            range={dashboardRange}
+            today={today}
+            onSelect={selectPeriod}
+          />
         </div>
+        <p className="text-xs text-muted-foreground tabular-nums">
+          {formatFullDate(dashboardRange.startDate)} –{" "}
+          {formatFullDate(dashboardRange.endDate)}
+        </p>
       </div>
 
       {dashboardError ? (
@@ -206,7 +119,7 @@ export function OverviewDashboard() {
           <CategorySpendBreakdownCard
             isLoading={dashboardLoading}
             categoryBreakdown={dashboardData?.categoryBreakdown}
-            filterKey={`${dashboardAccountId}|${dashboardStartDate}|${dashboardEndDate}`}
+            filterKey={`${dashboardAccountId}|${dashboardRange.startDate}|${dashboardRange.endDate}`}
           />
         </TabsContent>
 

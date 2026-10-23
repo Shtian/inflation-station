@@ -1,4 +1,86 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+
+const MONTH_NAMES = [
+  "januar",
+  "februar",
+  "mars",
+  "april",
+  "mai",
+  "juni",
+  "juli",
+  "august",
+  "september",
+  "oktober",
+  "november",
+  "desember",
+];
+
+function toIsoDate(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function monthOf(year: number, monthIndex: number) {
+  const first = new Date(year, monthIndex, 1);
+  return {
+    year: first.getFullYear(),
+    name: `${MONTH_NAMES[first.getMonth()]} ${first.getFullYear()}`,
+    param: toIsoDate(first).slice(0, 7),
+    range: {
+      startDate: toIsoDate(first),
+      endDate: toIsoDate(
+        new Date(first.getFullYear(), first.getMonth() + 1, 0),
+      ),
+    },
+  };
+}
+
+async function stubDashboard(page: Page) {
+  const requestedRanges: Array<{
+    startDate: string | null;
+    endDate: string | null;
+  }> = [];
+
+  await page.route("**/api/accounts", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        accounts: [
+          {
+            id: "acc-1",
+            name: "Main Account",
+            institution: "DNB",
+            isActive: true,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.route("**/api/dashboard/analytics**", async (route, request) => {
+    const url = new URL(request.url());
+    requestedRanges.push({
+      startDate: url.searchParams.get("startDate"),
+      endDate: url.searchParams.get("endDate"),
+    });
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        netCashflow: [],
+        inflowOutflow: [],
+        categoryBreakdown: [],
+        accountTrend: [],
+      }),
+    });
+  });
+
+  return { lastRange: () => requestedRanges.at(-1) };
+}
 
 test("updates dashboard charts when account and date filters change", async ({
   page,
@@ -161,10 +243,14 @@ test("updates dashboard charts when account and date filters change", async ({
     .click();
   await expect(page.getByText(/1\s?100,00/)).toBeVisible();
 
+  await page.getByRole("button", { name: "Annen periode" }).click();
   await page.getByRole("button", { name: "Hittil i år" }).click();
+  await expect(page.getByRole("button", { name: "Annen periode" })).toHaveCount(
+    0,
+  );
   await expect(
-    page.getByRole("button", { name: "Hittil i år" }),
-  ).toHaveAttribute("aria-pressed", "true");
+    page.getByRole("button", { name: "Hittil i år", expanded: false }),
+  ).toBeVisible();
   await expect(page.getByText(/960,00/).first()).toBeVisible();
   await page.getByRole("tab", { name: "Kategori", exact: true }).click();
   await expect(page.getByRole("row", { name: /Utilities/ })).toBeVisible();
@@ -266,4 +352,94 @@ test("hides a category from the totals and shows it again", async ({
     page.getByRole("button", { name: "Skjul Transport" }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Vis alle" })).toHaveCount(0);
+});
+
+test("selects a dashboard month by year and keeps it in the URL", async ({
+  page,
+}) => {
+  const now = new Date();
+  const previous = monthOf(now.getFullYear(), now.getMonth() - 1);
+  const marchYearBefore = monthOf(previous.year - 1, 2);
+  const pageErrors: Error[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error));
+  const dashboard = await stubDashboard(page);
+
+  await page.goto("/");
+
+  await expect.poll(dashboard.lastRange).toEqual(previous.range);
+  await expect(
+    page.getByRole("button", { name: previous.name, exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("group", { name: "År" })).toContainText(
+    String(previous.year),
+  );
+
+  await page.getByRole("button", { name: "Forrige år" }).click();
+  await expect(page.getByRole("group", { name: "År" })).toContainText(
+    String(previous.year - 1),
+  );
+  await page
+    .getByRole("button", { name: marchYearBefore.name, exact: true })
+    .click();
+
+  await expect.poll(dashboard.lastRange).toEqual(marchYearBefore.range);
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get("period") === marchYearBefore.param,
+  );
+
+  await page.reload();
+
+  await expect.poll(dashboard.lastRange).toEqual(marchYearBefore.range);
+  await expect(
+    page.getByRole("button", { name: marchYearBefore.name, exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByRole("button", { name: "Annen periode" }).click();
+  await page.getByRole("button", { name: "Egendefinert…" }).click();
+  await expect(page.getByRole("grid")).toHaveCount(2);
+
+  const marchYear = marchYearBefore.year;
+  await page
+    .getByRole("button", { name: new RegExp(`\\b5\\. mars ${marchYear}$`) })
+    .click();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get("period") ===
+      `${marchYear}-03-05..${marchYear}-03-05`,
+  );
+  await expect(page.getByRole("grid")).toHaveCount(2);
+
+  await page
+    .getByRole("button", { name: new RegExp(`\\b18\\. mars ${marchYear}$`) })
+    .click();
+  await expect.poll(dashboard.lastRange).toEqual({
+    startDate: `${marchYear}-03-05`,
+    endDate: `${marchYear}-03-18`,
+  });
+  await expect(page.getByRole("grid")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Egendefinert", expanded: false }),
+  ).toBeVisible();
+
+  expect(pageErrors).toEqual([]);
+});
+
+test("falls back to the previous month for an invalid period param", async ({
+  page,
+}) => {
+  const now = new Date();
+  const previous = monthOf(now.getFullYear(), now.getMonth() - 1);
+  const pageErrors: Error[] = [];
+  page.on("pageerror", (error) => pageErrors.push(error));
+  const dashboard = await stubDashboard(page);
+
+  await page.goto("/?period=garbage");
+
+  await expect(page.getByRole("heading", { name: "Oversikt" })).toBeVisible();
+  await expect.poll(dashboard.lastRange).toEqual(previous.range);
+  await expect(
+    page.getByRole("button", { name: previous.name, exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(pageErrors).toEqual([]);
 });

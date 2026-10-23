@@ -3,7 +3,14 @@ export type Account = {
   name: string;
 };
 
-export type DashboardRangePreset = "30d" | "90d" | "ytd" | "custom";
+export type DashboardRollingPreset = "30d" | "90d" | "ytd";
+
+export type DashboardPeriod =
+  | { kind: "month"; year: number; month: number } // month is 1-12
+  | { kind: "rolling"; preset: DashboardRollingPreset }
+  | { kind: "custom"; startDate: string; endDate: string }; // ISO yyyy-mm-dd
+
+export type DashboardDateRange = { startDate: string; endDate: string };
 
 export type DashboardAnalytics = {
   netCashflow: Array<{
