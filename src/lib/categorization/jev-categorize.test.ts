@@ -1,6 +1,7 @@
 import { PaymentType } from "@prisma/client";
 import type { Fetch } from "@typesafe-ai/sdk";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
+import { stubConfig } from "../../../tests/support/config-env";
 import {
   categorizeRowsWithJev,
   type JevCategorizeRow,
@@ -64,10 +65,6 @@ const categories: JevCategoryOption[] = [
 ];
 
 describe("categorizeRowsWithJev", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it("builds alternatives from every category plus the uncategorized sentinel", async () => {
     let capturedBody:
       | { questions: { pick: { criteria: Record<string, string | null> } } }
@@ -178,7 +175,7 @@ describe("categorizeRowsWithJev", () => {
   });
 
   it("counts every row as key_missing when no API key is configured", async () => {
-    vi.stubEnv("TYPESAFE_API_KEY", "");
+    stubConfig({ TYPESAFE_API_KEY: undefined });
     const fetchImpl = vi.fn();
 
     const result = await categorizeRowsWithJev({

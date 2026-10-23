@@ -177,9 +177,9 @@ describe("resolveHintGuessDisabledReason", () => {
     [{}, "key_missing"],
     [{ OPENAI_API_KEY: "  " }, "key_missing"],
     [{ OPENAI_API_KEY: "k" }, null],
-    [{ OPENAI_API_KEY: "k", OPENAI_HINT_SUGGESTIONS_ENABLED: "true" }, null],
+    [{ OPENAI_API_KEY: "k", OPENAI_HINT_SUGGESTIONS_ENABLED: true }, null],
     [
-      { OPENAI_API_KEY: "k", OPENAI_HINT_SUGGESTIONS_ENABLED: " FALSE " },
+      { OPENAI_API_KEY: "k", OPENAI_HINT_SUGGESTIONS_ENABLED: false },
       "disabled",
     ],
   ])("%j is %s", (env, reason) => {

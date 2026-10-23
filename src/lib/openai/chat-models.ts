@@ -1,3 +1,4 @@
+import { ENV } from "varlock/env";
 import { z } from "zod";
 
 const OPENAI_MODELS_URL = "https://api.openai.com/v1/models";
@@ -78,7 +79,7 @@ export async function listChatModels(
     return { source: "openai", ids: select(cachedList.models, new Date()) };
   }
 
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const apiKey = ENV.OPENAI_API_KEY?.trim();
   if (!apiKey) {
     return { source: "unavailable" };
   }

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ENV } from "varlock/env";
 import type { CsvParserResult } from "@/lib/import/csv-parser";
 import {
   type ColumnMapping,
@@ -72,15 +73,11 @@ function badRequest(error: string, message: string) {
 }
 
 function resolveCleanupDisabledReason(): CleanupDisabledReason | null {
-  const enabled =
-    process.env.OPENAI_MESSAGE_CLEANUP_ENABLED?.trim().toLowerCase() !==
-    "false";
-
-  if (!enabled) {
+  if (ENV.OPENAI_MESSAGE_CLEANUP_ENABLED === false) {
     return "disabled";
   }
 
-  return process.env.OPENAI_API_KEY?.trim() ? null : "key_missing";
+  return ENV.OPENAI_API_KEY?.trim() ? null : "key_missing";
 }
 
 // The mime type, the form field name and the filename are all client claims.

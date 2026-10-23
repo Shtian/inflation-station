@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createFileRoute } from "@tanstack/react-router";
 import { safeValidateUIMessages, stepCountIs, streamText } from "ai";
+import { ENV } from "varlock/env";
 import {
   buildOnboardingSystemPrompt,
   createOnboardingTools,
@@ -50,7 +51,7 @@ export const Route = createFileRoute("/api/onboarding/chat")({
 
         setAiChatScope("onboarding", (payload as { id?: unknown } | null)?.id);
         const openai = createOpenAI({
-          apiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
+          apiKey: ENV.OPENAI_API_KEY?.trim() ?? "",
         });
         const result = streamText({
           model: openai.chat(ONBOARDING_AGENT_MODEL),

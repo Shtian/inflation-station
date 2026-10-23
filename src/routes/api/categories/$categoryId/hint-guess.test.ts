@@ -1,12 +1,6 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vite-plus/test";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { routeHandler } from "../../-route-handler";
+import { stubConfig } from "../../../../../tests/support/config-env";
 import { Route } from "./hint-guess";
 
 const GET = routeHandler(Route, "GET");
@@ -30,12 +24,7 @@ function get(categoryId: string) {
 describe("GET /api/categories/[categoryId]/hint-guess", () => {
   beforeEach(() => {
     generateMock.mockReset();
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("OPENAI_HINT_SUGGESTIONS_ENABLED", "");
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
+    stubConfig({ OPENAI_API_KEY: "test-key" });
   });
 
   it("returns the guess without caching it", async () => {
@@ -65,7 +54,7 @@ describe("GET /api/categories/[categoryId]/hint-guess", () => {
   });
 
   it("answers disabled without generating when the flag is off", async () => {
-    vi.stubEnv("OPENAI_HINT_SUGGESTIONS_ENABLED", "false");
+    stubConfig({ OPENAI_HINT_SUGGESTIONS_ENABLED: false });
 
     const response = await get("cat-1");
 
@@ -78,7 +67,7 @@ describe("GET /api/categories/[categoryId]/hint-guess", () => {
   });
 
   it("answers key_missing without generating when there is no API key", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "");
+    stubConfig({ OPENAI_API_KEY: undefined });
 
     const response = await get("cat-1");
 

@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createFileRoute } from "@tanstack/react-router";
 import { safeValidateUIMessages, stepCountIs, streamText } from "ai";
+import { ENV } from "varlock/env";
 import {
   createFeedbackTools,
   FEEDBACK_AGENT_MODEL,
@@ -68,7 +69,7 @@ export const Route = createFileRoute("/api/feedback/chat")({
 
         setAiChatScope("feedback", (payload as { id?: unknown } | null)?.id);
         const openai = createOpenAI({
-          apiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
+          apiKey: ENV.OPENAI_API_KEY?.trim() ?? "",
         });
         const tools = createFeedbackTools({
           repo,

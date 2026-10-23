@@ -14,23 +14,37 @@ Local-first personal economy dashboard built with TanStack Start on Vite+, TypeS
    ```bash
    pnpm install
    ```
-2. Generate Prisma client:
+2. Create a `.env` that points at the local database (see [Configuration](#configuration)):
+   ```
+   DATABASE_URL=file:./prisma/dev.db
+   ```
+3. Generate Prisma client:
    ```bash
    pnpm exec prisma generate
    ```
-3. Apply migrations to local SQLite:
+4. Apply migrations to local SQLite:
    ```bash
    pnpm exec prisma migrate deploy
    ```
-4. Seed default data:
+5. Seed default data:
    ```bash
    pnpm db:seed
    ```
-5. Start development server:
+6. Start development server:
    ```bash
    pnpm dev
    ```
-6. Open `http://localhost:3000`.
+7. Open `http://localhost:3000`.
+
+## Configuration
+
+[`.env.schema`](.env.schema) is the reference for every environment variable: its type, whether it is required, its default, and whether it is a secret. [Varlock](https://varlock.dev) loads it together with your gitignored `.env`, and values set in the process environment win over both. Secrets go in `.env` only.
+
+- `pnpm dev` and `pnpm build` validate the config first and stop with an error when a required value is missing or invalid. Only `DATABASE_URL` is required.
+- An empty or missing optional key turns its feature off: `OPENAI_API_KEY`, `TYPESAFE_API_KEY`, `FEEDBACK_GITHUB_REPO`, and `VITE_SENTRY_DSN`.
+- `pnpm exec varlock load` prints the resolved config with secrets masked.
+- App code reads config through the typed `ENV` from `varlock/env`. Its types are generated into the gitignored `env.d.ts`; `pnpm dev` and `pnpm build` regenerate it, or run `pnpm exec varlock codegen` before `pnpm typecheck` in a fresh checkout.
+- The server reads `DATABASE_URL`, the OpenAI and TypeSafe keys and flags, and `FEEDBACK_GITHUB_REPO` when it boots, so restart it after a change. The Sentry values are baked into the build, so rebuild after a change.
 
 ## Self-Hosting (Raspberry Pi / Linux)
 
@@ -46,7 +60,7 @@ The app runs as a production build managed by pm2, served on port 3000 by defaul
 ### First-time Setup
 
 1. Clone the repo and enter the directory.
-2. Copy `.env.example` to `.env` and configure `DATABASE_URL` to a path **outside** the repo (so it survives pulls):
+2. Create `.env` and set `DATABASE_URL` to a path **outside** the repo (so it survives pulls). [`.env.schema`](.env.schema) lists every other setting:
    ```
    DATABASE_URL=file:/path/to/data.db
    ```
@@ -133,9 +147,9 @@ Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) a
 
 OpenAI-based categorization suggestions are optional.
 
-- Set key to enable AI suggestions:
-  ```bash
-  export OPENAI_API_KEY="your_key_here"
+- Set the key in `.env` to enable AI suggestions:
+  ```
+  OPENAI_API_KEY=your_key_here
   ```
 - If `OPENAI_API_KEY` is not set (or provider calls fail), imports still complete and rule-based categorization continues without failing the pipeline.
 
@@ -143,17 +157,17 @@ OpenAI-based categorization suggestions are optional.
 
 Jev suggests a category for each imported row and helps guess which CSV columns hold the date, amount, description and payment type.
 
-- Set key to enable Jev:
-  ```bash
-  export TYPESAFE_API_KEY="your_key_here"
+- Set the key in `.env` to enable Jev:
+  ```
+  TYPESAFE_API_KEY=your_key_here
   ```
 - If `TYPESAFE_API_KEY` is not set, imports still complete: rows go to review without Jev's category suggestions, and the column-mapping step uses the built-in guesser alone.
 
 ### Evaluating Jev categorization
 
-`pnpm eval:jev --limit 20` measures how well Jev picks categories, so a change to category hints, the prompt or the confidence floor can be compared with numbers. It needs `TYPESAFE_API_KEY`, makes one live API call per case, and is not part of `pnpm test` or CI.
+`pnpm eval:jev --limit 20` measures how well Jev picks categories, so a change to category hints, the prompt or the confidence floor can be compared with numbers. It needs `TYPESAFE_API_KEY` in `.env`, makes one live API call per case, and is not part of `pnpm test` or CI.
 
-- Labels come from already-categorized transactions in `DATABASE_URL` (default `prisma/dev.db`), one per distinct merchant, most recent first. `--limit` caps the cases (default 50).
+- Labels come from already-categorized transactions in `DATABASE_URL`, one per distinct merchant, most recent first. `--limit` caps the cases (default 50).
 - Each case runs through the production `categorizeRowsWithJev`, including the confidence floor, with the categories and their classifier hints from the same database.
 - Transactions do not store the import's name, title, sender or recipient. The eval sends `merchant` (or the normalized merchant) as the name and leaves the other three empty, so it is a little harder than a real import.
 - The report counts suggested (correct and wrong), uncategorized, below floor and each unavailable reason, with p50 and max latency, then lists every wrong or missed row.
