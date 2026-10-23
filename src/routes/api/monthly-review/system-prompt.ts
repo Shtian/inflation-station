@@ -90,7 +90,7 @@ export const Route = createFileRoute("/api/monthly-review/system-prompt")({
             listChatModels(),
           ]);
           return Response.json(toResponse(result, chatModels));
-        } catch (_error) {
+        } catch {
           return Response.json(
             {
               error: "MONTHLY_REVIEW_SYSTEM_PROMPT_FETCH_FAILED",
@@ -137,7 +137,7 @@ export const Route = createFileRoute("/api/monthly-review/system-prompt")({
           });
 
           return Response.json(toResponse(result, chatModels));
-        } catch (_error) {
+        } catch {
           return Response.json(
             {
               error: "MONTHLY_REVIEW_SYSTEM_PROMPT_UPDATE_FAILED",

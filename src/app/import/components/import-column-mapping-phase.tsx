@@ -191,7 +191,6 @@ function PreviewTable({
           ) : (
             rows.map((row, index) => (
               // Sample rows have no identity beyond their position.
-              // biome-ignore lint/suspicious/noArrayIndexKey: see above
               <TableRow key={index}>
                 {PREVIEW_COLUMNS.map((column) => (
                   <TableCell

@@ -48,7 +48,7 @@ export const Route = createFileRoute("/api/monthly-review/timeline")({
           });
 
           return Response.json({ rows });
-        } catch (_error) {
+        } catch {
           return Response.json(
             {
               error: "MONTHLY_REVIEW_TIMELINE_FETCH_FAILED",

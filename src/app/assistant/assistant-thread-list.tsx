@@ -113,6 +113,8 @@ function RenameThreadDialog({
                 onChange={(event) => setTitle(event.target.value)}
                 maxLength={ASSISTANT_THREAD_TITLE_MAX_LENGTH}
                 disabled={saving}
+                // The rename dialog has one field, so it takes focus on open.
+                // oxlint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />
             </FieldContent>

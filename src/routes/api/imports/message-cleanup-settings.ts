@@ -63,7 +63,7 @@ export const Route = createFileRoute("/api/imports/message-cleanup-settings")({
             listChatModels(),
           ]);
           return Response.json(toResponse(result, chatModels));
-        } catch (_error) {
+        } catch {
           return Response.json(
             {
               error: "MESSAGE_CLEANUP_SETTINGS_FETCH_FAILED",

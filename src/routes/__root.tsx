@@ -68,11 +68,11 @@ function RootDocument({ children }: { children: ReactNode }) {
     <html lang="nb" suppressHydrationWarning>
       <head>
         <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: static script built from the palette registry, no user input
+          // Static script built from the palette registry, no user input.
           dangerouslySetInnerHTML={{ __html: PALETTE_BOOT_SCRIPT }}
         />
         <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: static script built from the sidebar state constants, no user input
+          // Static script built from the sidebar state constants, no user input.
           dangerouslySetInnerHTML={{ __html: SIDEBAR_BOOT_SCRIPT }}
         />
         <HeadContent />

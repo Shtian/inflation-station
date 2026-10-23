@@ -47,6 +47,59 @@ export default defineConfig(({ mode }) => {
   const buildSha = getGitSha();
 
   return {
+    lint: {
+      plugins: ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+      categories: { correctness: "error" },
+      rules: {
+        // React Compiler diagnostics. Clearing them changes component
+        // behavior, so they wait for their own change.
+        "react/set-state-in-effect": "off",
+        "react/refs": "off",
+        "react/incompatible-library": "off",
+        // role="img" on drawn charts and role="group" on ButtonGroup have no
+        // matching intrinsic tag.
+        "jsx-a11y/prefer-tag-over-role": "off",
+      },
+      ignorePatterns: [
+        "src/routeTree.gen.ts",
+        "src/components/ui/**",
+        ".agents/**",
+        ".claude/**",
+      ],
+    },
+    fmt: {
+      printWidth: 80,
+      sortPackageJson: false,
+      sortImports: {
+        groups: [
+          "builtin",
+          "external",
+          "internal",
+          ["parent", "sibling", "index"],
+        ],
+        newlinesBetween: false,
+        partitionByNewline: true,
+      },
+      sortTailwindcss: {
+        stylesheet: "./src/app/globals.css",
+        functions: ["clsx", "cva", "cn", "tw"],
+      },
+      ignorePatterns: [
+        "src/routeTree.gen.ts",
+        ".agents/**",
+        ".claude/**",
+        ".playwright-cli/**",
+        "**/*.md",
+        "**/*.yml",
+        "**/*.yaml",
+      ],
+      overrides: [
+        {
+          files: ["src/components/ui/**"],
+          options: { sortImports: false, sortTailwindcss: false },
+        },
+      ],
+    },
     // The deployed `.env` still names the Sentry DSN with the old
     // NEXT_PUBLIC_ prefix, so keep reading those names.
     define: {

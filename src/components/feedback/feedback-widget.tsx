@@ -367,6 +367,8 @@ export function FeedbackWidget() {
       )}
 
       {view === "chat" ? (
+        // Escape closes the panel from whichever control inside it has focus.
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
         <section
           aria-label="Tilbakemelding"
           onKeyDown={(event) => {
