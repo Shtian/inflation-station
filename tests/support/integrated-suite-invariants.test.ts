@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const INTEGRATED_SPEC_DIR = path.resolve(__dirname, "../integrated");
 const FIXTURE_HELPER = path.resolve(__dirname, "integrated-database.ts");

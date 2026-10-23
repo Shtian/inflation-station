@@ -1,6 +1,6 @@
 import { PaymentType, type SuggestionSource } from "@prisma/client";
 import type { Fetch } from "@typesafe-ai/sdk";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { CategoryRuleCandidate } from "../categorization/rule-engine";
 import type { CsvParserResult, ParsedCsvRow } from "./csv-parser";
 import { stageParsedImportRows } from "./review-stage";

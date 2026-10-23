@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import trumfSeptember from "../../src/lib/import/pdf/__fixtures__/trumf-2026-09.json";
 import { extractStatementItems } from "../../src/lib/import/pdf/extract-items";

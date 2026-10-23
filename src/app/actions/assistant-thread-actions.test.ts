@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { deleteAssistantThreadAction } from "./delete-assistant-thread";
 import { renameAssistantThreadAction } from "./rename-assistant-thread";
 

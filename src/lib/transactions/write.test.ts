@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import type { z } from "zod";
 import { normalizeImportMerchant } from "@/lib/import/normalization";
 import {

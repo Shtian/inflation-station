@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { getAssistantChatStatus } from "./chat-status";
 import type { AssistantUIMessage } from "./contract";
 

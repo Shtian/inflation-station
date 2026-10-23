@@ -1,5 +1,12 @@
 import type { Fetch } from "@typesafe-ai/sdk";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 import type { ColumnMapping } from "./column-mapping";
 import {
   guessColumnMapping,

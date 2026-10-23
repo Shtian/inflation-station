@@ -1,5 +1,12 @@
 import { readFile } from "node:fs/promises";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 import type { ColumnMapping } from "@/lib/import/csv/column-mapping";
 import { routeHandler } from "../-route-handler";
 import { Route } from "./parse";

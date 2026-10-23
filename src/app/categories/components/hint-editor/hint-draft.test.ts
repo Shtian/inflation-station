@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { CategoryMerchantHistory } from "@/lib/categorization/category-merchants";
 import {
   type HintDraft,

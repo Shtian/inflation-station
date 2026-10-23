@@ -1,6 +1,13 @@
 import { APICallError, simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
 import type { selectAssistantModelIds } from "@/lib/assistant/models";
 import { routeHandler } from "../-route-handler";
 import { Route } from "./chat";

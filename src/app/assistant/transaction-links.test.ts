@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { AssistantUIMessage } from "@/lib/assistant/contract";
 import type { SearchTransactionsInput } from "@/lib/assistant/search";
 import type { SummarizeSpendingInput } from "@/lib/assistant/spending";

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { CleanupPlan } from "@/lib/import/message-cleanup/plan";
 import type { CleanupChunkResponse } from "@/lib/import/message-cleanup/wire";
 import { runCleanupChunks } from "./run-cleanup-chunks";

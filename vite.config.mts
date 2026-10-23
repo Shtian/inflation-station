@@ -6,8 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
-import { loadEnv } from "vite";
-import { defineConfig, type Plugin } from "vite-plus";
+import { defineConfig, loadEnv, type Plugin } from "vite-plus";
 
 const SERVER_ONLY_ID = "\0server-only";
 
@@ -124,7 +123,9 @@ export default defineConfig(({ mode }) => {
       tanstackStart({ router: { routeFileIgnorePattern: "\\.test\\.tsx?$" } }),
       react(),
       babel({ presets: [reactCompilerPreset()] }),
-      nitro(),
+      // Nitro only builds the server bundle. Under `vp test` its dev runner
+      // evaluates CommonJS deps as ESM and logs `exports is not defined`.
+      mode !== "test" && nitro(),
       // Source maps upload only when a token is present, so builds without
       // Sentry stay quiet and offline.
       sentryTanstackStart({

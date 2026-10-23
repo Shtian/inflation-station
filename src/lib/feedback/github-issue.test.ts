@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { type CommandRunner, createGithubIssue } from "./github-issue";
 
 const input = {

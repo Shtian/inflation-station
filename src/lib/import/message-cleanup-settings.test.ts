@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import {
   DEFAULT_MESSAGE_CLEANUP_SYSTEM_PROMPT,
   getMessageCleanupSettings,

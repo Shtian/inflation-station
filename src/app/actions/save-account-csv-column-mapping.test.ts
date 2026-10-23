@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { saveAccountCsvColumnMappingAction } from "./save-account-csv-column-mapping";
 
 const { accountUpdateMock } = vi.hoisted(() => ({

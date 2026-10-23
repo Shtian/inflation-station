@@ -1,5 +1,5 @@
 import { MonthlyReviewStatus } from "@prisma/client";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { getMonthlyTimeline, MONTHLY_TIMELINE_REVIEW_STATE } from "./timeline";
 
 function createTimelineDbMock() {

@@ -1,5 +1,5 @@
 import type { Tool } from "ai";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import {
   createTestDatabase,
   type TestDatabase,
