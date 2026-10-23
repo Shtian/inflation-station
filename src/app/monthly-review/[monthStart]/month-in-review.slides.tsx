@@ -1,5 +1,5 @@
+import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import Link from "next/link";
 import { type ReactNode, useEffect, useState } from "react";
 import { formatNok, formatSignedNok } from "@/lib/format-nok";
 import { toDeltaDirection } from "@/lib/monthly-review/delta";
@@ -324,7 +324,12 @@ function CategoriesSlide({ review }: SlideContext) {
             <li key={category.categoryId ?? category.categoryName}>
               {category.categoryId ? (
                 <Link
-                  href={`/transactions?dateFrom=${dateFrom}&dateTo=${dateTo}&categoryId=${encodeURIComponent(category.categoryId)}`}
+                  to="/transactions"
+                  search={{
+                    dateFrom,
+                    dateTo,
+                    categoryId: category.categoryId,
+                  }}
                   className="block rounded-sm no-underline decoration-[var(--mir-accent)] hover:[&_span.truncate]:underline"
                 >
                   {row}
@@ -674,7 +679,8 @@ function FinaleSlide(context: SlideContext) {
       >
         {adjacentMonths.previous ? (
           <Link
-            href={`/monthly-review/${adjacentMonths.previous}`}
+            to="/monthly-review/$monthStart"
+            params={{ monthStart: adjacentMonths.previous }}
             className={exitLinkClassName}
           >
             <ArrowLeft aria-hidden className="size-4" />
@@ -685,14 +691,16 @@ function FinaleSlide(context: SlideContext) {
           Spill av igjen
         </button>
         <Link
-          href={`/transactions?dateFrom=${dateFrom}&dateTo=${dateTo}`}
+          to="/transactions"
+          search={{ dateFrom, dateTo }}
           className={exitLinkClassName}
         >
           Se transaksjoner
         </Link>
         {adjacentMonths.next ? (
           <Link
-            href={`/monthly-review/${adjacentMonths.next}`}
+            to="/monthly-review/$monthStart"
+            params={{ monthStart: adjacentMonths.next }}
             className={exitLinkClassName}
           >
             {formatMonthHeading(adjacentMonths.next)}

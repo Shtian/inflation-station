@@ -1,7 +1,7 @@
 "use client";
 
+import { Link } from "@tanstack/react-router";
 import { ArrowRight, Calendar } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { buttonVariants } from "@/components/ui/button";
@@ -306,7 +306,8 @@ export function MonthlyReviewManager() {
                   </div>
 
                   <Link
-                    href={`/monthly-review/${row.monthStart}`}
+                    to="/monthly-review/$monthStart"
+                    params={{ monthStart: row.monthStart }}
                     className={cn(
                       buttonVariants({ size: "lg" }),
                       "h-11 bg-brand px-5 font-semibold text-base text-brand-foreground hover:bg-brand/90",

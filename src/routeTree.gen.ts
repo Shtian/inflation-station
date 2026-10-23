@@ -19,6 +19,8 @@ import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
 import { Route as AssistantIndexRouteImport } from './routes/assistant/index'
 import { Route as CategoriesIndexRouteImport } from './routes/categories/index'
 import { Route as ImportIndexRouteImport } from './routes/import/index'
+import { Route as MonthlyReviewIndexRouteImport } from './routes/monthly-review/index'
+import { Route as MonthlyReviewMonthStartRouteImport } from './routes/monthly-review/$monthStart'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SubscriptionsIndexRouteImport } from './routes/subscriptions/index'
@@ -95,6 +97,16 @@ const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
 const ImportIndexRoute = ImportIndexRouteImport.update({
   id: '/import/',
   path: '/import/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonthlyReviewIndexRoute = MonthlyReviewIndexRouteImport.update({
+  id: '/monthly-review/',
+  path: '/monthly-review/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonthlyReviewMonthStartRoute = MonthlyReviewMonthStartRouteImport.update({
+  id: '/monthly-review/$monthStart',
+  path: '/monthly-review/$monthStart',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
@@ -249,11 +261,13 @@ export interface FileRoutesByFullPath {
   '/api/categories': typeof ApiCategoriesRouteWithChildren
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
+  '/monthly-review/$monthStart': typeof MonthlyReviewMonthStartRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/accounts/': typeof AccountsIndexRoute
   '/assistant/': typeof AssistantIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
+  '/monthly-review/': typeof MonthlyReviewIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
@@ -288,11 +302,13 @@ export interface FileRoutesByTo {
   '/api/categories': typeof ApiCategoriesRouteWithChildren
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
+  '/monthly-review/$monthStart': typeof MonthlyReviewMonthStartRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/accounts': typeof AccountsIndexRoute
   '/assistant': typeof AssistantIndexRoute
   '/categories': typeof CategoriesIndexRoute
   '/import': typeof ImportIndexRoute
+  '/monthly-review': typeof MonthlyReviewIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/subscriptions': typeof SubscriptionsIndexRoute
@@ -328,11 +344,13 @@ export interface FileRoutesById {
   '/api/categories': typeof ApiCategoriesRouteWithChildren
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
+  '/monthly-review/$monthStart': typeof MonthlyReviewMonthStartRoute
   '/trips/$tripId': typeof TripsTripIdRoute
   '/accounts/': typeof AccountsIndexRoute
   '/assistant/': typeof AssistantIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
+  '/monthly-review/': typeof MonthlyReviewIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
@@ -369,11 +387,13 @@ export interface FileRouteTypes {
     | '/api/categories'
     | '/api/category-rules'
     | '/api/transactions'
+    | '/monthly-review/$monthStart'
     | '/trips/$tripId'
     | '/accounts/'
     | '/assistant/'
     | '/categories/'
     | '/import/'
+    | '/monthly-review/'
     | '/onboarding/'
     | '/settings/'
     | '/subscriptions/'
@@ -408,11 +428,13 @@ export interface FileRouteTypes {
     | '/api/categories'
     | '/api/category-rules'
     | '/api/transactions'
+    | '/monthly-review/$monthStart'
     | '/trips/$tripId'
     | '/accounts'
     | '/assistant'
     | '/categories'
     | '/import'
+    | '/monthly-review'
     | '/onboarding'
     | '/settings'
     | '/subscriptions'
@@ -447,11 +469,13 @@ export interface FileRouteTypes {
     | '/api/categories'
     | '/api/category-rules'
     | '/api/transactions'
+    | '/monthly-review/$monthStart'
     | '/trips/$tripId'
     | '/accounts/'
     | '/assistant/'
     | '/categories/'
     | '/import/'
+    | '/monthly-review/'
     | '/onboarding/'
     | '/settings/'
     | '/subscriptions/'
@@ -487,11 +511,13 @@ export interface RootRouteChildren {
   ApiCategoriesRoute: typeof ApiCategoriesRouteWithChildren
   ApiCategoryRulesRoute: typeof ApiCategoryRulesRouteWithChildren
   ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
+  MonthlyReviewMonthStartRoute: typeof MonthlyReviewMonthStartRoute
   TripsTripIdRoute: typeof TripsTripIdRoute
   AccountsIndexRoute: typeof AccountsIndexRoute
   AssistantIndexRoute: typeof AssistantIndexRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
   ImportIndexRoute: typeof ImportIndexRoute
+  MonthlyReviewIndexRoute: typeof MonthlyReviewIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   SubscriptionsIndexRoute: typeof SubscriptionsIndexRoute
@@ -584,6 +610,20 @@ declare module '@tanstack/react-router' {
       path: '/import'
       fullPath: '/import/'
       preLoaderRoute: typeof ImportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monthly-review/': {
+      id: '/monthly-review/'
+      path: '/monthly-review'
+      fullPath: '/monthly-review/'
+      preLoaderRoute: typeof MonthlyReviewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monthly-review/$monthStart': {
+      id: '/monthly-review/$monthStart'
+      path: '/monthly-review/$monthStart'
+      fullPath: '/monthly-review/$monthStart'
+      preLoaderRoute: typeof MonthlyReviewMonthStartRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding/': {
@@ -850,11 +890,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCategoriesRoute: ApiCategoriesRouteWithChildren,
   ApiCategoryRulesRoute: ApiCategoryRulesRouteWithChildren,
   ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
+  MonthlyReviewMonthStartRoute: MonthlyReviewMonthStartRoute,
   TripsTripIdRoute: TripsTripIdRoute,
   AccountsIndexRoute: AccountsIndexRoute,
   AssistantIndexRoute: AssistantIndexRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
   ImportIndexRoute: ImportIndexRoute,
+  MonthlyReviewIndexRoute: MonthlyReviewIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   SubscriptionsIndexRoute: SubscriptionsIndexRoute,
