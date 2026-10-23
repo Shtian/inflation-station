@@ -5,7 +5,7 @@ Local-first personal economy dashboard built with TanStack Start on Vite+, TypeS
 ## Prerequisites
 
 - Node.js 20+
-- pnpm 10+
+- pnpm 12 (pinned via `packageManager`)
 - Git
 
 ## Local Setup (macOS)
@@ -39,7 +39,7 @@ The app runs as a production build managed by pm2, served on port 3000 by defaul
 ### Prerequisites
 
 - Node.js 22.5+ (the database backup script uses `node:sqlite`)
-- pnpm 10+
+- pnpm 12 (pinned via `packageManager`)
 - pm2 (`npm install -g pm2`)
 - Git
 
