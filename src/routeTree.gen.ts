@@ -18,6 +18,7 @@ import { Route as ApiCategoryRulesRouteImport } from './routes/api/category-rule
 import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
 import { Route as CategoriesIndexRouteImport } from './routes/categories/index'
 import { Route as ImportIndexRouteImport } from './routes/import/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as TransactionsIndexRouteImport } from './routes/transactions/index'
 import { Route as TripsIndexRouteImport } from './routes/trips/index'
 import { Route as TripsTripIdRouteImport } from './routes/trips/$tripId'
@@ -86,6 +87,11 @@ const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
 const ImportIndexRoute = ImportIndexRouteImport.update({
   id: '/import/',
   path: '/import/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TransactionsIndexRoute = TransactionsIndexRouteImport.update({
@@ -229,6 +235,7 @@ export interface FileRoutesByFullPath {
   '/accounts/': typeof AccountsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/transactions/': typeof TransactionsIndexRoute
   '/trips/': typeof TripsIndexRoute
   '/api/accounts/$accountId': typeof ApiAccountsAccountIdRoute
@@ -264,6 +271,7 @@ export interface FileRoutesByTo {
   '/accounts': typeof AccountsIndexRoute
   '/categories': typeof CategoriesIndexRoute
   '/import': typeof ImportIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/transactions': typeof TransactionsIndexRoute
   '/trips': typeof TripsIndexRoute
   '/api/accounts/$accountId': typeof ApiAccountsAccountIdRoute
@@ -300,6 +308,7 @@ export interface FileRoutesById {
   '/accounts/': typeof AccountsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/transactions/': typeof TransactionsIndexRoute
   '/trips/': typeof TripsIndexRoute
   '/api/accounts/$accountId': typeof ApiAccountsAccountIdRoute
@@ -337,6 +346,7 @@ export interface FileRouteTypes {
     | '/accounts/'
     | '/categories/'
     | '/import/'
+    | '/settings/'
     | '/transactions/'
     | '/trips/'
     | '/api/accounts/$accountId'
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/categories'
     | '/import'
+    | '/settings'
     | '/transactions'
     | '/trips'
     | '/api/accounts/$accountId'
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/accounts/'
     | '/categories/'
     | '/import/'
+    | '/settings/'
     | '/transactions/'
     | '/trips/'
     | '/api/accounts/$accountId'
@@ -443,6 +455,7 @@ export interface RootRouteChildren {
   AccountsIndexRoute: typeof AccountsIndexRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
   ImportIndexRoute: typeof ImportIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
   TransactionsIndexRoute: typeof TransactionsIndexRoute
   TripsIndexRoute: typeof TripsIndexRoute
   ApiAssistantChatRoute: typeof ApiAssistantChatRoute
@@ -525,6 +538,13 @@ declare module '@tanstack/react-router' {
       path: '/import'
       fullPath: '/import/'
       preLoaderRoute: typeof ImportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/transactions/': {
@@ -774,6 +794,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountsIndexRoute: AccountsIndexRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
   ImportIndexRoute: ImportIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
   TransactionsIndexRoute: TransactionsIndexRoute,
   TripsIndexRoute: TripsIndexRoute,
   ApiAssistantChatRoute: ApiAssistantChatRoute,
