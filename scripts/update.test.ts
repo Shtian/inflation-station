@@ -93,15 +93,51 @@ function pm2Calls() {
     : [];
 }
 
-function sentryEvents() {
+function sentryEnvelopes() {
   return readdirSync(logs)
     .filter((f) => /^curl-\d+\.body$/.test(f))
     .map((f) => {
-      const [header, item, event] = readFileSync(path.join(logs, f), "utf8")
+      const [header, ...rest] = readFileSync(path.join(logs, f), "utf8")
         .split("\n")
         .map((line) => JSON.parse(line));
-      return { header, item, event };
+      const items = [];
+      for (let i = 0; i < rest.length; i += 2) {
+        items.push({ header: rest[i], payload: rest[i + 1] });
+      }
+      return { header, items };
     });
+}
+
+function onlyEnvelope() {
+  const envelopes = sentryEnvelopes();
+  expect(envelopes).toHaveLength(1);
+  const [{ header, items }] = envelopes;
+  return {
+    header,
+    types: items.map((i) => i.header.type),
+    event: items.find((i) => i.header.type === "event")?.payload,
+    metricItem: items.find((i) => i.header.type === "trace_metric"),
+  };
+}
+
+type Metric = {
+  name: string;
+  type: string;
+  unit?: string;
+  value: number;
+  trace_id: string;
+  attributes: Record<string, { value: unknown; type: string }>;
+};
+
+function describeMetrics(items: Metric[]) {
+  return items.map((m) => ({
+    name: m.name,
+    type: m.type,
+    unit: m.unit,
+    ...Object.fromEntries(
+      Object.entries(m.attributes).map(([k, a]) => [k, `${a.type}:${a.value}`]),
+    ),
+  }));
 }
 
 function curlArgs() {
@@ -220,10 +256,8 @@ describe("update.sh", () => {
     });
 
     expect(run.status).toBe(137);
-    const events = sentryEvents();
-    expect(events).toHaveLength(1);
-    const [{ header, item, event }] = events;
-    expect(item).toEqual({ type: "event" });
+    const { header, types, event } = onlyEnvelope();
+    expect(types).toEqual(["event", "trace_metric"]);
     expect(header.event_id).toBe(event.event_id);
     expect(event).toMatchObject({
       level: "error",
@@ -255,7 +289,7 @@ describe("update.sh", () => {
     const run = deploy("bbb2222", { FAKE_FAIL: "db:migrate:deploy" });
 
     expect(run.status).toBe(1);
-    const [{ event }] = sentryEvents();
+    const { event } = onlyEnvelope();
     expect(event.message.formatted).toBe("Deploy failed at migrate (exit 1)");
     expect(event.environment).toBe("production");
     expect(event.extra).toEqual({});
@@ -271,7 +305,7 @@ describe("update.sh", () => {
 
     expect(run.status).toBe(2);
     expect(run.stderr).toContain("==> Deploy failed at install (exit 2)");
-    expect(sentryEvents()).toEqual([]);
+    expect(sentryEnvelopes()).toEqual([]);
   });
 
   it("keeps the failing exit code when Sentry is unreachable", () => {
@@ -287,6 +321,108 @@ describe("update.sh", () => {
     });
 
     expect(run.status).toBe(137);
-    expect(sentryEvents()).toHaveLength(1);
+    expect(sentryEnvelopes()).toHaveLength(1);
+  });
+
+  it("sends deploy timings to Sentry after a successful deploy", () => {
+    writeFileSync(
+      path.join(app, ".env"),
+      [
+        "VITE_SENTRY_DSN=https://pubkey@o1.ingest.sentry.io/42",
+        "VITE_SENTRY_ENVIRONMENT=home",
+        "PM2_APP_NAME=inflation-station-other",
+      ].join("\n"),
+    );
+
+    const run = deploy("aaa1111");
+
+    expect(run.status).toBe(0);
+    const { header, types, metricItem } = onlyEnvelope();
+    expect(header).toEqual({});
+    expect(types).toEqual(["trace_metric"]);
+    expect(metricItem?.header).toEqual({
+      type: "trace_metric",
+      item_count: 7,
+      content_type: "application/vnd.sentry.items.trace-metric+json",
+    });
+    expect(metricItem?.payload.version).toBe(2);
+    const metrics: Metric[] = metricItem?.payload.items;
+    const common = {
+      "sentry.release": "string:aaa1111",
+      "sentry.environment": "string:home",
+      pm2_app: "string:inflation-station-other",
+    };
+    const step = (name: string) => ({
+      name: "deploy.step.duration",
+      type: "distribution",
+      unit: "millisecond",
+      ...common,
+      deploy_step: `string:${name}`,
+      outcome: "string:success",
+    });
+    expect(describeMetrics(metrics)).toEqual([
+      step("install"),
+      step("migrate"),
+      step("build"),
+      step("assemble"),
+      step("restart"),
+      {
+        name: "deploy.duration",
+        type: "distribution",
+        unit: "millisecond",
+        ...common,
+        outcome: "string:success",
+      },
+      {
+        name: "deploy.completed",
+        type: "counter",
+        unit: undefined,
+        ...common,
+        outcome: "string:success",
+      },
+    ]);
+    expect(metrics[6].value).toBe(1);
+    for (const m of metrics.slice(0, 6)) {
+      expect(Number.isInteger(m.value) && m.value >= 0).toBe(true);
+    }
+    const stepTotal = metrics.slice(0, 5).reduce((sum, m) => sum + m.value, 0);
+    expect(metrics[5].value).toBeGreaterThanOrEqual(stepTotal);
+  });
+
+  it("links a failed deploy's event to its step timings", () => {
+    writeFileSync(
+      path.join(app, ".env"),
+      "VITE_SENTRY_DSN=https://pubkey@o1.ingest.sentry.io/42\n",
+    );
+
+    const run = deploy("bbb2222", {
+      FAKE_FAIL: "build",
+      FAKE_FAIL_CODE: "137",
+    });
+
+    expect(run.status).toBe(137);
+    const { event, metricItem } = onlyEnvelope();
+    const metrics: Metric[] = metricItem?.payload.items;
+    expect(
+      describeMetrics(metrics).map((m) => [m.name, m.deploy_step, m.outcome]),
+    ).toEqual([
+      ["deploy.step.duration", "string:install", "string:success"],
+      ["deploy.step.duration", "string:migrate", "string:success"],
+      ["deploy.step.duration", "string:build", "string:failure"],
+      ["deploy.duration", "string:build", "string:failure"],
+      ["deploy.completed", undefined, "string:failure"],
+    ]);
+    const traceId = event.contexts.trace.trace_id;
+    expect(traceId).toMatch(/^[0-9a-f]{32}$/);
+    expect(event.contexts.trace.span_id).toMatch(/^[0-9a-f]{16}$/);
+    expect(new Set(metrics.map((m) => m.trace_id))).toEqual(new Set([traceId]));
+  });
+
+  it("sends nothing after a successful deploy when no DSN is configured", () => {
+    const run = deploy("aaa1111");
+
+    expect(run.status).toBe(0);
+    expect(live("server/index.mjs")).toBe("server aaa1111\n");
+    expect(sentryEnvelopes()).toEqual([]);
   });
 });

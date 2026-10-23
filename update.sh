@@ -6,11 +6,18 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 cd "$REPO_DIR"
 
+# A missing node must not fail the deploy just for timing.
+now_ms() {
+  node -p 'Date.now()' 2>/dev/null || echo "$(date +%s)000"
+}
+
 STEP="prepare"
 STEP_OUTPUT="$(mktemp)"
+STEP_TIMES="$(mktemp)"
+START_MS="$(now_ms)"
 
-report_failure() {
-  local code="$1" dsn="${VITE_SENTRY_DSN:-}"
+report_to_sentry() {
+  local code="$1" end_ms="$2" dsn="${VITE_SENTRY_DSN:-}"
   [ -n "$dsn" ] || return 0
 
   local rest="${dsn#*://}"
@@ -20,29 +27,81 @@ report_failure() {
 
   # Migration errors can echo database values, which stay out of Sentry.
   local output=""
-  if [ "$STEP" != "migrate" ]; then
+  if [ "$code" -ne 0 ] && [ "$STEP" != "migrate" ]; then
     output="$(tail -n 50 "$STEP_OUTPUT")"
   fi
 
   DEPLOY_STEP="$STEP" DEPLOY_EXIT="$code" DEPLOY_OUTPUT="$output" \
+    DEPLOY_START="$START_MS" DEPLOY_END="$end_ms" DEPLOY_TIMES="$(cat "$STEP_TIMES")" \
     DEPLOY_RELEASE="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" \
-    DEPLOY_APP="$APP_NAME" node -e '
+    DEPLOY_APP="${APP_NAME:-}" node -e '
       const e = process.env;
+      const failed = e.DEPLOY_EXIT !== "0";
+      const environment = e.VITE_SENTRY_ENVIRONMENT || "production";
       const id = crypto.randomUUID().replaceAll("-", "");
-      const event = {
-        event_id: id,
-        timestamp: Date.now() / 1000,
-        platform: "other",
-        level: "error",
-        logger: "update.sh",
-        environment: e.VITE_SENTRY_ENVIRONMENT || "production",
-        release: e.DEPLOY_RELEASE,
-        message: { formatted: `Deploy failed at ${e.DEPLOY_STEP} (exit ${e.DEPLOY_EXIT})` },
-        fingerprint: ["deploy-failed", e.DEPLOY_STEP],
-        tags: { deploy_step: e.DEPLOY_STEP, exit_code: e.DEPLOY_EXIT, pm2_app: e.DEPLOY_APP },
-        extra: e.DEPLOY_OUTPUT ? { output_tail: e.DEPLOY_OUTPUT } : {},
-      };
-      process.stdout.write([{ event_id: id }, { type: "event" }, event].map((l) => JSON.stringify(l)).join("\n"));
+      const traceId = crypto.randomUUID().replaceAll("-", "");
+      const end = Number(e.DEPLOY_END);
+      const outcome = (ok) => (ok ? "success" : "failure");
+
+      const metric = (name, type, unit, value, at, attributes) => ({
+        timestamp: at / 1000,
+        trace_id: traceId,
+        name,
+        type,
+        ...(unit && { unit }),
+        value,
+        attributes: Object.fromEntries(
+          Object.entries({
+            "sentry.release": e.DEPLOY_RELEASE,
+            "sentry.environment": environment,
+            pm2_app: e.DEPLOY_APP,
+            ...attributes,
+          }).map(([k, v]) => [k, { value: v, type: "string" }]),
+        ),
+      });
+      const marks = e.DEPLOY_TIMES.split("\n").filter(Boolean).map((l) => l.split(" "));
+      const metrics = marks.map(([step, start], i) => {
+        const last = i === marks.length - 1;
+        const stop = last ? end : Number(marks[i + 1][1]);
+        return metric("deploy.step.duration", "distribution", "millisecond", stop - Number(start), stop, {
+          deploy_step: step,
+          outcome: outcome(!(last && failed)),
+        });
+      });
+      metrics.push(
+        metric("deploy.duration", "distribution", "millisecond", end - Number(e.DEPLOY_START), end, {
+          outcome: outcome(!failed),
+          ...(failed && { deploy_step: e.DEPLOY_STEP }),
+        }),
+        metric("deploy.completed", "counter", undefined, 1, end, { outcome: outcome(!failed) }),
+      );
+
+      const lines = [failed ? { event_id: id } : {}];
+      if (failed) {
+        lines.push({ type: "event" }, {
+          event_id: id,
+          timestamp: Date.now() / 1000,
+          platform: "other",
+          level: "error",
+          logger: "update.sh",
+          environment,
+          release: e.DEPLOY_RELEASE,
+          message: { formatted: `Deploy failed at ${e.DEPLOY_STEP} (exit ${e.DEPLOY_EXIT})` },
+          fingerprint: ["deploy-failed", e.DEPLOY_STEP],
+          tags: { deploy_step: e.DEPLOY_STEP, exit_code: e.DEPLOY_EXIT, pm2_app: e.DEPLOY_APP },
+          extra: e.DEPLOY_OUTPUT ? { output_tail: e.DEPLOY_OUTPUT } : {},
+          contexts: { trace: { trace_id: traceId, span_id: id.slice(16) } },
+        });
+      }
+      lines.push(
+        {
+          type: "trace_metric",
+          item_count: metrics.length,
+          content_type: "application/vnd.sentry.items.trace-metric+json",
+        },
+        { version: 2, items: metrics },
+      );
+      process.stdout.write(lines.map((l) => JSON.stringify(l)).join("\n"));
     ' | curl -sS -o /dev/null --connect-timeout 5 --max-time 10 \
     -H "Content-Type: application/x-sentry-envelope" \
     -H "X-Sentry-Auth: Sentry sentry_version=7, sentry_key=${key%%:*}, sentry_client=update.sh/1" \
@@ -50,12 +109,13 @@ report_failure() {
 }
 
 on_exit() {
-  local code=$?
+  local code=$? end_ms
+  end_ms="$(now_ms)"
   if [ "$code" -ne 0 ]; then
     echo "==> Deploy failed at $STEP (exit $code)" >&2
-    report_failure "$code" || true
   fi
-  rm -f "$STEP_OUTPUT"
+  report_to_sentry "$code" "$end_ms" || true
+  rm -f "$STEP_OUTPUT" "$STEP_TIMES"
   exit "$code"
 }
 trap on_exit EXIT
@@ -63,6 +123,7 @@ trap on_exit EXIT
 run_step() {
   STEP="$1"
   shift
+  echo "$STEP $(now_ms)" >> "$STEP_TIMES"
   "$@" 2>&1 | tee "$STEP_OUTPUT"
 }
 
