@@ -1,50 +1,46 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import type { DateRange } from "react-day-picker";
 import type {
   Account,
   DashboardAnalytics,
-  DashboardRangePreset,
+  DashboardDateRange,
+  DashboardPeriod,
 } from "./overview-dashboard.types";
-import { getPresetRange, toDateInputValue } from "./overview-dashboard.utils";
+import {
+  formatDashboardPeriod,
+  parseDashboardPeriod,
+  previousMonth,
+  resolveDashboardPeriod,
+} from "./overview-dashboard.utils";
 
 type UseOverviewDashboardResult = {
   accounts: Account[];
   dashboardAccountId: string;
-  dashboardRangePreset: DashboardRangePreset;
-  dashboardStartDate: string;
-  dashboardEndDate: string;
+  period: DashboardPeriod;
+  dashboardRange: DashboardDateRange;
+  today: Date;
   dashboardLoading: boolean;
   dashboardError: string | null;
   dashboardData: DashboardAnalytics | null;
-  customDatePopoverOpen: boolean;
   setDashboardAccountId: (accountId: string) => void;
-  setDashboardRangePreset: (preset: DashboardRangePreset) => void;
-  setDashboardStartDate: (value: string) => void;
-  setDashboardEndDate: (value: string) => void;
-  setCustomDatePopoverOpen: (open: boolean) => void;
-  setDashboardPreset: (preset: Exclude<DashboardRangePreset, "custom">) => void;
-  setCustomDateRange: (range: DateRange) => void;
+  selectPeriod: (period: DashboardPeriod) => void;
 };
 
 export function useOverviewDashboard(): UseOverviewDashboardResult {
   const navigate = useNavigate();
+  const search = useSearch({ from: "/" });
+  const [today] = useState(() => new Date());
+  const period = parseDashboardPeriod(search.period) ?? previousMonth(today);
+  const { startDate: dashboardStartDate, endDate: dashboardEndDate } =
+    resolveDashboardPeriod(period, today);
+
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [dashboardAccountId, setDashboardAccountId] = useState("");
-  const [dashboardRangePreset, setDashboardRangePreset] =
-    useState<DashboardRangePreset>("30d");
-  const [dashboardStartDate, setDashboardStartDate] = useState(
-    () => getPresetRange("30d").startDate,
-  );
-  const [dashboardEndDate, setDashboardEndDate] = useState(
-    () => getPresetRange("30d").endDate,
-  );
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardAnalytics | null>(
     null,
   );
-  const [customDatePopoverOpen, setCustomDatePopoverOpen] = useState(false);
 
   const loadAccounts = useCallback(async () => {
     const response = await fetch("/api/accounts");
@@ -114,46 +110,27 @@ export function useOverviewDashboard(): UseOverviewDashboardResult {
     void loadDashboard();
   }, [loadDashboard]);
 
-  function setDashboardPreset(preset: Exclude<DashboardRangePreset, "custom">) {
-    const range = getPresetRange(preset);
-    setDashboardRangePreset(preset);
-    setDashboardStartDate(range.startDate);
-    setDashboardEndDate(range.endDate);
-  }
-
-  function setCustomDateRange(range: DateRange) {
-    if (!range.from) {
-      return;
-    }
-
-    setDashboardRangePreset("custom");
-    setDashboardStartDate(toDateInputValue(range.from));
-
-    if (range.to) {
-      setDashboardEndDate(toDateInputValue(range.to));
-      setCustomDatePopoverOpen(false);
-      return;
-    }
-
-    setDashboardEndDate(toDateInputValue(range.from));
+  function selectPeriod(next: DashboardPeriod) {
+    void navigate({
+      to: "/",
+      search: (prev) => ({ ...prev, period: formatDashboardPeriod(next) }),
+      replace: true,
+    });
   }
 
   return {
     accounts,
     dashboardAccountId,
-    dashboardRangePreset,
-    dashboardStartDate,
-    dashboardEndDate,
+    period,
+    dashboardRange: {
+      startDate: dashboardStartDate,
+      endDate: dashboardEndDate,
+    },
+    today,
     dashboardLoading,
     dashboardError,
     dashboardData,
-    customDatePopoverOpen,
     setDashboardAccountId,
-    setDashboardRangePreset,
-    setDashboardStartDate,
-    setDashboardEndDate,
-    setCustomDatePopoverOpen,
-    setDashboardPreset,
-    setCustomDateRange,
+    selectPeriod,
   };
 }
