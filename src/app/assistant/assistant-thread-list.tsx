@@ -1,10 +1,8 @@
 "use client";
 
-import { useRouter as useStartRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { MoreHorizontal, Pencil, SquarePen, Trash2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
@@ -74,7 +72,7 @@ function RenameThreadDialog({
   thread: AssistantThreadListItem;
   onClose: () => void;
 }) {
-  const startRouter = useStartRouter();
+  const router = useRouter();
   const renameAssistantThread = useServerFn(renameAssistantThreadFn);
   const [title, setTitle] = useState(thread.title);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +88,7 @@ function RenameThreadDialog({
         setError(result.error.message);
         return;
       }
-      await startRouter.invalidate();
+      await router.invalidate();
       toast.success("Samtalen fikk nytt navn");
       onClose();
     });
@@ -149,7 +147,6 @@ function DeleteThreadDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const startRouter = useStartRouter();
   const deleteAssistantThread = useServerFn(deleteAssistantThreadFn);
   const [error, setError] = useState<string | null>(null);
   const [deleting, startDeleting] = useTransition();
@@ -161,11 +158,11 @@ function DeleteThreadDialog({
         setError(result.error.message);
         return;
       }
-      await startRouter.invalidate();
+      await router.invalidate();
       toast.success("Samtalen ble slettet");
       onClose();
       if (isActive) {
-        router.push("/assistant");
+        void router.navigate({ to: "/assistant" });
       }
     });
   }
@@ -271,7 +268,8 @@ function ThreadActionsMenu({
 export function NewThreadLink() {
   return (
     <Link
-      href="/assistant"
+      to="/assistant"
+      activeOptions={{ exact: true }}
       aria-label="Ny samtale"
       title="Ny samtale"
       className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
@@ -310,7 +308,8 @@ export function AssistantThreadList({
                   )}
                 >
                   <Link
-                    href={`/assistant?thread=${thread.id}`}
+                    to="/assistant"
+                    search={{ thread: thread.id }}
                     aria-current={isActive ? "page" : undefined}
                     className="flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2.5 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                   >

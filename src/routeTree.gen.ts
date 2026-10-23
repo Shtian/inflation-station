@@ -16,6 +16,7 @@ import { Route as ApiAccountsRouteImport } from './routes/api/accounts'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
 import { Route as ApiCategoryRulesRouteImport } from './routes/api/category-rules'
 import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
+import { Route as AssistantIndexRouteImport } from './routes/assistant/index'
 import { Route as CategoriesIndexRouteImport } from './routes/categories/index'
 import { Route as ImportIndexRouteImport } from './routes/import/index'
 import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
@@ -79,6 +80,11 @@ const ApiCategoryRulesRoute = ApiCategoryRulesRouteImport.update({
 const ApiTransactionsRoute = ApiTransactionsRouteImport.update({
   id: '/api/transactions',
   path: '/api/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistantIndexRoute = AssistantIndexRouteImport.update({
+  id: '/assistant/',
+  path: '/assistant/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
@@ -245,6 +251,7 @@ export interface FileRoutesByFullPath {
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/trips/$tripId': typeof TripsTripIdRoute
   '/accounts/': typeof AccountsIndexRoute
+  '/assistant/': typeof AssistantIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
@@ -283,6 +290,7 @@ export interface FileRoutesByTo {
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/trips/$tripId': typeof TripsTripIdRoute
   '/accounts': typeof AccountsIndexRoute
+  '/assistant': typeof AssistantIndexRoute
   '/categories': typeof CategoriesIndexRoute
   '/import': typeof ImportIndexRoute
   '/onboarding': typeof OnboardingIndexRoute
@@ -322,6 +330,7 @@ export interface FileRoutesById {
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/trips/$tripId': typeof TripsTripIdRoute
   '/accounts/': typeof AccountsIndexRoute
+  '/assistant/': typeof AssistantIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
   '/onboarding/': typeof OnboardingIndexRoute
@@ -362,6 +371,7 @@ export interface FileRouteTypes {
     | '/api/transactions'
     | '/trips/$tripId'
     | '/accounts/'
+    | '/assistant/'
     | '/categories/'
     | '/import/'
     | '/onboarding/'
@@ -400,6 +410,7 @@ export interface FileRouteTypes {
     | '/api/transactions'
     | '/trips/$tripId'
     | '/accounts'
+    | '/assistant'
     | '/categories'
     | '/import'
     | '/onboarding'
@@ -438,6 +449,7 @@ export interface FileRouteTypes {
     | '/api/transactions'
     | '/trips/$tripId'
     | '/accounts/'
+    | '/assistant/'
     | '/categories/'
     | '/import/'
     | '/onboarding/'
@@ -477,6 +489,7 @@ export interface RootRouteChildren {
   ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
   TripsTripIdRoute: typeof TripsTripIdRoute
   AccountsIndexRoute: typeof AccountsIndexRoute
+  AssistantIndexRoute: typeof AssistantIndexRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
   ImportIndexRoute: typeof ImportIndexRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
@@ -550,6 +563,13 @@ declare module '@tanstack/react-router' {
       path: '/api/transactions'
       fullPath: '/api/transactions'
       preLoaderRoute: typeof ApiTransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistant/': {
+      id: '/assistant/'
+      path: '/assistant'
+      fullPath: '/assistant/'
+      preLoaderRoute: typeof AssistantIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categories/': {
@@ -832,6 +852,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
   TripsTripIdRoute: TripsTripIdRoute,
   AccountsIndexRoute: AccountsIndexRoute,
+  AssistantIndexRoute: AssistantIndexRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
   ImportIndexRoute: ImportIndexRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,

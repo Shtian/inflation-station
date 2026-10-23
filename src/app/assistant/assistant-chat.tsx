@@ -1,10 +1,9 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { useNavigate, useRouter, useSearch } from "@tanstack/react-router";
 import { DefaultChatTransport } from "ai";
 import { ArrowUpRight, RotateCcw } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   Conversation,
@@ -162,7 +161,7 @@ function AssistantMessage({
         <ul className="flex flex-col items-start gap-1 text-xs">
           {transactionLinks.map((link) => (
             <li key={link.href}>
-              <Link
+              <a
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -170,7 +169,7 @@ function AssistantMessage({
               >
                 {link.label}
                 <ArrowUpRight aria-hidden className="size-3" />
-              </Link>
+              </a>
             </li>
           ))}
         </ul>
@@ -266,6 +265,11 @@ function AssistantConversation({
   defaultModelId,
 }: ThreadProps & ModelChoices) {
   const router = useRouter();
+  const navigate = useNavigate();
+  const searchThread = useSearch({
+    from: "/assistant/",
+    select: (search) => search.thread,
+  });
   const [input, setInput] = useState("");
   const { options, updateOptions } = useChatOptions({
     availableModels,
@@ -277,7 +281,7 @@ function AssistantConversation({
       id: threadId,
       messages: initialMessages,
       transport,
-      onFinish: () => router.refresh(),
+      onFinish: () => void router.invalidate(),
     });
 
   const busy = status === "submitted" || status === "streaming";
@@ -288,10 +292,12 @@ function AssistantConversation({
     if (!text || busy) {
       return;
     }
-    if (
-      new URLSearchParams(window.location.search).get("thread") !== threadId
-    ) {
-      window.history.replaceState(null, "", `?thread=${threadId}`);
+    if (searchThread !== threadId) {
+      void navigate({
+        to: "/assistant",
+        search: { thread: threadId },
+        replace: true,
+      });
     }
     void sendMessage({ text }, { body: options });
     setInput("");
