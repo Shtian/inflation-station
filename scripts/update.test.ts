@@ -27,10 +27,10 @@ const fakes: Record<string, string> = {
 if [ "$1" = "\${FAKE_FAIL:-}" ]; then echo "boom $1"; exit "\${FAKE_FAIL_CODE:-1}"; fi
 case "$1" in
   build)
-    rm -rf .next
-    mkdir -p .next/standalone/.next .next/static
-    echo "server $FAKE_SHA" > .next/standalone/server.js
-    echo "chunk $FAKE_SHA" > .next/static/chunk.js
+    rm -rf .output
+    mkdir -p .output/server .output/public/assets
+    echo "server $FAKE_SHA" > .output/server/index.mjs
+    echo "chunk $FAKE_SHA" > .output/public/assets/chunk.js
     ;;
 esac
 echo "pnpm $1 ok"
@@ -48,7 +48,13 @@ case "$1" in
     ;;
   delete) rm -f "$LOGS/pm2-path" ;;
   start)
-    node -e 'const a = require(require("path").resolve(process.argv[1])).apps[0]; process.stdout.write(require("path").resolve(a.cwd, a.script))' "$2" > "$LOGS/pm2-path"
+    node -e '
+      const path = require("path");
+      const app = require(path.resolve(process.argv[1])).apps[0];
+      const fs = require("fs");
+      fs.writeFileSync(process.argv[2] + "/pm2-path", path.resolve(app.cwd, app.script));
+      fs.writeFileSync(process.argv[2] + "/pm2-self-update-root", app.env.SELF_UPDATE_ROOT);
+    ' "$2" "$LOGS"
     ;;
 esac
 `,
@@ -107,7 +113,7 @@ beforeEach(() => {
   app = path.join(tmp, "app");
   bin = path.join(tmp, "bin");
   logs = path.join(tmp, "logs");
-  mkdirSync(path.join(app, "public"), { recursive: true });
+  mkdirSync(app);
   mkdirSync(bin);
   mkdirSync(logs);
   copyFileSync(path.join(ROOT, "update.sh"), path.join(app, "update.sh"));
@@ -115,7 +121,6 @@ beforeEach(() => {
     path.join(ROOT, "ecosystem.config.js"),
     path.join(app, "ecosystem.config.js"),
   );
-  writeFileSync(path.join(app, "public/favicon.txt"), "icon\n");
   for (const [name, body] of Object.entries(fakes)) {
     writeFileSync(path.join(bin, name), `#!/usr/bin/env bash\n${body}`);
     chmodSync(path.join(bin, name), 0o755);
@@ -131,11 +136,13 @@ describe("update.sh", () => {
     const run = deploy("aaa1111");
 
     expect(run.status).toBe(0);
-    expect(live("server.js")).toBe("server aaa1111\n");
-    expect(live(".next/static/chunk.js")).toBe("chunk aaa1111\n");
-    expect(live("public/favicon.txt")).toBe("icon\n");
+    expect(live("server/index.mjs")).toBe("server aaa1111\n");
+    expect(live("public/assets/chunk.js")).toBe("chunk aaa1111\n");
     expect(readFileSync(path.join(logs, "pm2-path"), "utf8")).toBe(
-      path.join(app, ".releases/current/server.js"),
+      path.join(app, ".releases/current/server/index.mjs"),
+    );
+    expect(readFileSync(path.join(logs, "pm2-self-update-root"), "utf8")).toBe(
+      app,
     );
     expect(pm2Calls()).toEqual([
       "delete inflation-station",
@@ -152,8 +159,8 @@ describe("update.sh", () => {
     const run = deploy("ccc3333");
 
     expect(run.status).toBe(0);
-    expect(live("server.js")).toBe("server ccc3333\n");
-    expect(live(".next/static/chunk.js")).toBe("chunk ccc3333\n");
+    expect(live("server/index.mjs")).toBe("server ccc3333\n");
+    expect(live("public/assets/chunk.js")).toBe("chunk ccc3333\n");
     expect(pm2Calls()).toEqual(["restart inflation-station"]);
     expect(
       readdirSync(path.join(app, ".releases"))
@@ -173,23 +180,22 @@ describe("update.sh", () => {
 
     expect(run.status).toBe(137);
     expect(run.stderr).toContain("==> Deploy failed at build (exit 137)");
-    expect(live("server.js")).toBe("server aaa1111\n");
-    expect(live(".next/static/chunk.js")).toBe("chunk aaa1111\n");
-    expect(live("public/favicon.txt")).toBe("icon\n");
+    expect(live("server/index.mjs")).toBe("server aaa1111\n");
+    expect(live("public/assets/chunk.js")).toBe("chunk aaa1111\n");
     expect(pm2Calls()).toEqual([]);
   });
 
-  it("moves a process from the old .next/standalone layout to the release", () => {
+  it("moves a process from the Next release layout to the Nitro server", () => {
     writeFileSync(
       path.join(logs, "pm2-path"),
-      path.join(app, ".next/standalone/server.js"),
+      path.join(app, ".releases/current/server.js"),
     );
 
     const run = deploy("aaa1111");
 
     expect(run.status).toBe(0);
     expect(readFileSync(path.join(logs, "pm2-path"), "utf8")).toBe(
-      path.join(app, ".releases/current/server.js"),
+      path.join(app, ".releases/current/server/index.mjs"),
     );
     expect(pm2Calls()).toEqual([
       "delete inflation-station",

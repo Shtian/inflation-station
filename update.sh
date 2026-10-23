@@ -90,7 +90,7 @@ fi
 echo "==> Running migrations..."
 run_step migrate pnpm db:migrate:deploy
 
-# `next build` empties .next first, so pm2 runs a copy under .releases that
+# The build empties .output first, so pm2 runs a copy under .releases that
 # the build never touches. A failed build leaves the live release serving.
 echo "==> Building..."
 run_step build pnpm build
@@ -101,9 +101,7 @@ assemble_release() {
   local previous
   previous="$(readlink .releases/current || true)"
   mkdir -p .releases
-  mv .next/standalone ".releases/$RELEASE_ID"
-  mv .next/static ".releases/$RELEASE_ID/.next/static"
-  cp -r public ".releases/$RELEASE_ID/public"
+  mv .output ".releases/$RELEASE_ID"
   # The running server resolved its own directory through this link at
   # start, so it keeps serving the previous release until pm2 restarts it.
   ln -sfn "$RELEASE_ID" .releases/current
@@ -132,7 +130,7 @@ pm2_script_path() {
 # `pm2 restart` keeps the script path the process was started with, so a
 # process from an older layout is recreated from ecosystem.config.js.
 restart_app() {
-  if [ "$(pm2_script_path)" = "$REPO_DIR/.releases/current/server.js" ]; then
+  if [ "$(pm2_script_path)" = "$REPO_DIR/.releases/current/server/index.mjs" ]; then
     pm2 restart "$APP_NAME"
   else
     pm2 delete "$APP_NAME" >/dev/null 2>&1 || true

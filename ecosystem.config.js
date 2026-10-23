@@ -13,13 +13,16 @@ module.exports = {
   apps: [
     {
       name: env.PM2_APP_NAME || "inflation-station",
-      script: ".releases/current/server.js",
+      script: ".releases/current/server/index.mjs",
       interpreter: "node",
       cwd: __dirname,
       env_file: ".env",
       env: {
         PORT: env.PORT || 3000,
-        HOSTNAME: "0.0.0.0",
+        HOST: "0.0.0.0",
+        // Only a deployed checkout runs under this config, so the Update button
+        // never appears in a dev, CI, or E2E server built from the same code.
+        SELF_UPDATE_ROOT: __dirname,
       },
       watch: false,
       autorestart: true,

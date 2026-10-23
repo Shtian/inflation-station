@@ -76,7 +76,7 @@ The script installs dependencies, backs up the database (to `<database dir>/back
 
 pm2 runs the build from `.releases/current`, a link to the latest release. The script only switches that link after a build succeeds, so a failed build leaves the running site untouched. The previous release is kept until the next deploy.
 
-The footer also has an Update button that does the same from the browser. It runs `git pull --ff-only` and then `update.sh`, and skips the rebuild and restart when the pull brings nothing new. Output goes to `.update/update.log`. The button only appears in the standalone production build that `update.sh` produces.
+The footer also has an Update button that does the same from the browser. It runs `git pull --ff-only` and then `update.sh`, and skips the rebuild and restart when the pull brings nothing new. Output goes to `.update/update.log`. The button only appears under the pm2 process that `ecosystem.config.js` starts.
 
 To take a backup manually, run `scripts/backup-db.sh [output-dir]`. It is safe to run while the app is running.
 
