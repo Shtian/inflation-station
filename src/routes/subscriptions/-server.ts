@@ -1,8 +1,15 @@
 import { createServerFn } from "@tanstack/react-start";
+import { format } from "date-fns";
 import {
   clearSubscriptionDecisionAction,
   setSubscriptionDecisionAction,
 } from "@/app/actions/subscription-decisions";
+import { prisma } from "@/lib/prisma";
+import { loadSubscriptionReview } from "@/lib/subscriptions/load";
+
+export const getSubscriptionReview = createServerFn({ method: "GET" }).handler(
+  () => loadSubscriptionReview(prisma, format(new Date(), "yyyy-MM-dd")),
+);
 
 // Validation stays in the shared mutation so the error contract matches the
 // Next action; see `trips/-server.ts` for why output is not strict.

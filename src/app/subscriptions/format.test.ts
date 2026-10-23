@@ -5,7 +5,6 @@ import {
   describeExcludedFromTotals,
   describeYearlyImpact,
   formatAmount,
-  merchantTransactionsHref,
 } from "./format";
 
 const normalizeSpaces = (value: string) => value.replaceAll(/\s/g, " ");
@@ -110,13 +109,5 @@ describe("formatAmount", () => {
     expect(
       [formatAmount(5988), formatAmount(149.9)].map(normalizeSpaces),
     ).toEqual(["5 988 kr", "149,90 kr"]);
-  });
-});
-
-describe("merchantTransactionsHref", () => {
-  it("searches transactions by the merchant key", () => {
-    expect(merchantTransactionsHref("apple com bill")).toBe(
-      "/transactions?globalQuery=apple+com+bill",
-    );
   });
 });
