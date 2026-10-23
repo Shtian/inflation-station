@@ -2,7 +2,7 @@
 
 Load this when working in `src/app/transactions`.
 
-- Keep account/pagination filter state and transactions/accounts/categories loading in `use-transactions-manager.ts`. Trip options are the exception: `page.tsx` is a `force-dynamic` server component that loads them with `listTripOptions` and passes them down as a prop.
+- Keep account/pagination filter state and transactions/accounts/categories loading in `use-transactions-manager.ts`. Trip options are the exception: the route loader fetches them with the `getTripOptions` server function (`src/routes/transactions/-server.ts`) and passes them down as a prop.
 - Parse and serialize `/transactions` table URL state with `transactions-table-url-state.ts`; keep table params canonical (`globalQuery`, no legacy `query`) and preserve unrelated URL params.
 - Fetch `/api/transactions` when account, page, or page size changes.
 - Reset pagination to page 1 whenever table filters/sorting/page-size change.
@@ -11,11 +11,11 @@ Load this when working in `src/app/transactions`.
 - Keep debounced `globalQuery` input state synced from parsed URL state (not every table-state change) so typing is not reset when other filters update.
 - Keep sortable column headers wired to `use-transactions-manager.ts` `sorting` state with a tri-state cycle (asc/desc/none) so sort intent stays URL-backed.
 - Persist transactions table column visibility in `sessionStorage` via TanStack `columnVisibility` state and only expose hideable data columns in the visibility menu.
-- Render the full-width toggle with shared `TableWidthToggle` (`storageKey="transactions-table-width"`); `page.tsx` lifts the `max-w-6xl` cap with the `full-width:` variant from `globals.css`, so do not thread width state through props.
+- Render the full-width toggle with shared `TableWidthToggle` (`storageKey="transactions-table-width"`); the route component lifts the `max-w-6xl` cap with the `full-width:` variant from `globals.css`, so do not thread width state through props.
 - For server-driven pagination controls, drive TanStack `pagination` state from API metadata (`page`, `pageSize`, `totalPages`) with `manualPagination` and route page/page-size updates through manager callbacks.
 - Keep edit/delete dialog state local to this route and dialog markup in focused components under `components/*`.
 - In `components/edit-transaction-dialog.tsx`, use shared `Field` primitives for labeled controls while preserving existing control ids (`edit-*`) so label selectors and dialog interactions remain stable.
-- Submit edits/deletes via `/api/transactions/[transactionId]` and refetch current paginated query after mutations. The edit dialog's "Tur" field rides the same PATCH; `toEditFormState` must read `row.tripId ?? null`, because every save sends the trip back and stubbed rows omit it.
+- Submit edits/deletes via `/api/transactions/$transactionId` and refetch current paginated query after mutations. The edit dialog's "Tur" field rides the same PATCH; `toEditFormState` must read `row.tripId ?? null`, because every save sends the trip back and stubbed rows omit it.
 - Keep NOK-only currency in this edit flow.
 - Render a dedicated notes column with explicit empty-state text for null notes.
 - Keep transaction note validation + character-count helper text inline within the edit dialog field content; only route submit-level failures through the dialog alert.

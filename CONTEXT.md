@@ -15,7 +15,7 @@ behaviour, URL/pagination state, and request payload shape.
 _Avoid_: mocked suite, fake suite, unit e2e
 
 **Integrated suite**:
-The Playwright specs that run against a real Next.js server backed by a real
+The Playwright specs that run against a real TanStack Start server backed by a real
 migrated database, with no request interception. Exists to prove the browser →
 route → Prisma → SQLite chain connects, not to re-test edge cases the domain
 seam already owns.

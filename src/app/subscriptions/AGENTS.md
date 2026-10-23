@@ -2,8 +2,8 @@
 
 Load this when working in `src/app/subscriptions`.
 
-- `/subscriptions` ("Faste trekk") is a server component that calls `loadSubscriptionReview` from `src/lib/subscriptions/load.ts` with today's local date. Detection and alert rules live in `src/lib/subscriptions`, not here.
-- The page reads the database directly, so stubbed Playwright specs cannot feed it. Cover it with an integrated spec (`tests/integrated/us-028-subscriptions.integrated.ts`).
+- The `/subscriptions` ("Faste trekk") loader calls `getSubscriptionReview`, a server function that runs `loadSubscriptionReview` from `src/lib/subscriptions/load.ts` with today's local date. Detection and alert rules live in `src/lib/subscriptions`, not here.
+- The loader reads the database through a server function, so stubbed Playwright specs cannot feed it. Cover it with an integrated spec (`tests/integrated/us-028-subscriptions.integrated.ts`).
 - Decisions go through `setSubscriptionDecisionAction` and `clearSubscriptionDecisionAction` in `src/app/actions/subscription-decisions.ts`, called through the server functions in `src/routes/subscriptions/-server.ts`. After a successful write the button calls `router.invalidate()`, which refreshes the page. `components/decision-button.tsx` maps each button intent to its action, toast copy and the undo behind the toast's Angre in one table.
 - Every section (Bekreftet, Forslag, Avsluttet, Avviste) renders `components/subscription-table.tsx`, so columns are defined once and line up down the page. Alerts are listed in `components/attention-strip.tsx` in the warning colour; `ALERT_ACTIONS` there maps an alert kind to its inline action.
 - A decision is keyed by `normalizedMerchant`, so one click moves every candidate at that merchant.

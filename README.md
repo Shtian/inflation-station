@@ -1,6 +1,6 @@
 # Inflation Station
 
-Local-first personal economy dashboard built with Next.js, TypeScript, Prisma, and SQLite.
+Local-first personal economy dashboard built with TanStack Start on Vite+, TypeScript, Prisma, and SQLite.
 
 ## Prerequisites
 
@@ -108,7 +108,7 @@ The Spør chat (`/assistant`) also spends OpenAI tokens on the instance's `OPENA
 
 ### Feedback Widget
 
-Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) alongside `OPENAI_API_KEY` to show a floating Feedback button on every page. It chats with the user about a bug or idea and, once they approve the draft, files a GitHub issue with the `gh` CLI, so run `gh auth login` on the host as the user that runs the app. The `bug`, `enhancement`, and `needs-triage` labels must exist in the target repo. Pages are prerendered, so the button appears or disappears on the next build (`bash update.sh`).
+Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) alongside `OPENAI_API_KEY` to show a floating Feedback button on every page. It chats with the user about a bug or idea and, once they approve the draft, files a GitHub issue with the `gh` CLI, so run `gh auth login` on the host as the user that runs the app. The `bug`, `enhancement`, and `needs-triage` labels must exist in the target repo. The server reads it at runtime, so restart the app after changing it (`bash update.sh`).
 
 ## Prisma Migration and Seed Workflow
 
@@ -160,11 +160,11 @@ Jev suggests a category for each imported row and helps guess which CSV columns 
 
 ## Useful Commands
 
-- `pnpm lint`
-- `pnpm lint:fix` (applies Biome lint/format/assist fixes via `biome check --write`)
+- `pnpm lint` (`vp check`: Oxfmt formatting and Oxlint)
+- `pnpm lint:fix` (`vp check --fix`)
 - `pnpm typecheck`
 - `pnpm test`
-- `pnpm test:unit`
+- `pnpm test:unit` (`vp test`)
 - `pnpm test:e2e`
 - `pnpm build`
 

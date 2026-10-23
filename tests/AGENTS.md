@@ -2,12 +2,12 @@
 
 Load this when working in `tests`.
 
-Two Playwright projects live here. The **stubbed suite** intercepts every API call and serves fixtures to the browser. The **integrated suite** runs against a real Next server backed by a real migrated database. `CONTEXT.md` defines both terms.
+Two Playwright projects live here. The **stubbed suite** intercepts every API call and serves fixtures to the browser. The **integrated suite** runs against a real Start server backed by a real migrated database. `CONTEXT.md` defines both terms.
 
 - Keep stubbed specs in `tests/e2e/*.e2e.ts` and integrated specs in `tests/integrated/*.integrated.ts`, both named after the user story they cover (`us-0NN-<slug>`). `testMatch` keys off the extension, so a file in the right directory with the wrong extension runs in neither project.
 - Assert Sonner feedback with `page.locator("[data-sonner-toast]", { hasText: "..." })` instead of inline banner DOM or bare `getByText`.
 - When a route migrates inline success feedback to toasts, update its spec's assertions in the same change; inline error copy stays asserted as inline DOM.
-- Unit tests for application code are colocated with their source in `src/**/*.test.ts` (Vitest). The Vitest files here cover the support modules in `tests/support/` and the suites' own invariants, neither of which has a `src/` counterpart to sit beside.
+- Unit tests for application code are colocated with their source in `src/**/*.test.ts` and run with `vp test` (Vitest, configured in `vite.config.mts`). The test files here cover the support modules in `tests/support/` and the suites' own invariants, neither of which has a `src/` counterpart to sit beside.
 - One of those support tests, `statement-pdf.test.ts`, launches chromium, so `pnpm test:unit` needs a browser installed and not just the E2E job. `.github/workflows/unit-tests.yml` installs the headless shell for that reason; dropping the step fails Vitest in CI while it still passes on any machine that has run `playwright install`.
 
 ## Database isolation differs by suite
