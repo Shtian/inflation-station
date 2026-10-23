@@ -1,4 +1,4 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, type LinkProps, useLocation } from "@tanstack/react-router";
 import {
   ArrowLeftRight,
   CalendarDays,
@@ -22,7 +22,11 @@ import {
 } from "@/components/ui/tooltip";
 import { BuildInfo } from "./build-info";
 
-type NavItem = { href: string; label: string; Icon: LucideIcon };
+type NavItem = {
+  href: NonNullable<LinkProps["to"]>;
+  label: string;
+  Icon: LucideIcon;
+};
 
 const navGroups: NavItem[][] = [
   [
