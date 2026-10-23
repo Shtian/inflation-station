@@ -9,6 +9,7 @@ import {
 } from "vite-plus/test";
 import type { ColumnMapping } from "@/lib/import/csv/column-mapping";
 import { routeHandler } from "../-route-handler";
+import { stubConfig } from "../../../../tests/support/config-env";
 import { Route } from "./parse";
 
 const POST = routeHandler(Route, "POST");
@@ -146,14 +147,11 @@ describe("POST /api/imports/parse", () => {
     stageParsedImportRowsMock.mockReset();
     stageParsedImportRowsMock.mockResolvedValue(STAGED_RESULT);
 
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("OPENAI_MESSAGE_CLEANUP_ENABLED", "true");
-    vi.stubEnv("TYPESAFE_API_KEY", "");
+    stubConfig({ OPENAI_API_KEY: "test-key" });
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.unstubAllEnvs();
   });
 
   it("returns 400 when the payload is missing required fields", async () => {
@@ -467,7 +465,7 @@ describe("POST /api/imports/parse", () => {
   });
 
   it("returns cleanup unavailable with key_missing when OPENAI_API_KEY is unset", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "");
+    stubConfig({ OPENAI_API_KEY: undefined });
 
     const response = await POST(
       jsonRequest({
@@ -487,7 +485,7 @@ describe("POST /api/imports/parse", () => {
   });
 
   it("returns cleanup unavailable with disabled when OPENAI_MESSAGE_CLEANUP_ENABLED is false", async () => {
-    vi.stubEnv("OPENAI_MESSAGE_CLEANUP_ENABLED", "false");
+    stubConfig({ OPENAI_MESSAGE_CLEANUP_ENABLED: false });
 
     const response = await POST(
       jsonRequest({

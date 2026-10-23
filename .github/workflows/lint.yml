@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      # `vp check` loads vite.config.mts, whose Varlock plugin validates
+      # .env.schema. Lint opens no database, so any valid path will do.
+      DATABASE_URL: file:./prisma/ci.db
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -57,6 +61,10 @@ jobs:
 
       - name: Generate Prisma client
         run: pnpm prisma generate
+
+      # env.d.ts types `ENV` and is generated from .env.schema, not committed.
+      - name: Generate Varlock types
+        run: pnpm exec varlock codegen
 
       - name: Run typecheck
         run: pnpm typecheck

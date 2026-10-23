@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ENV } from "varlock/env";
 import {
   generateCategoryHintGuess,
   resolveHintGuessDisabledReason,
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/api/categories/$categoryId/hint-guess")({
         const result = await generateCategoryHintGuess({
           db: prisma,
           categoryId,
-          apiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
+          apiKey: ENV.OPENAI_API_KEY?.trim() ?? "",
         });
 
         switch (result.status) {

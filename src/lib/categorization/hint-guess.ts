@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
+import { ENV, type TypedEnvSchema } from "varlock/env";
 import { z } from "zod";
 import {
   buildProviderErrorDetail,
@@ -52,9 +53,12 @@ Return:
 The user's other categories are listed so you can keep this one distinct from look-alikes. Never suggest a merchant that belongs better in another category.`;
 
 export function resolveHintGuessDisabledReason(
-  env: Record<string, string | undefined> = process.env,
+  env: Pick<
+    TypedEnvSchema,
+    "OPENAI_API_KEY" | "OPENAI_HINT_SUGGESTIONS_ENABLED"
+  > = ENV,
 ): HintGuessDisabledReason | null {
-  if (env.OPENAI_HINT_SUGGESTIONS_ENABLED?.trim().toLowerCase() === "false") {
+  if (env.OPENAI_HINT_SUGGESTIONS_ENABLED === false) {
     return "disabled";
   }
   return env.OPENAI_API_KEY?.trim() ? null : "key_missing";

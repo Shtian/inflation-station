@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ENV } from "varlock/env";
 import { z } from "zod";
 import { getMessageCleanupSettings } from "@/lib/import/message-cleanup-settings";
 import { runCleanupChunk } from "@/lib/import/message-cleanup/chunk";
@@ -82,7 +83,7 @@ export const Route = createFileRoute("/api/imports/cleanup")({
 
         const settings = await getMessageCleanupSettings(prisma);
         const result = await runCleanupChunk({
-          apiKey: process.env.OPENAI_API_KEY ?? "",
+          apiKey: ENV.OPENAI_API_KEY ?? "",
           model: settings.modelId,
           systemPrompt: settings.prompt,
           reasoningEffort: settings.reasoningEffort,

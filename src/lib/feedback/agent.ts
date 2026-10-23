@@ -1,4 +1,5 @@
 import { convertToModelMessages, type ModelMessage, tool } from "ai";
+import { ENV, type TypedEnvSchema } from "varlock/env";
 import {
   type CreatedIssue,
   type FeedbackDisabledReason,
@@ -10,10 +11,8 @@ import {
 
 export const FEEDBACK_AGENT_MODEL = "gpt-6-luna";
 
-const REPO_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
-
 export function resolveFeedbackDisabledReason(
-  env: Record<string, string | undefined> = process.env,
+  env: Pick<TypedEnvSchema, "OPENAI_API_KEY" | "FEEDBACK_GITHUB_REPO"> = ENV,
 ): FeedbackDisabledReason | null {
   if (!env.OPENAI_API_KEY?.trim()) {
     return "key_missing";
@@ -22,10 +21,9 @@ export function resolveFeedbackDisabledReason(
 }
 
 export function resolveFeedbackRepo(
-  env: Record<string, string | undefined> = process.env,
+  env: Pick<TypedEnvSchema, "FEEDBACK_GITHUB_REPO"> = ENV,
 ): string | null {
-  const repo = env.FEEDBACK_GITHUB_REPO?.trim() ?? "";
-  return REPO_PATTERN.test(repo) ? repo : null;
+  return env.FEEDBACK_GITHUB_REPO?.trim() || null;
 }
 
 export const FEEDBACK_SYSTEM_PROMPT = `You are the feedback assistant inside Inflation Station, a personal-finance app (bank imports, transactions, categories, accounts, monthly reviews). Your only job is to turn a user's bug report or feature idea into a GitHub issue.

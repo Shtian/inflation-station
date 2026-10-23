@@ -1,6 +1,8 @@
+import "varlock/auto-load";
 import { parseArgs } from "node:util";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@prisma/client";
+import { ENV } from "varlock/env";
 import {
   categorizeRowsWithJev,
   type JevCategoryOption,
@@ -12,7 +14,6 @@ import {
   type JevEvalResult,
   singleRowOutcome,
 } from "@/lib/categorization/jev-eval";
-import { resolveDatabaseUrl } from "@/lib/database-url";
 
 const DEFAULT_LIMIT = 50;
 const CONCURRENCY = 12;
@@ -74,9 +75,9 @@ async function evaluateAll(
 }
 
 async function main() {
-  if (!process.env.TYPESAFE_API_KEY?.trim()) {
+  if (!ENV.TYPESAFE_API_KEY?.trim()) {
     console.error(
-      "TYPESAFE_API_KEY is not set. The Jev eval calls the live TypeSafe API; export the key and rerun.",
+      "TYPESAFE_API_KEY is not set. The Jev eval calls the live TypeSafe API; set it in .env and rerun.",
     );
     process.exitCode = 1;
     return;
@@ -90,7 +91,7 @@ async function main() {
   }
 
   const prisma = new PrismaClient({
-    adapter: new PrismaBetterSqlite3({ url: resolveDatabaseUrl() }),
+    adapter: new PrismaBetterSqlite3({ url: ENV.DATABASE_URL }),
   });
 
   try {

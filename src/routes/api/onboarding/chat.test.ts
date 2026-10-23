@@ -1,12 +1,6 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vite-plus/test";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { routeHandler } from "../-route-handler";
+import { stubConfig } from "../../../../tests/support/config-env";
 import { Route } from "./chat";
 
 const POST = routeHandler(Route, "POST");
@@ -25,15 +19,11 @@ function post(body: string) {
 
 describe("POST /api/onboarding/chat", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
+    stubConfig({ OPENAI_API_KEY: "test-key" });
   });
 
   it("answers 503 when there is no API key", async () => {
-    vi.stubEnv("OPENAI_API_KEY", " ");
+    stubConfig({ OPENAI_API_KEY: " " });
 
     const response = await post(JSON.stringify({ messages: [] }));
 

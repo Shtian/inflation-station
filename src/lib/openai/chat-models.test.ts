@@ -6,6 +6,7 @@ import {
   it,
   vi,
 } from "vite-plus/test";
+import { stubConfig } from "../../../tests/support/config-env";
 import {
   acceptsChatModel,
   selectChatModelIds,
@@ -285,12 +286,11 @@ describe("listChatModels", () => {
       toFake: ["Date"],
       now: new Date("2026-10-11T12:00:00Z"),
     });
-    vi.stubEnv("OPENAI_API_KEY", "sk-test");
+    stubConfig({ OPENAI_API_KEY: "sk-test" });
   });
 
   afterEach(() => {
     vi.useRealTimers();
-    vi.unstubAllEnvs();
     vi.unstubAllGlobals();
   });
 
@@ -371,7 +371,7 @@ describe("listChatModels", () => {
   });
 
   it("is unavailable without an API key", async () => {
-    vi.stubEnv("OPENAI_API_KEY", " ");
+    stubConfig({ OPENAI_API_KEY: " " });
     stubFetch(() => Response.json(modelsResponse));
     const listChatModels = await listChatModelsFresh();
 

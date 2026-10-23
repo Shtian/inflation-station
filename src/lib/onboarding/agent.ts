@@ -5,6 +5,7 @@ import {
   type ModelMessage,
   tool,
 } from "ai";
+import { ENV, type TypedEnvSchema } from "varlock/env";
 import {
   addAccountsInputSchema,
   addCategoriesInputSchema,
@@ -22,7 +23,7 @@ import { createAccounts, createCategories } from "./setup-store";
 export const ONBOARDING_AGENT_MODEL = "gpt-6-luna";
 
 export function resolveOnboardingDisabledReason(
-  env: Record<string, string | undefined> = process.env,
+  env: Pick<TypedEnvSchema, "OPENAI_API_KEY"> = ENV,
 ): OnboardingDisabledReason | null {
   return env.OPENAI_API_KEY?.trim() ? null : "key_missing";
 }

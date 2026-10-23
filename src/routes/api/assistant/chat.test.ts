@@ -1,15 +1,9 @@
 import { APICallError, simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vite-plus/test";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { selectAssistantModelIds } from "@/lib/assistant/models";
 import { routeHandler } from "../-route-handler";
+import { stubConfig } from "../../../../tests/support/config-env";
 import { Route } from "./chat";
 
 const GET = routeHandler(Route, "GET");
@@ -108,16 +102,12 @@ function post(body: string) {
 
 describe("POST /api/assistant/chat", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    stubConfig({ OPENAI_API_KEY: "test-key" });
     saveMock.mockReset();
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it("answers 503 when there is no API key", async () => {
-    vi.stubEnv("OPENAI_API_KEY", " ");
+    stubConfig({ OPENAI_API_KEY: " " });
 
     const response = await post(JSON.stringify({ messages: [] }));
 
@@ -241,14 +231,10 @@ describe("POST /api/assistant/chat", () => {
 
 describe("POST /api/assistant/chat options", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    stubConfig({ OPENAI_API_KEY: "test-key" });
     saveMock.mockReset();
     responsesModelIds.length = 0;
     listChatModelsMock.mockImplementation(listOpenAIModels);
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
   });
 
   function openAIOptionsSent(mock: MockLanguageModelV3) {
@@ -403,12 +389,8 @@ describe("GET /api/assistant/chat", () => {
     listChatModelsMock.mockReset();
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it("offers the assistant's OpenAI models with the default first when a key is set", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    stubConfig({ OPENAI_API_KEY: "test-key" });
     listChatModelsMock.mockImplementation(listOpenAIModels);
 
     await expect((await GET()).json()).resolves.toEqual({
@@ -419,7 +401,7 @@ describe("GET /api/assistant/chat", () => {
   });
 
   it("reports key_missing and offers only the default when the key is blank", async () => {
-    vi.stubEnv("OPENAI_API_KEY", " ");
+    stubConfig({ OPENAI_API_KEY: " " });
 
     await expect((await GET()).json()).resolves.toEqual({
       disabledReason: "key_missing",

@@ -64,9 +64,13 @@ jobs:
 
       # Each webServer entry in playwright.config.ts names and migrates a
       # database of its own, and the build opens no connection, so there is
-      # nothing to prepare here.
+      # nothing to prepare here. The Varlock plugin still validates
+      # .env.schema during the build, and the servers read DATABASE_URL again
+      # when they boot, so this value never reaches a test.
       - name: Build
         run: pnpm build
+        env:
+          DATABASE_URL: file:./prisma/ci.db
 
       # Do not add `--shard`: locks give no mutual exclusion across shard
       # invocations.

@@ -1,12 +1,6 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vite-plus/test";
+import { beforeEach, describe, expect, it } from "vite-plus/test";
 import { routeHandler } from "../-route-handler";
+import { stubConfig } from "../../../../tests/support/config-env";
 import { Route } from "./chat";
 
 const POST = routeHandler(Route, "POST");
@@ -23,16 +17,14 @@ function post(body: string) {
 
 describe("POST /api/feedback/chat", () => {
   beforeEach(() => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("FEEDBACK_GITHUB_REPO", "Shtian/inflation-station");
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
+    stubConfig({
+      OPENAI_API_KEY: "test-key",
+      FEEDBACK_GITHUB_REPO: "Shtian/inflation-station",
+    });
   });
 
   it("answers 503 key_missing when there is no API key", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "");
+    stubConfig({ OPENAI_API_KEY: undefined });
 
     const response = await post(JSON.stringify({ messages: [] }));
 
@@ -43,8 +35,8 @@ describe("POST /api/feedback/chat", () => {
     });
   });
 
-  it("answers 503 repo_missing when the repo is not owner/name", async () => {
-    vi.stubEnv("FEEDBACK_GITHUB_REPO", "inflation-station");
+  it("answers 503 repo_missing when the repo is unset", async () => {
+    stubConfig({ FEEDBACK_GITHUB_REPO: undefined });
 
     const response = await post(JSON.stringify({ messages: [] }));
 

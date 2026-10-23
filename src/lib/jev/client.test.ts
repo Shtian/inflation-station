@@ -1,5 +1,6 @@
 import type { Fetch } from "@typesafe-ai/sdk";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
+import { stubConfig } from "../../../tests/support/config-env";
 import { runJevChoice } from "./client";
 
 function systemOneResponse(choice: string, confidence: number) {
@@ -37,10 +38,6 @@ const alternatives = {
 };
 
 describe("runJevChoice", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it("returns the chosen alternative and confidence on the happy path", async () => {
     const fetchImpl = vi.fn(async () => systemOneResponse("billing", 0.87));
 
@@ -130,7 +127,7 @@ describe("runJevChoice", () => {
   });
 
   it("reports key_missing without calling the provider when no key is configured", async () => {
-    vi.stubEnv("TYPESAFE_API_KEY", "");
+    stubConfig({ TYPESAFE_API_KEY: undefined });
     const fetchImpl = vi.fn();
 
     const result = await runJevChoice({

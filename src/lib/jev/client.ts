@@ -7,6 +7,7 @@ import {
   type RetryPolicy,
   TypeSafeClient,
 } from "@typesafe-ai/sdk";
+import { ENV } from "varlock/env";
 
 export const DEFAULT_JEV_TIMEOUT_MS = 5_000;
 
@@ -34,7 +35,7 @@ export async function runJevChoice<const T extends ChoiceCriteria>(params: {
     return { status: "unavailable", reason: "disabled" };
   }
 
-  const apiKey = (params.apiKey ?? process.env.TYPESAFE_API_KEY)?.trim();
+  const apiKey = (params.apiKey ?? ENV.TYPESAFE_API_KEY)?.trim();
   if (!apiKey) {
     return { status: "unavailable", reason: "key_missing" };
   }

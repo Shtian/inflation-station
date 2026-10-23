@@ -1,6 +1,6 @@
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import prismaClient from "@prisma/client";
-import { resolveDatabaseUrl } from "../src/lib/database-url.ts";
+import { resolveDatabaseUrl } from "./database-url.ts";
 
 const { PrismaClient } = prismaClient;
 

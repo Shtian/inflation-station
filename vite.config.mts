@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
-import { defineConfig, loadEnv, type Plugin } from "vite-plus";
+import { defineConfig, type Plugin } from "vite-plus";
 
 const SERVER_ONLY_ID = "\0server-only";
 
@@ -41,9 +41,15 @@ function getGitSha(): string {
   }
 }
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, import.meta.dirname, "");
+export default defineConfig(async ({ mode }) => {
   const buildSha = getGitSha();
+  // Importing the plugin resolves `.env.schema` into `process.env`. Tests
+  // skip it and replace `varlock/env` with a stub (tests/support/config-env).
+  const varlock =
+    mode === "test" ? undefined : await import("@varlock/vite-integration");
+  // Read from `process.env` because `ENV` throws on invalid config before the
+  // plugin can stop the build with its own validation report.
+  const { SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT } = process.env;
 
   return {
     lint: {
@@ -108,7 +114,13 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { "@": path.resolve(import.meta.dirname, "src") },
     },
+    test: {
+      setupFiles: ["tests/support/config-env.ts"],
+    },
     plugins: [
+      // `auto-load` resolves server config when the built server boots, so
+      // one build serves the stubbed and integrated E2E databases.
+      varlock?.varlockVitePlugin({ ssrInjectMode: "auto-load" }),
       serverOnly(),
       tailwindcss(),
       // Keep colocated tests out of the route tree.
@@ -121,10 +133,10 @@ export default defineConfig(({ mode }) => {
       // Source maps upload only when a token is present, so builds without
       // Sentry stay quiet and offline.
       sentryTanstackStart({
-        authToken: env.SENTRY_AUTH_TOKEN,
-        org: env.SENTRY_ORG,
-        project: env.SENTRY_PROJECT,
-        sourcemaps: { disable: !env.SENTRY_AUTH_TOKEN },
+        authToken: SENTRY_AUTH_TOKEN,
+        org: SENTRY_ORG,
+        project: SENTRY_PROJECT,
+        sourcemaps: { disable: !SENTRY_AUTH_TOKEN },
         release: { name: buildSha },
         silent: !process.env.CI,
         telemetry: false,

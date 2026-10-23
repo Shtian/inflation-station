@@ -10,6 +10,7 @@ import {
   stepCountIs,
   streamText,
 } from "ai";
+import { ENV } from "varlock/env";
 import { z } from "zod";
 import {
   ASSISTANT_AGENT_MODEL,
@@ -154,7 +155,7 @@ export const Route = createFileRoute("/api/assistant/chat")({
 
         setAiChatScope("assistant", id);
         const openai = createOpenAI({
-          apiKey: process.env.OPENAI_API_KEY?.trim() ?? "",
+          apiKey: ENV.OPENAI_API_KEY?.trim() ?? "",
         });
         const result = streamText({
           model: openai.responses(modelId),

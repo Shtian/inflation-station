@@ -38,24 +38,15 @@ describe("resolveFeedbackDisabledReason", () => {
   });
 
   it("reports key_missing before checking the repo", () => {
-    expect(
-      resolveFeedbackDisabledReason({
-        OPENAI_API_KEY: "  ",
-        FEEDBACK_GITHUB_REPO: "",
-      }),
-    ).toBe("key_missing");
+    expect(resolveFeedbackDisabledReason({ OPENAI_API_KEY: "  " })).toBe(
+      "key_missing",
+    );
   });
 
-  it("reports repo_missing when the repo is unset or not owner/name", () => {
+  it("reports repo_missing when the repo is unset", () => {
     expect(resolveFeedbackDisabledReason({ OPENAI_API_KEY: "sk-test" })).toBe(
       "repo_missing",
     );
-    expect(
-      resolveFeedbackDisabledReason({
-        OPENAI_API_KEY: "sk-test",
-        FEEDBACK_GITHUB_REPO: "https://github.com/Shtian/inflation-station",
-      }),
-    ).toBe("repo_missing");
   });
 });
 

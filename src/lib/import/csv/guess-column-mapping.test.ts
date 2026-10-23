@@ -1,12 +1,5 @@
 import type { Fetch } from "@typesafe-ai/sdk";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vite-plus/test";
+import { describe, expect, it, vi } from "vite-plus/test";
 import type { ColumnMapping } from "./column-mapping";
 import {
   guessColumnMapping,
@@ -62,14 +55,6 @@ function jevFetch(answerFor: (instructions: string) => JevAnswer) {
 }
 
 describe("guessColumnMapping", () => {
-  beforeEach(() => {
-    vi.stubEnv("TYPESAFE_API_KEY", "");
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
   it("returns the heuristic guess when Jev has no API key", async () => {
     const guess = await guessColumnMapping({
       headers: SPAREBANK_HEADERS,

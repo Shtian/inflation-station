@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
 import { MonthlyReviewStatus, type PaymentType, Prisma } from "@prisma/client";
 import { generateObject } from "ai";
+import { ENV } from "varlock/env";
 import {
   buildProviderErrorDetail,
   isAbortError,
@@ -344,7 +345,7 @@ export async function generateMonthlyReview(
   const openAiApiKey =
     options && "openAiApiKey" in options
       ? options.openAiApiKey
-      : process.env.OPENAI_API_KEY;
+      : ENV.OPENAI_API_KEY;
   const apiKey = openAiApiKey?.trim();
 
   if (!apiKey) {
