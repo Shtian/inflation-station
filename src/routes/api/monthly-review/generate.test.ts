@@ -1,6 +1,9 @@
 import { MonthlyReviewStatus } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./generate";
+
+const POST = routeHandler(Route, "POST");
 
 const {
   generateMonthlyReviewMock,

@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./message-cleanup-settings";
+
+const GET = routeHandler(Route, "GET");
 
 const {
   listChatModelsMock,

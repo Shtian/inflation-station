@@ -2,7 +2,11 @@ import { APICallError, simulateReadableStream } from "ai";
 import { MockLanguageModelV3 } from "ai/test";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { selectAssistantModelIds } from "@/lib/assistant/models";
-import { GET, POST } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./chat";
+
+const GET = routeHandler(Route, "GET");
+const POST = routeHandler(Route, "POST");
 
 const { saveMock, model, responsesModelIds, listChatModelsMock } = vi.hoisted(
   () => ({

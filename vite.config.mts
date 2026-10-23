@@ -70,7 +70,8 @@ export default defineConfig(({ mode }) => {
     plugins: [
       serverOnly(),
       tailwindcss(),
-      tanstackStart(),
+      // Keep colocated tests out of the route tree.
+      tanstackStart({ router: { routeFileIgnorePattern: "\\.test\\.tsx?$" } }),
       react(),
       babel({ presets: [reactCompilerPreset()] }),
       nitro(),

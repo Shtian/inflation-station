@@ -23,3 +23,4 @@ src/lib/assistant/agent.ts	List individual transactions, newest first, optionall
 src/lib/assistant/agent.ts	Facts for one calendar month: income, spend by category, bills versus everyday spend, top merchants, and a comparison with the previous month.
 src/lib/assistant/agent.ts	List every category with its id, name, and kind.
 src/lib/assistant/agent.ts	List every account with its id, name, institution, and whether it is active.
+src/routes/api/-route-handler.ts	The route has no handler.

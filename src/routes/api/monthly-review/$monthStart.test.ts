@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./$monthStart";
+
+const GET = routeHandler(Route, "GET");
 
 const { findManyMock, findFirstMock, findUniqueMock, prismaMock } = vi.hoisted(
   () => {
@@ -25,7 +28,7 @@ vi.mock("@/lib/prisma", () => ({
 
 function get(monthStart: string) {
   return GET(new Request(`http://localhost/api/monthly-review/${monthStart}`), {
-    params: Promise.resolve({ monthStart }),
+    monthStart,
   });
 }
 

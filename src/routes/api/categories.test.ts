@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
+import { routeHandler } from "./-route-handler";
+import { Route } from "./categories";
+
+const POST = routeHandler(Route, "POST");
 
 const { createMock, prismaMock } = vi.hoisted(() => {
   const create = vi.fn();

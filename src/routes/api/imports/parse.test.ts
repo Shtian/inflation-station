@@ -1,7 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ColumnMapping } from "@/lib/import/csv/column-mapping";
-import { POST } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./parse";
+
+const POST = routeHandler(Route, "POST");
 
 const { prismaMock, stageParsedImportRowsMock } = vi.hoisted(() => ({
   prismaMock: {
@@ -70,7 +73,7 @@ function formRequest(
 }
 
 const FIXTURE_PDF = new URL(
-  "../../../../lib/import/pdf/__fixtures__/trumf-2026-09.pdf",
+  "../../../lib/import/pdf/__fixtures__/trumf-2026-09.pdf",
   import.meta.url,
 );
 

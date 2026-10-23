@@ -8,7 +8,10 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
 } from "@/lib/transactions/note";
-import { POST } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./submit";
+
+const POST = routeHandler(Route, "POST");
 
 const { prismaMock, submitImportReviewMock } = vi.hoisted(() => ({
   prismaMock: { _tag: "prisma-mock" },

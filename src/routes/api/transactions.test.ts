@@ -1,6 +1,11 @@
 import { PaymentType } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DELETE, GET, POST } from "./route";
+import { routeHandler } from "./-route-handler";
+import { Route } from "./transactions";
+
+const DELETE = routeHandler(Route, "DELETE");
+const GET = routeHandler(Route, "GET");
+const POST = routeHandler(Route, "POST");
 
 const {
   getTransactionsPageMock,

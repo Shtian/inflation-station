@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PATCH } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./$categoryId";
+
+const PATCH = routeHandler(Route, "PATCH");
 
 const { updateMock, prismaMock } = vi.hoisted(() => {
   const update = vi.fn();
@@ -34,9 +37,7 @@ describe("PATCH /api/categories/[categoryId]", () => {
           name: "   ",
         }),
       }),
-      {
-        params: Promise.resolve({ categoryId: "cat-1" }),
-      },
+      { categoryId: "cat-1" },
     );
 
     expect(response.status).toBe(400);
@@ -57,9 +58,7 @@ describe("PATCH /api/categories/[categoryId]", () => {
         },
         body: JSON.stringify({ name: "Commute" }),
       }),
-      {
-        params: Promise.resolve({ categoryId: "cat-missing" }),
-      },
+      { categoryId: "cat-missing" },
     );
 
     expect(response.status).toBe(404);
@@ -79,9 +78,7 @@ describe("PATCH /api/categories/[categoryId]", () => {
         },
         body: JSON.stringify({ name: "Food" }),
       }),
-      {
-        params: Promise.resolve({ categoryId: "cat-1" }),
-      },
+      { categoryId: "cat-1" },
     );
 
     expect(response.status).toBe(409);
@@ -110,9 +107,7 @@ describe("PATCH /api/categories/[categoryId]", () => {
           classifierHint: "Recurring transport top-ups",
         }),
       }),
-      {
-        params: Promise.resolve({ categoryId: "cat-1" }),
-      },
+      { categoryId: "cat-1" },
     );
 
     expect(response.status).toBe(200);
@@ -148,9 +143,7 @@ describe("PATCH /api/categories/[categoryId]", () => {
         },
         body: JSON.stringify({ name: "Commute" }),
       }),
-      {
-        params: Promise.resolve({ categoryId: "cat-1" }),
-      },
+      { categoryId: "cat-1" },
     );
 
     expect(response.status).toBe(200);
@@ -177,9 +170,7 @@ describe("PATCH /api/categories/[categoryId]", () => {
         },
         body: JSON.stringify({ name: "Commute", classifierHint: "   " }),
       }),
-      {
-        params: Promise.resolve({ categoryId: "cat-1" }),
-      },
+      { categoryId: "cat-1" },
     );
 
     expect(response.status).toBe(200);

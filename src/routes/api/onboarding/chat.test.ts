@@ -1,9 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./chat";
+
+const POST = routeHandler(Route, "POST");
+
+vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
 function post(body: string) {
   return POST(
-    new Request("http://localhost/api/feedback/chat", {
+    new Request("http://localhost/api/onboarding/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
@@ -11,37 +16,23 @@ function post(body: string) {
   );
 }
 
-describe("POST /api/feedback/chat", () => {
+describe("POST /api/onboarding/chat", () => {
   beforeEach(() => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("FEEDBACK_GITHUB_REPO", "Shtian/inflation-station");
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
-  it("answers 503 key_missing when there is no API key", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "");
+  it("answers 503 when there is no API key", async () => {
+    vi.stubEnv("OPENAI_API_KEY", " ");
 
     const response = await post(JSON.stringify({ messages: [] }));
 
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({
-      error: "FEEDBACK_UNAVAILABLE",
-      reason: "key_missing",
-    });
-  });
-
-  it("answers 503 repo_missing when the repo is not owner/name", async () => {
-    vi.stubEnv("FEEDBACK_GITHUB_REPO", "inflation-station");
-
-    const response = await post(JSON.stringify({ messages: [] }));
-
-    expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toEqual({
-      error: "FEEDBACK_UNAVAILABLE",
-      reason: "repo_missing",
+      error: "ONBOARDING_UNAVAILABLE",
     });
   });
 
@@ -50,31 +41,39 @@ describe("POST /api/feedback/chat", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: "INVALID_FEEDBACK_MESSAGES",
+      error: "INVALID_ONBOARDING_MESSAGES",
       message: "Forespørselen må være JSON.",
     });
   });
 
   it("answers 400 when messages are not UI messages", async () => {
     const response = await post(
-      JSON.stringify({ messages: [{ role: "user", content: "hello" }] }),
+      JSON.stringify({ messages: [{ role: "user", content: "hei" }] }),
     );
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
-      error: "INVALID_FEEDBACK_MESSAGES",
+      error: "INVALID_ONBOARDING_MESSAGES",
     });
   });
 
-  it("answers 400 when user metadata breaks the schema", async () => {
+  it("answers 400 when a proposal breaks the tool input schema", async () => {
     const response = await post(
       JSON.stringify({
         messages: [
+          { id: "u1", role: "user", parts: [{ type: "text", text: "Hei" }] },
           {
-            id: "u1",
-            role: "user",
-            parts: [{ type: "text", text: "Broken" }],
-            metadata: { pathname: 42 },
+            id: "a1",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-addAccounts",
+                toolCallId: "call-1",
+                state: "approval-requested",
+                input: { accounts: [] },
+                approval: { id: "approval-1" },
+              },
+            ],
           },
         ],
       }),
@@ -82,7 +81,7 @@ describe("POST /api/feedback/chat", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({
-      error: "INVALID_FEEDBACK_MESSAGES",
+      error: "INVALID_ONBOARDING_MESSAGES",
     });
   });
 });

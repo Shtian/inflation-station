@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "./route";
+import { routeHandler } from "../../-route-handler";
+import { Route } from "./merchants";
+
+const GET = routeHandler(Route, "GET");
 
 const { findUniqueMock, groupByMock, prismaMock } = vi.hoisted(() => {
   const findUnique = vi.fn();
@@ -22,7 +25,7 @@ vi.mock("@/lib/prisma", () => ({
 function get(categoryId: string) {
   return GET(
     new Request(`http://localhost/api/categories/${categoryId}/merchants`),
-    { params: Promise.resolve({ categoryId }) },
+    { categoryId },
   );
 }
 

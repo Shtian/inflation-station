@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "./route";
+import { routeHandler } from "../../-route-handler";
+import { Route } from "./hint-guess";
+
+const GET = routeHandler(Route, "GET");
 
 const { generateMock } = vi.hoisted(() => ({ generateMock: vi.fn() }));
 
@@ -13,7 +16,7 @@ vi.mock("@/lib/categorization/hint-guess", async (importOriginal) => ({
 function get(categoryId: string) {
   return GET(
     new Request(`http://localhost/api/categories/${categoryId}/hint-guess`),
-    { params: Promise.resolve({ categoryId }) },
+    { categoryId },
   );
 }
 

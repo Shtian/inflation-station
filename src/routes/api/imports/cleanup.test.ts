@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { POST } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./cleanup";
+
+const POST = routeHandler(Route, "POST");
 
 const { prismaMock, runCleanupChunkMock, getMessageCleanupSettingsMock } =
   vi.hoisted(() => ({

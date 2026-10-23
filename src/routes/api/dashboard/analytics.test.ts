@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./analytics";
+
+const GET = routeHandler(Route, "GET");
 
 const { getDashboardAnalyticsMock, prismaMock } = vi.hoisted(() => ({
   getDashboardAnalyticsMock: vi.fn(),

@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { GET } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./timeline";
+
+const GET = routeHandler(Route, "GET");
 
 const { getMonthlyTimelineMock, prismaMock } = vi.hoisted(() => ({
   getMonthlyTimelineMock: vi.fn(),

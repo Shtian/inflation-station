@@ -1,6 +1,10 @@
 import { PaymentType } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DELETE, PATCH } from "./route";
+import { routeHandler } from "../-route-handler";
+import { Route } from "./$transactionId";
+
+const DELETE = routeHandler(Route, "DELETE");
+const PATCH = routeHandler(Route, "PATCH");
 
 const {
   prismaMock,
@@ -39,9 +43,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
   });
 
   it("returns 400 when transactionId route param is invalid", async () => {
-    const response = await PATCH(new Request("http://localhost"), {
-      params: Promise.resolve({}),
-    });
+    const response = await PATCH(new Request("http://localhost"), {});
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
@@ -68,9 +70,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
         body: JSON.stringify({ paymentType: "INVALID" }),
         headers: { "Content-Type": "application/json" },
       }),
-      {
-        params: Promise.resolve({ transactionId: "tx-1" }),
-      },
+      { transactionId: "tx-1" },
     );
 
     expect(response.status).toBe(400);
@@ -104,9 +104,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
         }),
         headers: { "Content-Type": "application/json" },
       }),
-      {
-        params: Promise.resolve({ transactionId: "tx-1" }),
-      },
+      { transactionId: "tx-1" },
     );
 
     expect(response.status).toBe(200);
@@ -137,9 +135,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
         body: JSON.stringify({ merchant: "Store" }),
         headers: { "Content-Type": "application/json" },
       }),
-      {
-        params: Promise.resolve({ transactionId: "tx-1" }),
-      },
+      { transactionId: "tx-1" },
     );
 
     expect(response.status).toBe(status);
@@ -160,9 +156,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
         body: JSON.stringify({ tripId: "gone" }),
         headers: { "Content-Type": "application/json" },
       }),
-      {
-        params: Promise.resolve({ transactionId: "tx-1" }),
-      },
+      { transactionId: "tx-1" },
     );
 
     expect(response.status).toBe(404);
@@ -186,9 +180,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
           body: JSON.stringify({ merchant: "Store" }),
           headers: { "Content-Type": "application/json" },
         }),
-        {
-          params: Promise.resolve({ transactionId: "tx-1" }),
-        },
+        { transactionId: "tx-1" },
       ),
     ).rejects.toThrow("boom");
   });
@@ -207,9 +199,7 @@ describe("PATCH /api/transactions/[transactionId]", () => {
           body: JSON.stringify({ merchant: "Store" }),
           headers: { "Content-Type": "application/json" },
         }),
-        {
-          params: Promise.resolve({ transactionId: "tx-1" }),
-        },
+        { transactionId: "tx-1" },
       ),
     ).rejects.toEqual({ code: "P2002" });
   });
@@ -224,7 +214,7 @@ describe("DELETE /api/transactions/[transactionId]", () => {
     deleteTransactionMock.mockRejectedValue({ code: "P2025" });
 
     const response = await DELETE(new Request("http://localhost"), {
-      params: Promise.resolve({ transactionId: "missing-id" }),
+      transactionId: "missing-id",
     });
 
     expect(response.status).toBe(404);
@@ -238,7 +228,7 @@ describe("DELETE /api/transactions/[transactionId]", () => {
     deleteTransactionMock.mockResolvedValue(undefined);
 
     const response = await DELETE(new Request("http://localhost"), {
-      params: Promise.resolve({ transactionId: "tx-1" }),
+      transactionId: "tx-1",
     });
 
     expect(response.status).toBe(204);
