@@ -43,6 +43,13 @@ export const Route = createFileRoute("/trips/$tripId")({
   loaderDeps: ({ search }) => ({ search }),
   loader: ({ params, deps }) =>
     getTripPage({ data: { tripId: params.tripId, search: deps.search } }),
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        title: `${loaderData?.summary.name ?? "Tur"} · Inflation Station`,
+      },
+    ],
+  }),
   pendingComponent: TripsPending,
   errorComponent: TripsError,
   component: TripPage,
