@@ -43,6 +43,13 @@ export const Route = createFileRoute("/trips/$tripId")({
   loaderDeps: ({ search }) => ({ search }),
   loader: ({ params, deps }) =>
     getTripPage({ data: { tripId: params.tripId, search: deps.search } }),
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        title: `${loaderData?.summary.name ?? "Tur"} · Inflation Station`,
+      },
+    ],
+  }),
   pendingComponent: TripsPending,
   errorComponent: TripsError,
   component: TripPage,
@@ -65,17 +72,17 @@ function TripPage() {
       <div className="space-y-3">
         <Link
           to="/trips"
-          className="inline-flex items-center gap-1 text-muted-foreground text-sm hover:text-foreground"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft aria-hidden className="size-4" />
           Turer
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
               {summary.name}
             </h1>
-            <p className="text-muted-foreground text-sm tabular-nums">
+            <p className="text-sm text-muted-foreground tabular-nums">
               {formatTripRange(summary.startDate, summary.endDate)} ·{" "}
               {formatDays(summary.days)}
             </p>
@@ -92,20 +99,20 @@ function TripPage() {
 
       <dl aria-label="Kostnad" className="flex flex-wrap gap-x-10 gap-y-4">
         <div className="space-y-1">
-          <dt className="text-muted-foreground text-sm">Totalt</dt>
-          <dd className="font-mono font-semibold text-foreground text-lg tabular-nums tracking-tight">
+          <dt className="text-sm text-muted-foreground">Totalt</dt>
+          <dd className="font-mono text-lg font-semibold tracking-tight text-foreground tabular-nums">
             {formatAmount(summary.costNok)}
           </dd>
         </div>
         <div className="space-y-1">
-          <dt className="text-muted-foreground text-sm">Per dag</dt>
-          <dd className="font-mono font-semibold text-foreground text-lg tabular-nums tracking-tight">
+          <dt className="text-sm text-muted-foreground">Per dag</dt>
+          <dd className="font-mono text-lg font-semibold tracking-tight text-foreground tabular-nums">
             {formatAmount(summary.perDayNok)}
           </dd>
         </div>
         <div className="space-y-1">
-          <dt className="text-muted-foreground text-sm">Transaksjoner</dt>
-          <dd className="font-semibold text-foreground text-lg tabular-nums tracking-tight">
+          <dt className="text-sm text-muted-foreground">Transaksjoner</dt>
+          <dd className="text-lg font-semibold tracking-tight text-foreground tabular-nums">
             {memberCount}
           </dd>
         </div>

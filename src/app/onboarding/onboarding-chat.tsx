@@ -128,20 +128,20 @@ function ProposalCard({
     case "input-streaming":
     case "input-available":
       return (
-        <p className="text-muted-foreground text-xs">Forbereder {noun}…</p>
+        <p className="text-xs text-muted-foreground">Forbereder {noun}…</p>
       );
     case "approval-requested":
     case "approval-responded":
     case "output-denied":
       if (part.state === "approval-requested" && !isLatest) {
         return (
-          <p className="text-muted-foreground text-xs">Forslaget ble avvist</p>
+          <p className="text-xs text-muted-foreground">Forslaget ble avvist</p>
         );
       }
       return (
         <Confirmation approval={part.approval} state={part.state}>
           <ConfirmationRequest>
-            <p className="font-medium text-sm">Legge til disse {noun}?</p>
+            <p className="text-sm font-medium">Legge til disse {noun}?</p>
             <ul className="flex flex-col gap-2">
               {proposalRows(part).map((row) => (
                 <li key={row.name} className="flex flex-col gap-0.5">
@@ -152,7 +152,7 @@ function ProposalCard({
                     ) : null}
                   </span>
                   {row.detail ? (
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-xs text-muted-foreground">
                       {row.detail}
                     </span>
                   ) : null}
@@ -161,10 +161,10 @@ function ProposalCard({
             </ul>
           </ConfirmationRequest>
           <ConfirmationAccepted>
-            <p className="text-muted-foreground text-xs">Legger til {noun}…</p>
+            <p className="text-xs text-muted-foreground">Legger til {noun}…</p>
           </ConfirmationAccepted>
           <ConfirmationRejected>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               Forslaget ble avvist
             </p>
           </ConfirmationRejected>
@@ -186,7 +186,7 @@ function ProposalCard({
     case "output-available":
       return <p className="text-sm">{describeBatchResult(part.output)}</p>;
     case "output-error":
-      return <p className="text-destructive text-xs">{part.errorText}</p>;
+      return <p className="text-xs text-destructive">{part.errorText}</p>;
   }
 }
 
@@ -311,10 +311,10 @@ export function OnboardingChat({
   return (
     <section
       aria-label="Samtale med oppsettsguiden"
-      className="flex h-[70dvh] min-h-[28rem] flex-col overflow-hidden rounded-xl bg-card text-card-foreground text-sm ring-1 ring-foreground/10 lg:h-[calc(100dvh-14rem)]"
+      className="flex h-[70dvh] min-h-[28rem] flex-col overflow-hidden rounded-xl bg-card text-sm text-card-foreground ring-1 ring-foreground/10 lg:h-[calc(100dvh-14rem)]"
     >
-      <header className="flex items-center gap-1 border-border border-b px-4 py-2">
-        <h2 className="flex-1 font-semibold text-sm">Oppsettsguide</h2>
+      <header className="flex items-center gap-1 border-b border-border px-4 py-2">
+        <h2 className="flex-1 text-sm font-semibold">Oppsettsguide</h2>
         <Button
           size="icon-sm"
           variant="ghost"
@@ -330,7 +330,7 @@ export function OnboardingChat({
         <ConversationContent className="min-h-full gap-4 p-4">
           {messages.length === 0 ? (
             <ConversationEmptyState className="flex-1 items-start justify-end gap-3 p-0 text-left">
-              <p className="max-w-prose text-muted-foreground text-sm">
+              <p className="max-w-prose text-sm text-muted-foreground">
                 Jeg hjelper deg med å sette opp Inflation Station. Fortell meg
                 hvilke bankkontoer du bruker, så legger jeg dem til. Deretter
                 velger vi kategorier for forbruket ditt og en måte å holde
@@ -343,7 +343,7 @@ export function OnboardingChat({
                     key={suggestion}
                     suggestion={suggestion}
                     onClick={send}
-                    className="h-auto whitespace-normal py-1.5 text-left"
+                    className="h-auto py-1.5 text-left whitespace-normal"
                   />
                 ))}
               </div>
@@ -360,10 +360,10 @@ export function OnboardingChat({
             ))
           )}
           {status === "submitted" ? (
-            <p className="text-muted-foreground text-xs">Tenker…</p>
+            <p className="text-xs text-muted-foreground">Tenker…</p>
           ) : null}
           {error ? (
-            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive text-xs">
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
               <span className="flex-1">{describeChatError(error)}</span>
               <Button
                 size="xs"
@@ -379,7 +379,7 @@ export function OnboardingChat({
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="border-border border-t p-3">
+      <div className="border-t border-border p-3">
         <PromptInput onSubmit={(message) => send(message.text)}>
           <PromptInputTextarea
             ref={textareaRef}

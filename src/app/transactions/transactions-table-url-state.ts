@@ -87,6 +87,10 @@ function parsePageSize(value: string | null): number {
     : DEFAULT_PAGE_SIZE;
 }
 
+export function formatSortingParam(sorting: TransactionSorting): string {
+  return `${sorting.field}:${sorting.direction}`;
+}
+
 function applyTableStateToSearchParams(
   searchParams: URLSearchParams,
   state: TransactionsTableUrlState,
@@ -99,10 +103,7 @@ function applyTableStateToSearchParams(
   searchParams.set("pageSize", String(state.pageSize));
 
   if (state.sorting) {
-    searchParams.set(
-      "sorting",
-      `${state.sorting.field}:${state.sorting.direction}`,
-    );
+    searchParams.set("sorting", formatSortingParam(state.sorting));
   }
   if (state.globalQuery) {
     searchParams.set("globalQuery", state.globalQuery);
@@ -148,23 +149,6 @@ export function toTransactionsTableSearchParams(
   const nextSearchParams = new URLSearchParams(sourceSearchParams?.toString());
   applyTableStateToSearchParams(nextSearchParams, state);
   return nextSearchParams;
-}
-
-export function areTransactionsTableUrlStatesEqual(
-  left: TransactionsTableUrlState,
-  right: TransactionsTableUrlState,
-) {
-  return (
-    left.page === right.page &&
-    left.pageSize === right.pageSize &&
-    left.sorting?.field === right.sorting?.field &&
-    left.sorting?.direction === right.sorting?.direction &&
-    left.globalQuery === right.globalQuery &&
-    left.dateFrom === right.dateFrom &&
-    left.dateTo === right.dateTo &&
-    left.accountId === right.accountId &&
-    left.categoryId === right.categoryId
-  );
 }
 
 export function withFilterStateChange(

@@ -7,5 +7,5 @@ Load this when working in `src/app/settings`.
 - Each section component owns its own fetch, save and feedback state, and shows its loading state inside its card with `SettingsStatus`.
 - Emit save success through Sonner toasts and keep load and save failures as inline `role="alert"` text inside the section.
 - Keep control ids and label text stable (`message-cleanup-openai-model`, `message-cleanup-reasoning-effort`, `message-cleanup-system-prompt`, `monthly-review-openai-model`, `monthly-review-system-prompt`). `SettingsRow` renders the `<label htmlFor>`, so pass the control's id as `htmlFor`.
-- Message cleanup saves through `updateMessageCleanupSettingsAction` (a Server Action), wrapped in `try/catch` so transport failures still show the save error copy and re-enable controls. Monthly review saves with `PUT /api/monthly-review/system-prompt`. Both actions revalidate `/settings`.
+- Message cleanup saves through the `updateMessageCleanupSettingsFn` server function (`src/routes/settings/-server.ts`), wrapped in `try/catch` so transport failures still show the save error copy and re-enable controls. Monthly review saves with `PUT /api/monthly-review/system-prompt`.
 - Both sections render a `Lagre prompt` button. E2E specs scope it by section region, e.g. `page.getByRole("region", { name: "Import", exact: true })`.

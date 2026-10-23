@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { getSentryOptions } from "./options";
 
 function sample(name: string, url?: string, parentSampled?: boolean) {

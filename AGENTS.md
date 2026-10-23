@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Inflation Station is a Next.js + TypeScript personal-finance app with Prisma-backed imports, transaction workflows, and monthly AI-assisted review generation.
+Inflation Station is a TanStack Start (Vite+) + TypeScript personal-finance app with Prisma-backed imports, transaction workflows, and monthly AI-assisted review generation.
 
 ## Working mode
 - For any nontrivial change, architecture decision, or bug fix, apply `/poteto-mode` before starting. It matches the task to a playbook and grounds decisions in named principles.
@@ -14,7 +14,7 @@ Inflation Station is a Next.js + TypeScript personal-finance app with Prisma-bac
 - If behavior changes and tests are feasible, add or update tests.
 - When migrating inline success feedback to Sonner toasts, update Playwright assertions that currently use `getByText("...added/updated/removed/saved...")` so E2E coverage follows the feedback surface change.
 - After Prisma schema changes, run `pnpm exec prisma generate` before type/build checks.
-- For Server Action mutations, use `src/lib/server-actions/mutation-result.ts` to keep validation and typed error contracts consistent with existing API error-code semantics.
+- Pages load data in route loaders that call server functions (`createServerFn`), and mutations run through POST server functions followed by `router.invalidate()`; see `src/routes/AGENTS.md`. Build mutation results with `src/lib/server-actions/mutation-result.ts` to keep validation and typed error contracts consistent with existing API error-code semantics.
 - For deterministic category color changes, keep `getDeterministicColorFromText` return shape stable (`hue`, `saturation`, `lightness`, and contrast fields) even when changing color space, and update `src/lib/deterministic-color.test.ts` in the same change.
 - For `uncategorized` fallback color changes, keep `src/lib/category-color.ts` and `src/lib/category-color.test.ts` in sync, keep the explicit neutral fallback with separate `lightTextColor`/`darkTextColor` tokens, and return valid CSS color strings consumed by category badges/charts.
 
@@ -39,7 +39,7 @@ Triage uses the default `needs-triage`, `needs-info`, `ready-for-agent`, `ready-
 Single-context layout - CONTEXT.md + docs/adr/ at repo root (created lazily as needed). See `docs/agents/domain.md`.
 
 ## Folder-specific guidance (load only when working there)
-- `src/app/AGENTS.md`
+- `src/routes/AGENTS.md`
 - `src/app/(overview)/AGENTS.md`
 - `src/app/import/AGENTS.md`
 - `src/app/transactions/AGENTS.md`
@@ -49,11 +49,11 @@ Single-context layout - CONTEXT.md + docs/adr/ at repo root (created lazily as n
 - `src/app/settings/AGENTS.md`
 - `src/app/subscriptions/AGENTS.md`
 - `src/app/trips/AGENTS.md`
-- `src/app/api/AGENTS.md`
-- `src/app/api/imports/AGENTS.md`
-- `src/app/api/transactions/AGENTS.md`
-- `src/app/api/monthly-review/AGENTS.md`
-- `src/app/api/dashboard/AGENTS.md`
+- `src/routes/api/AGENTS.md`
+- `src/routes/api/imports/AGENTS.md`
+- `src/routes/api/transactions/AGENTS.md`
+- `src/routes/api/monthly-review/AGENTS.md`
+- `src/routes/api/dashboard/AGENTS.md`
 - `src/lib/import/AGENTS.md`
 - `src/lib/transactions/AGENTS.md`
 - `src/lib/monthly-review/AGENTS.md`

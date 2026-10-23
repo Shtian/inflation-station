@@ -91,7 +91,7 @@ function ColumnChoices({
 }) {
   return (
     <fieldset className="space-y-1.5">
-      <legend className="mb-1.5 font-medium text-xs">{legend}</legend>
+      <legend className="mb-1.5 text-xs font-medium">{legend}</legend>
       <div className="grid gap-1.5 sm:grid-cols-2">
         {proposal.headers.map((header, index) => {
           const selected = isSelected(index);
@@ -126,8 +126,8 @@ function ColumnChoices({
                 />
               )}
               <span className="min-w-0">
-                <span className="block font-medium text-sm">{header}</span>
-                <span className="block truncate font-mono text-muted-foreground text-xs">
+                <span className="block text-sm font-medium">{header}</span>
+                <span className="block truncate font-mono text-xs text-muted-foreground">
                   {sampleValues(proposal, index) || "Tom"}
                 </span>
               </span>
@@ -191,7 +191,6 @@ function PreviewTable({
           ) : (
             rows.map((row, index) => (
               // Sample rows have no identity beyond their position.
-              // biome-ignore lint/suspicious/noArrayIndexKey: see above
               <TableRow key={index}>
                 {PREVIEW_COLUMNS.map((column) => (
                   <TableCell
@@ -487,17 +486,17 @@ export function ImportColumnMappingPhase({
           type="button"
           onClick={onBack}
           disabled={importLoading}
-          className="flex items-center gap-1.5 text-muted-foreground text-xs transition-colors hover:text-foreground"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="h-3 w-3" aria-hidden="true" />
           Tilbake
         </button>
-        <h2 className="font-semibold text-foreground text-xl tracking-tight">
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">
           Koble kolonner
         </h2>
       </div>
 
-      <output className="flex items-center gap-2 font-medium text-sm">
+      <output className="flex items-center gap-2 text-sm font-medium">
         {mapping ? (
           <CircleCheck
             className="h-4 w-4 shrink-0 text-emerald-600"
@@ -542,20 +541,20 @@ export function ImportColumnMappingPhase({
                       aria-hidden="true"
                     />
                   )}
-                  <span className="w-24 shrink-0 font-medium text-sm sm:w-28">
+                  <span className="w-24 shrink-0 text-sm font-medium sm:w-28">
                     {row.label}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block break-words font-mono text-xs sm:truncate">
+                    <span className="block font-mono text-xs break-words sm:truncate">
                       {row.columns ||
                         (row.optional ? "Ikke brukt" : "Velg en kolonne")}
                     </span>
                     {row.example ? (
-                      <span className="block break-words text-muted-foreground text-xs sm:truncate">
+                      <span className="block text-xs break-words text-muted-foreground sm:truncate">
                         f.eks. {row.example}
                       </span>
                     ) : null}
-                    <span className="block text-muted-foreground text-xs sm:hidden">
+                    <span className="block text-xs text-muted-foreground sm:hidden">
                       {SOURCE_LABELS[sources[row.field]]}
                     </span>
                   </span>
@@ -592,7 +591,7 @@ export function ImportColumnMappingPhase({
       >
         <h3
           id="column-mapping-preview-heading"
-          className="font-medium text-foreground text-sm"
+          className="text-sm font-medium text-foreground"
         >
           {mapping
             ? `Slik blir de første ${proposal.sampleRows.length} radene importert`
@@ -602,7 +601,7 @@ export function ImportColumnMappingPhase({
       </section>
 
       {preview && preview.summary.ignoredReserved > 0 ? (
-        <p className="text-muted-foreground text-xs">
+        <p className="text-xs text-muted-foreground">
           {preview.summary.ignoredReserved}{" "}
           {preview.summary.ignoredReserved === 1
             ? "reservert rad"
@@ -613,7 +612,7 @@ export function ImportColumnMappingPhase({
       {preview && preview.errors.length > 0 ? (
         <ul
           aria-label="Feil i forhåndsvisningen"
-          className="space-y-1 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="space-y-1 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {preview.errors.map((error) => (
             <li key={`${error.rowNumber}-${error.code}`}>{error.message}</li>
@@ -624,14 +623,14 @@ export function ImportColumnMappingPhase({
       {importError ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {importError}
         </p>
       ) : null}
 
       <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-muted-foreground text-xs sm:max-w-sm">
+        <p className="text-xs text-muted-foreground sm:max-w-sm">
           {mapping ? (
             <>
               Lagres for{" "}

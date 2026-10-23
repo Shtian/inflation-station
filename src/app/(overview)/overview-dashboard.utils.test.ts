@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { fromDateInputValue, getPresetRange } from "./overview-dashboard.utils";
 
 describe("overview dashboard date presets", () => {

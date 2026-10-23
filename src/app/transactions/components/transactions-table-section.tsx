@@ -408,7 +408,7 @@ export function TransactionsTableSection({
                 />
                 <TooltipContent
                   side="top"
-                  className="wrap-break-word max-w-xs whitespace-pre-wrap"
+                  className="max-w-xs wrap-break-word whitespace-pre-wrap"
                 >
                   {note}
                 </TooltipContent>
@@ -535,7 +535,7 @@ export function TransactionsTableSection({
 
   if (loading && !transactions) {
     return (
-      <p className="text-muted-foreground text-sm">Laster inn transaksjoner…</p>
+      <p className="text-sm text-muted-foreground">Laster inn transaksjoner…</p>
     );
   }
 
@@ -558,7 +558,7 @@ export function TransactionsTableSection({
           <div className="min-w-50 flex-1">
             <label
               htmlFor="transactions-global-query"
-              className="mb-1.5 block font-medium text-muted-foreground text-xs"
+              className="mb-1.5 block text-xs font-medium text-muted-foreground"
             >
               Søk
             </label>
@@ -579,7 +579,7 @@ export function TransactionsTableSection({
             <div>
               <label
                 htmlFor="transactions-date-from"
-                className="mb-1.5 block font-medium text-muted-foreground text-xs"
+                className="mb-1.5 block text-xs font-medium text-muted-foreground"
               >
                 Fra dato
               </label>
@@ -619,7 +619,7 @@ export function TransactionsTableSection({
             <div>
               <label
                 htmlFor="transactions-date-to"
-                className="mb-1.5 block font-medium text-muted-foreground text-xs"
+                className="mb-1.5 block text-xs font-medium text-muted-foreground"
               >
                 Til dato
               </label>
@@ -660,7 +660,7 @@ export function TransactionsTableSection({
           <div>
             <label
               htmlFor="transactions-account-filter"
-              className="mb-1.5 block font-medium text-muted-foreground text-xs"
+              className="mb-1.5 block text-xs font-medium text-muted-foreground"
             >
               Konto
             </label>
@@ -700,7 +700,7 @@ export function TransactionsTableSection({
           <div>
             <label
               htmlFor="transactions-category-filter"
-              className="mb-1.5 block font-medium text-muted-foreground text-xs"
+              className="mb-1.5 block text-xs font-medium text-muted-foreground"
             >
               Kategori
             </label>
@@ -719,7 +719,7 @@ export function TransactionsTableSection({
 
       {/* Table Info & Actions */}
       <div className="mt-8 flex items-center justify-between">
-        <span className="text-muted-foreground text-sm">
+        <span className="text-sm text-muted-foreground">
           {Object.keys(rowSelection).length > 0 ? (
             <>
               <span className="font-medium text-foreground">
@@ -800,7 +800,7 @@ export function TransactionsTableSection({
 
       {/* Transactions Table */}
       {transactions.rows.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           {hasActiveFilters
             ? "Fant ingen transaksjoner for de valgte filtrene."
             : "Fant ingen transaksjoner."}

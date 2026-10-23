@@ -148,19 +148,19 @@ export function CategorySpendBreakdownCard({
     <Card>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 max-w-[62ch] space-y-1">
-            <h3 className="font-semibold text-foreground text-sm">
+          <div className="max-w-[62ch] min-w-0 space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">
               Forbruk per kategori
             </h3>
             {hasData ? (
-              <p className="text-muted-foreground text-sm">
+              <p className="text-sm text-muted-foreground">
                 {view === "list"
                   ? LIST_LEDES[sort](ledger)
                   : mapLede(visibleRows, ledger.total)}
               </p>
             ) : null}
             {hasData && hiddenRows.length > 0 ? (
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-muted-foreground">
                 {formatCount(
                   hiddenRows.length,
                   "kategori skjult",
@@ -212,7 +212,7 @@ export function CategorySpendBreakdownCard({
                   />
                   <Label
                     htmlFor={mergeSmallId}
-                    className="cursor-pointer font-normal text-muted-foreground text-xs"
+                    className="cursor-pointer text-xs font-normal text-muted-foreground"
                   >
                     Slå sammen små kategorier (under{" "}
                     {formatPercent(SMALL_CATEGORY_SHARE)})
@@ -223,18 +223,18 @@ export function CategorySpendBreakdownCard({
           ) : null}
         </div>
         {isLoading ? (
-          <output className="block text-muted-foreground text-sm">
+          <output className="block text-sm text-muted-foreground">
             Laster inn diagramdata…
           </output>
         ) : null}
         {!isLoading && rows.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             Ingen forbruksdata for valgte filtre.
           </p>
         ) : null}
         {hasData && hiddenRows.length > 0 ? (
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-muted-foreground text-xs">Skjult:</span>
+            <span className="text-xs text-muted-foreground">Skjult:</span>
             {hiddenRows.map((row) => (
               <Button
                 key={getCategoryKey(row)}

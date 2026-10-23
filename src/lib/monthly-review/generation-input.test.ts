@@ -1,5 +1,5 @@
 import { PaymentType } from "@prisma/client";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { buildMonthlyReviewGenerationInput } from "./generation-input";
 import { DEFAULT_MONTHLY_REVIEW_SYSTEM_PROMPT } from "./system-prompt";
 

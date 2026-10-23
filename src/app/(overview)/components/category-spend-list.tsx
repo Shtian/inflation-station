@@ -87,7 +87,7 @@ export function CategorySpendList({
                       aria-label={`Skjul ${row.categoryName}`}
                       disabled={!canHide}
                       onClick={() => onHide(key)}
-                      className="opacity-0 focus-visible:opacity-100 group-focus-within/row:opacity-100 group-hover/row:opacity-100"
+                      className="opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 focus-visible:opacity-100"
                     >
                       <EyeOffIcon />
                     </Button>
@@ -113,7 +113,7 @@ export function CategorySpendList({
                 <TableCell
                   className={cn(
                     WIDE_ONLY,
-                    "text-right text-muted-foreground text-xs tabular-nums",
+                    "text-right text-xs text-muted-foreground tabular-nums",
                   )}
                 >
                   {row.cumulativeShare === null
@@ -130,7 +130,7 @@ export function CategorySpendList({
               {index === cutAfterIndex ? (
                 <TableRow className="border-0 hover:bg-transparent">
                   <TableCell colSpan={COLUMN_COUNT} className="px-2 py-2">
-                    <div className="flex items-center gap-2.5 text-muted-foreground text-xs before:flex-1 before:border-border before:border-t before:border-dashed after:flex-1 after:border-border after:border-t after:border-dashed">
+                    <div className="flex items-center gap-2.5 text-xs text-muted-foreground before:flex-1 before:border-t before:border-dashed before:border-border after:flex-1 after:border-t after:border-dashed after:border-border">
                       {formatPercent(CUT_SHARE)} av forbruket er nådd ·{" "}
                       {formatCount(
                         rows.length - index - 1,

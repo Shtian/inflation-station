@@ -1,8 +1,8 @@
 "use client";
 
+import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { saveAccountCsvColumnMappingAction } from "@/app/actions/save-account-csv-column-mapping";
 import { createCategoryInline } from "@/lib/categories/create-category-inline";
 import { inferCategoryKind } from "@/lib/categories/infer-category-kind";
 import type { JevOutcomeSummary } from "@/lib/categorization/jev-categorize";
@@ -21,6 +21,7 @@ import {
   MAX_TRANSACTION_NOTE_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH_MESSAGE,
 } from "@/lib/transactions/note";
+import { saveAccountCsvColumnMappingFn } from "@/routes/import/-server";
 import type { ReviewRow } from "./import-review-table";
 import {
   applyChunkResult,
@@ -136,6 +137,9 @@ function deriveOriginalMessage(row: { name?: string; title?: string }): string {
 }
 
 export function useImportWorkflow() {
+  const saveAccountCsvColumnMapping = useServerFn(
+    saveAccountCsvColumnMappingFn,
+  );
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [accountError, setAccountError] = useState<string | null>(null);
@@ -485,10 +489,12 @@ export function useImportWorkflow() {
     setImportLoading(true);
     let saveError: string | null = null;
     try {
-      const saved = await saveAccountCsvColumnMappingAction({
-        accountId: selectedAccountId,
-        headers: mappingProposal.headers,
-        mapping,
+      const saved = await saveAccountCsvColumnMapping({
+        data: {
+          accountId: selectedAccountId,
+          headers: mappingProposal.headers,
+          mapping,
+        },
       });
       saveError = saved.ok ? null : saved.error.message;
     } catch {
@@ -504,7 +510,13 @@ export function useImportWorkflow() {
     }
 
     await parseCsv(mapping);
-  }, [mappingDraft, mappingProposal, selectedAccountId, parseCsv]);
+  }, [
+    mappingDraft,
+    mappingProposal,
+    selectedAccountId,
+    parseCsv,
+    saveAccountCsvColumnMapping,
+  ]);
 
   const editColumnMapping = useCallback(() => {
     if (parseResult?.columnMapping) {

@@ -1,4 +1,4 @@
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import type {
@@ -28,7 +28,7 @@ type UseOverviewDashboardResult = {
 };
 
 export function useOverviewDashboard(): UseOverviewDashboardResult {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [dashboardAccountId, setDashboardAccountId] = useState("");
   const [dashboardRangePreset, setDashboardRangePreset] =
@@ -62,7 +62,7 @@ export function useOverviewDashboard(): UseOverviewDashboardResult {
     }
 
     if (body.accounts.length === 0) {
-      router.replace("/onboarding");
+      void navigate({ to: "/onboarding", replace: true });
       return;
     }
 
@@ -72,7 +72,7 @@ export function useOverviewDashboard(): UseOverviewDashboardResult {
     }));
 
     setAccounts(nextAccounts);
-  }, [router]);
+  }, [navigate]);
 
   const loadDashboard = useCallback(async () => {
     setDashboardLoading(true);

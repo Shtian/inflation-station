@@ -1,18 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import {
   clearSubscriptionDecisionAction,
   setSubscriptionDecisionAction,
 } from "./subscription-decisions";
 
-const { setMock, clearMock, revalidatePathMock } = vi.hoisted(() => ({
+const { setMock, clearMock } = vi.hoisted(() => ({
   setMock: vi.fn(),
   clearMock: vi.fn(),
-  revalidatePathMock: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({ prisma: { _tag: "prisma-mock" } }));
-
-vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
 
 vi.mock("@/lib/subscriptions/decisions", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/subscriptions/decisions")>()),
@@ -23,12 +20,11 @@ vi.mock("@/lib/subscriptions/decisions", async (importOriginal) => ({
 beforeEach(() => {
   setMock.mockReset().mockResolvedValue(undefined);
   clearMock.mockReset().mockResolvedValue(undefined);
-  revalidatePathMock.mockReset();
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 describe("setSubscriptionDecisionAction", () => {
-  it("stores the decision and refreshes the subscriptions page", async () => {
+  it("stores the decision", async () => {
     const result = await setSubscriptionDecisionAction({
       normalizedMerchant: "netflix",
       status: "CONFIRMED",
@@ -39,7 +35,6 @@ describe("setSubscriptionDecisionAction", () => {
       data: { normalizedMerchant: "netflix", status: "CONFIRMED" },
     });
     expect(setMock.mock.calls[0].slice(1)).toEqual(["netflix", "CONFIRMED"]);
-    expect(revalidatePathMock.mock.calls).toEqual([["/subscriptions"]]);
   });
 
   it("stores an ended decision", async () => {
@@ -86,7 +81,7 @@ describe("setSubscriptionDecisionAction", () => {
 });
 
 describe("clearSubscriptionDecisionAction", () => {
-  it("clears the decision and refreshes the subscriptions page", async () => {
+  it("clears the decision", async () => {
     const result = await clearSubscriptionDecisionAction({
       normalizedMerchant: "spotify",
     });
@@ -96,7 +91,6 @@ describe("clearSubscriptionDecisionAction", () => {
       data: { normalizedMerchant: "spotify" },
     });
     expect(clearMock.mock.calls[0].slice(1)).toEqual(["spotify"]);
-    expect(revalidatePathMock.mock.calls).toEqual([["/subscriptions"]]);
   });
 
   it("rejects a missing merchant without clearing", async () => {

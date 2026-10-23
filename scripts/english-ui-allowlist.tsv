@@ -16,10 +16,11 @@ src/lib/import/csv/guess-column-mapping.ts	pick the column that best names the m
 src/lib/import/csv/guess-column-mapping.ts	saved
 src/lib/import/csv/values.ts	Unsupported CSV date format:
 src/lib/categorization/jev-eval.ts	Expected exactly one row outcome, got
-src/app/api/transactions/route.ts	sorting må ha formatet <felt>:<retning> med feltene bookingDate, amountNok, merchant eller category.
+src/routes/api/transactions.ts	sorting må ha formatet <felt>:<retning> med feltene bookingDate, amountNok, merchant eller category.
 src/lib/transactions/delete.ts	ids must be a non-empty array
 src/lib/assistant/agent.ts	Total spend in NOK for an inclusive local date range, grouped by category, merchant, month, or account. Optionally filter by category ids, account ids, or a merchant search. Transfers and incoming money are excluded.
 src/lib/assistant/agent.ts	List individual transactions, newest first, optionally filtered by an inclusive local date range, category id, account id, or a text search on merchant, note, and category name. Use it to show examples, not to compute totals.
 src/lib/assistant/agent.ts	Facts for one calendar month: income, spend by category, bills versus everyday spend, top merchants, and a comparison with the previous month.
 src/lib/assistant/agent.ts	List every category with its id, name, and kind.
 src/lib/assistant/agent.ts	List every account with its id, name, institution, and whether it is active.
+src/routes/api/-route-handler.ts	The route has no handler.

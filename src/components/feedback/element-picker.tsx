@@ -105,7 +105,7 @@ export function ElementPickerOverlay({
   return (
     <>
       <style>{"* { cursor: crosshair !important; }"}</style>
-      <output className="fixed top-3 left-1/2 z-feedback -translate-x-1/2 rounded-full bg-foreground px-4 py-1.5 text-background text-xs shadow-lg">
+      <output className="fixed top-3 left-1/2 z-feedback -translate-x-1/2 rounded-full bg-foreground px-4 py-1.5 text-xs text-background shadow-lg">
         Klikk på et element for å legge det ved · Esc for å avbryte
       </output>
       {highlight ? (
@@ -119,7 +119,7 @@ export function ElementPickerOverlay({
             height: highlight.height,
           }}
         >
-          <span className="absolute -top-5 left-0 rounded-sm bg-brand px-1.5 py-0.5 font-mono text-[10px] text-brand-foreground leading-none">
+          <span className="absolute -top-5 left-0 rounded-sm bg-brand px-1.5 py-0.5 font-mono text-[10px] leading-none text-brand-foreground">
             {highlight.tagName}
           </span>
         </div>

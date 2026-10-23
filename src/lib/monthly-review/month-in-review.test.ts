@@ -1,5 +1,5 @@
 import { MonthlyReviewStatus, type PaymentType } from "@prisma/client";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import {
   createTestDatabase,
   type TestDatabase,

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import type { z } from "zod";
 import { normalizeImportMerchant } from "@/lib/import/normalization";
 import {
@@ -57,22 +57,19 @@ const VALID_CREATE_PAYLOAD = {
 };
 
 describe("parseTransactionCreatePayload", () => {
-  it.each([
-    "2026-02-31",
-    "2026-13-01",
-    "15-01-2026",
-    "2026-1-5",
-    "",
-  ])("rejects bookingDate %j", (bookingDate) => {
-    expect(
-      rejection(
-        parseTransactionCreatePayload({
-          ...VALID_CREATE_PAYLOAD,
-          bookingDate,
-        }),
-      ).messages,
-    ).toContain("bookingDate må ha formatet ÅÅÅÅ-MM-DD.");
-  });
+  it.each(["2026-02-31", "2026-13-01", "15-01-2026", "2026-1-5", ""])(
+    "rejects bookingDate %j",
+    (bookingDate) => {
+      expect(
+        rejection(
+          parseTransactionCreatePayload({
+            ...VALID_CREATE_PAYLOAD,
+            bookingDate,
+          }),
+        ).messages,
+      ).toContain("bookingDate må ha formatet ÅÅÅÅ-MM-DD.");
+    },
+  );
 
   it("turns a calendar date into midnight UTC", () => {
     expect(
@@ -138,35 +135,33 @@ describe("parseTransactionCreatePayload", () => {
 });
 
 describe("parseTransactionUpdatePayload", () => {
-  it.each([
-    "id",
-    "accountId",
-    "createdAt",
-    "updatedAt",
-  ])("rejects the server-owned field %s", (field) => {
-    expect(
-      rejection(
-        parseTransactionUpdatePayload({
-          merchant: "Corner Shop",
-          [field]: "anything",
-        }),
-      ).paths,
-    ).toContain(field);
-  });
+  it.each(["id", "accountId", "createdAt", "updatedAt"])(
+    "rejects the server-owned field %s",
+    (field) => {
+      expect(
+        rejection(
+          parseTransactionUpdatePayload({
+            merchant: "Corner Shop",
+            [field]: "anything",
+          }),
+        ).paths,
+      ).toContain(field);
+    },
+  );
 
-  it.each([
-    "currency",
-    "normalizedMerchant",
-  ])("rejects the derived field %s", (field) => {
-    expect(
-      rejection(
-        parseTransactionUpdatePayload({
-          merchant: "Corner Shop",
-          [field]: "anything",
-        }),
-      ).messages.join(" "),
-    ).toContain(field);
-  });
+  it.each(["currency", "normalizedMerchant"])(
+    "rejects the derived field %s",
+    (field) => {
+      expect(
+        rejection(
+          parseTransactionUpdatePayload({
+            merchant: "Corner Shop",
+            [field]: "anything",
+          }),
+        ).messages.join(" "),
+      ).toContain(field);
+    },
+  );
 
   it("rejects an update that changes nothing", () => {
     expect(rejection(parseTransactionUpdatePayload({})).messages).toContain(

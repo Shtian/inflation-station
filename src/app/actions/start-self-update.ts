@@ -1,5 +1,3 @@
-"use server";
-
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import {
@@ -25,7 +23,7 @@ export async function startSelfUpdateAction(): Promise<
   MutationActionResult<{ sha: string }, StartSelfUpdateErrorCode>
 > {
   const root = process.env.SELF_UPDATE_ROOT;
-  const sha = process.env.NEXT_PUBLIC_BUILD_SHA ?? "unknown";
+  const sha = import.meta.env.VITE_BUILD_SHA ?? "unknown";
 
   if (!root) {
     return mutationError(

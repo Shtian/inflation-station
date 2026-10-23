@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { getCategoryColor } from "./category-color";
 import { getDeterministicColorFromText } from "./deterministic-color";
 

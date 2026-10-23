@@ -109,10 +109,10 @@ export function CategoryManagementSection({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h3 className="font-semibold text-base text-foreground">
+        <h3 className="text-base font-semibold text-foreground">
           Kategoriadministrasjon
         </h3>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Opprett og fjern kategorier som brukes i gjennomgang og analyser.
         </p>
       </div>
@@ -189,7 +189,7 @@ export function CategoryManagementSection({
       </div>
 
       {!loading && missingHintCount > 0 ? (
-        <output className="block rounded-md border border-border bg-muted/40 px-3 py-2 text-muted-foreground text-sm">
+        <output className="block rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
           {missingHintCount === 1
             ? "1 kategori mangler hint."
             : `${missingHintCount} kategorier mangler hint.`}{" "}

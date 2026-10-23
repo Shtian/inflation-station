@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { deriveCleanupStreamStatus } from "./cleanup-stream-status";
 import { resolveRowMessage } from "./resolve-row-message";
 

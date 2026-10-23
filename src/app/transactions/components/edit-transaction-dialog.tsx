@@ -222,7 +222,7 @@ export function EditTransactionDialog({
             {editError ? (
               <p
                 role="alert"
-                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
               >
                 {editError}
               </p>

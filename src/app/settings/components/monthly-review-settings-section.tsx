@@ -190,12 +190,12 @@ export function MonthlyReviewSettingsSection() {
               </SelectContent>
             </Select>
             {availableModelsSource === "unavailable" ? (
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-muted-foreground">
                 Kunne ikke laste inn modeller fra OpenAI. Viser bare den lagrede
                 modellen.
               </p>
             ) : null}
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               {usesDefaultModel
                 ? `Bruker standardmodellen ${resolvedModelId}.`
                 : `Bruker den lagrede modellen ${resolvedModelId}.`}
@@ -218,13 +218,13 @@ export function MonthlyReviewSettingsSection() {
               placeholder="La stå tomt for å bruke standardprompten."
             />
 
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               {usesDefaultPrompt
                 ? "Bruker standardprompten for generering."
                 : "Bruker den lagrede egendefinerte prompten for generering."}
             </p>
             {usesDefaultPrompt ? (
-              <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-xs">
+              <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
                 {resolvedPrompt}
               </p>
             ) : null}
@@ -232,7 +232,7 @@ export function MonthlyReviewSettingsSection() {
             {error ? (
               <p
                 role="alert"
-                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
               >
                 {error}
               </p>

@@ -1,0 +1,408 @@
+import { PaymentType } from "@prisma/client";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { routeHandler } from "./-route-handler";
+import { Route } from "./transactions";
+
+const DELETE = routeHandler(Route, "DELETE");
+const GET = routeHandler(Route, "GET");
+const POST = routeHandler(Route, "POST");
+
+const {
+  getTransactionsPageMock,
+  deleteTransactionsMock,
+  createTransactionMock,
+  prismaMock,
+} = vi.hoisted(() => ({
+  getTransactionsPageMock: vi.fn(),
+  deleteTransactionsMock: vi.fn(),
+  createTransactionMock: vi.fn(),
+  prismaMock: { _tag: "prisma-mock" },
+}));
+
+vi.mock("@/lib/prisma", () => ({
+  prisma: prismaMock,
+}));
+
+vi.mock("@/lib/transactions/list", () => ({
+  getTransactionsPage: getTransactionsPageMock,
+}));
+
+vi.mock("@/lib/transactions/delete", () => ({
+  deleteTransactions: deleteTransactionsMock,
+}));
+
+vi.mock("@/lib/transactions/write", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/lib/transactions/write")>();
+  return {
+    ...actual,
+    createTransaction: createTransactionMock,
+  };
+});
+
+describe("GET /api/transactions", () => {
+  beforeEach(() => {
+    getTransactionsPageMock.mockReset();
+    getTransactionsPageMock.mockResolvedValue({
+      rows: [],
+      pagination: {
+        total: 0,
+        page: 1,
+        pageSize: 25,
+        totalPages: 1,
+      },
+    });
+  });
+
+  it("returns 400 for invalid page", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/transactions?page=0"),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_PAGE",
+      message: "page må være et positivt heltall.",
+    });
+    expect(getTransactionsPageMock).not.toHaveBeenCalled();
+  });
+
+  it("forwards validated page, pageSize, and account filter", async () => {
+    const response = await GET(
+      new Request(
+        "http://localhost/api/transactions?page=2&pageSize=10&accountId=acc-1",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(getTransactionsPageMock).toHaveBeenCalledWith(prismaMock, {
+      page: 2,
+      pageSize: 10,
+      sorting: undefined,
+      query: undefined,
+      dateFrom: undefined,
+      dateTo: undefined,
+      accountId: "acc-1",
+      categoryId: undefined,
+    });
+  });
+
+  it("uses defaults and omits empty account filter", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/transactions?accountId=%20%20"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(getTransactionsPageMock).toHaveBeenCalledWith(prismaMock, {
+      page: 1,
+      pageSize: 25,
+      sorting: undefined,
+      query: undefined,
+      dateFrom: undefined,
+      dateTo: undefined,
+      accountId: undefined,
+      categoryId: undefined,
+    });
+  });
+
+  it("forwards extended table query params", async () => {
+    const response = await GET(
+      new Request(
+        "http://localhost/api/transactions?page=3&pageSize=50&sorting=amountNok:asc&globalQuery=coffee%20shop&dateFrom=2026-01-01&dateTo=2026-01-31&accountId=acc-1&categoryId=cat-7",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(getTransactionsPageMock).toHaveBeenCalledWith(prismaMock, {
+      page: 3,
+      pageSize: 50,
+      sorting: {
+        field: "amountNok",
+        direction: "asc",
+      },
+      query: "coffee shop",
+      dateFrom: new Date("2026-01-01T00:00:00.000Z"),
+      dateTo: new Date("2026-01-31T00:00:00.000Z"),
+      accountId: "acc-1",
+      categoryId: "cat-7",
+    });
+  });
+
+  it("returns 400 for malformed sorting", async () => {
+    const response = await GET(
+      new Request(
+        "http://localhost/api/transactions?sorting=normalizedMerchant:asc",
+      ),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_SORTING",
+      message:
+        "sorting må ha formatet <felt>:<retning> med feltene bookingDate, amountNok, merchant eller category.",
+    });
+    expect(getTransactionsPageMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for malformed date filters", async () => {
+    const invalidDateResponse = await GET(
+      new Request("http://localhost/api/transactions?dateFrom=2026/01/01"),
+    );
+
+    expect(invalidDateResponse.status).toBe(400);
+    await expect(invalidDateResponse.json()).resolves.toEqual({
+      error: "INVALID_DATE_FROM",
+      message: "dateFrom må ha formatet ÅÅÅÅ-MM-DD.",
+    });
+
+    const invalidRangeResponse = await GET(
+      new Request(
+        "http://localhost/api/transactions?dateFrom=2026-02-01&dateTo=2026-01-31",
+      ),
+    );
+
+    expect(invalidRangeResponse.status).toBe(400);
+    await expect(invalidRangeResponse.json()).resolves.toEqual({
+      error: "INVALID_DATE_RANGE",
+      message: "dateFrom kan ikke være senere enn dateTo.",
+    });
+    expect(getTransactionsPageMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for date filters naming a day that does not exist", async () => {
+    const invalidDateFromResponse = await GET(
+      new Request("http://localhost/api/transactions?dateFrom=2026-02-31"),
+    );
+
+    expect(invalidDateFromResponse.status).toBe(400);
+    await expect(invalidDateFromResponse.json()).resolves.toEqual({
+      error: "INVALID_DATE_FROM",
+      message: "dateFrom må ha formatet ÅÅÅÅ-MM-DD.",
+    });
+
+    const invalidDateToResponse = await GET(
+      new Request("http://localhost/api/transactions?dateTo=2026-02-31"),
+    );
+
+    expect(invalidDateToResponse.status).toBe(400);
+    await expect(invalidDateToResponse.json()).resolves.toEqual({
+      error: "INVALID_DATE_TO",
+      message: "dateTo må ha formatet ÅÅÅÅ-MM-DD.",
+    });
+
+    expect(getTransactionsPageMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("DELETE /api/transactions", () => {
+  beforeEach(() => {
+    deleteTransactionsMock.mockReset();
+    deleteTransactionsMock.mockResolvedValue(0);
+  });
+
+  it("returns 200 with deleted count on valid ids", async () => {
+    deleteTransactionsMock.mockResolvedValue(3);
+
+    const response = await DELETE(
+      new Request("http://localhost/api/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: ["tx-1", "tx-2", "tx-3"] }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ deleted: 3 });
+    expect(deleteTransactionsMock).toHaveBeenCalledWith(prismaMock, [
+      "tx-1",
+      "tx-2",
+      "tx-3",
+    ]);
+  });
+
+  it("returns 400 when ids is empty array", async () => {
+    const response = await DELETE(
+      new Request("http://localhost/api/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [] }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "INVALID_IDS",
+    });
+    expect(deleteTransactionsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when ids is missing", async () => {
+    const response = await DELETE(
+      new Request("http://localhost/api/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "INVALID_IDS",
+    });
+    expect(deleteTransactionsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for invalid body shape", async () => {
+    const response = await DELETE(
+      new Request("http://localhost/api/transactions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: "not-an-array" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "INVALID_IDS",
+    });
+    expect(deleteTransactionsMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/transactions", () => {
+  const validPayload = {
+    accountId: "acc-1",
+    bookingDate: "2026-03-01",
+    amountNok: -50,
+    merchant: "My Shop",
+    paymentType: PaymentType.CARD,
+  };
+
+  const createdTransaction = { id: "tx-new" };
+
+  beforeEach(() => {
+    createTransactionMock.mockReset();
+    createTransactionMock.mockResolvedValue(createdTransaction);
+  });
+
+  it("returns 201 with the created transaction id on valid payload", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toEqual(createdTransaction);
+    expect(createTransactionMock).toHaveBeenCalledWith(
+      prismaMock,
+      expect.objectContaining({
+        accountId: "acc-1",
+        amountNok: -50,
+        paymentType: PaymentType.CARD,
+      }),
+    );
+  });
+
+  it("returns 400 with validation details on missing required fields", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amountNok: 100 }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("INVALID_PAYLOAD");
+    expect(body.details).toBeDefined();
+    expect(createTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 when body is not valid JSON", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not-json",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("INVALID_PAYLOAD");
+    expect(body.message).toBe(
+      "Ugyldige transaksjonsdata. Invalid input: expected object, received null",
+    );
+    expect(createTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it("names the failing field in the validation message", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...validPayload, bookingDate: "2026/03/01" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "INVALID_PAYLOAD",
+      message:
+        "Ugyldige transaksjonsdata. bookingDate: bookingDate må ha formatet ÅÅÅÅ-MM-DD.",
+      details: {
+        bookingDate: ["bookingDate må ha formatet ÅÅÅÅ-MM-DD."],
+      },
+    });
+    expect(createTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the account or category does not exist", async () => {
+    createTransactionMock.mockRejectedValue({ code: "P2003" });
+
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...validPayload, categoryId: "missing-cat" }),
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      error: "CATEGORY_OR_ACCOUNT_NOT_FOUND",
+      message: "Fant ikke den valgte kontoen eller kategorien.",
+    });
+  });
+
+  it("rethrows unexpected create errors", async () => {
+    createTransactionMock.mockRejectedValue(new Error("boom"));
+
+    await expect(
+      POST(
+        new Request("http://localhost/api/transactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(validPayload),
+        }),
+      ),
+    ).rejects.toThrow("boom");
+  });
+
+  it("accepts negative amountNok and returns 201", async () => {
+    const response = await POST(
+      new Request("http://localhost/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...validPayload, amountNok: -999.99 }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createTransactionMock).toHaveBeenCalled();
+  });
+});

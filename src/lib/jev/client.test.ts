@@ -1,5 +1,5 @@
 import type { Fetch } from "@typesafe-ai/sdk";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { runJevChoice } from "./client";
 
 function systemOneResponse(choice: string, confidence: number) {

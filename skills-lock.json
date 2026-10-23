@@ -7,11 +7,6 @@
       "skillPath": ".agents/skills/impeccable/SKILL.md",
       "computedHash": "de7de6829490819b3c18cfdad2c93d002bd428c4b738d29b971ef3dc8f911d08"
     },
-    "server-actions": {
-      "source": "davepoon/buildwithclaude",
-      "sourceType": "github",
-      "computedHash": "beb8383b05d1c0a2d11590e6924a5994d30b0c13a4ba8dd64eba4a1ae5e4bc8b"
-    },
     "skill-doctor": {
       "source": "warpdotdev/common-skills",
       "sourceType": "github",

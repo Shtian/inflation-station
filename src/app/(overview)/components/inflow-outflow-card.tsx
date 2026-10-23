@@ -33,14 +33,14 @@ export function InflowOutflowCard({
   return (
     <Card>
       <CardContent className="space-y-3">
-        <h3 className="font-semibold text-foreground text-sm">Inn og ut</h3>
+        <h3 className="text-sm font-semibold text-foreground">Inn og ut</h3>
         {isLoading ? (
-          <output className="mt-3 block text-muted-foreground text-sm">
+          <output className="mt-3 block text-sm text-muted-foreground">
             Laster inn diagramdata…
           </output>
         ) : null}
         {!isLoading && (!inflowOutflow || inflowOutflow.length === 0) ? (
-          <p className="mt-3 text-muted-foreground text-sm">
+          <p className="mt-3 text-sm text-muted-foreground">
             Ingen data for valgte filtre.
           </p>
         ) : null}

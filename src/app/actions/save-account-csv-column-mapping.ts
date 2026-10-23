@@ -1,5 +1,3 @@
-"use server";
-
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import {

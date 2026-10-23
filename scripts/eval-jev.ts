@@ -54,6 +54,8 @@ async function evaluateAll(
   cases: JevEvalCase[],
   categories: JevCategoryOption[],
 ): Promise<JevEvalResult[]> {
+  // Workers fill the slots out of order, by case index.
+  // oxlint-disable-next-line unicorn/no-new-array
   const results: JevEvalResult[] = new Array(cases.length);
   let nextIndex = 0;
 

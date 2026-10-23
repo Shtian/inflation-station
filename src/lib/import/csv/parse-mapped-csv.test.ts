@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { ColumnMapping } from "./column-mapping";
 import { parseMappedCsv, readCsvTable } from "./parse-mapped-csv";
 

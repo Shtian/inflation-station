@@ -1,0 +1,112 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
+import { getMessageCleanupSettings } from "@/lib/import/message-cleanup-settings";
+import { runCleanupChunk } from "@/lib/import/message-cleanup/chunk";
+import {
+  planCleanupChunks,
+  toCleanupCandidates,
+  toCleanupMessage,
+} from "@/lib/import/message-cleanup/plan";
+import { prisma } from "@/lib/prisma";
+
+const cleanupRequestSchema = z.object({
+  sessionId: z.string().trim().min(1),
+  chunkIndex: z.number().int().min(0),
+});
+
+function badRequest(error: string, message: string) {
+  return Response.json({ error, message }, { status: 400 });
+}
+
+export const Route = createFileRoute("/api/imports/cleanup")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const payload = cleanupRequestSchema.safeParse(
+          await request.json().catch(() => null),
+        );
+
+        if (!payload.success) {
+          return badRequest(
+            "INVALID_CLEANUP_CHUNK_PAYLOAD",
+            "Forventet sessionId og chunkIndex i forespørselen.",
+          );
+        }
+
+        const { sessionId, chunkIndex } = payload.data;
+
+        const rows = await prisma.importReviewRow.findMany({
+          where: { sessionId },
+          select: { id: true, rowNumber: true, name: true, title: true },
+        });
+
+        if (rows.length === 0) {
+          return Response.json(
+            {
+              error: "IMPORT_REVIEW_SESSION_NOT_FOUND",
+              message:
+                "Fant ikke importgjennomgangen, eller den er allerede sendt inn.",
+            },
+            { status: 404 },
+          );
+        }
+
+        const plan = planCleanupChunks({
+          sessionId,
+          disabledReason: null,
+          candidates: toCleanupCandidates(rows),
+        });
+        const chunk =
+          plan.status === "planned" ? plan.chunks[chunkIndex] : undefined;
+
+        if (!chunk) {
+          return badRequest(
+            "INVALID_CLEANUP_CHUNK_INDEX",
+            "chunkIndex samsvarer ikke med noen del i ryddeplanen for denne gjennomgangen.",
+          );
+        }
+
+        const rowById = new Map(rows.map((row) => [row.id, row]));
+        const chunkRows = chunk.rowIds.flatMap((rowId) => {
+          const row = rowById.get(rowId);
+          return row
+            ? [{ rowNumber: row.rowNumber, message: toCleanupMessage(row) }]
+            : [];
+        });
+        const rowIdByRowNumber = new Map(
+          chunk.rowIds.flatMap((rowId) => {
+            const row = rowById.get(rowId);
+            return row ? [[row.rowNumber, rowId] as const] : [];
+          }),
+        );
+
+        const settings = await getMessageCleanupSettings(prisma);
+        const result = await runCleanupChunk({
+          apiKey: process.env.OPENAI_API_KEY ?? "",
+          model: settings.modelId,
+          systemPrompt: settings.prompt,
+          reasoningEffort: settings.reasoningEffort,
+          rows: chunkRows,
+        });
+
+        if (result.status === "failed") {
+          return Response.json({
+            index: chunkIndex,
+            status: "failed",
+            reason: result.reason,
+          });
+        }
+
+        const suggestions = result.suggestions.flatMap((suggestion) => {
+          const rowId = rowIdByRowNumber.get(suggestion.rowNumber);
+          return rowId
+            ? [{ rowId, cleanedMessage: suggestion.cleanedMessage }]
+            : [];
+        });
+
+        return Response.json({ index: chunkIndex, status: "ok", suggestions });
+      },
+      ANY: async () => new Response(null, { status: 405 }),
+    },
+  },
+});

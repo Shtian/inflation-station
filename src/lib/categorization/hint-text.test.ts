@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import {
   applyMerchantChip,
   formatJevCategoryLine,
@@ -174,14 +174,12 @@ describe("setLeadingDescription", () => {
     expect(off("Rema, Kiwi")).toBe("Rema, Kiwi");
   });
 
-  it.each([
-    "Rema",
-    "Bolt (not Bolt Food),  taxi",
-    "x: y; z",
-    "  Kiwi",
-  ])("round-trips %j", (text) => {
-    expect(off(on(text))).toBe(text);
-  });
+  it.each(["Rema", "Bolt (not Bolt Food),  taxi", "x: y; z", "  Kiwi"])(
+    "round-trips %j",
+    (text) => {
+      expect(off(on(text))).toBe(text);
+    },
+  );
 
   it("lets merchant chips append after the description and remove back to it", () => {
     expect(applyMerchantChip("Groceries and food shopping.", kiwi)).toEqual({

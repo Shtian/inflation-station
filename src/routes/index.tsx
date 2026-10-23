@@ -1,18 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { OverviewDashboard } from "@/app/(overview)/overview-dashboard";
 
 export const Route = createFileRoute("/")({
+  head: () => ({ meta: [{ title: "Oversikt · Inflation Station" }] }),
   component: Home,
 });
 
 function Home() {
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-2 px-5 py-8 md:px-10">
-      <h1 className="font-semibold text-2xl text-foreground tracking-tight">
-        Inflation Station
-      </h1>
-      <p className="text-muted-foreground text-sm">
-        Denne serveren viser foreløpig bare Turer.
-      </p>
+    <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10">
+      <OverviewDashboard />
     </main>
   );
 }

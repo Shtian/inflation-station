@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import { createCategoryInline } from "@/lib/categories/create-category-inline";
 import { inferCategoryKind } from "@/lib/categories/infer-category-kind";
 import type {
@@ -11,9 +11,7 @@ import type {
   TransactionsResponse,
 } from "./transactions-manager.types";
 import {
-  areTransactionsTableUrlStatesEqual,
-  parseTransactionsTableUrlState,
-  toTransactionsTableSearchParams,
+  type TransactionsTableUrlState,
   withFilterStateChange,
 } from "./transactions-table-url-state";
 
@@ -45,20 +43,20 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 }
 
 export function useTransactionsManager() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const parsedUrlState = useMemo(
-    () =>
-      parseTransactionsTableUrlState(
-        new URLSearchParams(searchParams.toString()),
-      ),
-    [searchParams],
+  const tableState = useSearch({ from: "/transactions/" });
+  const navigate = useNavigate({ from: "/transactions/" });
+  const setTableState = useCallback(
+    (
+      update: (current: TransactionsTableUrlState) => TransactionsTableUrlState,
+    ) => {
+      void navigate({ search: update, replace: true });
+    },
+    [navigate],
   );
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [tableState, setTableState] = useState(parsedUrlState);
   const [globalQueryInput, setGlobalQueryInput] = useState(
-    parsedUrlState.globalQuery ?? "",
+    tableState.globalQuery ?? "",
   );
   const debouncedGlobalQueryInput = useDebouncedValue(globalQueryInput, 250);
   const [loading, setLoading] = useState(true);
@@ -68,16 +66,8 @@ export function useTransactionsManager() {
   );
 
   useEffect(() => {
-    setTableState((current) =>
-      areTransactionsTableUrlStatesEqual(current, parsedUrlState)
-        ? current
-        : parsedUrlState,
-    );
-  }, [parsedUrlState]);
-
-  useEffect(() => {
-    setGlobalQueryInput(parsedUrlState.globalQuery ?? "");
-  }, [parsedUrlState.globalQuery]);
+    setGlobalQueryInput(tableState.globalQuery ?? "");
+  }, [tableState.globalQuery]);
 
   useEffect(() => {
     const trimmed = debouncedGlobalQueryInput.trim();
@@ -92,31 +82,7 @@ export function useTransactionsManager() {
         globalQuery: nextGlobalQuery,
       });
     });
-  }, [debouncedGlobalQueryInput]);
-
-  useEffect(() => {
-    const nextParams = toTransactionsTableSearchParams(
-      tableState,
-      new URLSearchParams(searchParams.toString()),
-    );
-    const nextQuery = nextParams.toString();
-    const currentQuery = searchParams.toString();
-
-    if (nextQuery === currentQuery) {
-      return;
-    }
-
-    // `router.replace` silently no-ops here once /transactions has been loaded
-    // from its static prerender, leaving the URL frozen while the table moves
-    // on. Table state is pure client state anyway - every row comes from
-    // /api/transactions - so rewrite the query directly and skip the round
-    // trip. Next keeps useSearchParams in sync with history writes.
-    window.history.replaceState(
-      null,
-      "",
-      nextQuery.length > 0 ? `${pathname}?${nextQuery}` : pathname,
-    );
-  }, [pathname, searchParams, tableState]);
+  }, [debouncedGlobalQueryInput, setTableState]);
 
   const loadAccounts = useCallback(async () => {
     const response = await fetch("/api/accounts");
@@ -246,7 +212,7 @@ export function useTransactionsManager() {
 
     setTransactions(parsed);
     setLoading(false);
-  }, [tableState]);
+  }, [tableState, setTableState]);
 
   useEffect(() => {
     void loadAccounts();
@@ -269,54 +235,69 @@ export function useTransactionsManager() {
         page: clamped,
       }));
     },
-    [transactions?.pagination.totalPages],
+    [transactions?.pagination.totalPages, setTableState],
   );
 
-  const setAccountFilter = useCallback((nextAccountId: string) => {
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        accountId: nextAccountId || undefined,
-      }),
-    );
-  }, []);
+  const setAccountFilter = useCallback(
+    (nextAccountId: string) => {
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          accountId: nextAccountId || undefined,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
-  const setPageSizeFilter = useCallback((nextPageSize: number) => {
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        pageSize: nextPageSize,
-      }),
-    );
-  }, []);
+  const setPageSizeFilter = useCallback(
+    (nextPageSize: number) => {
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          pageSize: nextPageSize,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
   const setGlobalQueryFilter = useCallback((nextGlobalQuery: string) => {
     setGlobalQueryInput(nextGlobalQuery);
   }, []);
 
-  const setDateFromFilter = useCallback((nextDateFrom: string) => {
-    const trimmed = nextDateFrom.trim();
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        dateFrom: trimmed.length > 0 ? trimmed : undefined,
-      }),
-    );
-  }, []);
+  const setDateFromFilter = useCallback(
+    (nextDateFrom: string) => {
+      const trimmed = nextDateFrom.trim();
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          dateFrom: trimmed.length > 0 ? trimmed : undefined,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
-  const setDateToFilter = useCallback((nextDateTo: string) => {
-    const trimmed = nextDateTo.trim();
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        dateTo: trimmed.length > 0 ? trimmed : undefined,
-      }),
-    );
-  }, []);
+  const setDateToFilter = useCallback(
+    (nextDateTo: string) => {
+      const trimmed = nextDateTo.trim();
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          dateTo: trimmed.length > 0 ? trimmed : undefined,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
-  const setCategoryFilter = useCallback((nextCategoryId: string) => {
-    setTableState((current) =>
-      withFilterStateChange(current, {
-        categoryId: nextCategoryId || undefined,
-      }),
-    );
-  }, []);
+  const setCategoryFilter = useCallback(
+    (nextCategoryId: string) => {
+      setTableState((current) =>
+        withFilterStateChange(current, {
+          categoryId: nextCategoryId || undefined,
+        }),
+      );
+    },
+    [setTableState],
+  );
 
   const setSorting = useCallback(
     (nextSorting: TransactionSorting | undefined) => {
@@ -326,7 +307,7 @@ export function useTransactionsManager() {
         }),
       );
     },
-    [],
+    [setTableState],
   );
 
   return {

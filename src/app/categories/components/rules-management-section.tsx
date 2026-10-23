@@ -74,10 +74,10 @@ export function RulesManagementSection({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h3 className="font-semibold text-base text-foreground">
+        <h3 className="text-base font-semibold text-foreground">
           Kategoriregler
         </h3>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Lag faste kategoriforslag basert på tekst i brukerstedet og eventuelt
           betalingstype.
         </p>

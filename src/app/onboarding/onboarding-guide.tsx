@@ -1,7 +1,7 @@
 "use client";
 
+import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { resolveCurrentStep } from "@/lib/onboarding/progress";
 import { OnboardingChat } from "./onboarding-chat";
@@ -19,7 +19,7 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
       <aside className="flex flex-col gap-6">
         <OnboardingStepper snapshot={snapshot} />
         {state.status === "error" ? (
-          <div className="flex items-center gap-2 text-destructive text-xs">
+          <div className="flex items-center gap-2 text-xs text-destructive">
             <span className="flex-1">
               Kunne ikke laste inn fremdriften i oppsettet.
             </span>
@@ -30,14 +30,14 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
         ) : null}
         {canMoveOn ? (
           <div className="flex flex-col gap-2">
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               {isDone
                 ? "Alt er klart. Importer en kontoutskrift for å se forbruket ditt."
                 : "Du kan fullføre de gjenstående stegene senere."}
             </p>
             <div className="flex flex-wrap gap-2">
               <Link
-                href="/import"
+                to="/import"
                 className={buttonVariants({
                   variant: isDone ? "default" : "outline",
                   size: "sm",
@@ -47,7 +47,7 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
                 <ArrowRight data-icon="inline-end" />
               </Link>
               <Link
-                href="/"
+                to="/"
                 className={buttonVariants({ variant: "ghost", size: "sm" })}
               >
                 Gå til oversikten

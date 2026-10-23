@@ -1,5 +1,5 @@
 import { MonthlyReviewStatus, PaymentType, Prisma } from "@prisma/client";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import {
   generateMonthlyReview,
   MonthlyReviewMonthStartValidationError,

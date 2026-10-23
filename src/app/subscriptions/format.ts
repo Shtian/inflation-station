@@ -80,7 +80,3 @@ export function describeExcludedFromTotals(
   }
   return `Ekskl. ${excluded.length} faste trekk som ikke er trukket som forventet.`;
 }
-
-export function merchantTransactionsHref(normalizedMerchant: string): string {
-  return `/transactions?${new URLSearchParams({ globalQuery: normalizedMerchant })}`;
-}

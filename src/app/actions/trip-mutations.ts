@@ -19,12 +19,6 @@ import {
 
 type TripErrorCode = "INVALID_TRIP_PAYLOAD" | "TRIP_NOT_FOUND";
 
-/**
- * Next passes its cache revalidation; Start invalidates on the client instead.
- * It runs inside the mutation, so a throw maps to the fallback error.
- */
-type AfterWrite = () => void;
-
 const INVALID_TRIP_MESSAGE = "Sjekk feltene og prøv igjen.";
 
 const updateTripInputSchema = z.intersection(
@@ -44,7 +38,6 @@ function mapTripNotFound(
 
 export async function createTripMutation(
   input: unknown,
-  afterWrite?: AfterWrite,
 ): Promise<
   MutationActionResult<{ id: string }, TripErrorCode | "TRIP_SAVE_FAILED">
 > {
@@ -58,11 +51,7 @@ export async function createTripMutation(
   }
 
   return executeServerMutation({
-    execute: async () => {
-      const trip = await createTrip(prisma, parsed.data);
-      afterWrite?.();
-      return trip;
-    },
+    execute: () => createTrip(prisma, parsed.data),
     fallbackError: {
       code: "TRIP_SAVE_FAILED",
       message: "Kunne ikke lagre turen. Prøv igjen.",
@@ -72,7 +61,6 @@ export async function createTripMutation(
 
 export async function updateTripMutation(
   input: unknown,
-  afterWrite?: AfterWrite,
 ): Promise<
   MutationActionResult<{ id: string }, TripErrorCode | "TRIP_SAVE_FAILED">
 > {
@@ -88,11 +76,7 @@ export async function updateTripMutation(
   const { tripId, ...trip } = parsed.data;
 
   return executeServerMutation({
-    execute: async () => {
-      const updated = await updateTrip(prisma, tripId, trip);
-      afterWrite?.();
-      return updated;
-    },
+    execute: () => updateTrip(prisma, tripId, trip),
     mapError: mapTripNotFound,
     fallbackError: {
       code: "TRIP_SAVE_FAILED",
@@ -103,7 +87,6 @@ export async function updateTripMutation(
 
 export async function deleteTripMutation(
   input: unknown,
-  afterWrite?: AfterWrite,
 ): Promise<
   MutationActionResult<{ id: string }, TripErrorCode | "TRIP_DELETE_FAILED">
 > {
@@ -117,11 +100,7 @@ export async function deleteTripMutation(
   }
 
   return executeServerMutation({
-    execute: async () => {
-      const deleted = await deleteTrip(prisma, parsed.data.tripId);
-      afterWrite?.();
-      return deleted;
-    },
+    execute: () => deleteTrip(prisma, parsed.data.tripId),
     mapError: mapTripNotFound,
     fallbackError: {
       code: "TRIP_DELETE_FAILED",
@@ -133,7 +112,6 @@ export async function deleteTripMutation(
 /** The one tagging mutation: checklist confirm, search add and per-row removal. */
 export async function setTripMembershipMutation(
   input: unknown,
-  afterWrite?: AfterWrite,
 ): Promise<
   MutationActionResult<
     { added: number; removed: number },
@@ -150,11 +128,7 @@ export async function setTripMembershipMutation(
   }
 
   return executeServerMutation({
-    execute: async () => {
-      const counts = await setTripMembership(prisma, parsed.data);
-      afterWrite?.();
-      return counts;
-    },
+    execute: () => setTripMembership(prisma, parsed.data),
     mapError: mapTripNotFound,
     fallbackError: {
       code: "TRIP_MEMBERSHIP_SAVE_FAILED",

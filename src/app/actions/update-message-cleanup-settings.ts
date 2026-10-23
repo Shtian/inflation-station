@@ -1,7 +1,4 @@
-"use server";
-
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   DEFAULT_MESSAGE_CLEANUP_OPENAI_MODEL,
@@ -143,8 +140,6 @@ export async function updateMessageCleanupSettingsAction(
         modelId,
         reasoningEffort: resolvedReasoningEffort.id,
       });
-
-      revalidatePath("/settings");
       return toResponse(result, chatModels);
     },
     fallbackError: {

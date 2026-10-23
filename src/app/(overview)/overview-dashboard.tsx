@@ -64,10 +64,10 @@ export function OverviewDashboard() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Oversikt
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Følg netto kontantstrøm, inn og ut, forbruk per kategori og
           kontoutvikling.
         </p>
@@ -79,7 +79,7 @@ export function OverviewDashboard() {
         <div className="space-y-2">
           <Label
             htmlFor="dashboard-account-filter"
-            className="block font-medium text-foreground text-sm"
+            className="block text-sm font-medium text-foreground"
           >
             Kontofilter
           </Label>
@@ -114,7 +114,7 @@ export function OverviewDashboard() {
         <div className="space-y-2">
           <p
             id="date-range-label"
-            className="font-medium text-foreground text-sm"
+            className="text-sm font-medium text-foreground"
           >
             Datoperiode
           </p>
@@ -175,7 +175,7 @@ export function OverviewDashboard() {
           </ButtonGroup>
           <p
             className={cn(
-              "text-muted-foreground text-xs",
+              "text-xs text-muted-foreground",
               dashboardRangePreset !== "custom" && "hidden",
             )}
           >
@@ -188,7 +188,7 @@ export function OverviewDashboard() {
       {dashboardError ? (
         <p
           role="alert"
-          className="mt-4 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="mt-4 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {dashboardError}
         </p>

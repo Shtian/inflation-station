@@ -6,15 +6,13 @@ import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
-import { loadEnv } from "vite";
-import { defineConfig, type Plugin } from "vite-plus";
+import { defineConfig, loadEnv, type Plugin } from "vite-plus";
 
 const SERVER_ONLY_ID = "\0server-only";
 
 /**
- * `src/lib/prisma.ts` imports `server-only`, which Next resolves from its own
- * bundle. Keep the guard: the server environments get an empty module, and a
- * client bundle that reaches it fails the build.
+ * `src/lib/prisma.ts` imports `server-only`. The server environments get an
+ * empty module, and a client bundle that reaches it fails the build.
  */
 function serverOnly(): Plugin {
   return {
@@ -48,32 +46,78 @@ export default defineConfig(({ mode }) => {
   const buildSha = getGitSha();
 
   return {
-    // Both apps share one `.env` while they run side by side, so the Start
-    // build reads the Next names.
+    lint: {
+      plugins: ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+      categories: { correctness: "error" },
+      rules: {
+        // React Compiler diagnostics. Clearing them changes component
+        // behavior, so they wait for their own change.
+        "react/set-state-in-effect": "off",
+        "react/refs": "off",
+        "react/incompatible-library": "off",
+        // role="img" on drawn charts and role="group" on ButtonGroup have no
+        // matching intrinsic tag.
+        "jsx-a11y/prefer-tag-over-role": "off",
+      },
+      ignorePatterns: [
+        "src/routeTree.gen.ts",
+        "src/components/ui/**",
+        ".agents/**",
+        ".claude/**",
+      ],
+    },
+    fmt: {
+      printWidth: 80,
+      sortPackageJson: false,
+      sortImports: {
+        groups: [
+          "builtin",
+          "external",
+          "internal",
+          ["parent", "sibling", "index"],
+        ],
+        newlinesBetween: false,
+        partitionByNewline: true,
+      },
+      sortTailwindcss: {
+        stylesheet: "./src/app/globals.css",
+        functions: ["clsx", "cva", "cn", "tw"],
+      },
+      ignorePatterns: [
+        "src/routeTree.gen.ts",
+        ".agents/**",
+        ".claude/**",
+        ".playwright-cli/**",
+        "**/*.md",
+        "**/*.yml",
+        "**/*.yaml",
+      ],
+      overrides: [
+        {
+          files: ["src/components/ui/**"],
+          options: { sortImports: false, sortTailwindcss: false },
+        },
+      ],
+    },
     define: {
       "import.meta.env.VITE_BUILD_SHA": JSON.stringify(buildSha),
       "import.meta.env.VITE_BUILD_TIME": JSON.stringify(
         new Date().toISOString(),
       ),
-      "import.meta.env.VITE_SENTRY_DSN": JSON.stringify(
-        env.NEXT_PUBLIC_SENTRY_DSN ?? "",
-      ),
-      "import.meta.env.VITE_SENTRY_ENVIRONMENT": JSON.stringify(
-        env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? "",
-      ),
     },
     resolve: {
       alias: { "@": path.resolve(import.meta.dirname, "src") },
     },
-    // postcss.config.mjs belongs to Next; Tailwind runs through its Vite plugin here.
-    css: { postcss: { plugins: [] } },
     plugins: [
       serverOnly(),
       tailwindcss(),
-      tanstackStart(),
+      // Keep colocated tests out of the route tree.
+      tanstackStart({ router: { routeFileIgnorePattern: "\\.test\\.tsx?$" } }),
       react(),
       babel({ presets: [reactCompilerPreset()] }),
-      nitro(),
+      // Nitro only builds the server bundle. Under `vp test` its dev runner
+      // evaluates CommonJS deps as ESM and logs `exports is not defined`.
+      mode !== "test" && nitro(),
       // Source maps upload only when a token is present, so builds without
       // Sentry stay quiet and offline.
       sentryTanstackStart({

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { parseSidebarState } from "./sidebar-state";
 
 describe("parseSidebarState", () => {

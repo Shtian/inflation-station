@@ -1,10 +1,10 @@
 "use client";
 
 import type { OpenAIChatModelId } from "@ai-sdk/openai/internal";
+import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { updateMessageCleanupSettingsAction } from "@/app/actions/update-message-cleanup-settings";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -29,6 +29,7 @@ import {
   reasoningEffortEntrySchema,
   reasoningEffortSchema,
 } from "@/lib/monthly-review/reasoning-effort-registry";
+import { updateMessageCleanupSettingsFn } from "@/routes/settings/-server";
 import {
   SettingsRow,
   SettingsSection,
@@ -44,6 +45,9 @@ const messageCleanupSettingsResponseSchema =
   });
 
 export function MessageCleanupSettingsSection() {
+  const updateMessageCleanupSettings = useServerFn(
+    updateMessageCleanupSettingsFn,
+  );
   const [promptText, setPromptText] = useState("");
   const [resolvedPrompt, setResolvedPrompt] = useState("");
   const [usesDefaultPrompt, setUsesDefaultPrompt] = useState(false);
@@ -132,12 +136,14 @@ export function MessageCleanupSettingsSection() {
     setSaving(true);
     setError(null);
 
-    let result: Awaited<ReturnType<typeof updateMessageCleanupSettingsAction>>;
+    let result: Awaited<ReturnType<typeof updateMessageCleanupSettings>>;
     try {
-      result = await updateMessageCleanupSettingsAction({
-        promptText: params.promptText,
-        modelId: params.modelId,
-        reasoningEffort: params.reasoningEffort,
+      result = await updateMessageCleanupSettings({
+        data: {
+          promptText: params.promptText,
+          modelId: params.modelId,
+          reasoningEffort: params.reasoningEffort,
+        },
       });
     } catch {
       setSaving(false);
@@ -260,12 +266,12 @@ export function MessageCleanupSettingsSection() {
               </SelectContent>
             </Select>
             {availableModelsSource === "unavailable" ? (
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-muted-foreground">
                 Kunne ikke laste inn modeller fra OpenAI. Viser bare den lagrede
                 modellen.
               </p>
             ) : null}
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               {usesDefaultModel
                 ? `Bruker standardmodellen ${resolvedModelId}.`
                 : `Bruker den lagrede modellen ${resolvedModelId}.`}
@@ -312,7 +318,7 @@ export function MessageCleanupSettingsSection() {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               {usesDefaultReasoningEffort
                 ? `Bruker standardnivået ${getReasoningEffortById(resolvedReasoningEffortState).label}.`
                 : `Bruker det lagrede nivået ${getReasoningEffortById(resolvedReasoningEffortState).label}.`}
@@ -335,13 +341,13 @@ export function MessageCleanupSettingsSection() {
               placeholder="La stå tomt for å bruke standardprompten."
             />
 
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               {usesDefaultPrompt
                 ? "Bruker standardprompten for rydding."
                 : "Bruker den lagrede egendefinerte prompten for rydding."}
             </p>
             {usesDefaultPrompt ? (
-              <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-muted-foreground text-xs">
+              <p className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
                 {resolvedPrompt}
               </p>
             ) : null}
@@ -349,7 +355,7 @@ export function MessageCleanupSettingsSection() {
             {error ? (
               <p
                 role="alert"
-                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
               >
                 {error}
               </p>

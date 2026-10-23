@@ -1,7 +1,7 @@
 "use client";
 
+import { Link } from "@tanstack/react-router";
 import { ArrowRight, Calendar } from "lucide-react";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { buttonVariants } from "@/components/ui/button";
@@ -160,10 +160,10 @@ export function MonthlyReviewManager() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
           Økonomisk tidslinje
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Månedlig oversikt over forbruket. Åpne en måned for å se måneden som
           gikk.
         </p>
@@ -202,7 +202,7 @@ export function MonthlyReviewManager() {
       <Separator className="my-4" />
 
       {loading ? (
-        <output className="block text-muted-foreground text-sm">
+        <output className="block text-sm text-muted-foreground">
           Laster inn tidslinjen…
         </output>
       ) : null}
@@ -210,14 +210,14 @@ export function MonthlyReviewManager() {
       {error ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {error}
         </p>
       ) : null}
 
       {!loading && !error && !hasRows ? (
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Ingen månedsdata er tilgjengelig ennå.
         </p>
       ) : null}
@@ -243,7 +243,7 @@ export function MonthlyReviewManager() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold text-foreground text-xl">
+                      <h2 className="text-xl font-semibold text-foreground">
                         {formatMonthHeading(row.monthStart)}
                       </h2>
                       <span
@@ -252,7 +252,7 @@ export function MonthlyReviewManager() {
                         {stateTone.label}
                       </span>
                     </div>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm text-muted-foreground">
                       {row.transactionCount}{" "}
                       {row.transactionCount === 1
                         ? "forbrukstransaksjon"
@@ -261,15 +261,15 @@ export function MonthlyReviewManager() {
                   </div>
 
                   <div className="space-y-1 text-right">
-                    <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                       Månedens saldo
                     </p>
                     <p
-                      className={`font-semibold text-2xl tracking-tight ${row.monthlyBalanceNok >= 0 ? "text-success" : "text-destructive"}`}
+                      className={`text-2xl font-semibold tracking-tight ${row.monthlyBalanceNok >= 0 ? "text-success" : "text-destructive"}`}
                     >
                       {formatSignedNok(row.monthlyBalanceNok, "auto")}
                     </p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm text-muted-foreground">
                       {describeSpendChange(row)}
                     </p>
                   </div>
@@ -277,7 +277,7 @@ export function MonthlyReviewManager() {
 
                 <div className="grid gap-2 rounded-md border border-border/70 bg-muted/20 p-3 text-sm md:grid-cols-2">
                   <div className="space-y-0.5">
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                    <p className="text-xs tracking-wide text-muted-foreground uppercase">
                       Samlet forbruk
                     </p>
                     <p className="font-medium text-destructive">
@@ -285,7 +285,7 @@ export function MonthlyReviewManager() {
                     </p>
                   </div>
                   <div className="space-y-0.5 md:text-right">
-                    <p className="text-muted-foreground text-xs uppercase tracking-wide">
+                    <p className="text-xs tracking-wide text-muted-foreground uppercase">
                       Samlet inntekt
                     </p>
                     <p className="font-medium text-success">
@@ -296,7 +296,7 @@ export function MonthlyReviewManager() {
 
                 <div className="space-y-4 text-sm">
                   <div className="space-y-2 rounded-md border border-border/70 bg-muted/20 p-3">
-                    <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                       Forbruk per kategori
                     </p>
                     <CategorySpendBar
@@ -306,10 +306,11 @@ export function MonthlyReviewManager() {
                   </div>
 
                   <Link
-                    href={`/monthly-review/${row.monthStart}`}
+                    to="/monthly-review/$monthStart"
+                    params={{ monthStart: row.monthStart }}
                     className={cn(
                       buttonVariants({ size: "lg" }),
-                      "h-11 bg-brand px-5 font-semibold text-base text-brand-foreground hover:bg-brand/90",
+                      "h-11 bg-brand px-5 text-base font-semibold text-brand-foreground hover:bg-brand/90",
                     )}
                   >
                     Månedsrapport for {formatMonthStartLabel(row.monthStart)}

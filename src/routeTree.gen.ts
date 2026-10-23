@@ -11,8 +11,42 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MonitoringRouteImport } from './routes/monitoring'
+import { Route as AccountsIndexRouteImport } from './routes/accounts/index'
+import { Route as ApiAccountsRouteImport } from './routes/api/accounts'
+import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
+import { Route as ApiCategoryRulesRouteImport } from './routes/api/category-rules'
+import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
+import { Route as AssistantIndexRouteImport } from './routes/assistant/index'
+import { Route as CategoriesIndexRouteImport } from './routes/categories/index'
+import { Route as ImportIndexRouteImport } from './routes/import/index'
+import { Route as MonthlyReviewIndexRouteImport } from './routes/monthly-review/index'
+import { Route as MonthlyReviewMonthStartRouteImport } from './routes/monthly-review/$monthStart'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as SubscriptionsIndexRouteImport } from './routes/subscriptions/index'
+import { Route as TransactionsIndexRouteImport } from './routes/transactions/index'
 import { Route as TripsIndexRouteImport } from './routes/trips/index'
 import { Route as TripsTripIdRouteImport } from './routes/trips/$tripId'
+import { Route as ApiAccountsAccountIdRouteImport } from './routes/api/accounts/$accountId'
+import { Route as ApiAssistantChatRouteImport } from './routes/api/assistant/chat'
+import { Route as ApiCategoriesCategoryIdRouteImport } from './routes/api/categories/$categoryId'
+import { Route as ApiCategorizationReviewRouteImport } from './routes/api/categorization/review'
+import { Route as ApiCategoryRulesRuleIdRouteImport } from './routes/api/category-rules/$ruleId'
+import { Route as ApiDashboardAnalyticsRouteImport } from './routes/api/dashboard/analytics'
+import { Route as ApiFeedbackChatRouteImport } from './routes/api/feedback/chat'
+import { Route as ApiImportsCleanupRouteImport } from './routes/api/imports/cleanup'
+import { Route as ApiImportsMessageCleanupSettingsRouteImport } from './routes/api/imports/message-cleanup-settings'
+import { Route as ApiImportsParseRouteImport } from './routes/api/imports/parse'
+import { Route as ApiImportsSubmitRouteImport } from './routes/api/imports/submit'
+import { Route as ApiMonthlyReviewMonthStartRouteImport } from './routes/api/monthly-review/$monthStart'
+import { Route as ApiMonthlyReviewGenerateRouteImport } from './routes/api/monthly-review/generate'
+import { Route as ApiMonthlyReviewSystemPromptRouteImport } from './routes/api/monthly-review/system-prompt'
+import { Route as ApiMonthlyReviewTimelineRouteImport } from './routes/api/monthly-review/timeline'
+import { Route as ApiOnboardingChatRouteImport } from './routes/api/onboarding/chat'
+import { Route as ApiSelfUpdateAvailabilityRouteImport } from './routes/api/self-update/availability'
+import { Route as ApiSelfUpdateStatusRouteImport } from './routes/api/self-update/status'
+import { Route as ApiTransactionsTransactionIdRouteImport } from './routes/api/transactions/$transactionId'
+import { Route as ApiCategoriesCategoryIdHintGuessRouteImport } from './routes/api/categories/$categoryId/hint-guess'
 import { Route as ApiCategoriesCategoryIdMerchantsRouteImport } from './routes/api/categories/$categoryId/merchants'
 
 const IndexRoute = IndexRouteImport.update({
@@ -25,6 +59,76 @@ const MonitoringRoute = MonitoringRouteImport.update({
   path: '/monitoring',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountsIndexRoute = AccountsIndexRouteImport.update({
+  id: '/accounts/',
+  path: '/accounts/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAccountsRoute = ApiAccountsRouteImport.update({
+  id: '/api/accounts',
+  path: '/api/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
+  id: '/api/categories',
+  path: '/api/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCategoryRulesRoute = ApiCategoryRulesRouteImport.update({
+  id: '/api/category-rules',
+  path: '/api/category-rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTransactionsRoute = ApiTransactionsRouteImport.update({
+  id: '/api/transactions',
+  path: '/api/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistantIndexRoute = AssistantIndexRouteImport.update({
+  id: '/assistant/',
+  path: '/assistant/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
+  id: '/categories/',
+  path: '/categories/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImportIndexRoute = ImportIndexRouteImport.update({
+  id: '/import/',
+  path: '/import/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonthlyReviewIndexRoute = MonthlyReviewIndexRouteImport.update({
+  id: '/monthly-review/',
+  path: '/monthly-review/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonthlyReviewMonthStartRoute = MonthlyReviewMonthStartRouteImport.update({
+  id: '/monthly-review/$monthStart',
+  path: '/monthly-review/$monthStart',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubscriptionsIndexRoute = SubscriptionsIndexRouteImport.update({
+  id: '/subscriptions/',
+  path: '/subscriptions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransactionsIndexRoute = TransactionsIndexRouteImport.update({
+  id: '/transactions/',
+  path: '/transactions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TripsIndexRoute = TripsIndexRouteImport.update({
   id: '/trips/',
   path: '/trips/',
@@ -35,33 +139,243 @@ const TripsTripIdRoute = TripsTripIdRouteImport.update({
   path: '/trips/$tripId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAccountsAccountIdRoute = ApiAccountsAccountIdRouteImport.update({
+  id: '/$accountId',
+  path: '/$accountId',
+  getParentRoute: () => ApiAccountsRoute,
+} as any)
+const ApiAssistantChatRoute = ApiAssistantChatRouteImport.update({
+  id: '/api/assistant/chat',
+  path: '/api/assistant/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCategoriesCategoryIdRoute = ApiCategoriesCategoryIdRouteImport.update({
+  id: '/$categoryId',
+  path: '/$categoryId',
+  getParentRoute: () => ApiCategoriesRoute,
+} as any)
+const ApiCategorizationReviewRoute = ApiCategorizationReviewRouteImport.update({
+  id: '/api/categorization/review',
+  path: '/api/categorization/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCategoryRulesRuleIdRoute = ApiCategoryRulesRuleIdRouteImport.update({
+  id: '/$ruleId',
+  path: '/$ruleId',
+  getParentRoute: () => ApiCategoryRulesRoute,
+} as any)
+const ApiDashboardAnalyticsRoute = ApiDashboardAnalyticsRouteImport.update({
+  id: '/api/dashboard/analytics',
+  path: '/api/dashboard/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFeedbackChatRoute = ApiFeedbackChatRouteImport.update({
+  id: '/api/feedback/chat',
+  path: '/api/feedback/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiImportsCleanupRoute = ApiImportsCleanupRouteImport.update({
+  id: '/api/imports/cleanup',
+  path: '/api/imports/cleanup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiImportsMessageCleanupSettingsRoute =
+  ApiImportsMessageCleanupSettingsRouteImport.update({
+    id: '/api/imports/message-cleanup-settings',
+    path: '/api/imports/message-cleanup-settings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiImportsParseRoute = ApiImportsParseRouteImport.update({
+  id: '/api/imports/parse',
+  path: '/api/imports/parse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiImportsSubmitRoute = ApiImportsSubmitRouteImport.update({
+  id: '/api/imports/submit',
+  path: '/api/imports/submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMonthlyReviewMonthStartRoute =
+  ApiMonthlyReviewMonthStartRouteImport.update({
+    id: '/api/monthly-review/$monthStart',
+    path: '/api/monthly-review/$monthStart',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMonthlyReviewGenerateRoute =
+  ApiMonthlyReviewGenerateRouteImport.update({
+    id: '/api/monthly-review/generate',
+    path: '/api/monthly-review/generate',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMonthlyReviewSystemPromptRoute =
+  ApiMonthlyReviewSystemPromptRouteImport.update({
+    id: '/api/monthly-review/system-prompt',
+    path: '/api/monthly-review/system-prompt',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMonthlyReviewTimelineRoute =
+  ApiMonthlyReviewTimelineRouteImport.update({
+    id: '/api/monthly-review/timeline',
+    path: '/api/monthly-review/timeline',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiOnboardingChatRoute = ApiOnboardingChatRouteImport.update({
+  id: '/api/onboarding/chat',
+  path: '/api/onboarding/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSelfUpdateAvailabilityRoute =
+  ApiSelfUpdateAvailabilityRouteImport.update({
+    id: '/api/self-update/availability',
+    path: '/api/self-update/availability',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiSelfUpdateStatusRoute = ApiSelfUpdateStatusRouteImport.update({
+  id: '/api/self-update/status',
+  path: '/api/self-update/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTransactionsTransactionIdRoute =
+  ApiTransactionsTransactionIdRouteImport.update({
+    id: '/$transactionId',
+    path: '/$transactionId',
+    getParentRoute: () => ApiTransactionsRoute,
+  } as any)
+const ApiCategoriesCategoryIdHintGuessRoute =
+  ApiCategoriesCategoryIdHintGuessRouteImport.update({
+    id: '/hint-guess',
+    path: '/hint-guess',
+    getParentRoute: () => ApiCategoriesCategoryIdRoute,
+  } as any)
 const ApiCategoriesCategoryIdMerchantsRoute =
   ApiCategoriesCategoryIdMerchantsRouteImport.update({
-    id: '/api/categories/$categoryId/merchants',
-    path: '/api/categories/$categoryId/merchants',
-    getParentRoute: () => rootRouteImport,
+    id: '/merchants',
+    path: '/merchants',
+    getParentRoute: () => ApiCategoriesCategoryIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/monitoring': typeof MonitoringRoute
+  '/api/accounts': typeof ApiAccountsRouteWithChildren
+  '/api/categories': typeof ApiCategoriesRouteWithChildren
+  '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
+  '/api/transactions': typeof ApiTransactionsRouteWithChildren
+  '/monthly-review/$monthStart': typeof MonthlyReviewMonthStartRoute
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/accounts/': typeof AccountsIndexRoute
+  '/assistant/': typeof AssistantIndexRoute
+  '/categories/': typeof CategoriesIndexRoute
+  '/import/': typeof ImportIndexRoute
+  '/monthly-review/': typeof MonthlyReviewIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/subscriptions/': typeof SubscriptionsIndexRoute
+  '/transactions/': typeof TransactionsIndexRoute
   '/trips/': typeof TripsIndexRoute
+  '/api/accounts/$accountId': typeof ApiAccountsAccountIdRoute
+  '/api/assistant/chat': typeof ApiAssistantChatRoute
+  '/api/categories/$categoryId': typeof ApiCategoriesCategoryIdRouteWithChildren
+  '/api/categorization/review': typeof ApiCategorizationReviewRoute
+  '/api/category-rules/$ruleId': typeof ApiCategoryRulesRuleIdRoute
+  '/api/dashboard/analytics': typeof ApiDashboardAnalyticsRoute
+  '/api/feedback/chat': typeof ApiFeedbackChatRoute
+  '/api/imports/cleanup': typeof ApiImportsCleanupRoute
+  '/api/imports/message-cleanup-settings': typeof ApiImportsMessageCleanupSettingsRoute
+  '/api/imports/parse': typeof ApiImportsParseRoute
+  '/api/imports/submit': typeof ApiImportsSubmitRoute
+  '/api/monthly-review/$monthStart': typeof ApiMonthlyReviewMonthStartRoute
+  '/api/monthly-review/generate': typeof ApiMonthlyReviewGenerateRoute
+  '/api/monthly-review/system-prompt': typeof ApiMonthlyReviewSystemPromptRoute
+  '/api/monthly-review/timeline': typeof ApiMonthlyReviewTimelineRoute
+  '/api/onboarding/chat': typeof ApiOnboardingChatRoute
+  '/api/self-update/availability': typeof ApiSelfUpdateAvailabilityRoute
+  '/api/self-update/status': typeof ApiSelfUpdateStatusRoute
+  '/api/transactions/$transactionId': typeof ApiTransactionsTransactionIdRoute
+  '/api/categories/$categoryId/hint-guess': typeof ApiCategoriesCategoryIdHintGuessRoute
   '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/monitoring': typeof MonitoringRoute
+  '/api/accounts': typeof ApiAccountsRouteWithChildren
+  '/api/categories': typeof ApiCategoriesRouteWithChildren
+  '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
+  '/api/transactions': typeof ApiTransactionsRouteWithChildren
+  '/monthly-review/$monthStart': typeof MonthlyReviewMonthStartRoute
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/accounts': typeof AccountsIndexRoute
+  '/assistant': typeof AssistantIndexRoute
+  '/categories': typeof CategoriesIndexRoute
+  '/import': typeof ImportIndexRoute
+  '/monthly-review': typeof MonthlyReviewIndexRoute
+  '/onboarding': typeof OnboardingIndexRoute
+  '/settings': typeof SettingsIndexRoute
+  '/subscriptions': typeof SubscriptionsIndexRoute
+  '/transactions': typeof TransactionsIndexRoute
   '/trips': typeof TripsIndexRoute
+  '/api/accounts/$accountId': typeof ApiAccountsAccountIdRoute
+  '/api/assistant/chat': typeof ApiAssistantChatRoute
+  '/api/categories/$categoryId': typeof ApiCategoriesCategoryIdRouteWithChildren
+  '/api/categorization/review': typeof ApiCategorizationReviewRoute
+  '/api/category-rules/$ruleId': typeof ApiCategoryRulesRuleIdRoute
+  '/api/dashboard/analytics': typeof ApiDashboardAnalyticsRoute
+  '/api/feedback/chat': typeof ApiFeedbackChatRoute
+  '/api/imports/cleanup': typeof ApiImportsCleanupRoute
+  '/api/imports/message-cleanup-settings': typeof ApiImportsMessageCleanupSettingsRoute
+  '/api/imports/parse': typeof ApiImportsParseRoute
+  '/api/imports/submit': typeof ApiImportsSubmitRoute
+  '/api/monthly-review/$monthStart': typeof ApiMonthlyReviewMonthStartRoute
+  '/api/monthly-review/generate': typeof ApiMonthlyReviewGenerateRoute
+  '/api/monthly-review/system-prompt': typeof ApiMonthlyReviewSystemPromptRoute
+  '/api/monthly-review/timeline': typeof ApiMonthlyReviewTimelineRoute
+  '/api/onboarding/chat': typeof ApiOnboardingChatRoute
+  '/api/self-update/availability': typeof ApiSelfUpdateAvailabilityRoute
+  '/api/self-update/status': typeof ApiSelfUpdateStatusRoute
+  '/api/transactions/$transactionId': typeof ApiTransactionsTransactionIdRoute
+  '/api/categories/$categoryId/hint-guess': typeof ApiCategoriesCategoryIdHintGuessRoute
   '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/monitoring': typeof MonitoringRoute
+  '/api/accounts': typeof ApiAccountsRouteWithChildren
+  '/api/categories': typeof ApiCategoriesRouteWithChildren
+  '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
+  '/api/transactions': typeof ApiTransactionsRouteWithChildren
+  '/monthly-review/$monthStart': typeof MonthlyReviewMonthStartRoute
   '/trips/$tripId': typeof TripsTripIdRoute
+  '/accounts/': typeof AccountsIndexRoute
+  '/assistant/': typeof AssistantIndexRoute
+  '/categories/': typeof CategoriesIndexRoute
+  '/import/': typeof ImportIndexRoute
+  '/monthly-review/': typeof MonthlyReviewIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/subscriptions/': typeof SubscriptionsIndexRoute
+  '/transactions/': typeof TransactionsIndexRoute
   '/trips/': typeof TripsIndexRoute
+  '/api/accounts/$accountId': typeof ApiAccountsAccountIdRoute
+  '/api/assistant/chat': typeof ApiAssistantChatRoute
+  '/api/categories/$categoryId': typeof ApiCategoriesCategoryIdRouteWithChildren
+  '/api/categorization/review': typeof ApiCategorizationReviewRoute
+  '/api/category-rules/$ruleId': typeof ApiCategoryRulesRuleIdRoute
+  '/api/dashboard/analytics': typeof ApiDashboardAnalyticsRoute
+  '/api/feedback/chat': typeof ApiFeedbackChatRoute
+  '/api/imports/cleanup': typeof ApiImportsCleanupRoute
+  '/api/imports/message-cleanup-settings': typeof ApiImportsMessageCleanupSettingsRoute
+  '/api/imports/parse': typeof ApiImportsParseRoute
+  '/api/imports/submit': typeof ApiImportsSubmitRoute
+  '/api/monthly-review/$monthStart': typeof ApiMonthlyReviewMonthStartRoute
+  '/api/monthly-review/generate': typeof ApiMonthlyReviewGenerateRoute
+  '/api/monthly-review/system-prompt': typeof ApiMonthlyReviewSystemPromptRoute
+  '/api/monthly-review/timeline': typeof ApiMonthlyReviewTimelineRoute
+  '/api/onboarding/chat': typeof ApiOnboardingChatRoute
+  '/api/self-update/availability': typeof ApiSelfUpdateAvailabilityRoute
+  '/api/self-update/status': typeof ApiSelfUpdateStatusRoute
+  '/api/transactions/$transactionId': typeof ApiTransactionsTransactionIdRoute
+  '/api/categories/$categoryId/hint-guess': typeof ApiCategoriesCategoryIdHintGuessRoute
   '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
 }
 export interface FileRouteTypes {
@@ -69,31 +383,161 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/monitoring'
+    | '/api/accounts'
+    | '/api/categories'
+    | '/api/category-rules'
+    | '/api/transactions'
+    | '/monthly-review/$monthStart'
     | '/trips/$tripId'
+    | '/accounts/'
+    | '/assistant/'
+    | '/categories/'
+    | '/import/'
+    | '/monthly-review/'
+    | '/onboarding/'
+    | '/settings/'
+    | '/subscriptions/'
+    | '/transactions/'
     | '/trips/'
+    | '/api/accounts/$accountId'
+    | '/api/assistant/chat'
+    | '/api/categories/$categoryId'
+    | '/api/categorization/review'
+    | '/api/category-rules/$ruleId'
+    | '/api/dashboard/analytics'
+    | '/api/feedback/chat'
+    | '/api/imports/cleanup'
+    | '/api/imports/message-cleanup-settings'
+    | '/api/imports/parse'
+    | '/api/imports/submit'
+    | '/api/monthly-review/$monthStart'
+    | '/api/monthly-review/generate'
+    | '/api/monthly-review/system-prompt'
+    | '/api/monthly-review/timeline'
+    | '/api/onboarding/chat'
+    | '/api/self-update/availability'
+    | '/api/self-update/status'
+    | '/api/transactions/$transactionId'
+    | '/api/categories/$categoryId/hint-guess'
     | '/api/categories/$categoryId/merchants'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/monitoring'
+    | '/api/accounts'
+    | '/api/categories'
+    | '/api/category-rules'
+    | '/api/transactions'
+    | '/monthly-review/$monthStart'
     | '/trips/$tripId'
+    | '/accounts'
+    | '/assistant'
+    | '/categories'
+    | '/import'
+    | '/monthly-review'
+    | '/onboarding'
+    | '/settings'
+    | '/subscriptions'
+    | '/transactions'
     | '/trips'
+    | '/api/accounts/$accountId'
+    | '/api/assistant/chat'
+    | '/api/categories/$categoryId'
+    | '/api/categorization/review'
+    | '/api/category-rules/$ruleId'
+    | '/api/dashboard/analytics'
+    | '/api/feedback/chat'
+    | '/api/imports/cleanup'
+    | '/api/imports/message-cleanup-settings'
+    | '/api/imports/parse'
+    | '/api/imports/submit'
+    | '/api/monthly-review/$monthStart'
+    | '/api/monthly-review/generate'
+    | '/api/monthly-review/system-prompt'
+    | '/api/monthly-review/timeline'
+    | '/api/onboarding/chat'
+    | '/api/self-update/availability'
+    | '/api/self-update/status'
+    | '/api/transactions/$transactionId'
+    | '/api/categories/$categoryId/hint-guess'
     | '/api/categories/$categoryId/merchants'
   id:
     | '__root__'
     | '/'
     | '/monitoring'
+    | '/api/accounts'
+    | '/api/categories'
+    | '/api/category-rules'
+    | '/api/transactions'
+    | '/monthly-review/$monthStart'
     | '/trips/$tripId'
+    | '/accounts/'
+    | '/assistant/'
+    | '/categories/'
+    | '/import/'
+    | '/monthly-review/'
+    | '/onboarding/'
+    | '/settings/'
+    | '/subscriptions/'
+    | '/transactions/'
     | '/trips/'
+    | '/api/accounts/$accountId'
+    | '/api/assistant/chat'
+    | '/api/categories/$categoryId'
+    | '/api/categorization/review'
+    | '/api/category-rules/$ruleId'
+    | '/api/dashboard/analytics'
+    | '/api/feedback/chat'
+    | '/api/imports/cleanup'
+    | '/api/imports/message-cleanup-settings'
+    | '/api/imports/parse'
+    | '/api/imports/submit'
+    | '/api/monthly-review/$monthStart'
+    | '/api/monthly-review/generate'
+    | '/api/monthly-review/system-prompt'
+    | '/api/monthly-review/timeline'
+    | '/api/onboarding/chat'
+    | '/api/self-update/availability'
+    | '/api/self-update/status'
+    | '/api/transactions/$transactionId'
+    | '/api/categories/$categoryId/hint-guess'
     | '/api/categories/$categoryId/merchants'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MonitoringRoute: typeof MonitoringRoute
+  ApiAccountsRoute: typeof ApiAccountsRouteWithChildren
+  ApiCategoriesRoute: typeof ApiCategoriesRouteWithChildren
+  ApiCategoryRulesRoute: typeof ApiCategoryRulesRouteWithChildren
+  ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
+  MonthlyReviewMonthStartRoute: typeof MonthlyReviewMonthStartRoute
   TripsTripIdRoute: typeof TripsTripIdRoute
+  AccountsIndexRoute: typeof AccountsIndexRoute
+  AssistantIndexRoute: typeof AssistantIndexRoute
+  CategoriesIndexRoute: typeof CategoriesIndexRoute
+  ImportIndexRoute: typeof ImportIndexRoute
+  MonthlyReviewIndexRoute: typeof MonthlyReviewIndexRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+  SubscriptionsIndexRoute: typeof SubscriptionsIndexRoute
+  TransactionsIndexRoute: typeof TransactionsIndexRoute
   TripsIndexRoute: typeof TripsIndexRoute
-  ApiCategoriesCategoryIdMerchantsRoute: typeof ApiCategoriesCategoryIdMerchantsRoute
+  ApiAssistantChatRoute: typeof ApiAssistantChatRoute
+  ApiCategorizationReviewRoute: typeof ApiCategorizationReviewRoute
+  ApiDashboardAnalyticsRoute: typeof ApiDashboardAnalyticsRoute
+  ApiFeedbackChatRoute: typeof ApiFeedbackChatRoute
+  ApiImportsCleanupRoute: typeof ApiImportsCleanupRoute
+  ApiImportsMessageCleanupSettingsRoute: typeof ApiImportsMessageCleanupSettingsRoute
+  ApiImportsParseRoute: typeof ApiImportsParseRoute
+  ApiImportsSubmitRoute: typeof ApiImportsSubmitRoute
+  ApiMonthlyReviewMonthStartRoute: typeof ApiMonthlyReviewMonthStartRoute
+  ApiMonthlyReviewGenerateRoute: typeof ApiMonthlyReviewGenerateRoute
+  ApiMonthlyReviewSystemPromptRoute: typeof ApiMonthlyReviewSystemPromptRoute
+  ApiMonthlyReviewTimelineRoute: typeof ApiMonthlyReviewTimelineRoute
+  ApiOnboardingChatRoute: typeof ApiOnboardingChatRoute
+  ApiSelfUpdateAvailabilityRoute: typeof ApiSelfUpdateAvailabilityRoute
+  ApiSelfUpdateStatusRoute: typeof ApiSelfUpdateStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -112,6 +556,104 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MonitoringRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/accounts/': {
+      id: '/accounts/'
+      path: '/accounts'
+      fullPath: '/accounts/'
+      preLoaderRoute: typeof AccountsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/accounts': {
+      id: '/api/accounts'
+      path: '/api/accounts'
+      fullPath: '/api/accounts'
+      preLoaderRoute: typeof ApiAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/categories': {
+      id: '/api/categories'
+      path: '/api/categories'
+      fullPath: '/api/categories'
+      preLoaderRoute: typeof ApiCategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/category-rules': {
+      id: '/api/category-rules'
+      path: '/api/category-rules'
+      fullPath: '/api/category-rules'
+      preLoaderRoute: typeof ApiCategoryRulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/transactions': {
+      id: '/api/transactions'
+      path: '/api/transactions'
+      fullPath: '/api/transactions'
+      preLoaderRoute: typeof ApiTransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistant/': {
+      id: '/assistant/'
+      path: '/assistant'
+      fullPath: '/assistant/'
+      preLoaderRoute: typeof AssistantIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories/': {
+      id: '/categories/'
+      path: '/categories'
+      fullPath: '/categories/'
+      preLoaderRoute: typeof CategoriesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/import/': {
+      id: '/import/'
+      path: '/import'
+      fullPath: '/import/'
+      preLoaderRoute: typeof ImportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monthly-review/': {
+      id: '/monthly-review/'
+      path: '/monthly-review'
+      fullPath: '/monthly-review/'
+      preLoaderRoute: typeof MonthlyReviewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/monthly-review/$monthStart': {
+      id: '/monthly-review/$monthStart'
+      path: '/monthly-review/$monthStart'
+      fullPath: '/monthly-review/$monthStart'
+      preLoaderRoute: typeof MonthlyReviewMonthStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subscriptions/': {
+      id: '/subscriptions/'
+      path: '/subscriptions'
+      fullPath: '/subscriptions/'
+      preLoaderRoute: typeof SubscriptionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transactions/': {
+      id: '/transactions/'
+      path: '/transactions'
+      fullPath: '/transactions/'
+      preLoaderRoute: typeof TransactionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/trips/': {
       id: '/trips/'
       path: '/trips'
@@ -126,22 +668,255 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TripsTripIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/accounts/$accountId': {
+      id: '/api/accounts/$accountId'
+      path: '/$accountId'
+      fullPath: '/api/accounts/$accountId'
+      preLoaderRoute: typeof ApiAccountsAccountIdRouteImport
+      parentRoute: typeof ApiAccountsRoute
+    }
+    '/api/assistant/chat': {
+      id: '/api/assistant/chat'
+      path: '/api/assistant/chat'
+      fullPath: '/api/assistant/chat'
+      preLoaderRoute: typeof ApiAssistantChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/categories/$categoryId': {
+      id: '/api/categories/$categoryId'
+      path: '/$categoryId'
+      fullPath: '/api/categories/$categoryId'
+      preLoaderRoute: typeof ApiCategoriesCategoryIdRouteImport
+      parentRoute: typeof ApiCategoriesRoute
+    }
+    '/api/categorization/review': {
+      id: '/api/categorization/review'
+      path: '/api/categorization/review'
+      fullPath: '/api/categorization/review'
+      preLoaderRoute: typeof ApiCategorizationReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/category-rules/$ruleId': {
+      id: '/api/category-rules/$ruleId'
+      path: '/$ruleId'
+      fullPath: '/api/category-rules/$ruleId'
+      preLoaderRoute: typeof ApiCategoryRulesRuleIdRouteImport
+      parentRoute: typeof ApiCategoryRulesRoute
+    }
+    '/api/dashboard/analytics': {
+      id: '/api/dashboard/analytics'
+      path: '/api/dashboard/analytics'
+      fullPath: '/api/dashboard/analytics'
+      preLoaderRoute: typeof ApiDashboardAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/feedback/chat': {
+      id: '/api/feedback/chat'
+      path: '/api/feedback/chat'
+      fullPath: '/api/feedback/chat'
+      preLoaderRoute: typeof ApiFeedbackChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/imports/cleanup': {
+      id: '/api/imports/cleanup'
+      path: '/api/imports/cleanup'
+      fullPath: '/api/imports/cleanup'
+      preLoaderRoute: typeof ApiImportsCleanupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/imports/message-cleanup-settings': {
+      id: '/api/imports/message-cleanup-settings'
+      path: '/api/imports/message-cleanup-settings'
+      fullPath: '/api/imports/message-cleanup-settings'
+      preLoaderRoute: typeof ApiImportsMessageCleanupSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/imports/parse': {
+      id: '/api/imports/parse'
+      path: '/api/imports/parse'
+      fullPath: '/api/imports/parse'
+      preLoaderRoute: typeof ApiImportsParseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/imports/submit': {
+      id: '/api/imports/submit'
+      path: '/api/imports/submit'
+      fullPath: '/api/imports/submit'
+      preLoaderRoute: typeof ApiImportsSubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monthly-review/$monthStart': {
+      id: '/api/monthly-review/$monthStart'
+      path: '/api/monthly-review/$monthStart'
+      fullPath: '/api/monthly-review/$monthStart'
+      preLoaderRoute: typeof ApiMonthlyReviewMonthStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monthly-review/generate': {
+      id: '/api/monthly-review/generate'
+      path: '/api/monthly-review/generate'
+      fullPath: '/api/monthly-review/generate'
+      preLoaderRoute: typeof ApiMonthlyReviewGenerateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monthly-review/system-prompt': {
+      id: '/api/monthly-review/system-prompt'
+      path: '/api/monthly-review/system-prompt'
+      fullPath: '/api/monthly-review/system-prompt'
+      preLoaderRoute: typeof ApiMonthlyReviewSystemPromptRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/monthly-review/timeline': {
+      id: '/api/monthly-review/timeline'
+      path: '/api/monthly-review/timeline'
+      fullPath: '/api/monthly-review/timeline'
+      preLoaderRoute: typeof ApiMonthlyReviewTimelineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/onboarding/chat': {
+      id: '/api/onboarding/chat'
+      path: '/api/onboarding/chat'
+      fullPath: '/api/onboarding/chat'
+      preLoaderRoute: typeof ApiOnboardingChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/self-update/availability': {
+      id: '/api/self-update/availability'
+      path: '/api/self-update/availability'
+      fullPath: '/api/self-update/availability'
+      preLoaderRoute: typeof ApiSelfUpdateAvailabilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/self-update/status': {
+      id: '/api/self-update/status'
+      path: '/api/self-update/status'
+      fullPath: '/api/self-update/status'
+      preLoaderRoute: typeof ApiSelfUpdateStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/transactions/$transactionId': {
+      id: '/api/transactions/$transactionId'
+      path: '/$transactionId'
+      fullPath: '/api/transactions/$transactionId'
+      preLoaderRoute: typeof ApiTransactionsTransactionIdRouteImport
+      parentRoute: typeof ApiTransactionsRoute
+    }
+    '/api/categories/$categoryId/hint-guess': {
+      id: '/api/categories/$categoryId/hint-guess'
+      path: '/hint-guess'
+      fullPath: '/api/categories/$categoryId/hint-guess'
+      preLoaderRoute: typeof ApiCategoriesCategoryIdHintGuessRouteImport
+      parentRoute: typeof ApiCategoriesCategoryIdRoute
+    }
     '/api/categories/$categoryId/merchants': {
       id: '/api/categories/$categoryId/merchants'
-      path: '/api/categories/$categoryId/merchants'
+      path: '/merchants'
       fullPath: '/api/categories/$categoryId/merchants'
       preLoaderRoute: typeof ApiCategoriesCategoryIdMerchantsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ApiCategoriesCategoryIdRoute
     }
   }
 }
 
+interface ApiAccountsRouteChildren {
+  ApiAccountsAccountIdRoute: typeof ApiAccountsAccountIdRoute
+}
+
+const ApiAccountsRouteChildren: ApiAccountsRouteChildren = {
+  ApiAccountsAccountIdRoute: ApiAccountsAccountIdRoute,
+}
+
+const ApiAccountsRouteWithChildren = ApiAccountsRoute._addFileChildren(
+  ApiAccountsRouteChildren,
+)
+
+interface ApiCategoriesCategoryIdRouteChildren {
+  ApiCategoriesCategoryIdHintGuessRoute: typeof ApiCategoriesCategoryIdHintGuessRoute
+  ApiCategoriesCategoryIdMerchantsRoute: typeof ApiCategoriesCategoryIdMerchantsRoute
+}
+
+const ApiCategoriesCategoryIdRouteChildren: ApiCategoriesCategoryIdRouteChildren =
+  {
+    ApiCategoriesCategoryIdHintGuessRoute:
+      ApiCategoriesCategoryIdHintGuessRoute,
+    ApiCategoriesCategoryIdMerchantsRoute:
+      ApiCategoriesCategoryIdMerchantsRoute,
+  }
+
+const ApiCategoriesCategoryIdRouteWithChildren =
+  ApiCategoriesCategoryIdRoute._addFileChildren(
+    ApiCategoriesCategoryIdRouteChildren,
+  )
+
+interface ApiCategoriesRouteChildren {
+  ApiCategoriesCategoryIdRoute: typeof ApiCategoriesCategoryIdRouteWithChildren
+}
+
+const ApiCategoriesRouteChildren: ApiCategoriesRouteChildren = {
+  ApiCategoriesCategoryIdRoute: ApiCategoriesCategoryIdRouteWithChildren,
+}
+
+const ApiCategoriesRouteWithChildren = ApiCategoriesRoute._addFileChildren(
+  ApiCategoriesRouteChildren,
+)
+
+interface ApiCategoryRulesRouteChildren {
+  ApiCategoryRulesRuleIdRoute: typeof ApiCategoryRulesRuleIdRoute
+}
+
+const ApiCategoryRulesRouteChildren: ApiCategoryRulesRouteChildren = {
+  ApiCategoryRulesRuleIdRoute: ApiCategoryRulesRuleIdRoute,
+}
+
+const ApiCategoryRulesRouteWithChildren =
+  ApiCategoryRulesRoute._addFileChildren(ApiCategoryRulesRouteChildren)
+
+interface ApiTransactionsRouteChildren {
+  ApiTransactionsTransactionIdRoute: typeof ApiTransactionsTransactionIdRoute
+}
+
+const ApiTransactionsRouteChildren: ApiTransactionsRouteChildren = {
+  ApiTransactionsTransactionIdRoute: ApiTransactionsTransactionIdRoute,
+}
+
+const ApiTransactionsRouteWithChildren = ApiTransactionsRoute._addFileChildren(
+  ApiTransactionsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MonitoringRoute: MonitoringRoute,
+  ApiAccountsRoute: ApiAccountsRouteWithChildren,
+  ApiCategoriesRoute: ApiCategoriesRouteWithChildren,
+  ApiCategoryRulesRoute: ApiCategoryRulesRouteWithChildren,
+  ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
+  MonthlyReviewMonthStartRoute: MonthlyReviewMonthStartRoute,
   TripsTripIdRoute: TripsTripIdRoute,
+  AccountsIndexRoute: AccountsIndexRoute,
+  AssistantIndexRoute: AssistantIndexRoute,
+  CategoriesIndexRoute: CategoriesIndexRoute,
+  ImportIndexRoute: ImportIndexRoute,
+  MonthlyReviewIndexRoute: MonthlyReviewIndexRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+  SubscriptionsIndexRoute: SubscriptionsIndexRoute,
+  TransactionsIndexRoute: TransactionsIndexRoute,
   TripsIndexRoute: TripsIndexRoute,
-  ApiCategoriesCategoryIdMerchantsRoute: ApiCategoriesCategoryIdMerchantsRoute,
+  ApiAssistantChatRoute: ApiAssistantChatRoute,
+  ApiCategorizationReviewRoute: ApiCategorizationReviewRoute,
+  ApiDashboardAnalyticsRoute: ApiDashboardAnalyticsRoute,
+  ApiFeedbackChatRoute: ApiFeedbackChatRoute,
+  ApiImportsCleanupRoute: ApiImportsCleanupRoute,
+  ApiImportsMessageCleanupSettingsRoute: ApiImportsMessageCleanupSettingsRoute,
+  ApiImportsParseRoute: ApiImportsParseRoute,
+  ApiImportsSubmitRoute: ApiImportsSubmitRoute,
+  ApiMonthlyReviewMonthStartRoute: ApiMonthlyReviewMonthStartRoute,
+  ApiMonthlyReviewGenerateRoute: ApiMonthlyReviewGenerateRoute,
+  ApiMonthlyReviewSystemPromptRoute: ApiMonthlyReviewSystemPromptRoute,
+  ApiMonthlyReviewTimelineRoute: ApiMonthlyReviewTimelineRoute,
+  ApiOnboardingChatRoute: ApiOnboardingChatRoute,
+  ApiSelfUpdateAvailabilityRoute: ApiSelfUpdateAvailabilityRoute,
+  ApiSelfUpdateStatusRoute: ApiSelfUpdateStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

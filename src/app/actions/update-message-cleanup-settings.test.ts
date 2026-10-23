@@ -1,22 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { updateMessageCleanupSettingsAction } from "./update-message-cleanup-settings";
 
-const {
-  updateMessageCleanupSettingsMock,
-  revalidatePathMock,
-  listChatModelsMock,
-} = vi.hoisted(() => ({
-  updateMessageCleanupSettingsMock: vi.fn(),
-  revalidatePathMock: vi.fn(),
-  listChatModelsMock: vi.fn(),
-}));
+const { updateMessageCleanupSettingsMock, listChatModelsMock } = vi.hoisted(
+  () => ({
+    updateMessageCleanupSettingsMock: vi.fn(),
+    listChatModelsMock: vi.fn(),
+  }),
+);
 
 vi.mock("@/lib/prisma", () => ({
   prisma: { _tag: "prisma-mock" },
-}));
-
-vi.mock("next/cache", () => ({
-  revalidatePath: revalidatePathMock,
 }));
 
 vi.mock("@/lib/openai/chat-models", async (importOriginal) => ({
@@ -45,7 +38,6 @@ const settingsViewResult = {
 describe("updateMessageCleanupSettingsAction", () => {
   beforeEach(() => {
     updateMessageCleanupSettingsMock.mockReset();
-    revalidatePathMock.mockReset();
     updateMessageCleanupSettingsMock.mockResolvedValue(settingsViewResult);
     listChatModelsMock.mockResolvedValue({
       source: "openai",
@@ -130,7 +122,6 @@ describe("updateMessageCleanupSettingsAction", () => {
         reasoningEffort: "medium",
       },
     );
-    expect(revalidatePathMock).toHaveBeenCalledWith("/settings");
     expect(result.data).toEqual({
       promptText: "Keep merchant names compact.",
       resolvedPrompt: "Keep merchant names compact.",

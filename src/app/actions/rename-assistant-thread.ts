@@ -1,6 +1,3 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import {
   assistantThreadIdSchema,
@@ -48,7 +45,6 @@ export async function renameAssistantThreadAction(
   return executeServerMutation({
     execute: async () => {
       await renameAssistantThread(prisma, id, title);
-      revalidatePath("/assistant");
       return { id, title };
     },
     mapError: (error) =>

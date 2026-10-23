@@ -23,10 +23,10 @@ function importSection(page: Page) {
   return page.getByRole("region", { name: "Import", exact: true });
 }
 
-test("submits message cleanup settings through a server action", async ({
+test("submits message cleanup settings through a server function", async ({
   page,
 }) => {
-  let serverActionRequestCount = 0;
+  let serverFnRequestCount = 0;
 
   const availableModels = ["gpt-4o-mini", "gpt-5.2"];
 
@@ -82,13 +82,10 @@ test("submits message cleanup settings through a server action", async ({
     });
   });
 
-  await page.route("**/settings", async (route) => {
+  await page.route("**/_serverFn/**", async (route) => {
     const request = route.request();
-    if (
-      request.method() === "POST" &&
-      Object.hasOwn(request.headers(), "next-action")
-    ) {
-      serverActionRequestCount += 1;
+    if (request.method() === "POST") {
+      serverFnRequestCount += 1;
     }
 
     await route.fallback();
@@ -119,7 +116,7 @@ test("submits message cleanup settings through a server action", async ({
     .getByRole("button", { name: "Lagre prompt" })
     .click();
 
-  await expect.poll(() => serverActionRequestCount).toBe(1);
+  await expect.poll(() => serverFnRequestCount).toBe(1);
   await expect(
     page.locator("[data-sonner-toast]", { hasText: "Systemprompt lagret." }),
   ).toBeVisible();
@@ -130,7 +127,7 @@ test("submits message cleanup settings through a server action", async ({
   await reasoningEffortCombobox.click();
   await page.getByRole("option", { name: "Høy", exact: true }).click();
 
-  await expect.poll(() => serverActionRequestCount).toBe(2);
+  await expect.poll(() => serverFnRequestCount).toBe(2);
   await expect(
     page.locator("[data-sonner-toast]", {
       hasText: "Resonneringsnivå for rydding lagret.",
@@ -144,7 +141,7 @@ test("submits message cleanup settings through a server action", async ({
 test("shows stable save failure feedback when message cleanup action fails", async ({
   page,
 }) => {
-  let serverActionRequestCount = 0;
+  let serverFnRequestCount = 0;
 
   await page.route("**/api/imports/message-cleanup-settings", async (route) => {
     await route.fulfill({
@@ -197,13 +194,10 @@ test("shows stable save failure feedback when message cleanup action fails", asy
     });
   });
 
-  await page.route("**/settings", async (route) => {
+  await page.route("**/_serverFn/**", async (route) => {
     const request = route.request();
-    if (
-      request.method() === "POST" &&
-      Object.hasOwn(request.headers(), "next-action")
-    ) {
-      serverActionRequestCount += 1;
+    if (request.method() === "POST") {
+      serverFnRequestCount += 1;
       await route.fulfill({
         status: 500,
         contentType: "text/plain",
@@ -225,7 +219,7 @@ test("shows stable save failure feedback when message cleanup action fails", asy
     .getByRole("button", { name: "Lagre prompt" })
     .click();
 
-  await expect.poll(() => serverActionRequestCount).toBe(1);
+  await expect.poll(() => serverFnRequestCount).toBe(1);
   await expect(
     page.getByText(
       "Kunne ikke lagre innstillingene for meldingsrydding. Prøv igjen.",

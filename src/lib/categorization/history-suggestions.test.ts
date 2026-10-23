@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import {
   type CategorizedHistoryEntry,
   type HistoryLookupRow,
@@ -35,16 +35,21 @@ describe("suggestCategoriesFromHistory", () => {
     ["vipps", "vipps 99887766", false],
     ["h m 0512 storo", "h m 0144 sandvika", false],
     ["kaffebrenneriet 12 oslo", "iz kaffebrenneriet", true],
-  ])("two past %s against row %s matches: %s", (previous, next, shouldMatch) => {
-    const suggestions = suggestCategoriesFromHistory(
-      [row(2, next)],
-      [past(previous, "cat-a"), past(previous, "cat-a")],
-    );
+  ])(
+    "two past %s against row %s matches: %s",
+    (previous, next, shouldMatch) => {
+      const suggestions = suggestCategoriesFromHistory(
+        [row(2, next)],
+        [past(previous, "cat-a"), past(previous, "cat-a")],
+      );
 
-    expect(suggestions).toEqual(
-      shouldMatch ? [{ rowNumber: 2, categoryId: "cat-a", confidence: 1 }] : [],
-    );
-  });
+      expect(suggestions).toEqual(
+        shouldMatch
+          ? [{ rowNumber: 2, categoryId: "cat-a", confidence: 1 }]
+          : [],
+      );
+    },
+  );
 
   it("never lets income history suggest for an expense", () => {
     const suggestions = suggestCategoriesFromHistory(

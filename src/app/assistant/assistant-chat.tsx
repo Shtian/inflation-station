@@ -1,10 +1,9 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { useNavigate, useRouter, useSearch } from "@tanstack/react-router";
 import { DefaultChatTransport } from "ai";
 import { ArrowUpRight, RotateCcw } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   Conversation,
@@ -162,7 +161,7 @@ function AssistantMessage({
         <ul className="flex flex-col items-start gap-1 text-xs">
           {transactionLinks.map((link) => (
             <li key={link.href}>
-              <Link
+              <a
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -170,7 +169,7 @@ function AssistantMessage({
               >
                 {link.label}
                 <ArrowUpRight aria-hidden className="size-3" />
-              </Link>
+              </a>
             </li>
           ))}
         </ul>
@@ -266,6 +265,11 @@ function AssistantConversation({
   defaultModelId,
 }: ThreadProps & ModelChoices) {
   const router = useRouter();
+  const navigate = useNavigate();
+  const searchThread = useSearch({
+    from: "/assistant/",
+    select: (search) => search.thread,
+  });
   const [input, setInput] = useState("");
   const { options, updateOptions } = useChatOptions({
     availableModels,
@@ -277,7 +281,7 @@ function AssistantConversation({
       id: threadId,
       messages: initialMessages,
       transport,
-      onFinish: () => router.refresh(),
+      onFinish: () => void router.invalidate(),
     });
 
   const busy = status === "submitted" || status === "streaming";
@@ -288,10 +292,12 @@ function AssistantConversation({
     if (!text || busy) {
       return;
     }
-    if (
-      new URLSearchParams(window.location.search).get("thread") !== threadId
-    ) {
-      window.history.replaceState(null, "", `?thread=${threadId}`);
+    if (searchThread !== threadId) {
+      void navigate({
+        to: "/assistant",
+        search: { thread: threadId },
+        replace: true,
+      });
     }
     void sendMessage({ text }, { body: options });
     setInput("");
@@ -310,12 +316,12 @@ function AssistantConversation({
             // table inside; flatten it to plain rows on the chat surface.
             "[&_[data-streamdown=table-wrapper]]:gap-0 [&_[data-streamdown=table-wrapper]]:rounded-none [&_[data-streamdown=table-wrapper]]:border-0 [&_[data-streamdown=table-wrapper]]:bg-transparent [&_[data-streamdown=table-wrapper]]:p-0",
             "[&_[data-streamdown=table-wrapper]>div:last-child]:rounded-none [&_[data-streamdown=table-wrapper]>div:last-child]:border-0 [&_[data-streamdown=table-wrapper]>div:last-child]:bg-transparent",
-            "[&_[data-streamdown=table-cell]]:pl-0 [&_[data-streamdown=table-cell]]:tabular-nums [&_[data-streamdown=table-header-cell]]:pl-0 [&_[data-streamdown=table-header-cell]]:font-medium [&_[data-streamdown=table-header-cell]]:text-muted-foreground [&_[data-streamdown=table-header-cell]]:text-xs [&_[data-streamdown=table-header]]:bg-transparent",
+            "[&_[data-streamdown=table-cell]]:pl-0 [&_[data-streamdown=table-cell]]:tabular-nums [&_[data-streamdown=table-header-cell]]:pl-0 [&_[data-streamdown=table-header-cell]]:text-xs [&_[data-streamdown=table-header-cell]]:font-medium [&_[data-streamdown=table-header-cell]]:text-muted-foreground [&_[data-streamdown=table-header]]:bg-transparent",
           )}
         >
           {messages.length === 0 ? (
             <ConversationEmptyState className="flex-1 items-start justify-end gap-3 p-0 text-left">
-              <p className="max-w-prose text-muted-foreground text-sm">
+              <p className="max-w-prose text-sm text-muted-foreground">
                 Spør om forbruket ditt, så svarer jeg med tall hentet fra
                 transaksjonene dine.
               </p>
@@ -325,7 +331,7 @@ function AssistantConversation({
                     key={suggestion}
                     suggestion={suggestion}
                     onClick={send}
-                    className="h-auto whitespace-normal py-1.5 text-left"
+                    className="h-auto py-1.5 text-left whitespace-normal"
                   />
                 ))}
               </div>
@@ -342,10 +348,10 @@ function AssistantConversation({
             ))
           )}
           {chatStatus ? (
-            <p className="text-muted-foreground text-xs">{chatStatus}</p>
+            <p className="text-xs text-muted-foreground">{chatStatus}</p>
           ) : null}
           {error ? (
-            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive text-xs">
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
               <span className="flex-1">{describeChatError(error)}</span>
               <Button
                 size="xs"
@@ -404,7 +410,7 @@ export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
 
   if (availability.status === "loading") {
     return (
-      <p className={cn(STATE_COLUMN, "text-muted-foreground text-sm")}>
+      <p className={cn(STATE_COLUMN, "text-sm text-muted-foreground")}>
         Sjekker om chatten er tilgjengelig…
       </p>
     );
@@ -415,7 +421,7 @@ export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
       <div
         className={cn(
           STATE_COLUMN,
-          "flex items-center gap-2 text-destructive text-sm",
+          "flex items-center gap-2 text-sm text-destructive",
         )}
       >
         <span>Kunne ikke sjekke om chatten er tilgjengelig.</span>

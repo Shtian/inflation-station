@@ -19,6 +19,7 @@ import fontsCss from "./-shell/fonts.css?url";
 
 const getShellFlags = createServerFn({ method: "GET" }).handler(() => ({
   feedbackEnabled: resolveFeedbackDisabledReason() === null,
+  selfUpdateEnabled: Boolean(process.env.SELF_UPDATE_ROOT),
 }));
 
 export const Route = createRootRoute({
@@ -50,10 +51,10 @@ export const Route = createRootRoute({
 function NotFound() {
   return (
     <main className="mx-auto w-full max-w-6xl space-y-2 px-5 py-8 md:px-10">
-      <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Fant ikke siden
       </h1>
-      <p className="text-muted-foreground text-sm">
+      <p className="text-sm text-muted-foreground">
         Siden finnes ikke, eller den er ikke flyttet til denne serveren ennå.
       </p>
     </main>
@@ -67,11 +68,11 @@ function RootDocument({ children }: { children: ReactNode }) {
     <html lang="nb" suppressHydrationWarning>
       <head>
         <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: static script built from the palette registry, no user input
+          // Static script built from the palette registry, no user input.
           dangerouslySetInnerHTML={{ __html: PALETTE_BOOT_SCRIPT }}
         />
         <script
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: static script built from the sidebar state constants, no user input
+          // Static script built from the sidebar state constants, no user input.
           dangerouslySetInnerHTML={{ __html: SIDEBAR_BOOT_SCRIPT }}
         />
         <HeadContent />

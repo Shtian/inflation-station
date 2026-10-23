@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import {
   MESSAGE_SOURCE_CLEANED,
   MESSAGE_SOURCE_ORIGINAL,

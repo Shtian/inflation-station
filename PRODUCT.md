@@ -24,7 +24,7 @@ Inflation Station puts a person's spending from several Norwegian banks and card
 - AI features need `OPENAI_API_KEY`. Everything else runs fully locally on SQLite.
 
 ## Capabilities and Constraints
-- Stack: Next.js App Router, TypeScript, Prisma + SQLite, Tailwind, Base UI / shadcn-style components, Sonner toasts.
+- Stack: TanStack Start on Vite+, TypeScript, Prisma + SQLite, Tailwind, Base UI / shadcn-style components, Sonner toasts.
 - Domain terms are defined in `CONTEXT.md` (rule match, AI suggestion, confidence, classifier hint, demo dataset). Use those words in the UI and in docs.
 - Confidence is shown only on the import review page, only next to AI suggestions, and never when the suggestion is "Uncategorized".
 - The app is used mainly on desktop. Mobile layouts are not a priority.

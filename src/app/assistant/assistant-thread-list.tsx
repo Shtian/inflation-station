@@ -1,12 +1,10 @@
 "use client";
 
+import { Link, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { MoreHorizontal, Pencil, SquarePen, Trash2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type FormEvent, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { deleteAssistantThreadAction } from "@/app/actions/delete-assistant-thread";
-import { renameAssistantThreadAction } from "@/app/actions/rename-assistant-thread";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +36,10 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ASSISTANT_THREAD_TITLE_MAX_LENGTH } from "@/lib/assistant/threads";
 import { cn } from "@/lib/utils";
+import {
+  deleteAssistantThreadFn,
+  renameAssistantThreadFn,
+} from "@/routes/assistant/-server";
 
 export type AssistantThreadListItem = {
   id: string;
@@ -56,7 +58,7 @@ function ErrorMessage({ message }: { message: string | null }) {
   return (
     <p
       role="alert"
-      className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+      className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
       {message}
     </p>
@@ -70,6 +72,8 @@ function RenameThreadDialog({
   thread: AssistantThreadListItem;
   onClose: () => void;
 }) {
+  const router = useRouter();
+  const renameAssistantThread = useServerFn(renameAssistantThreadFn);
   const [title, setTitle] = useState(thread.title);
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
@@ -77,14 +81,14 @@ function RenameThreadDialog({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     startSaving(async () => {
-      const result = await renameAssistantThreadAction({
-        id: thread.id,
-        title,
+      const result = await renameAssistantThread({
+        data: { id: thread.id, title },
       });
       if (!result.ok) {
         setError(result.error.message);
         return;
       }
+      await router.invalidate();
       toast.success("Samtalen fikk nytt navn");
       onClose();
     });
@@ -109,6 +113,8 @@ function RenameThreadDialog({
                 onChange={(event) => setTitle(event.target.value)}
                 maxLength={ASSISTANT_THREAD_TITLE_MAX_LENGTH}
                 disabled={saving}
+                // The rename dialog has one field, so it takes focus on open.
+                // oxlint-disable-next-line jsx-a11y/no-autofocus
                 autoFocus
               />
             </FieldContent>
@@ -143,20 +149,22 @@ function DeleteThreadDialog({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const deleteAssistantThread = useServerFn(deleteAssistantThreadFn);
   const [error, setError] = useState<string | null>(null);
   const [deleting, startDeleting] = useTransition();
 
   function confirm() {
     startDeleting(async () => {
-      const result = await deleteAssistantThreadAction({ id: thread.id });
+      const result = await deleteAssistantThread({ data: { id: thread.id } });
       if (!result.ok) {
         setError(result.error.message);
         return;
       }
+      await router.invalidate();
       toast.success("Samtalen ble slettet");
       onClose();
       if (isActive) {
-        router.push("/assistant");
+        void router.navigate({ to: "/assistant" });
       }
     });
   }
@@ -262,7 +270,8 @@ function ThreadActionsMenu({
 export function NewThreadLink() {
   return (
     <Link
-      href="/assistant"
+      to="/assistant"
+      activeOptions={{ exact: true }}
       aria-label="Ny samtale"
       title="Ny samtale"
       className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
@@ -284,7 +293,7 @@ export function AssistantThreadList({
   return (
     <nav aria-label="Samtaler" className="flex min-h-0 flex-1 flex-col">
       {threads.length === 0 ? (
-        <p className="px-4 text-muted-foreground text-xs">
+        <p className="px-4 text-xs text-muted-foreground">
           Ingen lagrede samtaler ennå
         </p>
       ) : (
@@ -301,14 +310,15 @@ export function AssistantThreadList({
                   )}
                 >
                   <Link
-                    href={`/assistant?thread=${thread.id}`}
+                    to="/assistant"
+                    search={{ thread: thread.id }}
                     aria-current={isActive ? "page" : undefined}
                     className="flex min-w-0 flex-1 items-baseline gap-2 rounded-md px-2.5 py-1.5 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                   >
                     <span className="min-w-0 flex-1 truncate">
                       {thread.title}
                     </span>
-                    <span className="shrink-0 text-muted-foreground text-xs tabular-nums group-focus-within:opacity-0 group-hover:opacity-0">
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums group-focus-within:opacity-0 group-hover:opacity-0">
                       {thread.updatedAtLabel}
                     </span>
                   </Link>
@@ -340,7 +350,7 @@ export function AssistantThreadHeader({
     <header className="flex h-14 shrink-0 items-center gap-1 px-6">
       <h2
         className={cn(
-          "min-w-0 flex-1 truncate font-medium text-sm",
+          "min-w-0 flex-1 truncate text-sm font-medium",
           !thread && "text-muted-foreground",
         )}
       >

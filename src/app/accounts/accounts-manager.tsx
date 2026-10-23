@@ -30,10 +30,10 @@ export function AccountsManager() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Kontoer
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Legg til, gi nytt navn til og fjern kontoer som brukes i importer.
         </p>
       </div>
@@ -52,7 +52,7 @@ export function AccountsManager() {
       {accountError ? (
         <p
           role="alert"
-          className="mt-4 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="mt-4 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {accountError}
         </p>

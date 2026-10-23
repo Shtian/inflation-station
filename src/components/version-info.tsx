@@ -60,7 +60,7 @@ export function VersionInfo({
           align="end"
           className="w-auto"
         >
-          <p className="font-mono text-muted-foreground text-xs tabular-nums">
+          <p className="font-mono text-xs text-muted-foreground tabular-nums">
             <span className="text-brand/60">{sha}</span>
             <span className="mx-1.5 text-border">·</span>
             <span>{formattedTime}</span>

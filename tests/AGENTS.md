@@ -2,12 +2,12 @@
 
 Load this when working in `tests`.
 
-Two Playwright projects live here. The **stubbed suite** intercepts every API call and serves fixtures to the browser. The **integrated suite** runs against a real Next server backed by a real migrated database. `CONTEXT.md` defines both terms.
+Two Playwright projects live here. The **stubbed suite** intercepts every API call and serves fixtures to the browser. The **integrated suite** runs against a real Start server backed by a real migrated database. `CONTEXT.md` defines both terms.
 
 - Keep stubbed specs in `tests/e2e/*.e2e.ts` and integrated specs in `tests/integrated/*.integrated.ts`, both named after the user story they cover (`us-0NN-<slug>`). `testMatch` keys off the extension, so a file in the right directory with the wrong extension runs in neither project.
 - Assert Sonner feedback with `page.locator("[data-sonner-toast]", { hasText: "..." })` instead of inline banner DOM or bare `getByText`.
 - When a route migrates inline success feedback to toasts, update its spec's assertions in the same change; inline error copy stays asserted as inline DOM.
-- Unit tests for application code are colocated with their source in `src/**/*.test.ts` (Vitest). The Vitest files here cover the support modules in `tests/support/` and the suites' own invariants, neither of which has a `src/` counterpart to sit beside.
+- Unit tests for application code are colocated with their source in `src/**/*.test.ts` and run with `vp test` (Vitest, configured in `vite.config.mts`). The test files here cover the support modules in `tests/support/` and the suites' own invariants, neither of which has a `src/` counterpart to sit beside.
 - One of those support tests, `statement-pdf.test.ts`, launches chromium, so `pnpm test:unit` needs a browser installed and not just the E2E job. `.github/workflows/unit-tests.yml` installs the headless shell for that reason; dropping the step fails Vitest in CI while it still passes on any machine that has run `playwright install`.
 
 ## Database isolation differs by suite
@@ -25,10 +25,10 @@ The integrated suite cannot do that. One server process reads `DATABASE_URL` onc
 ## Running the suites
 
 - `pnpm exec playwright test` runs both projects. `--project=stubbed` and `--project=integrated` run one.
-- The stubbed server binds `http://127.0.0.1:3000` and runs against `prisma/stubbed.db`. Three stubbed specs drive Server Actions, which POST to the page's own URL rather than to `/api/*`, so `page.route` cannot intercept them and they reach a real database. Giving that server one of its own keeps a suite run off `prisma/dev.db`.
+- The stubbed server binds `http://127.0.0.1:3000` and runs against `prisma/stubbed.db`. Server functions POST to `/_serverFn/*`, which no shared stub covers, so a stubbed spec that does not route them reaches a real database. Giving that server one of its own keeps a suite run off `prisma/dev.db`.
 - That holds when Playwright starts the server. It still reuses an already-running dev server locally, and that server has whatever `DATABASE_URL` you started it with. Stop it first if you want the guarantee. Set `PLAYWRIGHT_NO_WEBSERVER=1` to start neither server yourself.
-- The integrated server binds `http://127.0.0.1:3001`, owns that port outright, and runs against `prisma/integrated.db`. Locally it builds into `.next-integrated`, because a second `next dev` out of one directory refuses to start.
-- `PLAYWRIGHT_SERVER=start` runs both suites against the TanStack Start app instead of Next (`next`, the default). It always serves the prebuilt output, so run `pnpm start:build` first: on `vp dev` the client hydrates after the `load` event and specs click too early. Routes not yet ported to Start fail there with its "Fant ikke siden" page.
+- The integrated server binds `http://127.0.0.1:3001`, owns that port outright, and runs against `prisma/integrated.db`.
+- Both suites serve the prebuilt output with `pnpm start`, locally and in CI. Run `pnpm build` first. On `vp dev` the client hydrates after the `load` event and specs click too early.
 - `PLAYWRIGHT_STUBBED_PORT` and `PLAYWRIGHT_INTEGRATED_PORT` move either server off its default port. Set the stubbed one whenever another worktree may hold 3000, or the suite reuses that worktree's server and tests its code.
 - Both suites run chromium-only.
 - `prisma/dev.db` is gitignored, so it exists on your machine and not in CI. A test that reads it, or builds a path to it, has to behave the same when the file is missing, or it passes locally and fails on the pull request.

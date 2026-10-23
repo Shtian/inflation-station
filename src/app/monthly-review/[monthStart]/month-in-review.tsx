@@ -1,8 +1,7 @@
 "use client";
 
+import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
   type PointerEvent,
@@ -28,12 +27,12 @@ import {
   formatMonthHeading,
   formatMonthStartLabel,
 } from "../monthly-review-manager.utils";
+import { MonthInReviewSkeleton } from "./month-in-review-skeleton";
 import {
   type GenerateMode,
   MONTH_IN_REVIEW_SLIDES,
 } from "./month-in-review.slides";
 import { DECK_WORLDS, type DeckWorld } from "./month-in-review.worlds";
-import { MonthInReviewSkeleton } from "./month-in-review-skeleton";
 import "./month-in-review.css";
 
 const reviewResponseSchema = z.object({
@@ -64,7 +63,7 @@ export function MonthInReview({
   monthStart: string;
   initialSlideId: string | null;
 }) {
-  const router = useRouter();
+  const navigate = useNavigate({ from: "/monthly-review/$monthStart" });
   const monthLabel = formatMonthStartLabel(monthStart);
   const monthHeading = formatMonthHeading(monthStart);
   const [review, setReview] = useState<MonthInReviewWithReview | null>(null);
@@ -129,9 +128,7 @@ export function MonthInReview({
     }
 
     setActiveSlideId(target.id);
-    const url = new URL(window.location.href);
-    url.searchParams.set("slide", target.id);
-    window.history.replaceState(window.history.state, "", url);
+    void navigate({ search: { slide: target.id }, replace: true });
   }
 
   const onKeyDown = useEffectEvent((event: KeyboardEvent) => {
@@ -150,7 +147,7 @@ export function MonthInReview({
       ArrowLeft: () => goTo(activeIndex - 1),
       Home: () => goTo(0),
       End: () => goTo(slides.length - 1),
-      Escape: () => router.push(TIMELINE_HREF),
+      Escape: () => void navigate({ to: TIMELINE_HREF }),
     };
     const action = step[event.key];
     if (action) {
@@ -224,7 +221,7 @@ export function MonthInReview({
         className="mir-deck fixed inset-0 z-50 flex flex-col items-start justify-center gap-5 px-6 md:px-12"
         style={worldStyle(DECK_WORLDS.base)}
       >
-        <h1 className="font-extrabold text-3xl text-[var(--mir-accent)] md:text-5xl">
+        <h1 className="text-3xl font-extrabold text-[var(--mir-accent)] md:text-5xl">
           {monthHeading}
         </h1>
         <p role="alert" className="text-lg">
@@ -238,7 +235,7 @@ export function MonthInReview({
               Prøv igjen
             </button>
           ) : null}
-          <Link href={TIMELINE_HREF}>Tilbake til tidslinjen</Link>
+          <Link to={TIMELINE_HREF}>Tilbake til tidslinjen</Link>
         </div>
       </div>
     );
@@ -279,14 +276,14 @@ export function MonthInReview({
         </nav>
         <div className="flex items-center justify-between gap-4">
           <Link
-            href={TIMELINE_HREF}
+            to={TIMELINE_HREF}
             aria-label="Lukk måneden som gikk"
             className="-ml-2 inline-flex size-10 items-center justify-center rounded-full hover:bg-[color-mix(in_oklab,var(--mir-accent)_14%,transparent)]"
           >
             <X aria-hidden className="size-6" />
           </Link>
           <h1
-            className={`mir-expanded font-bold text-sm tracking-[0.02em] ${
+            className={`mir-expanded text-sm font-bold tracking-[0.02em] ${
               activeSlide.id === "intro" ? "sr-only" : ""
             }`}
           >

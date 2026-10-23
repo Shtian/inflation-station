@@ -19,7 +19,7 @@ export function SubscriptionDisclosure({
 }) {
   return (
     <Collapsible render={<section aria-label={title} />} className="space-y-3">
-      <CollapsibleTrigger className="group flex items-center gap-1 rounded-md font-medium text-muted-foreground text-sm outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50">
+      <CollapsibleTrigger className="group flex items-center gap-1 rounded-md text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50">
         <ChevronRight
           aria-hidden
           className="size-4 transition-transform group-data-panel-open:rotate-90"

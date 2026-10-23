@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  biome:
-    name: Biome
+  check:
+    name: Lint and format
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -17,13 +17,20 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
-        with:
-          version: 2.4.3
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.1.0
 
-      - name: Run Biome CI
-        run: biome ci .
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: lts/*
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run vp check
+        run: pnpm lint
 
   typecheck:
     name: Typecheck

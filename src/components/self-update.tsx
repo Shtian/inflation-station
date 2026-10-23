@@ -104,7 +104,7 @@ function UpdateLog({ log }: { log: string }) {
   return (
     <pre
       ref={ref}
-      className="max-h-72 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted p-2 font-mono text-muted-foreground text-xs"
+      className="max-h-72 overflow-auto rounded-md bg-muted p-2 font-mono text-xs break-all whitespace-pre-wrap text-muted-foreground"
     >
       {log || "Venter på utdata..."}
     </pre>

@@ -67,8 +67,9 @@ export async function readSelfUpdateStatus(
   return { sha, log: log === null ? "" : tail(log), ...phase };
 }
 
-// The standalone server sets NODE_ENV=production, which would make
-// `pnpm install` skip the devDependencies the build needs.
+// The Nitro server does not set NODE_ENV, but pm2 passes on whatever the
+// shell or `.env` holds. NODE_ENV=production would make `pnpm install` skip
+// the devDependencies the build needs.
 function updateEnv() {
   return Object.fromEntries(
     Object.entries(process.env).filter(

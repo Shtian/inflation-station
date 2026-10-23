@@ -1,6 +1,5 @@
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import type { RecurringCandidate } from "@/lib/subscriptions/model";
-import { merchantTransactionsHref } from "../format";
 
 export function MerchantLink({
   candidate,
@@ -9,7 +8,8 @@ export function MerchantLink({
 }) {
   return (
     <Link
-      href={merchantTransactionsHref(candidate.normalizedMerchant)}
+      to="/transactions"
+      search={{ globalQuery: candidate.normalizedMerchant }}
       title={`Se transaksjoner fra ${candidate.displayName}`}
       className="font-medium text-foreground underline-offset-4 hover:underline"
     >

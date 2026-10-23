@@ -1,14 +1,16 @@
 "use client";
 
+import { useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useTransition } from "react";
 import { toast } from "sonner";
-import {
-  clearSubscriptionDecisionAction,
-  setSubscriptionDecisionAction,
-} from "@/app/actions/subscription-decisions";
 import { Button } from "@/components/ui/button";
 import type { MutationActionResult } from "@/lib/server-actions/mutation-result";
 import type { SubscriptionDecisionStatus } from "@/lib/subscriptions/model";
+import {
+  clearSubscriptionDecisionFn,
+  setSubscriptionDecisionFn,
+} from "@/routes/subscriptions/-server";
 
 export type DecisionIntent =
   | "CONFIRM"
@@ -18,18 +20,28 @@ export type DecisionIntent =
   | "END"
   | "RECONFIRM";
 
+type DecisionWrites = {
+  set: ReturnType<typeof useServerFn<typeof setSubscriptionDecisionFn>>;
+  clear: ReturnType<typeof useServerFn<typeof clearSubscriptionDecisionFn>>;
+  invalidate: () => Promise<void>;
+};
+
 /** One decision write and the toast that reports it. */
 type DecisionStep = {
-  run: (normalizedMerchant: string) => Promise<MutationActionResult<unknown>>;
+  run: (
+    writes: DecisionWrites,
+    normalizedMerchant: string,
+  ) => Promise<MutationActionResult<unknown>>;
   success: (name: string) => string;
 };
 
 const setStatus =
-  (status: SubscriptionDecisionStatus) => (normalizedMerchant: string) =>
-    setSubscriptionDecisionAction({ normalizedMerchant, status });
+  (status: SubscriptionDecisionStatus) =>
+  (writes: DecisionWrites, normalizedMerchant: string) =>
+    writes.set({ data: { normalizedMerchant, status } });
 
-const clearDecision = (normalizedMerchant: string) =>
-  clearSubscriptionDecisionAction({ normalizedMerchant });
+const clearDecision = (writes: DecisionWrites, normalizedMerchant: string) =>
+  writes.clear({ data: { normalizedMerchant } });
 
 const backToSuggestions: DecisionStep = {
   run: clearDecision,
@@ -115,22 +127,25 @@ const FAILED_MESSAGE = "Kunne ikke lagre valget. Prøv igjen.";
 
 async function runStep(
   step: DecisionStep,
+  writes: DecisionWrites,
   normalizedMerchant: string,
   displayName: string,
   undo?: DecisionStep,
 ): Promise<void> {
   try {
-    const result = await step.run(normalizedMerchant);
+    const result = await step.run(writes, normalizedMerchant);
     if (!result.ok) {
       toast.error(result.error.message);
       return;
     }
+    await writes.invalidate();
     toast.success(
       step.success(displayName),
       undo && {
         action: {
           label: "Angre",
-          onClick: () => void runStep(undo, normalizedMerchant, displayName),
+          onClick: () =>
+            void runStep(undo, writes, normalizedMerchant, displayName),
         },
       },
     );
@@ -150,6 +165,12 @@ export function DecisionButton({
   normalizedMerchant,
   displayName,
 }: DecisionButtonProps) {
+  const router = useRouter();
+  const writes: DecisionWrites = {
+    set: useServerFn(setSubscriptionDecisionFn),
+    clear: useServerFn(clearSubscriptionDecisionFn),
+    invalidate: () => router.invalidate(),
+  };
   const [pending, startTransition] = useTransition();
   const { label, variant, apply, undo } = INTENTS[intent];
 
@@ -162,7 +183,7 @@ export function DecisionButton({
       aria-label={`${label} ${displayName}`}
       onClick={() =>
         startTransition(() =>
-          runStep(apply, normalizedMerchant, displayName, undo),
+          runStep(apply, writes, normalizedMerchant, displayName, undo),
         )
       }
     >

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import amexSeptember from "./__fixtures__/amex-2026-09.json";
 import trumfSeptember from "./__fixtures__/trumf-2026-09.json";

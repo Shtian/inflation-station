@@ -123,7 +123,7 @@ function isUiContext(node: ts.Node): boolean {
       return UI_MESSAGE_CALLEE.test(callee);
     }
     if (ts.isNewExpression(parent)) {
-      return /Error$/.test(parent.expression.getText());
+      return parent.expression.getText().endsWith("Error");
     }
     if (
       ts.isBinaryExpression(parent) &&

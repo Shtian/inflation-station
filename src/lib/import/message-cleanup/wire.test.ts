@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { parseCleanupChunkResponse } from "./wire";
 
 function jsonResponse(status: number, body: unknown): Response {

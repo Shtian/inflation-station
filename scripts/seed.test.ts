@@ -5,7 +5,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@prisma/client";
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 
 const execFileAsync = promisify(execFile);
 

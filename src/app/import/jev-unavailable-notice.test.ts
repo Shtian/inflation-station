@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import type { JevOutcomeSummary } from "@/lib/categorization/jev-categorize";
 import { describeJevUnavailability } from "./jev-unavailable-notice";
 

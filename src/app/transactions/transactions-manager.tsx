@@ -294,10 +294,10 @@ export function TransactionsManager({ trips }: { trips: TripOption[] }) {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Transaksjoner
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Filtrer og bla gjennom importerte transaksjoner.
         </p>
       </div>
@@ -305,7 +305,7 @@ export function TransactionsManager({ trips }: { trips: TripOption[] }) {
       {error ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {error}
         </p>

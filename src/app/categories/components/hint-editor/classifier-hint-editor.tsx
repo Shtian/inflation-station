@@ -153,7 +153,7 @@ export function ClassifierHintEditor({
           rows={2}
           disabled={disabled}
         />
-        <div className="flex items-start justify-between gap-3 text-muted-foreground text-xs">
+        <div className="flex items-start justify-between gap-3 text-xs text-muted-foreground">
           <p>
             Jev leser <span className="text-foreground">{view.jevLine}</span>
           </p>
@@ -181,7 +181,7 @@ export function ClassifierHintEditor({
           </Button>
         ) : null}
         {suggestions.kind === "expanded" ? (
-          <div className="space-y-3 border-border border-t pt-3">
+          <div className="space-y-3 border-t border-border pt-3">
             {suggestions.description ? (
               <label
                 htmlFor={`${id}-description`}
@@ -205,7 +205,7 @@ export function ClassifierHintEditor({
             ) : null}
             {suggestions.history ? (
               <div className="space-y-2">
-                <p className="font-medium text-xs">
+                <p className="text-xs font-medium">
                   Fra historikken din{" "}
                   <span className="font-normal text-muted-foreground">
                     · antall ganger brukt
@@ -240,7 +240,7 @@ export function ClassifierHintEditor({
             ) : null}
             {suggestions.guesses.length > 0 ? (
               <div className="space-y-2">
-                <p className="font-medium text-xs">
+                <p className="text-xs font-medium">
                   Ikke i historikken din{" "}
                   <span className="font-normal text-muted-foreground">
                     · dukker trolig opp senere
@@ -263,7 +263,7 @@ export function ClassifierHintEditor({
               </div>
             ) : null}
             {suggestions.ai?.kind === "suggest" ? (
-              <div className="flex flex-wrap items-center gap-1.5 text-muted-foreground text-xs">
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 <Button
                   type="button"
                   variant="outline"
@@ -280,13 +280,13 @@ export function ClassifierHintEditor({
               </div>
             ) : null}
             {suggestions.ai?.kind === "pending" ? (
-              <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Loader2 className="size-3 animate-spin" aria-hidden="true" />
                 Finner lignende brukersteder…
               </p>
             ) : null}
             {suggestions.ai?.kind === "unavailable" ? (
-              <p className="flex flex-wrap items-center gap-1 text-muted-foreground text-xs">
+              <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                 {AI_UNAVAILABLE_MESSAGES[suggestions.ai.reason]}
                 {suggestions.ai.reason === "failed" ? (
                   <Button
@@ -305,7 +305,7 @@ export function ClassifierHintEditor({
               </p>
             ) : null}
             {suggestions.note ? (
-              <output className="block text-muted-foreground text-xs">
+              <output className="block text-xs text-muted-foreground">
                 {suggestions.note}
               </output>
             ) : null}
@@ -351,7 +351,7 @@ function MerchantChip({
         presence === "on"
           ? "border-foreground/20 bg-muted"
           : guess
-            ? "border-muted-foreground/50 border-dashed bg-transparent text-muted-foreground hover:bg-muted"
+            ? "border-dashed border-muted-foreground/50 bg-transparent text-muted-foreground hover:bg-muted"
             : "border-border bg-background hover:bg-muted",
       )}
     >

@@ -1,5 +1,5 @@
 import { PaymentType, SuggestionSource } from "@prisma/client";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { buildRuleBasedSuggestions } from "./rule-engine";
 
 describe("buildRuleBasedSuggestions", () => {

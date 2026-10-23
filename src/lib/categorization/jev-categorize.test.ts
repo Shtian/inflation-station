@@ -1,6 +1,6 @@
 import { PaymentType } from "@prisma/client";
 import type { Fetch } from "@typesafe-ai/sdk";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import {
   categorizeRowsWithJev,
   type JevCategorizeRow,
