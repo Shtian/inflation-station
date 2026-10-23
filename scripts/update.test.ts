@@ -208,8 +208,8 @@ describe("update.sh", () => {
     writeFileSync(
       path.join(app, ".env"),
       [
-        "NEXT_PUBLIC_SENTRY_DSN=https://pubkey@o1.ingest.sentry.io/42",
-        "NEXT_PUBLIC_SENTRY_ENVIRONMENT=home",
+        "VITE_SENTRY_DSN=https://pubkey@o1.ingest.sentry.io/42",
+        "VITE_SENTRY_ENVIRONMENT=home",
         "PM2_APP_NAME=inflation-station-other",
       ].join("\n"),
     );
@@ -249,7 +249,7 @@ describe("update.sh", () => {
   it("reports a failed migration without its output", () => {
     writeFileSync(
       path.join(app, ".env"),
-      "NEXT_PUBLIC_SENTRY_DSN=https://pubkey@o1.ingest.sentry.io/42\n",
+      "VITE_SENTRY_DSN=https://pubkey@o1.ingest.sentry.io/42\n",
     );
 
     const run = deploy("bbb2222", { FAKE_FAIL: "db:migrate:deploy" });
@@ -262,7 +262,7 @@ describe("update.sh", () => {
   });
 
   it("sends nothing when no DSN is configured", () => {
-    writeFileSync(path.join(app, ".env"), "NEXT_PUBLIC_SENTRY_DSN=\n");
+    writeFileSync(path.join(app, ".env"), "VITE_SENTRY_DSN=\n");
 
     const run = deploy("bbb2222", {
       FAKE_FAIL: "install",
@@ -277,7 +277,7 @@ describe("update.sh", () => {
   it("keeps the failing exit code when Sentry is unreachable", () => {
     writeFileSync(
       path.join(app, ".env"),
-      "NEXT_PUBLIC_SENTRY_DSN=https://pubkey@o1.ingest.sentry.io/42\n",
+      "VITE_SENTRY_DSN=https://pubkey@o1.ingest.sentry.io/42\n",
     );
 
     const run = deploy("bbb2222", {

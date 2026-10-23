@@ -99,18 +99,10 @@ export default defineConfig(({ mode }) => {
         },
       ],
     },
-    // The deployed `.env` still names the Sentry DSN with the old
-    // NEXT_PUBLIC_ prefix, so keep reading those names.
     define: {
       "import.meta.env.VITE_BUILD_SHA": JSON.stringify(buildSha),
       "import.meta.env.VITE_BUILD_TIME": JSON.stringify(
         new Date().toISOString(),
-      ),
-      "import.meta.env.VITE_SENTRY_DSN": JSON.stringify(
-        env.NEXT_PUBLIC_SENTRY_DSN ?? "",
-      ),
-      "import.meta.env.VITE_SENTRY_ENVIRONMENT": JSON.stringify(
-        env.NEXT_PUBLIC_SENTRY_ENVIRONMENT ?? "",
       ),
     },
     resolve: {

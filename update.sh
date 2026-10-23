@@ -10,7 +10,7 @@ STEP="prepare"
 STEP_OUTPUT="$(mktemp)"
 
 report_failure() {
-  local code="$1" dsn="${NEXT_PUBLIC_SENTRY_DSN:-}"
+  local code="$1" dsn="${VITE_SENTRY_DSN:-}"
   [ -n "$dsn" ] || return 0
 
   local rest="${dsn#*://}"
@@ -35,7 +35,7 @@ report_failure() {
         platform: "other",
         level: "error",
         logger: "update.sh",
-        environment: e.NEXT_PUBLIC_SENTRY_ENVIRONMENT || "production",
+        environment: e.VITE_SENTRY_ENVIRONMENT || "production",
         release: e.DEPLOY_RELEASE,
         message: { formatted: `Deploy failed at ${e.DEPLOY_STEP} (exit ${e.DEPLOY_EXIT})` },
         fingerprint: ["deploy-failed", e.DEPLOY_STEP],

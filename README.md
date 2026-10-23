@@ -82,7 +82,7 @@ To take a backup manually, run `scripts/backup-db.sh [output-dir]`. It is safe t
 
 ### Error Monitoring (Sentry)
 
-Sentry is optional and off unless `NEXT_PUBLIC_SENTRY_DSN` is set in `.env`. The DSN is baked into the build, so run `bash update.sh` after changing it. To get readable stack traces, also set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`; the build then uploads source maps. Errors, stack traces, a small sample of traces, and every AI chat are sent. AI calls include their prompts, answers, and tool results, which can contain transaction data, so Sentry's Agent Tracing shows full conversations. Request bodies, headers, cookies, and database values are not sent.
+Sentry is optional and off unless `VITE_SENTRY_DSN` is set in `.env`. The DSN is baked into the build, so run `bash update.sh` after changing it. To get readable stack traces, also set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`; the build then uploads source maps. Errors, stack traces, a small sample of traces, and every AI chat are sent. AI calls include their prompts, answers, and tool results, which can contain transaction data, so Sentry's Agent Tracing shows full conversations. Request bodies, headers, cookies, and database values are not sent.
 
 `update.sh` also reports a failed deploy to Sentry as one event, such as "Deploy failed at build (exit 137)", with the last 50 lines of the failed step's output. A failed migration sends only the step and the exit code, because migration errors can contain database values.
 
