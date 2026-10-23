@@ -1,4 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  type SearchSchemaInput,
+} from "@tanstack/react-router";
 import { TransactionsManager } from "@/app/transactions/transactions-manager";
 import type { TransactionSorting } from "@/app/transactions/transactions-manager.types";
 import {
@@ -17,7 +20,9 @@ import { getTripOptions } from "./-server";
  * also re-validates the typed state it is handed, so `sorting` can be the
  * model's object; `parseTransactionsTableUrlState` still decides its validity.
  */
-function validateSearch(search: Record<string, unknown>) {
+function validateSearch(
+  search: Partial<TransactionsTableUrlState> & SearchSchemaInput,
+) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(search)) {
     if (
