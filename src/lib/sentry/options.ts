@@ -25,8 +25,8 @@ const tracesSampler: NonNullable<Options["tracesSampler"]> = ({
 // recommended 10% to fit the free tier. Chat requests are always traced, so
 // Sentry Conversations shows every turn of a chat rather than one in ten.
 //
-// Each app passes its own build-time env (NEXT_PUBLIC_* or VITE_*), since a
-// Vite client bundle has no `process.env`.
+// Callers pass the build-time `import.meta.env` values, since a Vite client
+// bundle has no `process.env`.
 export function getSentryOptions({
   dsn,
   environment,

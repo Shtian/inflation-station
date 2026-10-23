@@ -9,7 +9,6 @@ type RouteErrorProps = ErrorComponentProps & {
   fallbackMessage: string;
 };
 
-/** Start counterpart of `@/components/route-error-state`. */
 export function RouteError({
   error,
   reset,

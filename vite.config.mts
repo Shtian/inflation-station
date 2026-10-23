@@ -12,9 +12,8 @@ import { defineConfig, type Plugin } from "vite-plus";
 const SERVER_ONLY_ID = "\0server-only";
 
 /**
- * `src/lib/prisma.ts` imports `server-only`, which Next resolves from its own
- * bundle. Keep the guard: the server environments get an empty module, and a
- * client bundle that reaches it fails the build.
+ * `src/lib/prisma.ts` imports `server-only`. The server environments get an
+ * empty module, and a client bundle that reaches it fails the build.
  */
 function serverOnly(): Plugin {
   return {
@@ -48,8 +47,8 @@ export default defineConfig(({ mode }) => {
   const buildSha = getGitSha();
 
   return {
-    // Both apps share one `.env` while they run side by side, so the Start
-    // build reads the Next names.
+    // The deployed `.env` still names the Sentry DSN with the old
+    // NEXT_PUBLIC_ prefix, so keep reading those names.
     define: {
       "import.meta.env.VITE_BUILD_SHA": JSON.stringify(buildSha),
       "import.meta.env.VITE_BUILD_TIME": JSON.stringify(
@@ -65,8 +64,6 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { "@": path.resolve(import.meta.dirname, "src") },
     },
-    // postcss.config.mjs belongs to Next; Tailwind runs through its Vite plugin here.
-    css: { postcss: { plugins: [] } },
     plugins: [
       serverOnly(),
       tailwindcss(),

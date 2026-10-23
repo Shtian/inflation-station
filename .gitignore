@@ -15,11 +15,6 @@
 /playwright-report
 /test-results
 
-# next.js
-/.next/
-/.next-integrated/
-/out/
-
 # production
 /build
 
@@ -46,7 +41,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 # local e2e sqlite db
 /prisma/ci.db

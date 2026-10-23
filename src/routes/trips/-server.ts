@@ -34,8 +34,8 @@ export const getTripPage = createServerFn({ method: "GET" })
     return page;
   });
 
-// Validation stays in the shared mutations so the error contract matches the
-// Next actions. `details` is typed `unknown` there, which fails the strict
+// Validation stays in the shared mutations, which own the error contract.
+// `details` is typed `unknown` there, which fails the strict
 // serializable-output check, though at runtime it is zod's flattened errors.
 const passThrough = (input: unknown) => input;
 
