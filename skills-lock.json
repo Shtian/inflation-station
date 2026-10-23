@@ -12,6 +12,12 @@
       "sourceType": "github",
       "skillPath": ".agents/skills/skill-doctor/SKILL.md",
       "computedHash": "eae54bb2041744ff27c288e92a4805e9e1beef8ab8e9bd14c4950b8414246f80"
+    },
+    "varlock": {
+      "source": "dmno-dev/varlock",
+      "sourceType": "github",
+      "skillPath": "skills/varlock/SKILL.md",
+      "computedHash": "dd6f7de5155f31c602c7b92361f832e32e12cb632feaadd0c0022740d0e5da5b"
     }
   }
 }
