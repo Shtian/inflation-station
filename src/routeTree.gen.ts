@@ -18,6 +18,7 @@ import { Route as ApiCategoryRulesRouteImport } from './routes/api/category-rule
 import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
 import { Route as CategoriesIndexRouteImport } from './routes/categories/index'
 import { Route as ImportIndexRouteImport } from './routes/import/index'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SubscriptionsIndexRouteImport } from './routes/subscriptions/index'
 import { Route as TransactionsIndexRouteImport } from './routes/transactions/index'
@@ -88,6 +89,11 @@ const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
 const ImportIndexRoute = ImportIndexRouteImport.update({
   id: '/import/',
   path: '/import/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/accounts/': typeof AccountsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
   '/transactions/': typeof TransactionsIndexRoute
@@ -278,6 +285,7 @@ export interface FileRoutesByTo {
   '/accounts': typeof AccountsIndexRoute
   '/categories': typeof CategoriesIndexRoute
   '/import': typeof ImportIndexRoute
+  '/onboarding': typeof OnboardingIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/subscriptions': typeof SubscriptionsIndexRoute
   '/transactions': typeof TransactionsIndexRoute
@@ -316,6 +324,7 @@ export interface FileRoutesById {
   '/accounts/': typeof AccountsIndexRoute
   '/categories/': typeof CategoriesIndexRoute
   '/import/': typeof ImportIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/subscriptions/': typeof SubscriptionsIndexRoute
   '/transactions/': typeof TransactionsIndexRoute
@@ -355,6 +364,7 @@ export interface FileRouteTypes {
     | '/accounts/'
     | '/categories/'
     | '/import/'
+    | '/onboarding/'
     | '/settings/'
     | '/subscriptions/'
     | '/transactions/'
@@ -392,6 +402,7 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/categories'
     | '/import'
+    | '/onboarding'
     | '/settings'
     | '/subscriptions'
     | '/transactions'
@@ -429,6 +440,7 @@ export interface FileRouteTypes {
     | '/accounts/'
     | '/categories/'
     | '/import/'
+    | '/onboarding/'
     | '/settings/'
     | '/subscriptions/'
     | '/transactions/'
@@ -467,6 +479,7 @@ export interface RootRouteChildren {
   AccountsIndexRoute: typeof AccountsIndexRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
   ImportIndexRoute: typeof ImportIndexRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   SubscriptionsIndexRoute: typeof SubscriptionsIndexRoute
   TransactionsIndexRoute: typeof TransactionsIndexRoute
@@ -551,6 +564,13 @@ declare module '@tanstack/react-router' {
       path: '/import'
       fullPath: '/import/'
       preLoaderRoute: typeof ImportIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/': {
@@ -814,6 +834,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountsIndexRoute: AccountsIndexRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
   ImportIndexRoute: ImportIndexRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   SubscriptionsIndexRoute: SubscriptionsIndexRoute,
   TransactionsIndexRoute: TransactionsIndexRoute,

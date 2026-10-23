@@ -1,7 +1,7 @@
 "use client";
 
+import { Link } from "@tanstack/react-router";
 import { Check } from "lucide-react";
-import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 import {
   ONBOARDING_STEPS,
@@ -87,7 +87,7 @@ export function OnboardingStepper({
                 </ul>
               ) : null}
               <Link
-                href={step.manageHref}
+                to={step.manageHref}
                 className={cn(
                   buttonVariants({ variant: "link", size: "xs" }),
                   "h-auto self-start px-0 text-muted-foreground",

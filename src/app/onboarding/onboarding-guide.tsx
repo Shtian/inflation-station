@@ -1,7 +1,7 @@
 "use client";
 
+import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
-import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { resolveCurrentStep } from "@/lib/onboarding/progress";
 import { OnboardingChat } from "./onboarding-chat";
@@ -37,7 +37,7 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
             </p>
             <div className="flex flex-wrap gap-2">
               <Link
-                href="/import"
+                to="/import"
                 className={buttonVariants({
                   variant: isDone ? "default" : "outline",
                   size: "sm",
@@ -47,7 +47,7 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
                 <ArrowRight data-icon="inline-end" />
               </Link>
               <Link
-                href="/"
+                to="/"
                 className={buttonVariants({ variant: "ghost", size: "sm" })}
               >
                 Gå til oversikten

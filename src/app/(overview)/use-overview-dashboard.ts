@@ -62,8 +62,7 @@ export function useOverviewDashboard(): UseOverviewDashboardResult {
     }
 
     if (body.accounts.length === 0) {
-      // `href` until /onboarding is a Start route; the typed `to` rejects it.
-      void navigate({ href: "/onboarding", replace: true });
+      void navigate({ to: "/onboarding", replace: true });
       return;
     }
 
