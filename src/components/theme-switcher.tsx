@@ -72,8 +72,8 @@ export function ThemeSwitcher() {
       <PopoverTrigger
         render={
           <Button variant="ghost" size="icon">
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
             <span className="sr-only">Bytt tema</span>
           </Button>
         }
@@ -85,14 +85,14 @@ export function ThemeSwitcher() {
         className="w-80 gap-4 p-3"
       >
         <fieldset>
-          <legend className="mb-2 font-medium text-muted-foreground text-xs">
+          <legend className="mb-2 text-xs font-medium text-muted-foreground">
             Modus
           </legend>
           <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
             {MODES.map(({ id, label, Icon }) => (
               <label
                 key={id}
-                className="flex h-7 cursor-pointer items-center justify-center gap-1.5 rounded-md font-medium text-muted-foreground text-xs transition-colors hover:text-foreground has-checked:bg-background has-checked:text-foreground has-checked:shadow-sm has-focus-visible:ring-2 has-focus-visible:ring-ring/60"
+                className="flex h-7 cursor-pointer items-center justify-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground transition-colors hover:text-foreground has-checked:bg-background has-checked:text-foreground has-checked:shadow-sm has-focus-visible:ring-2 has-focus-visible:ring-ring/60"
               >
                 <input
                   type="radio"
@@ -109,7 +109,7 @@ export function ThemeSwitcher() {
           </div>
         </fieldset>
         <fieldset>
-          <legend className="mb-2 font-medium text-muted-foreground text-xs">
+          <legend className="mb-2 text-xs font-medium text-muted-foreground">
             Palett
           </legend>
           <div className="grid grid-cols-2 gap-3">
@@ -137,7 +137,7 @@ export function ThemeSwitcher() {
                   >
                     <PalettePreview id={id} />
                   </div>
-                  <span className="flex items-center justify-between px-0.5 font-medium text-xs">
+                  <span className="flex items-center justify-between px-0.5 text-xs font-medium">
                     {label}
                     {checked ? (
                       <Check aria-hidden className="size-3.5" />

@@ -67,18 +67,21 @@ describe("createAssistantQueries", () => {
       ["2026-09-01", 150.3, 2],
       ["2026-09-30", 0.3, 1],
       ["2026-10-01", 999, 1],
-    ])("buckets bookings on %s by local calendar day", async (day, totalSpendNok, transactionCount) => {
-      const summary = await queries.summarizeSpending({
-        from: day,
-        to: day,
-        groupBy: "category",
-      });
+    ])(
+      "buckets bookings on %s by local calendar day",
+      async (day, totalSpendNok, transactionCount) => {
+        const summary = await queries.summarizeSpending({
+          from: day,
+          to: day,
+          groupBy: "category",
+        });
 
-      expect({
-        totalSpendNok: summary.totalSpendNok,
-        transactionCount: summary.transactionCount,
-      }).toEqual({ totalSpendNok, transactionCount });
-    });
+        expect({
+          totalSpendNok: summary.totalSpendNok,
+          transactionCount: summary.transactionCount,
+        }).toEqual({ totalSpendNok, transactionCount });
+      },
+    );
 
     it("groups by normalized merchant with blank merchants as unknown", async () => {
       const summary = await queries.summarizeSpending({

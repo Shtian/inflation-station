@@ -64,7 +64,7 @@ function NavLink({ href, label, Icon }: NavItem) {
           <Link
             to={href}
             aria-current={isActive(pathname, href) ? "page" : undefined}
-            className="flex h-8 items-center gap-3 rounded-lg px-2 font-medium text-muted-foreground text-sm outline-none transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
+            className="flex h-8 items-center gap-3 rounded-lg px-2 text-sm font-medium text-muted-foreground transition-colors outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=page]:bg-sidebar-accent aria-[current=page]:text-sidebar-accent-foreground"
           />
         }
       >
@@ -89,12 +89,12 @@ function NavLink({ href, label, Icon }: NavItem) {
 /** Start copy of `@/components/app-sidebar`. */
 export function AppSidebar() {
   return (
-    <aside className="sticky top-0 flex h-svh w-14 shrink-0 flex-col gap-4 overflow-hidden border-sidebar-border border-r bg-sidebar px-3 py-3 text-sidebar-foreground transition-[width] motion-reduce:transition-none md:in-data-[sidebar=expanded]:w-56">
+    <aside className="sticky top-0 flex h-svh w-14 shrink-0 flex-col gap-4 overflow-hidden border-r border-sidebar-border bg-sidebar px-3 py-3 text-sidebar-foreground transition-[width] motion-reduce:transition-none md:in-data-[sidebar=expanded]:w-56">
       <div className="flex items-center gap-2">
         <SidebarToggle />
         <Link
           to="/"
-          className="hidden whitespace-nowrap font-semibold text-brand text-sm tracking-tight md:in-data-[sidebar=expanded]:inline"
+          className="hidden text-sm font-semibold tracking-tight whitespace-nowrap text-brand md:in-data-[sidebar=expanded]:inline"
         >
           Inflation Station
         </Link>

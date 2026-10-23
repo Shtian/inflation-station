@@ -35,9 +35,9 @@ export function AccountStateTrendCard({
   return (
     <div className="space-y-3">
       <Separator />
-      <h3 className="font-semibold text-foreground text-sm">Kontoutvikling</h3>
+      <h3 className="text-sm font-semibold text-foreground">Kontoutvikling</h3>
       {!isLoading && (!accountTrend || accountTrend.length === 0) ? (
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Ingen utviklingsdata for valgte filtre.
         </p>
       ) : null}
@@ -51,10 +51,10 @@ export function AccountStateTrendCard({
                 className="rounded-md border border-border/70 bg-muted/20 p-3"
               >
                 <div className="flex items-center justify-between">
-                  <p className="font-medium text-foreground text-sm">
+                  <p className="text-sm font-medium text-foreground">
                     {series.accountName}
                   </p>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-sm text-muted-foreground">
                     {latest ? formatNok(latest.cumulativeNok) : "-"}
                   </p>
                 </div>

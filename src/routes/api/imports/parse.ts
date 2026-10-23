@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { CsvParserResult } from "@/lib/import/csv-parser";
 import {
   type ColumnMapping,
   type ColumnMappingGuess,
@@ -17,7 +18,6 @@ import {
   parseMappedCsv,
   readCsvTable,
 } from "@/lib/import/csv/parse-mapped-csv";
-import type { CsvParserResult } from "@/lib/import/csv-parser";
 import {
   planCleanupChunks,
   toCleanupCandidates,

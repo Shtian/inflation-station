@@ -105,7 +105,7 @@ export function TripChecklist({
         <TableCell>
           <div className="truncate">{candidate.merchant}</div>
           {otherTrip ? (
-            <div className="truncate text-muted-foreground text-xs">
+            <div className="truncate text-xs text-muted-foreground">
               Tilhører «{otherTrip.name}»
             </div>
           ) : null}
@@ -165,8 +165,8 @@ export function TripChecklist({
             {recurring.length > 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={5} className="pt-4">
-                  <div className="font-medium text-sm">Faste utgifter</div>
-                  <div className="text-muted-foreground text-xs">
+                  <div className="text-sm font-medium">Faste utgifter</div>
+                  <div className="text-xs text-muted-foreground">
                     Faste trekk betales vanligvis enten du reiser eller ikke.
                   </div>
                 </TableCell>
@@ -212,7 +212,7 @@ export function TripChecklist({
         <div className="flex flex-wrap items-center gap-3">
           <p
             aria-live="polite"
-            className="flex gap-2 text-muted-foreground text-sm tabular-nums"
+            className="flex gap-2 text-sm text-muted-foreground tabular-nums"
           >
             <span>
               {describeSelection(
@@ -230,7 +230,7 @@ export function TripChecklist({
         </div>
       </div>
       {atLimit ? (
-        <p aria-live="polite" className="text-muted-foreground text-sm">
+        <p aria-live="polite" className="text-sm text-muted-foreground">
           {TRIP_SELECTION_LIMIT_MESSAGE}
         </p>
       ) : null}

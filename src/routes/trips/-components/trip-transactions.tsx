@@ -53,7 +53,7 @@ export function TripTransactions({
               <TableCell>
                 <div className="truncate">{transaction.merchant}</div>
                 {isTransfer(transaction) ? (
-                  <div className="truncate text-muted-foreground text-xs">
+                  <div className="truncate text-xs text-muted-foreground">
                     Ikke med i totalen
                   </div>
                 ) : null}

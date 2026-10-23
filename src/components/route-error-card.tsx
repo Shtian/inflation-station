@@ -23,8 +23,8 @@ export function RouteErrorCard({
             aria-hidden
           />
           <div className="space-y-1">
-            <h1 className="font-semibold text-base text-foreground">{title}</h1>
-            <p className="text-muted-foreground text-sm">{message}</p>
+            <h1 className="text-base font-semibold text-foreground">{title}</h1>
+            <p className="text-sm text-muted-foreground">{message}</p>
           </div>
         </div>
         <div className="mt-4">

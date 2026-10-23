@@ -129,7 +129,7 @@ export function AddTransactionDialog({
                   disabled={addSaving}
                 />
                 {isFutureDate(addForm.bookingDate) ? (
-                  <p className="text-warning text-xs">
+                  <p className="text-xs text-warning">
                     Denne datoen er frem i tid.
                   </p>
                 ) : null}
@@ -244,7 +244,7 @@ export function AddTransactionDialog({
             {addError ? (
               <p
                 role="alert"
-                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+                className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
               >
                 {addError}
               </p>

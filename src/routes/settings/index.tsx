@@ -17,10 +17,10 @@ function SettingsPage() {
   return (
     <main className="mx-auto w-full max-w-3xl space-y-8 px-5 py-8 md:px-10">
       <div className="space-y-1">
-        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Innstillinger
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Velg modeller og instruksjoner for AI-funksjonene i appen.
         </p>
       </div>

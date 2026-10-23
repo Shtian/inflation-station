@@ -144,13 +144,13 @@ export function ImportReviewPhase({
               className="h-6 w-6 shrink-0 animate-spin text-muted-foreground"
               aria-hidden="true"
             />
-            <h2 className="font-semibold text-foreground text-xl tracking-tight">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Forhåndsvisning av import
             </h2>
           </div>
         </div>
 
-        <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-muted-foreground text-sm">
+        <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-sm text-muted-foreground">
           <div>
             <span>Importerer til: </span>
             <span className="font-semibold text-foreground">
@@ -162,7 +162,7 @@ export function ImportReviewPhase({
         </div>
 
         <div className="space-y-2">
-          <p className="text-muted-foreground text-xs">
+          <p className="text-xs text-muted-foreground">
             Gjør klar innleste rader for gjennomgang.
           </p>
           <ReviewTableSkeleton />
@@ -183,7 +183,7 @@ export function ImportReviewPhase({
             className="h-6 w-6 shrink-0 text-success"
             aria-hidden="true"
           />
-          <h2 className="font-semibold text-foreground text-xl tracking-tight">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
             Forhåndsvisning av import
           </h2>
         </div>
@@ -222,7 +222,7 @@ export function ImportReviewPhase({
         </div>
       </div>
 
-      <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-muted-foreground text-sm">
+      <div className="flex flex-col gap-x-1.5 gap-y-1 border-b pb-4 text-sm text-muted-foreground">
         {parseResult.detection ? (
           <div>
             <span>Gjenkjent utsteder: </span>
@@ -262,14 +262,14 @@ export function ImportReviewPhase({
       {parseResult.review ? (
         <div className="grid grid-cols-3 divide-x overflow-hidden rounded-lg border">
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-muted-foreground text-sm">Rader totalt</span>
-            <span className="font-bold font-mono text-sm">
+            <span className="text-sm text-muted-foreground">Rader totalt</span>
+            <span className="font-mono text-sm font-bold">
               {reviewRows.length}
             </span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-muted-foreground text-sm">Inn</span>
-            <span className="font-bold font-mono text-sm text-success">
+            <span className="text-sm text-muted-foreground">Inn</span>
+            <span className="font-mono text-sm font-bold text-success">
               +
               {formatNok(
                 reviewRows.reduce(
@@ -280,8 +280,8 @@ export function ImportReviewPhase({
             </span>
           </div>
           <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-muted-foreground text-sm">Ut</span>
-            <span className="font-bold font-mono text-destructive text-sm">
+            <span className="text-sm text-muted-foreground">Ut</span>
+            <span className="font-mono text-sm font-bold text-destructive">
               {formatNok(
                 reviewRows.reduce(
                   (sum, row) => (row.amountNok < 0 ? sum + row.amountNok : sum),
@@ -296,7 +296,7 @@ export function ImportReviewPhase({
       {accountError ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {accountError}
         </p>
@@ -304,7 +304,7 @@ export function ImportReviewPhase({
       {importError ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {importError}
         </p>
@@ -312,7 +312,7 @@ export function ImportReviewPhase({
       {categoryError ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {categoryError}
         </p>
@@ -320,7 +320,7 @@ export function ImportReviewPhase({
 
       {parseResult.errors.length > 0 ? (
         <div className="rounded-md border border-warning/20 bg-warning/10 px-3 py-2">
-          <p className="mb-1 font-semibold text-warning text-xs uppercase tracking-wide">
+          <p className="mb-1 text-xs font-semibold tracking-wide text-warning uppercase">
             Valideringsfeil
           </p>
           <ul className="space-y-1 text-sm text-warning">
@@ -357,7 +357,7 @@ export function ImportReviewPhase({
             </p>
           ) : null}
           {parseResult.review.potentialDuplicates > 0 ? (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               {parseResult.review.potentialDuplicates}{" "}
               {parseResult.review.potentialDuplicates !== 1
                 ? "mulige duplikater"
@@ -366,12 +366,12 @@ export function ImportReviewPhase({
               finnes.
             </p>
           ) : (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               Meldingen bruker AI-ryddet tekst som standard når den finnes.
               Rader uten forslag beholder den opprinnelige meldingen.
             </p>
           )}
-          <p className="flex flex-wrap items-center gap-2 text-muted-foreground text-xs">
+          <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span>
               AI-rydding: {cleanupStatus.cleaned} av {cleanupStatus.total}{" "}
               rader. {cleanupStatus.pending} kjører fortsatt.
@@ -413,7 +413,7 @@ export function ImportReviewPhase({
       {submitError ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {submitError}
         </p>

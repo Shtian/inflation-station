@@ -109,12 +109,15 @@ describe("trip mutations", () => {
       () =>
         setTripMembershipMutation({ tripId: "gone", add: ["x"], remove: [] }),
     ],
-  ])("answers TRIP_NOT_FOUND to a %s of a missing trip", async (_label, run) => {
-    expect(await run()).toEqual({
-      ok: false,
-      error: { code: "TRIP_NOT_FOUND", message: "Fant ikke turen." },
-    });
-  });
+  ])(
+    "answers TRIP_NOT_FOUND to a %s of a missing trip",
+    async (_label, run) => {
+      expect(await run()).toEqual({
+        ok: false,
+        error: { code: "TRIP_NOT_FOUND", message: "Fant ikke turen." },
+      });
+    },
+  );
 
   it("tags and untags transactions and reports the counts", async () => {
     const id = await createLisboa();

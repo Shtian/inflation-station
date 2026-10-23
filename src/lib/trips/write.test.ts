@@ -73,20 +73,20 @@ describe("trip schemas", () => {
     ).toEqual({ endDate: ["Datoen må ha formatet ÅÅÅÅ-MM-DD."] });
   });
 
-  it.each([
-    "add",
-    "remove",
-  ] as const)("accepts 500 %s ids and rejects 501", (field) => {
-    const ids = Array.from({ length: 500 }, (_, index) => `row-${index}`);
-    const change = { tripId: "t", add: [], remove: [], [field]: ids };
-    expect(tripMembershipChangeSchema.parse(change)[field]).toEqual(ids);
-    expect(
-      tripMembershipChangeSchema.safeParse({
-        ...change,
-        [field]: [...ids, "row-500"],
-      }).success,
-    ).toBe(false);
-  });
+  it.each(["add", "remove"] as const)(
+    "accepts 500 %s ids and rejects 501",
+    (field) => {
+      const ids = Array.from({ length: 500 }, (_, index) => `row-${index}`);
+      const change = { tripId: "t", add: [], remove: [], [field]: ids };
+      expect(tripMembershipChangeSchema.parse(change)[field]).toEqual(ids);
+      expect(
+        tripMembershipChangeSchema.safeParse({
+          ...change,
+          [field]: [...ids, "row-500"],
+        }).success,
+      ).toBe(false);
+    },
+  );
 
   it("dedupes ids and rejects a change that adds and removes the same row", () => {
     expect(

@@ -154,18 +154,18 @@ export function CategoryShareMap({
           <>
             <span>
               {labels.name ? (
-                <span className="block font-semibold text-sm leading-tight">
+                <span className="block text-sm leading-tight font-semibold">
                   {name}
                 </span>
               ) : null}
               {labels.amount ? (
-                <span className="block font-medium text-xs tabular-nums opacity-80">
+                <span className="block text-xs font-medium tabular-nums opacity-80">
                   {formatWholeNok(spend)}
                 </span>
               ) : null}
             </span>
             {labels.percent ? (
-              <span className="font-semibold text-xl tabular-nums leading-none tracking-tight">
+              <span className="text-xl leading-none font-semibold tracking-tight tabular-nums">
                 {formatPercent(total > 0 ? spend / total : 0)}
               </span>
             ) : null}
@@ -230,7 +230,7 @@ function ShareMapTooltip({
   return (
     <div
       role="tooltip"
-      className="pointer-events-none fixed z-50 grid min-w-40 gap-1 rounded-lg border border-border/50 bg-popover px-2.5 py-1.5 text-popover-foreground text-xs shadow-xl"
+      className="pointer-events-none fixed z-50 grid min-w-40 gap-1 rounded-lg border border-border/50 bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-xl"
       style={{ top: anchor.top, [anchor.side]: anchor.inset }}
     >
       <div className="flex justify-between gap-4 font-semibold">

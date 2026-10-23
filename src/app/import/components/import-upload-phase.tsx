@@ -96,17 +96,17 @@ export function ImportUploadPhase({
     return (
       <div className="flex flex-col items-center">
         <FadeIn className="mb-6 space-y-1 text-center">
-          <p className="text-foreground text-sm">
+          <p className="text-sm text-foreground">
             Hvilken konto gjelder dette?
           </p>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-xs text-muted-foreground">
             Velg kontoen disse transaksjonene hører til.
           </p>
         </FadeIn>
 
         {!hasActiveAccounts ? (
           <FadeIn delay={60}>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm text-muted-foreground">
               Ingen aktive kontoer tilgjengelig.
             </p>
           </FadeIn>
@@ -118,15 +118,15 @@ export function ImportUploadPhase({
                   <button
                     type="button"
                     onClick={() => setSelectedAccountId(account.id)}
-                    className="group flex w-full cursor-pointer flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3.5 text-left transition-colors hover:border-muted-foreground/40 hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group flex w-full cursor-pointer flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3.5 text-left transition-colors hover:border-muted-foreground/40 hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                   >
                     <Landmark className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
                     <div>
-                      <p className="font-medium text-foreground text-sm leading-tight">
+                      <p className="text-sm leading-tight font-medium text-foreground">
                         {account.name}
                       </p>
                       {account.institution ? (
-                        <p className="mt-0.5 text-muted-foreground text-xs">
+                        <p className="mt-0.5 text-xs text-muted-foreground">
                           {account.institution}
                         </p>
                       ) : null}
@@ -142,7 +142,7 @@ export function ImportUploadPhase({
           <FadeIn delay={120} className="mt-4 w-full max-w-xl">
             <p
               role="alert"
-              className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+              className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
             >
               {accountError}
             </p>
@@ -163,7 +163,7 @@ export function ImportUploadPhase({
               setSelectedAccountId("");
               clearSelectedFile();
             }}
-            className="flex items-center gap-1.5 text-muted-foreground text-xs transition-colors hover:text-foreground"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-3 w-3" />
             Tilbake til kontoer
@@ -174,11 +174,11 @@ export function ImportUploadPhase({
           <div className="flex items-center gap-3 rounded-lg border border-primary/50 bg-card px-4 py-3">
             <Landmark className="h-4 w-4 shrink-0 text-muted-foreground" />
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-foreground text-sm">
+              <p className="text-sm font-medium text-foreground">
                 {selectedAccount.name}
               </p>
               {selectedAccount.institution ? (
-                <p className="text-muted-foreground text-xs">
+                <p className="text-xs text-muted-foreground">
                   {selectedAccount.institution}
                 </p>
               ) : null}
@@ -215,7 +215,7 @@ export function ImportUploadPhase({
                 >
                   {selectedFile.name}
                 </p>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-xs text-muted-foreground">
                   {formatFileSize(selectedFile.size)}
                 </p>
               </div>
@@ -253,10 +253,10 @@ export function ImportUploadPhase({
             >
               <UploadCloud className="h-5 w-5 text-muted-foreground" />
               <div className="space-y-0.5">
-                <p className="text-foreground text-sm">
+                <p className="text-sm text-foreground">
                   Slipp kontoutskriften her
                 </p>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-xs text-muted-foreground">
                   eller klikk for å velge fil · .csv eller .pdf opptil 10 MB
                 </p>
               </div>
@@ -266,7 +266,7 @@ export function ImportUploadPhase({
           {importError ? (
             <p
               role="alert"
-              className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+              className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
             >
               {importError}
             </p>
@@ -274,7 +274,7 @@ export function ImportUploadPhase({
           {categoryError ? (
             <p
               role="alert"
-              className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+              className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
             >
               {categoryError}
             </p>

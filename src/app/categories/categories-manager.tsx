@@ -305,16 +305,16 @@ export function CategoriesManager() {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Kategorier
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-muted-foreground">
           Administrer kategorier og faste regler som brukes ved import og
           gjennomgang.
         </p>
       </div>
 
-      <p className="rounded-md border border-brand/20 bg-brand/5 px-3 py-2 text-muted-foreground text-sm">
+      <p className="rounded-md border border-brand/20 bg-brand/5 px-3 py-2 text-sm text-muted-foreground">
         Transaksjoner i overføringskategorier holdes utenfor analyser av forbruk
         og inntekt.
       </p>
@@ -322,7 +322,7 @@ export function CategoriesManager() {
       {error ? (
         <p
           role="alert"
-          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+          className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           {error}
         </p>

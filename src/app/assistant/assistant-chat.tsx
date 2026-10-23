@@ -316,12 +316,12 @@ function AssistantConversation({
             // table inside; flatten it to plain rows on the chat surface.
             "[&_[data-streamdown=table-wrapper]]:gap-0 [&_[data-streamdown=table-wrapper]]:rounded-none [&_[data-streamdown=table-wrapper]]:border-0 [&_[data-streamdown=table-wrapper]]:bg-transparent [&_[data-streamdown=table-wrapper]]:p-0",
             "[&_[data-streamdown=table-wrapper]>div:last-child]:rounded-none [&_[data-streamdown=table-wrapper]>div:last-child]:border-0 [&_[data-streamdown=table-wrapper]>div:last-child]:bg-transparent",
-            "[&_[data-streamdown=table-cell]]:pl-0 [&_[data-streamdown=table-cell]]:tabular-nums [&_[data-streamdown=table-header-cell]]:pl-0 [&_[data-streamdown=table-header-cell]]:font-medium [&_[data-streamdown=table-header-cell]]:text-muted-foreground [&_[data-streamdown=table-header-cell]]:text-xs [&_[data-streamdown=table-header]]:bg-transparent",
+            "[&_[data-streamdown=table-cell]]:pl-0 [&_[data-streamdown=table-cell]]:tabular-nums [&_[data-streamdown=table-header-cell]]:pl-0 [&_[data-streamdown=table-header-cell]]:text-xs [&_[data-streamdown=table-header-cell]]:font-medium [&_[data-streamdown=table-header-cell]]:text-muted-foreground [&_[data-streamdown=table-header]]:bg-transparent",
           )}
         >
           {messages.length === 0 ? (
             <ConversationEmptyState className="flex-1 items-start justify-end gap-3 p-0 text-left">
-              <p className="max-w-prose text-muted-foreground text-sm">
+              <p className="max-w-prose text-sm text-muted-foreground">
                 Spør om forbruket ditt, så svarer jeg med tall hentet fra
                 transaksjonene dine.
               </p>
@@ -331,7 +331,7 @@ function AssistantConversation({
                     key={suggestion}
                     suggestion={suggestion}
                     onClick={send}
-                    className="h-auto whitespace-normal py-1.5 text-left"
+                    className="h-auto py-1.5 text-left whitespace-normal"
                   />
                 ))}
               </div>
@@ -348,10 +348,10 @@ function AssistantConversation({
             ))
           )}
           {chatStatus ? (
-            <p className="text-muted-foreground text-xs">{chatStatus}</p>
+            <p className="text-xs text-muted-foreground">{chatStatus}</p>
           ) : null}
           {error ? (
-            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive text-xs">
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
               <span className="flex-1">{describeChatError(error)}</span>
               <Button
                 size="xs"
@@ -410,7 +410,7 @@ export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
 
   if (availability.status === "loading") {
     return (
-      <p className={cn(STATE_COLUMN, "text-muted-foreground text-sm")}>
+      <p className={cn(STATE_COLUMN, "text-sm text-muted-foreground")}>
         Sjekker om chatten er tilgjengelig…
       </p>
     );
@@ -421,7 +421,7 @@ export function AssistantChat({ threadId, initialMessages }: ThreadProps) {
       <div
         className={cn(
           STATE_COLUMN,
-          "flex items-center gap-2 text-destructive text-sm",
+          "flex items-center gap-2 text-sm text-destructive",
         )}
       >
         <span>Kunne ikke sjekke om chatten er tilgjengelig.</span>

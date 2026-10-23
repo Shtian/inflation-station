@@ -122,25 +122,28 @@ describe("PATCH /api/transactions/[transactionId]", () => {
   it.each([
     ["P2025", 404, "TRANSACTION_NOT_FOUND", "Fant ikke transaksjonen."],
     ["P2003", 404, "CATEGORY_NOT_FOUND", "Fant ikke den valgte kategorien."],
-  ])("maps a rejected update with code %s to %i %s", async (code, status, error, message) => {
-    parseTransactionUpdatePayloadMock.mockReturnValue({
-      success: true,
-      data: { merchant: "Store" },
-    });
-    updateTransactionMock.mockRejectedValue({ code });
+  ])(
+    "maps a rejected update with code %s to %i %s",
+    async (code, status, error, message) => {
+      parseTransactionUpdatePayloadMock.mockReturnValue({
+        success: true,
+        data: { merchant: "Store" },
+      });
+      updateTransactionMock.mockRejectedValue({ code });
 
-    const response = await PATCH(
-      new Request("http://localhost", {
-        method: "PATCH",
-        body: JSON.stringify({ merchant: "Store" }),
-        headers: { "Content-Type": "application/json" },
-      }),
-      { transactionId: "tx-1" },
-    );
+      const response = await PATCH(
+        new Request("http://localhost", {
+          method: "PATCH",
+          body: JSON.stringify({ merchant: "Store" }),
+          headers: { "Content-Type": "application/json" },
+        }),
+        { transactionId: "tx-1" },
+      );
 
-    expect(response.status).toBe(status);
-    await expect(response.json()).resolves.toEqual({ error, message });
-  });
+      expect(response.status).toBe(status);
+      await expect(response.json()).resolves.toEqual({ error, message });
+    },
+  );
 
   it("maps a foreign-key failure on a missing trip to 404 TRIP_NOT_FOUND", async () => {
     parseTransactionUpdatePayloadMock.mockReturnValue({

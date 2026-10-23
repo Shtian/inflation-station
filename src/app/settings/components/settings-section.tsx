@@ -15,7 +15,7 @@ export function SettingsSection({
     <section aria-labelledby={headingId} className="space-y-2">
       <h2
         id={headingId}
-        className="px-1 font-medium text-muted-foreground text-sm"
+        className="px-1 text-sm font-medium text-muted-foreground"
       >
         {title}
       </h2>
@@ -50,7 +50,7 @@ export function SettingsRow({
     >
       <div className="min-w-0 space-y-1">
         <Label htmlFor={htmlFor}>{label}</Label>
-        <p className="text-muted-foreground text-xs">{description}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <div
         className={cn("flex flex-col gap-1.5", inline && "shrink-0 sm:w-64")}
@@ -62,5 +62,5 @@ export function SettingsRow({
 }
 
 export function SettingsStatus({ children }: { children: ReactNode }) {
-  return <p className="px-4 py-3 text-muted-foreground text-sm">{children}</p>;
+  return <p className="px-4 py-3 text-sm text-muted-foreground">{children}</p>;
 }

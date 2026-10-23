@@ -42,7 +42,7 @@ export function OnboardingStepper({
             <span
               aria-hidden
               className={cn(
-                "flex size-7 shrink-0 items-center justify-center rounded-full font-semibold text-xs",
+                "flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
                 status === "done" && "bg-brand text-brand-foreground",
                 status === "current" &&
                   "bg-brand/15 text-brand ring-2 ring-brand",
@@ -54,7 +54,7 @@ export function OnboardingStepper({
             </span>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <div className="flex flex-wrap items-baseline gap-x-2">
-                <h2 className="font-medium text-foreground text-sm">
+                <h2 className="text-sm font-medium text-foreground">
                   {step.title}
                 </h2>
                 <span
@@ -68,7 +68,7 @@ export function OnboardingStepper({
                   {status ? STATUS_LABELS[status] : "Sjekker…"}
                 </span>
               </div>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-muted-foreground">
                 {step.description}
               </p>
               {items.length > 0 ? (
@@ -79,7 +79,7 @@ export function OnboardingStepper({
                   {items.map((item) => (
                     <li
                       key={item}
-                      className="rounded-md bg-muted px-1.5 py-0.5 text-foreground text-xs"
+                      className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-foreground"
                     >
                       {item}
                     </li>

@@ -174,22 +174,25 @@ describe("toTripCandidate", () => {
     ["untagged transfer", transfer, -100, null, false],
     ["untagged uncategorized spend", null, -100, null, true],
     ["untagged uncategorized refund", null, 100, null, false],
-  ] as const)("suggesting, %s -> checked: %s", (_label, category, amountNok, trip, expected) => {
-    const candidate = toTripCandidate(
-      "lisboa",
-      row(
-        "x",
-        "2026-05-02",
-        amountNok,
-        category,
-        trip && { id: trip.id, name: trip.name },
-      ),
-      "suggest",
-      noRecurring,
-    );
+  ] as const)(
+    "suggesting, %s -> checked: %s",
+    (_label, category, amountNok, trip, expected) => {
+      const candidate = toTripCandidate(
+        "lisboa",
+        row(
+          "x",
+          "2026-05-02",
+          amountNok,
+          category,
+          trip && { id: trip.id, name: trip.name },
+        ),
+        "suggest",
+        noRecurring,
+      );
 
-    expect(candidate.defaultChecked).toBe(expected);
-  });
+      expect(candidate.defaultChecked).toBe(expected);
+    },
+  );
 
   it("shows stored membership once the trip is curated, so left-out spending stays out", () => {
     const candidates = [

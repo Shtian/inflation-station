@@ -27,12 +27,12 @@ import {
   formatMonthHeading,
   formatMonthStartLabel,
 } from "../monthly-review-manager.utils";
+import { MonthInReviewSkeleton } from "./month-in-review-skeleton";
 import {
   type GenerateMode,
   MONTH_IN_REVIEW_SLIDES,
 } from "./month-in-review.slides";
 import { DECK_WORLDS, type DeckWorld } from "./month-in-review.worlds";
-import { MonthInReviewSkeleton } from "./month-in-review-skeleton";
 import "./month-in-review.css";
 
 const reviewResponseSchema = z.object({
@@ -221,7 +221,7 @@ export function MonthInReview({
         className="mir-deck fixed inset-0 z-50 flex flex-col items-start justify-center gap-5 px-6 md:px-12"
         style={worldStyle(DECK_WORLDS.base)}
       >
-        <h1 className="font-extrabold text-3xl text-[var(--mir-accent)] md:text-5xl">
+        <h1 className="text-3xl font-extrabold text-[var(--mir-accent)] md:text-5xl">
           {monthHeading}
         </h1>
         <p role="alert" className="text-lg">
@@ -283,7 +283,7 @@ export function MonthInReview({
             <X aria-hidden className="size-6" />
           </Link>
           <h1
-            className={`mir-expanded font-bold text-sm tracking-[0.02em] ${
+            className={`mir-expanded text-sm font-bold tracking-[0.02em] ${
               activeSlide.id === "intro" ? "sr-only" : ""
             }`}
           >

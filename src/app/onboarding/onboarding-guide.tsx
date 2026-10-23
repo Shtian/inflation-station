@@ -19,7 +19,7 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
       <aside className="flex flex-col gap-6">
         <OnboardingStepper snapshot={snapshot} />
         {state.status === "error" ? (
-          <div className="flex items-center gap-2 text-destructive text-xs">
+          <div className="flex items-center gap-2 text-xs text-destructive">
             <span className="flex-1">
               Kunne ikke laste inn fremdriften i oppsettet.
             </span>
@@ -30,7 +30,7 @@ export function OnboardingGuide({ chatEnabled }: { chatEnabled: boolean }) {
         ) : null}
         {canMoveOn ? (
           <div className="flex flex-col gap-2">
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               {isDone
                 ? "Alt er klart. Importer en kontoutskrift for å se forbruket ditt."
                 : "Du kan fullføre de gjenstående stegene senere."}

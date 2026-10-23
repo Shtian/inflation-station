@@ -58,7 +58,7 @@ function ErrorMessage({ message }: { message: string | null }) {
   return (
     <p
       role="alert"
-      className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-destructive text-sm"
+      className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
       {message}
     </p>
@@ -293,7 +293,7 @@ export function AssistantThreadList({
   return (
     <nav aria-label="Samtaler" className="flex min-h-0 flex-1 flex-col">
       {threads.length === 0 ? (
-        <p className="px-4 text-muted-foreground text-xs">
+        <p className="px-4 text-xs text-muted-foreground">
           Ingen lagrede samtaler ennå
         </p>
       ) : (
@@ -318,7 +318,7 @@ export function AssistantThreadList({
                     <span className="min-w-0 flex-1 truncate">
                       {thread.title}
                     </span>
-                    <span className="shrink-0 text-muted-foreground text-xs tabular-nums group-focus-within:opacity-0 group-hover:opacity-0">
+                    <span className="shrink-0 text-xs text-muted-foreground tabular-nums group-focus-within:opacity-0 group-hover:opacity-0">
                       {thread.updatedAtLabel}
                     </span>
                   </Link>
@@ -350,7 +350,7 @@ export function AssistantThreadHeader({
     <header className="flex h-14 shrink-0 items-center gap-1 px-6">
       <h2
         className={cn(
-          "min-w-0 flex-1 truncate font-medium text-sm",
+          "min-w-0 flex-1 truncate text-sm font-medium",
           !thread && "text-muted-foreground",
         )}
       >

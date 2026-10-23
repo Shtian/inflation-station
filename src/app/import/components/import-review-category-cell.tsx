@@ -104,7 +104,7 @@ export function ImportReviewCategoryCell({
             <TooltipTrigger
               type="button"
               aria-label={sourceIndicator.label}
-              className="inline-flex rounded-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex rounded-sm text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               <sourceIndicator.Icon className="h-4 w-4" aria-hidden="true" />
             </TooltipTrigger>

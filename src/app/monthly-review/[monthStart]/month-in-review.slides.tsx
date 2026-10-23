@@ -102,7 +102,7 @@ function Headline({
 }) {
   return (
     <h2
-      className={`text-balance font-extrabold text-[clamp(2rem,7vw,4rem)] text-[var(--mir-accent)] leading-[1.02] tracking-[-0.025em] ${className}`}
+      className={`text-[clamp(2rem,7vw,4rem)] leading-[1.02] font-extrabold tracking-[-0.025em] text-balance text-[var(--mir-accent)] ${className}`}
     >
       {children}
     </h2>
@@ -117,7 +117,7 @@ function Muted({
   className?: string;
 }) {
   return (
-    <p className={`text-[var(--mir-muted)] text-base md:text-lg ${className}`}>
+    <p className={`text-base text-[var(--mir-muted)] md:text-lg ${className}`}>
       {children}
     </p>
   );
@@ -146,7 +146,7 @@ function IntroSlide({ review }: SlideContext) {
 
   return (
     <div className="flex flex-col gap-8 md:gap-10">
-      <h2 className="mir-wipe-up font-black text-[var(--mir-accent)] leading-[0.92] tracking-[-0.02em]">
+      <h2 className="mir-wipe-up leading-[0.92] font-black tracking-[-0.02em] text-[var(--mir-accent)]">
         <span className="mir-expanded block text-[clamp(2.75rem,11.5vw,6rem)]">
           {monthName}
         </span>
@@ -154,7 +154,7 @@ function IntroSlide({ review }: SlideContext) {
           {year}
         </span>
       </h2>
-      <p className="max-w-[38ch] text-pretty text-xl leading-snug md:text-3xl">
+      <p className="max-w-[38ch] text-xl leading-snug text-pretty md:text-3xl">
         {introLine(review)}
       </p>
     </div>
@@ -203,10 +203,10 @@ function FlowBar({
 }) {
   return (
     <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-4 gap-y-1">
-      <dt className="font-semibold text-[var(--mir-muted)] text-sm uppercase tracking-[0.08em]">
+      <dt className="text-sm font-semibold tracking-[0.08em] text-[var(--mir-muted)] uppercase">
         {label}
       </dt>
-      <dd className="font-bold text-lg md:text-xl">{whole(amountNok)}</dd>
+      <dd className="text-lg font-bold md:text-xl">{whole(amountNok)}</dd>
       <div className="mir-track col-span-2 h-3 overflow-hidden rounded-full">
         <div
           className="mir-grow-x h-full rounded-full bg-[var(--mir-accent)]"
@@ -232,12 +232,12 @@ function NetSlide({ review }: SlideContext) {
           <span
             aria-hidden
             data-testid="net-result"
-            className="mir-condensed block font-black text-[clamp(4.5rem,24vw,6rem)] text-[var(--mir-accent)] leading-[0.9] tracking-[-0.02em]"
+            className="mir-condensed block text-[clamp(4.5rem,24vw,6rem)] leading-[0.9] font-black tracking-[-0.02em] text-[var(--mir-accent)]"
           >
             {signedNet(Math.round(shown))}
           </span>
         </h2>
-        <p className="text-pretty font-semibold text-xl md:text-2xl">
+        <p className="text-xl font-semibold text-pretty md:text-2xl">
           {savingsSentence(review)}
         </p>
       </div>
@@ -294,12 +294,12 @@ function CategoriesSlide({ review }: SlideContext) {
           const row = (
             <>
               <span className="flex items-baseline justify-between gap-4">
-                <span className="truncate font-bold text-lg md:text-xl">
+                <span className="truncate text-lg font-bold md:text-xl">
                   {category.categoryName}
                 </span>
                 <span className="flex shrink-0 items-baseline gap-3">
                   {delta ? (
-                    <span className="text-[var(--mir-muted)] text-sm">
+                    <span className="text-sm text-[var(--mir-muted)]">
                       {delta}
                     </span>
                   ) : null}
@@ -382,20 +382,20 @@ function BillsSlide({ review }: SlideContext) {
         {visible.map((bill, index) => (
           <li
             key={`${bill.merchant}-${index}`}
-            className="mir-tick flex items-baseline justify-between gap-4 border-[color-mix(in_oklab,var(--mir-fg)_22%,transparent)] border-b py-2.5 last:border-b-0"
+            className="mir-tick flex items-baseline justify-between gap-4 border-b border-[color-mix(in_oklab,var(--mir-fg)_22%,transparent)] py-2.5 last:border-b-0"
             style={{ animationDelay: `${index * 140}ms` }}
           >
             <span className="min-w-0">
-              <span className="block truncate font-bold text-lg">
+              <span className="block truncate text-lg font-bold">
                 {bill.merchant}
               </span>
               {bill.categoryName ? (
-                <span className="block truncate text-[var(--mir-muted)] text-sm">
+                <span className="block truncate text-sm text-[var(--mir-muted)]">
                   {bill.categoryName}
                 </span>
               ) : null}
             </span>
-            <span className="shrink-0 font-semibold text-lg">
+            <span className="shrink-0 text-lg font-semibold">
               {whole(bill.amountNok)}
             </span>
           </li>
@@ -420,10 +420,10 @@ function MerchantsSlide({ review }: SlideContext) {
     <div className="flex flex-col gap-7 md:gap-9">
       <h2 className="overflow-hidden pb-1">
         <span className="mir-rise block">
-          <span className="mir-condensed block break-words font-black text-[clamp(3.5rem,17vw,6rem)] text-[var(--mir-accent)] leading-[0.92] tracking-[-0.02em]">
+          <span className="mir-condensed block text-[clamp(3.5rem,17vw,6rem)] leading-[0.92] font-black tracking-[-0.02em] break-words text-[var(--mir-accent)]">
             {first.merchant}
           </span>
-          <span className="mt-2 block font-bold text-2xl md:text-3xl">
+          <span className="mt-2 block text-2xl font-bold md:text-3xl">
             {whole(first.spendNok)},{" "}
             {plural(first.transactionCount, "kjøp", "kjøp")}
           </span>
@@ -438,14 +438,14 @@ function MerchantsSlide({ review }: SlideContext) {
                 className="mir-rise flex items-baseline gap-3"
                 style={{ animationDelay: `${(index + 1) * 120}ms` }}
               >
-                <span className="font-black text-2xl text-[var(--mir-muted)]">
+                <span className="text-2xl font-black text-[var(--mir-muted)]">
                   {index + 2}
                 </span>
                 <span className="min-w-0">
-                  <span className="mir-condensed block truncate font-extrabold text-[clamp(2rem,8vw,3rem)] leading-none">
+                  <span className="mir-condensed block truncate text-[clamp(2rem,8vw,3rem)] leading-none font-extrabold">
                     {merchant.merchant}
                   </span>
-                  <span className="block font-semibold text-lg">
+                  <span className="block text-lg font-semibold">
                     {whole(merchant.spendNok)}
                   </span>
                 </span>
@@ -508,11 +508,11 @@ function MomentsSlide({ review }: SlideContext) {
       ) : null}
 
       <figure className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-3">
-        <p className="col-start-2 text-[var(--mir-muted)] text-sm">
+        <p className="col-start-2 text-sm text-[var(--mir-muted)]">
           Hverdagskjøp per dag
         </p>
         <div
-          className="flex h-36 flex-col justify-between text-right text-[var(--mir-muted)] text-sm tabular-nums leading-none md:h-44"
+          className="flex h-36 flex-col justify-between text-right text-sm leading-none text-[var(--mir-muted)] tabular-nums md:h-44"
           aria-hidden="true"
         >
           <span>{maxDayCount}</span>
@@ -541,12 +541,12 @@ function MomentsSlide({ review }: SlideContext) {
             );
           })}
         </div>
-        <div className="col-start-2 flex justify-between text-[var(--mir-muted)] text-sm">
+        <div className="col-start-2 flex justify-between text-sm text-[var(--mir-muted)]">
           <span>{firstDay ? Number(firstDay.date.slice(8)) : null}</span>
           <span>{lastDay ? Number(lastDay.date.slice(8)) : null}</span>
         </div>
         {busiestDay ? (
-          <figcaption className="col-span-2 text-pretty font-semibold text-lg md:text-xl">
+          <figcaption className="col-span-2 text-lg font-semibold text-pretty md:text-xl">
             Flest kjøp: {formatDayLong(busiestDay.bookingDate)},{" "}
             {plural(busiestDay.transactionCount, "kjøp", "kjøp")} for{" "}
             {whole(busiestDay.spendNok)}.
@@ -585,7 +585,7 @@ function RecapVoice({
 
   if (isGenerating || review.reviewState === "GENERATING") {
     return (
-      <output className="block text-[var(--mir-muted)] text-lg">
+      <output className="block text-lg text-[var(--mir-muted)]">
         Skriver oppsummeringen…
       </output>
     );
@@ -605,10 +605,10 @@ function RecapVoice({
   if (generated) {
     return (
       <div className="max-w-[60ch] space-y-3">
-        <p className="text-pretty font-semibold text-xl md:text-2xl">
+        <p className="text-xl font-semibold text-pretty md:text-2xl">
           {keepAmountsTogether(generated.headline)}
         </p>
-        <ul className="space-y-2 text-pretty text-lg leading-relaxed">
+        <ul className="space-y-2 text-lg leading-relaxed text-pretty">
           {generated.points.map((point) => (
             <li key={point}>{keepAmountsTogether(point)}</li>
           ))}
@@ -647,7 +647,7 @@ function FinaleSlide(context: SlideContext) {
           <h2 aria-label={`Netto ${signedNet(cashflow.netNok)}`}>
             <span
               aria-hidden
-              className="mir-condensed block font-black text-[clamp(4rem,20vw,6rem)] text-[var(--mir-accent)] leading-[0.9] tracking-[-0.02em]"
+              className="mir-condensed block text-[clamp(4rem,20vw,6rem)] leading-[0.9] font-black tracking-[-0.02em] text-[var(--mir-accent)]"
             >
               {signedNet(cashflow.netNok)}
             </span>

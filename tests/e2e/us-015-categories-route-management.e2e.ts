@@ -280,7 +280,9 @@ test("manages categories and category rules from /categories", async ({
     timeout: 15_000,
   });
 
-  await (await openEditDialog(page, "Commute"))
+  await (
+    await openEditDialog(page, "Commute")
+  )
     .getByLabel("Klassifiseringshint (anbefalt)")
     .fill("Recurring transport top-ups");
   await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();
@@ -455,7 +457,9 @@ test("flags categories without a classifier hint on /categories", async ({
     groceriesRow.getByText("Mangler hint", { exact: true }),
   ).toHaveCount(0);
 
-  await (await openEditDialog(page, "Food"))
+  await (
+    await openEditDialog(page, "Food")
+  )
     .getByLabel("Klassifiseringshint (anbefalt)")
     .fill("Restaurants and takeaway: Foodora, Wolt");
   await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();
@@ -472,7 +476,9 @@ test("flags categories without a classifier hint on /categories", async ({
     timeout: 15_000,
   });
 
-  await (await openEditDialog(page, "Food"))
+  await (
+    await openEditDialog(page, "Food")
+  )
     .getByLabel("Klassifiseringshint (anbefalt)")
     .fill("");
   await page.getByRole("dialog").getByRole("button", { name: "Lagre" }).click();

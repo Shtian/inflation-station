@@ -68,7 +68,7 @@ function TransactionsPage() {
   const trips = Route.useLoaderData();
 
   return (
-    <main className="mx-auto w-full full-width:max-w-none max-w-6xl px-5 py-8 md:px-10">
+    <main className="mx-auto w-full max-w-6xl px-5 py-8 md:px-10 full-width:max-w-none">
       <TransactionsManager trips={trips} />
     </main>
   );

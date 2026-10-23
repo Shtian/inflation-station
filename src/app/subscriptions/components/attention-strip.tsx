@@ -31,7 +31,7 @@ export function AttentionStrip({
     >
       <h2
         id="subscriptions-attention"
-        className="flex items-center gap-2 font-medium text-sm text-warning"
+        className="flex items-center gap-2 text-sm font-medium text-warning"
       >
         <TriangleAlert aria-hidden className="size-4" />
         Trenger oppmerksomhet

@@ -31,9 +31,9 @@ function AssistantPage() {
 
   return (
     <main className="flex h-svh min-h-0 flex-col lg:flex-row">
-      <aside className="flex max-h-56 shrink-0 flex-col border-border border-b lg:max-h-none lg:w-72 lg:border-r lg:border-b-0">
+      <aside className="flex max-h-56 shrink-0 flex-col border-b border-border lg:max-h-none lg:w-72 lg:border-r lg:border-b-0">
         <div className="flex h-14 shrink-0 items-center gap-2 pr-2 pl-4">
-          <h1 className="flex-1 font-semibold text-base text-foreground tracking-tight">
+          <h1 className="flex-1 text-base font-semibold tracking-tight text-foreground">
             Innsikt
           </h1>
           <NewThreadLink />

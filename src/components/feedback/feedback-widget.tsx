@@ -134,7 +134,7 @@ function IssueDraftPart({
     case "input-streaming":
     case "input-available":
       return (
-        <p className="text-muted-foreground text-xs">Skriver utkast til sak…</p>
+        <p className="text-xs text-muted-foreground">Skriver utkast til sak…</p>
       );
     case "approval-requested":
     case "approval-responded":
@@ -143,7 +143,7 @@ function IssueDraftPart({
       // server sends it to the model as denied).
       if (part.state === "approval-requested" && !isLatest) {
         return (
-          <p className="text-muted-foreground text-xs">
+          <p className="text-xs text-muted-foreground">
             Utkastet ble forkastet
           </p>
         );
@@ -159,20 +159,20 @@ function IssueDraftPart({
               >
                 {part.input.kind === "bug" ? "Feil" : "Funksjon"}
               </Badge>
-              <span className="font-medium text-sm">{part.input.title}</span>
+              <span className="text-sm font-medium">{part.input.title}</span>
             </div>
             <div className="max-h-48 overflow-y-auto rounded-md bg-muted/50 p-2 text-xs [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs">
               <MessageResponse>{part.input.body}</MessageResponse>
             </div>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               Sidekontekst og valgte elementer legges ved.
             </p>
           </ConfirmationRequest>
           <ConfirmationAccepted>
-            <p className="text-muted-foreground text-xs">Oppretter sak…</p>
+            <p className="text-xs text-muted-foreground">Oppretter sak…</p>
           </ConfirmationAccepted>
           <ConfirmationRejected>
-            <p className="text-muted-foreground text-xs">
+            <p className="text-xs text-muted-foreground">
               Utkastet ble forkastet
             </p>
           </ConfirmationRejected>
@@ -206,7 +206,7 @@ function IssueDraftPart({
         </p>
       );
     case "output-error":
-      return <p className="text-destructive text-xs">{part.errorText}</p>;
+      return <p className="text-xs text-destructive">{part.errorText}</p>;
   }
 }
 
@@ -376,10 +376,10 @@ export function FeedbackWidget() {
               setView("closed");
             }
           }}
-          className="fixed inset-x-3 bottom-20 z-feedback flex h-[min(520px,calc(100dvh-7rem))] flex-col overflow-hidden rounded-xl bg-card text-card-foreground text-sm shadow-xl ring-1 ring-foreground/10 sm:inset-x-auto sm:right-5 sm:w-[380px]"
+          className="fixed inset-x-3 bottom-20 z-feedback flex h-[min(520px,calc(100dvh-7rem))] flex-col overflow-hidden rounded-xl bg-card text-sm text-card-foreground shadow-xl ring-1 ring-foreground/10 sm:inset-x-auto sm:right-5 sm:w-[380px]"
         >
-          <header className="flex items-center gap-1 border-border border-b px-3 py-2">
-            <h2 className="flex-1 font-semibold text-sm">Tilbakemelding</h2>
+          <header className="flex items-center gap-1 border-b border-border px-3 py-2">
+            <h2 className="flex-1 text-sm font-semibold">Tilbakemelding</h2>
             <Button
               size="icon-sm"
               variant="ghost"
@@ -403,7 +403,7 @@ export function FeedbackWidget() {
             <ConversationContent className="min-h-full gap-4 p-3">
               {messages.length === 0 ? (
                 <ConversationEmptyState className="flex-1 items-start gap-3 p-0 text-left">
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-sm text-muted-foreground">
                     Har du funnet en feil eller fått en idé? Beskriv den, så
                     gjør jeg den om til en sak for utvikleren.
                   </p>
@@ -435,10 +435,10 @@ export function FeedbackWidget() {
                 ))
               )}
               {status === "submitted" ? (
-                <p className="text-muted-foreground text-xs">Tenker…</p>
+                <p className="text-xs text-muted-foreground">Tenker…</p>
               ) : null}
               {error ? (
-                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive text-xs">
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
                   <span className="flex-1">{describeChatError(error)}</span>
                   <Button
                     size="xs"
@@ -454,7 +454,7 @@ export function FeedbackWidget() {
             <ConversationScrollButton />
           </Conversation>
 
-          <div className="border-border border-t p-3">
+          <div className="border-t border-border p-3">
             <PromptInput onSubmit={(message) => send(message.text)}>
               {pendingElement ? (
                 <PromptInputHeader>

@@ -51,10 +51,10 @@ export const Route = createRootRoute({
 function NotFound() {
   return (
     <main className="mx-auto w-full max-w-6xl space-y-2 px-5 py-8 md:px-10">
-      <h1 className="font-semibold text-2xl text-foreground tracking-tight">
+      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Fant ikke siden
       </h1>
-      <p className="text-muted-foreground text-sm">
+      <p className="text-sm text-muted-foreground">
         Siden finnes ikke, eller den er ikke flyttet til denne serveren ennå.
       </p>
     </main>
