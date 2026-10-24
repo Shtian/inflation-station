@@ -1,0 +1,14 @@
+{
+  "$schema": "../node_modules/@varlock/bumpy/config-schema.json",
+  "baseBranch": "main",
+  "changelog": "default",
+  "privatePackages": { "version": true, "tag": true },
+  "packages": {
+    // bumpy skips private packages when it looks for unreleased versions, so
+    // without a publish command a merged release PR creates no tag or GitHub
+    // release. This one only records the release.
+    "inflation-station": {
+      "publishCommand": "echo Released {{name}} {{version}}"
+    }
+  }
+}

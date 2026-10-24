@@ -8,6 +8,7 @@ Inflation Station is a TanStack Start (Vite+) + TypeScript personal-finance app 
 
 ## Essentials for all tasks
 - Package manager: `pnpm` (not npm).
+- Every PR needs a bump file in `.bumpy/` (`patch`, `minor`, or `major`), or `pnpm bumpy add --empty` when it ships nothing. CI fails without one; use the `add-change` skill to write it.
 - Work with progressive disclosure: start with `README.md`, `package.json`, and directly relevant files; expand only when blocked.
 - Make the smallest safe change; do not refactor unrelated code.
 - Preserve existing architecture and style unless asked to change them.
