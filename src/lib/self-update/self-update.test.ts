@@ -28,6 +28,7 @@ describe("readSelfUpdateStatus", () => {
     expect(await readSelfUpdateStatus(root, "abc1234")).toEqual({
       sha: "abc1234",
       log: "",
+      progress: null,
       phase: "never-run",
     });
   });
@@ -41,8 +42,32 @@ describe("readSelfUpdateStatus", () => {
     expect(await readSelfUpdateStatus(root, "abc1234")).toEqual({
       sha: "abc1234",
       log: "==> Pulling latest changes...",
+      progress: { label: "Henter endringer", index: 0, total: 6, percent: 0 },
       phase: "running",
     });
+  });
+
+  it("estimates progress from this run's steps and the last successful run", async () => {
+    writeState({
+      lock: `${process.pid}\n`,
+      "update.log": "==> Building...\n",
+      steps: "install 0\nmigrate 20000\nbuild 25000\n",
+      "steps.last":
+        "install 1000\nmigrate 31000\nbuild 35000\nassemble 125000\nrestart 126000\nend 130000\n",
+    });
+
+    expect(await readSelfUpdateStatus(root, "abc1234", 70_000)).toEqual({
+      sha: "abc1234",
+      log: "==> Building...",
+      progress: { label: "Bygger", index: 4, total: 6, percent: 61 },
+      phase: "running",
+    });
+  });
+
+  it("leaves progress out once the run has finished", async () => {
+    writeState({ result: "0\n", steps: "install 0\n" });
+
+    expect((await readSelfUpdateStatus(root, "abc1234")).progress).toBeNull();
   });
 
   it("ignores a stale lock and falls back to the recorded result", async () => {
@@ -52,6 +77,7 @@ describe("readSelfUpdateStatus", () => {
     expect(await readSelfUpdateStatus(root, "abc1234")).toEqual({
       sha: "abc1234",
       log: "boom",
+      progress: null,
       phase: "finished",
       exitCode: 3,
     });
@@ -64,6 +90,7 @@ describe("readSelfUpdateStatus", () => {
     expect(await readSelfUpdateStatus(root, "abc1234")).toEqual({
       sha: "abc1234",
       log: "killed midway",
+      progress: null,
       phase: "never-run",
     });
   });
@@ -74,6 +101,7 @@ describe("readSelfUpdateStatus", () => {
     expect(await readSelfUpdateStatus(root, "abc1234")).toEqual({
       sha: "abc1234",
       log: "==> Already up to date",
+      progress: null,
       phase: "finished",
       exitCode: 0,
     });

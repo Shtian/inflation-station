@@ -11,6 +11,10 @@ acquire_lock() {
 
 on_exit() {
   local code=$?
+  # The marks of the last successful run weight the next run's progress bar.
+  if [ "$code" -eq 0 ] && [ -s "$STATE_DIR/steps" ]; then
+    cp "$STATE_DIR/steps" "$STATE_DIR/steps.last" 2>/dev/null || true
+  fi
   # Written before the lock goes so a reader never sees neither file mid-exit.
   echo "$code" >"$STATE_DIR/result"
   if [ "$(cat "$LOCK" 2>/dev/null)" = "$$" ]; then
@@ -37,7 +41,8 @@ main() {
   fi
 
   trap on_exit EXIT
-  rm -f "$STATE_DIR/result"
+  rm -f "$STATE_DIR/result" "$STATE_DIR/steps"
+  export DEPLOY_STEPS_FILE="$STATE_DIR/steps"
   exec >"$STATE_DIR/update.log" 2>&1
 
   local before
