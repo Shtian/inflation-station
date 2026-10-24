@@ -1,0 +1,17 @@
+node_modules
+.output
+.nitro
+.tanstack
+.releases
+.update
+.env*
+!.env.schema
+env.d.ts
+*.db
+*.db-*
+test-data
+playwright-report
+test-results
+.playwright-cli
+.vitest
+.git

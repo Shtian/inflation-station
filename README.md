@@ -124,6 +124,47 @@ The Spør chat (`/assistant`) also spends OpenAI tokens on the instance's `OPENA
 
 Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) alongside `OPENAI_API_KEY` to show a floating Feedback button on every page. It chats with the user about a bug or idea and, once they approve the draft, files a GitHub issue with the `gh` CLI, so run `gh auth login` on the host as the user that runs the app. The `bug`, `enhancement`, and `needs-triage` labels must exist in the target repo. The server reads it at runtime, so restart the app after changing it (`bash update.sh`).
 
+## Self-Hosting on Coolify
+
+The app also ships as a Docker image, `ghcr.io/shtian/inflation-station:latest`. Every instance runs the same image with its own volume and settings.
+
+### Adding an instance
+
+1. In Coolify, add a **Docker Image** resource with the image `ghcr.io/shtian/inflation-station:latest`.
+2. Mount a persistent volume at `/data`, and set `DATABASE_URL=file:/data/data.db`.
+3. Keep it at 1 replica. SQLite allows one writer, and each start migrates the database.
+4. Set the runtime env vars from [`.env.schema`](.env.schema) that the instance needs, such as `OPENAI_API_KEY` and `TYPESAFE_API_KEY`. The container listens on port 3000.
+5. Give each instance its own hostname. The app has no `basePath`, so it cannot run under a sub-path.
+6. Add basic auth with Traefik labels, because the app has no login:
+   ```
+   traefik.http.middlewares.<name>-auth.basicauth.users=<user>:<htpasswd hash>
+   traefik.http.routers.<router>.middlewares=<name>-auth
+   ```
+   Generate the hash with `htpasswd -nbB <user> <password>`, and double every `$` in it when the label goes through Docker Compose.
+
+On every start the container creates the database directory, backs up an existing database to `/data/backups`, runs `prisma migrate deploy`, and then starts the server.
+
+### Differences from pm2
+
+- The Sentry DSN, org, and project are build args, so they are baked into the image, not set per instance. The build reads `SENTRY_AUTH_TOKEN` from a BuildKit secret, which keeps it out of the public image.
+- The footer shows the commit from the `SOURCE_COMMIT` build arg, since the image has no `.git`.
+- The Update button is hidden, because `SELF_UPDATE_ROOT` is not set. Update by deploying a newer image.
+- The Feedback widget is unavailable, because the image has no `gh`. Leave `FEEDBACK_GITHUB_REPO` empty.
+
+### Building the image locally
+
+```bash
+docker build -t inflation-station \
+  --build-arg SOURCE_COMMIT="$(git rev-parse HEAD)" \
+  --build-arg VITE_SENTRY_DSN=... --build-arg SENTRY_ORG=... --build-arg SENTRY_PROJECT=... \
+  --secret id=SENTRY_AUTH_TOKEN,env=SENTRY_AUTH_TOKEN \
+  .
+docker run -p 3000:3000 -v inflation-station-data:/data \
+  -e DATABASE_URL=file:/data/data.db inflation-station
+```
+
+The Sentry build args and the secret are optional.
+
 ## Prisma Migration and Seed Workflow
 
 - Create migration while developing schema changes:

@@ -249,6 +249,9 @@ importers:
       next-themes:
         specifier: ^0.4.6
         version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      prisma:
+        specifier: ^7.4.0
+        version: 7.4.0(@types/react@19.2.14)(better-sqlite3@12.11.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       react:
         specifier: 19.2.4
         version: 19.2.4
@@ -310,9 +313,6 @@ importers:
       nitro:
         specifier: 3.0.260903-beta
         version: 3.0.260903-beta
-      prisma:
-        specifier: ^7.4.0
-        version: 7.4.0(@types/react@19.2.14)(better-sqlite3@12.11.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       shadcn:
         specifier: ^3.8.4
         version: 3.8.4(@types/node@20.19.33)(supports-color@8.1.1)(typescript@5.9.3)
