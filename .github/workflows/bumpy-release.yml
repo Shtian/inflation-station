@@ -1,0 +1,108 @@
+name: Bumpy Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: bumpy-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      bumpy_version: ${{ steps.bumpy-version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: lts/*
+
+      - id: bumpy-version
+        name: Resolve bumpy version
+        run: echo "version=$(jq -r '.devDependencies["@varlock/bumpy"]' package.json)" >> "$GITHUB_OUTPUT"
+
+      - id: plan
+        name: Plan release
+        run: pnpm dlx "@varlock/bumpy@$BUMPY_VERSION" ci plan
+        env:
+          BUMPY_VERSION: ${{ steps.bumpy-version.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+
+  version-pr:
+    name: Update release PR
+    needs: plan
+    if: needs.plan.outputs.mode == 'version-pr'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      BUMPY_VERSION: ${{ needs.plan.outputs.bumpy_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: lts/*
+
+      # BUMPY_GH_TOKEN opens the release PR as a real user, so CI runs on it.
+      - name: Create or update release PR
+        run: pnpm dlx "@varlock/bumpy@$BUMPY_VERSION" ci release --expect-mode version-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUMPY_GH_TOKEN: ${{ secrets.BUMPY_GH_TOKEN }}
+
+  # The app is private, so publishing only tags the version and creates the
+  # GitHub release. Nothing goes to npm.
+  publish:
+    name: Tag and release
+    needs: plan
+    if: needs.plan.outputs.mode == 'publish'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BUMPY_VERSION: ${{ needs.plan.outputs.bumpy_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: lts/*
+
+      - name: Create tag and GitHub release
+        run: pnpm dlx "@varlock/bumpy@$BUMPY_VERSION" ci release --expect-mode publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUMPY_GH_TOKEN: ${{ secrets.BUMPY_GH_TOKEN }}

@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "add-change": {
+      "source": "dmno-dev/bumpy",
+      "sourceType": "github",
+      "skillPath": "skills/add-change/SKILL.md",
+      "computedHash": "b9d51725b0cacc755a6efc27548ae1f6d3d9b9eb088e2df8e6be47613bbcd20e"
+    },
     "impeccable": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",

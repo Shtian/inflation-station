@@ -1,0 +1,35 @@
+name: Bump File
+
+on:
+  pull_request:
+
+jobs:
+  check:
+    name: Bumpy check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.1.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: lts/*
+
+      # bumpy reads package.json and .bumpy/ only, so it runs pinned through
+      # dlx without a full install.
+      - name: Check bump files
+        run: |
+          VERSION=$(jq -r '.devDependencies["@varlock/bumpy"]' package.json)
+          pnpm dlx "@varlock/bumpy@$VERSION" ci check
+        env:
+          GH_TOKEN: ${{ github.token }}
