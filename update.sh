@@ -6,9 +6,14 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 cd "$REPO_DIR"
 
-# A missing node must not fail the deploy just for timing.
+# Older macOS date prints a literal N for %N, so fall back to whole seconds.
 now_ms() {
-  node -p 'Date.now()' 2>/dev/null || echo "$(date +%s)000"
+  local ns
+  ns="$(date +%s%N)"
+  case "$ns" in
+    *[!0-9]*) echo "$(date +%s)000" ;;
+    *) echo "$((ns / 1000000))" ;;
+  esac
 }
 
 STEP="prepare"
