@@ -33,7 +33,9 @@ function serverOnly(): Plugin {
   };
 }
 
-function getGitSha(): string {
+// Docker builds have no .git, so they pass the commit in SOURCE_COMMIT.
+function getBuildSha(): string {
+  if (process.env.SOURCE_COMMIT) return process.env.SOURCE_COMMIT.slice(0, 7);
   try {
     return execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim();
   } catch {
@@ -42,7 +44,7 @@ function getGitSha(): string {
 }
 
 export default defineConfig(async ({ mode }) => {
-  const buildSha = getGitSha();
+  const buildSha = getBuildSha();
   // Importing the plugin resolves `.env.schema` into `process.env`. Tests
   // skip it and replace `varlock/env` with a stub (tests/support/config-env).
   const varlock =
