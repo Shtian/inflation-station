@@ -1,13 +1,23 @@
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  estimateProgress,
+  parseStepMarks,
+  type SelfUpdateProgress,
+  stepDurations,
+} from "./progress";
 
 export type SelfUpdatePhase =
   | { phase: "never-run" }
   | { phase: "running" }
   | { phase: "finished"; exitCode: number };
 
-export type SelfUpdateStatus = { sha: string; log: string } & SelfUpdatePhase;
+export type SelfUpdateStatus = {
+  sha: string;
+  log: string;
+  progress: SelfUpdateProgress | null;
+} & SelfUpdatePhase;
 
 const LOG_TAIL_LINES = 200;
 
@@ -55,16 +65,34 @@ async function readPhase(stateDir: string): Promise<SelfUpdatePhase> {
   return { phase: "finished", exitCode };
 }
 
+async function readProgress(
+  stateDir: string,
+  nowMs: number,
+): Promise<SelfUpdateProgress> {
+  const [current, previous] = await Promise.all([
+    readOptional(path.join(stateDir, "steps")),
+    readOptional(path.join(stateDir, "steps.last")),
+  ]);
+  return estimateProgress(
+    parseStepMarks(current ?? ""),
+    stepDurations(parseStepMarks(previous ?? "")),
+    nowMs,
+  );
+}
+
 export async function readSelfUpdateStatus(
   root: string,
   sha: string,
+  nowMs = Date.now(),
 ): Promise<SelfUpdateStatus> {
   const stateDir = selfUpdateStateDir(root);
   const [phase, log] = await Promise.all([
     readPhase(stateDir),
     readOptional(path.join(stateDir, "update.log")),
   ]);
-  return { sha, log: log === null ? "" : tail(log), ...phase };
+  const progress =
+    phase.phase === "running" ? await readProgress(stateDir, nowMs) : null;
+  return { sha, log: log === null ? "" : tail(log), progress, ...phase };
 }
 
 // The Nitro server does not set NODE_ENV, but pm2 passes on whatever the

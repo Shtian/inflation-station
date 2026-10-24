@@ -123,6 +123,51 @@ describe("scripts/self-update.sh", () => {
     expect(existsSync(stateFile("lock"))).toBe(false);
   });
 
+  it("keeps the step marks of a successful run for the next progress bar", () => {
+    mkdirSync(path.join(app, ".update"));
+    writeFileSync(stateFile("steps"), "stale 1\n");
+    pushToOrigin((dir) =>
+      writeFileSync(
+        path.join(dir, "update.sh"),
+        'echo "build 1000" >> "$DEPLOY_STEPS_FILE"\necho "end 2000" >> "$DEPLOY_STEPS_FILE"\n',
+      ),
+    );
+
+    const run = runSelfUpdate();
+
+    expect(run.status).toBe(0);
+    expect(read("steps")).toBe("build 1000\nend 2000\n");
+    expect(read("steps.last")).toBe("build 1000\nend 2000\n");
+  });
+
+  it("keeps the previous step marks when a run fails", () => {
+    mkdirSync(path.join(app, ".update"));
+    writeFileSync(stateFile("steps.last"), "build 1000\nend 2000\n");
+    pushToOrigin((dir) =>
+      writeFileSync(
+        path.join(dir, "update.sh"),
+        'echo "install 5" >> "$DEPLOY_STEPS_FILE"\nexit 1\n',
+      ),
+    );
+
+    const run = runSelfUpdate();
+
+    expect(run.status).toBe(1);
+    expect(read("steps")).toBe("install 5\n");
+    expect(read("steps.last")).toBe("build 1000\nend 2000\n");
+  });
+
+  it("clears stale step marks on a run with nothing new", () => {
+    mkdirSync(path.join(app, ".update"));
+    writeFileSync(stateFile("steps"), "build 1000\n");
+
+    const run = runSelfUpdate();
+
+    expect(run.status).toBe(0);
+    expect(existsSync(stateFile("steps"))).toBe(false);
+    expect(existsSync(stateFile("steps.last"))).toBe(false);
+  });
+
   it("reclaims a lock whose pid is dead", () => {
     mkdirSync(path.join(app, ".update"));
     writeFileSync(stateFile("lock"), `${deadPid()}\n`);

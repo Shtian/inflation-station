@@ -116,6 +116,7 @@ report_to_sentry() {
 on_exit() {
   local code=$? end_ms
   end_ms="$(now_ms)"
+  mark_step end "$end_ms"
   if [ "$code" -ne 0 ]; then
     echo "==> Deploy failed at $STEP (exit $code)" >&2
   fi
@@ -125,10 +126,20 @@ on_exit() {
 }
 trap on_exit EXIT
 
+# scripts/self-update.sh reads these marks to drive the in-app progress bar.
+# A failed write only costs the bar, never the deploy.
+mark_step() {
+  [ -n "${DEPLOY_STEPS_FILE:-}" ] || return 0
+  echo "$1 $2" 2>/dev/null >> "$DEPLOY_STEPS_FILE" || true
+}
+
 run_step() {
+  local at
   STEP="$1"
   shift
-  echo "$STEP $(now_ms)" >> "$STEP_TIMES"
+  at="$(now_ms)"
+  echo "$STEP $at" >> "$STEP_TIMES"
+  mark_step "$STEP" "$at"
   "$@" 2>&1 | tee "$STEP_OUTPUT"
 }
 

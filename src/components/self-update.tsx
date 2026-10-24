@@ -11,6 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Progress,
+  ProgressLabel,
+  ProgressValue,
+} from "@/components/ui/progress";
 import type { UpdateAvailability } from "@/lib/self-update/availability";
 import {
   initialSelfUpdateDialogState,
@@ -19,6 +24,7 @@ import {
   type SelfUpdateDialogState,
   selfUpdateDialogReducer,
 } from "@/lib/self-update/dialog-state";
+import type { SelfUpdateProgress } from "@/lib/self-update/progress";
 import type { MutationActionResult } from "@/lib/server-actions/mutation-result";
 
 export type StartSelfUpdate = () => Promise<
@@ -92,6 +98,19 @@ function describe(
     case "failed":
       return state.message;
   }
+}
+
+function UpdateProgress({ progress }: { progress: SelfUpdateProgress }) {
+  const label =
+    progress.index === 0
+      ? progress.label
+      : `Steg ${progress.index} av ${progress.total}: ${progress.label}`;
+  return (
+    <Progress value={progress.percent}>
+      <ProgressLabel>{label}</ProgressLabel>
+      <ProgressValue />
+    </Progress>
+  );
 }
 
 function UpdateLog({ log }: { log: string }) {
@@ -241,8 +260,18 @@ export function SelfUpdateDialog({
           <DialogTitle>Oppdater Inflation Station</DialogTitle>
           <DialogDescription>{describe(state, availability)}</DialogDescription>
         </DialogHeader>
+        {polling && state.progress ? (
+          <UpdateProgress progress={state.progress} />
+        ) : null}
         {"log" in state && (polling || state.log !== "") ? (
-          <UpdateLog log={state.log} />
+          <details open={!polling} className="text-sm">
+            <summary className="cursor-pointer text-muted-foreground">
+              Vis logg
+            </summary>
+            <div className="mt-2">
+              <UpdateLog log={state.log} />
+            </div>
+          </details>
         ) : null}
         <DialogFooter showCloseButton>
           {state.kind === "idle" || state.kind === "starting" ? (

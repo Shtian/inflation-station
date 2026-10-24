@@ -129,7 +129,9 @@ type Metric = {
   attributes: Record<string, { value: unknown; type: string }>;
 };
 
-function describeMetrics(items: Metric[]) {
+function describeMetrics(
+  items: Metric[],
+): Record<string, string | undefined>[] {
   return items.map((m) => ({
     name: m.name,
     type: m.type,
@@ -416,6 +418,38 @@ describe("update.sh", () => {
     expect(traceId).toMatch(/^[0-9a-f]{32}$/);
     expect(event.contexts.trace.span_id).toMatch(/^[0-9a-f]{16}$/);
     expect(new Set(metrics.map((m) => m.trace_id))).toEqual(new Set([traceId]));
+  });
+
+  it("marks each step and the end in the progress file", () => {
+    const steps = path.join(logs, "steps");
+
+    const run = deploy("aaa1111", { DEPLOY_STEPS_FILE: steps });
+
+    expect(run.status).toBe(0);
+    const marks = readFileSync(steps, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => line.split(" "));
+    expect(marks.map(([step]) => step)).toEqual([
+      "install",
+      "migrate",
+      "build",
+      "assemble",
+      "restart",
+      "end",
+    ]);
+    const times = marks.map(([, at]) => Number(at));
+    expect(times.every(Number.isInteger)).toBe(true);
+    expect(times).toEqual([...times].sort((a, b) => a - b));
+  });
+
+  it("deploys even when the progress file cannot be written", () => {
+    const run = deploy("aaa1111", {
+      DEPLOY_STEPS_FILE: path.join(logs, "missing-dir/steps"),
+    });
+
+    expect(run.status).toBe(0);
+    expect(live("server/index.mjs")).toBe("server aaa1111\n");
   });
 
   it("sends nothing after a successful deploy when no DSN is configured", () => {

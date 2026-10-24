@@ -11,37 +11,53 @@ function run(events: SelfUpdateDialogEvent[]): SelfUpdateDialogState {
   return events.reduce(selfUpdateDialogReducer, { kind: "idle" });
 }
 
+const BUILDING = { label: "Bygger", index: 4, total: 6, percent: 61 };
+
 const started: SelfUpdateDialogEvent[] = [
   { type: "start" },
   { type: "started" },
 ];
 
 describe("selfUpdateDialogReducer", () => {
-  it("streams the log while the run is in progress", () => {
-    expect(
-      run([
-        ...started,
-        {
-          type: "status",
-          pageSha: PAGE_SHA,
-          status: { sha: PAGE_SHA, log: "==> Building...", phase: "running" },
-        },
-      ]),
-    ).toEqual({ kind: "running", log: "==> Building..." });
+  it("has no progress until the first status arrives", () => {
+    expect(run(started)).toEqual({ kind: "running", log: "", progress: null });
   });
 
-  it("goes offline when the server stops answering and keeps the last log", () => {
+  it("streams the log and progress while the run is in progress", () => {
     expect(
       run([
         ...started,
         {
           type: "status",
           pageSha: PAGE_SHA,
-          status: { sha: PAGE_SHA, log: "==> Building...", phase: "running" },
+          status: {
+            sha: PAGE_SHA,
+            log: "==> Building...",
+            progress: BUILDING,
+            phase: "running",
+          },
+        },
+      ]),
+    ).toEqual({ kind: "running", log: "==> Building...", progress: BUILDING });
+  });
+
+  it("goes offline when the server stops answering and keeps the last log and progress", () => {
+    expect(
+      run([
+        ...started,
+        {
+          type: "status",
+          pageSha: PAGE_SHA,
+          status: {
+            sha: PAGE_SHA,
+            log: "==> Building...",
+            progress: BUILDING,
+            phase: "running",
+          },
         },
         { type: "unreachable" },
       ]),
-    ).toEqual({ kind: "offline", log: "==> Building..." });
+    ).toEqual({ kind: "offline", log: "==> Building...", progress: BUILDING });
   });
 
   it("is done once a server with a different sha answers", () => {
@@ -55,6 +71,7 @@ describe("selfUpdateDialogReducer", () => {
           status: {
             sha: "bbb2222",
             log: "==> Done!",
+            progress: null,
             phase: "finished",
             exitCode: 0,
           },
@@ -73,6 +90,7 @@ describe("selfUpdateDialogReducer", () => {
           status: {
             sha: PAGE_SHA,
             log: "==> Already up to date",
+            progress: null,
             phase: "finished",
             exitCode: 0,
           },
@@ -91,6 +109,7 @@ describe("selfUpdateDialogReducer", () => {
           status: {
             sha: PAGE_SHA,
             log: "ERR_PNPM_OUTDATED_LOCKFILE",
+            progress: null,
             phase: "finished",
             exitCode: 1,
           },
@@ -122,10 +141,19 @@ describe("selfUpdateDialogReducer", () => {
         {
           type: "status",
           pageSha: PAGE_SHA,
-          status: { sha: PAGE_SHA, log: "==> Migrating...", phase: "running" },
+          status: {
+            sha: PAGE_SHA,
+            log: "==> Migrating...",
+            progress: BUILDING,
+            phase: "running",
+          },
         },
       ]),
-    ).toEqual({ kind: "running", log: "==> Migrating..." });
+    ).toEqual({
+      kind: "running",
+      log: "==> Migrating...",
+      progress: BUILDING,
+    });
   });
 
   it("stays idle when opened after an earlier run finished", () => {
@@ -134,7 +162,13 @@ describe("selfUpdateDialogReducer", () => {
         {
           type: "status",
           pageSha: PAGE_SHA,
-          status: { sha: PAGE_SHA, log: "old", phase: "finished", exitCode: 1 },
+          status: {
+            sha: PAGE_SHA,
+            log: "old",
+            progress: null,
+            phase: "finished",
+            exitCode: 1,
+          },
         },
       ]),
     ).toEqual({ kind: "idle" });

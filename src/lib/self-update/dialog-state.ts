@@ -1,10 +1,11 @@
+import type { SelfUpdateProgress } from "./progress";
 import type { SelfUpdateStatus } from "./self-update";
 
 export type SelfUpdateDialogState =
   | { kind: "idle" }
   | { kind: "starting" }
-  | { kind: "running"; log: string }
-  | { kind: "offline"; log: string }
+  | { kind: "running"; log: string; progress: SelfUpdateProgress | null }
+  | { kind: "offline"; log: string; progress: SelfUpdateProgress | null }
   | { kind: "done"; sha: string }
   | { kind: "up-to-date"; log: string }
   | { kind: "failed"; message: string; log: string };
@@ -36,7 +37,7 @@ function fromStatus(
   }
   switch (status.phase) {
     case "running":
-      return { kind: "running", log: status.log };
+      return { kind: "running", log: status.log, progress: status.progress };
     case "finished":
       return status.exitCode === 0
         ? { kind: "up-to-date", log: status.log }
@@ -58,7 +59,9 @@ export function selfUpdateDialogReducer(
     case "start":
       return state.kind === "idle" ? { kind: "starting" } : state;
     case "started":
-      return state.kind === "starting" ? { kind: "running", log: "" } : state;
+      return state.kind === "starting"
+        ? { kind: "running", log: "", progress: null }
+        : state;
     case "start-failed":
       return state.kind === "starting"
         ? { kind: "failed", message: event.message, log: "" }
@@ -66,7 +69,11 @@ export function selfUpdateDialogReducer(
     case "status": {
       if (state.kind === "idle") {
         return event.status.phase === "running"
-          ? { kind: "running", log: event.status.log }
+          ? {
+              kind: "running",
+              log: event.status.log,
+              progress: event.status.progress,
+            }
           : state;
       }
       if (!isPolling(state)) {
@@ -75,7 +82,10 @@ export function selfUpdateDialogReducer(
       return fromStatus(event.status, event.pageSha) ?? state;
     }
     case "unreachable":
-      return isPolling(state) ? { kind: "offline", log: state.log } : state;
+      // The server is down while pm2 restarts it, so the last progress stands.
+      return isPolling(state)
+        ? { kind: "offline", log: state.log, progress: state.progress }
+        : state;
     case "reset":
       return state.kind === "starting" ? state : initialSelfUpdateDialogState;
   }
