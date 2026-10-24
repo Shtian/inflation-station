@@ -15,10 +15,12 @@ import {
 } from "@/components/ui/popover";
 
 export function VersionInfo({
+  version,
   sha,
   formattedTime,
   startSelfUpdate,
 }: {
+  version: string;
   sha: string;
   formattedTime: string;
   /** Omitted where this server cannot update itself. */
@@ -61,6 +63,8 @@ export function VersionInfo({
           className="w-auto"
         >
           <p className="font-mono text-xs text-muted-foreground tabular-nums">
+            <span>v{version}</span>
+            <span className="mx-1.5 text-border">·</span>
             <span className="text-brand/60">{sha}</span>
             <span className="mx-1.5 text-border">·</span>
             <span>{formattedTime}</span>

@@ -38,11 +38,11 @@ report_to_sentry() {
 
   DEPLOY_STEP="$STEP" DEPLOY_EXIT="$code" DEPLOY_OUTPUT="$output" \
     DEPLOY_START="$START_MS" DEPLOY_END="$end_ms" DEPLOY_TIMES="$(cat "$STEP_TIMES")" \
-    DEPLOY_RELEASE="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" \
+    DEPLOY_RELEASE="inflation-station@$(node -p 'require("./package.json").version' 2>/dev/null || echo unknown)+$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" \
     DEPLOY_APP="${APP_NAME:-}" node -e '
       const e = process.env;
       const failed = e.DEPLOY_EXIT !== "0";
-      const environment = e.VITE_SENTRY_ENVIRONMENT || "production";
+      const environment = e.SENTRY_ENVIRONMENT || e.VITE_SENTRY_ENVIRONMENT || "production";
       const id = crypto.randomUUID().replaceAll("-", "");
       const traceId = crypto.randomUUID().replaceAll("-", "");
       const end = Number(e.DEPLOY_END);

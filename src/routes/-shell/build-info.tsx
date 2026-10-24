@@ -23,6 +23,7 @@ export function BuildInfo() {
 
   return (
     <VersionInfo
+      version={import.meta.env.VITE_APP_VERSION}
       sha={import.meta.env.VITE_BUILD_SHA || "unknown"}
       formattedTime={formattedTime}
       startSelfUpdate={selfUpdateEnabled ? startSelfUpdate : undefined}
