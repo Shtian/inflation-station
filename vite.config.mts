@@ -7,6 +7,8 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 import { defineConfig, type Plugin } from "vite-plus";
+import packageJson from "./package.json" with { type: "json" };
+import { getSentryRelease } from "./src/lib/sentry/release";
 
 const SERVER_ONLY_ID = "\0server-only";
 
@@ -108,6 +110,7 @@ export default defineConfig(async ({ mode }) => {
       ],
     },
     define: {
+      "import.meta.env.VITE_APP_VERSION": JSON.stringify(packageJson.version),
       "import.meta.env.VITE_BUILD_SHA": JSON.stringify(buildSha),
       "import.meta.env.VITE_BUILD_TIME": JSON.stringify(
         new Date().toISOString(),
@@ -139,7 +142,7 @@ export default defineConfig(async ({ mode }) => {
         org: SENTRY_ORG,
         project: SENTRY_PROJECT,
         sourcemaps: { disable: !SENTRY_AUTH_TOKEN },
-        release: { name: buildSha },
+        release: { name: getSentryRelease(packageJson.version, buildSha) },
         silent: !process.env.CI,
         telemetry: false,
       }),

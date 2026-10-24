@@ -25,8 +25,8 @@ const tracesSampler: NonNullable<Options["tracesSampler"]> = ({
 // recommended 10% to fit the free tier. Chat requests are always traced, so
 // Sentry Conversations shows every turn of a chat rather than one in ten.
 //
-// Callers pass the `ENV` values from `varlock/env`. Varlock inlines them into
-// the client bundle at build time, so they change only on a rebuild.
+// Varlock inlines the DSN into the client bundle at build time, so it changes
+// only on a rebuild. The environment is read when the server boots.
 export function getSentryOptions({
   dsn,
   environment,

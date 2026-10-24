@@ -12,6 +12,7 @@ import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { resolveFeedbackDisabledReason } from "@/lib/feedback/agent";
+import { getSentryEnvironment } from "@/lib/sentry/environment";
 import { SIDEBAR_BOOT_SCRIPT } from "@/lib/sidebar-state";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/theme-palettes";
 import { AppSidebar } from "./-shell/app-sidebar";
@@ -20,13 +21,14 @@ import fontsCss from "./-shell/fonts.css?url";
 const getShellFlags = createServerFn({ method: "GET" }).handler(() => ({
   feedbackEnabled: resolveFeedbackDisabledReason() === null,
   selfUpdateEnabled: Boolean(process.env.SELF_UPDATE_ROOT),
+  sentryEnvironment: getSentryEnvironment(),
 }));
 
 export const Route = createRootRoute({
   loader: () => getShellFlags(),
   // Server env only changes on restart, so client navigations reuse the first answer.
   staleTime: Number.POSITIVE_INFINITY,
-  head: () => ({
+  head: ({ loaderData }) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -36,6 +38,16 @@ export const Route = createRootRoute({
         content:
           "Personlig økonomioversikt for kontoimport og gjennomgang av transaksjoner.",
       },
+      // instrument.client.ts reads it, so the browser reports the
+      // environment the server was started with.
+      ...(loaderData?.sentryEnvironment
+        ? [
+            {
+              name: "sentry-environment",
+              content: loaderData.sentryEnvironment,
+            },
+          ]
+        : []),
     ],
     links: [
       { rel: "icon", href: faviconUrl },

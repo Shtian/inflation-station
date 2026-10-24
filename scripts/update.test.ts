@@ -155,6 +155,7 @@ beforeEach(() => {
   mkdirSync(bin);
   mkdirSync(logs);
   copyFileSync(path.join(ROOT, "update.sh"), path.join(app, "update.sh"));
+  writeFileSync(path.join(app, "package.json"), '{ "version": "2.3.4" }');
   copyFileSync(
     path.join(ROOT, "ecosystem.config.js"),
     path.join(app, "ecosystem.config.js"),
@@ -247,6 +248,7 @@ describe("update.sh", () => {
       path.join(app, ".env"),
       [
         "VITE_SENTRY_DSN=https://pubkey@o1.ingest.sentry.io/42",
+        "SENTRY_ENVIRONMENT=coolify",
         "VITE_SENTRY_ENVIRONMENT=home",
         "PM2_APP_NAME=inflation-station-other",
       ].join("\n"),
@@ -263,8 +265,8 @@ describe("update.sh", () => {
     expect(header.event_id).toBe(event.event_id);
     expect(event).toMatchObject({
       level: "error",
-      environment: "home",
-      release: "bbb2222",
+      environment: "coolify",
+      release: "inflation-station@2.3.4+bbb2222",
       message: { formatted: "Deploy failed at build (exit 137)" },
       fingerprint: ["deploy-failed", "build"],
       tags: {
@@ -350,7 +352,7 @@ describe("update.sh", () => {
     expect(metricItem?.payload.version).toBe(2);
     const metrics: Metric[] = metricItem?.payload.items;
     const common = {
-      "sentry.release": "string:aaa1111",
+      "sentry.release": "string:inflation-station@2.3.4+aaa1111",
       "sentry.environment": "string:home",
       pm2_app: "string:inflation-station-other",
     };
