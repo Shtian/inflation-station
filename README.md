@@ -144,6 +144,53 @@ The app also ships as a Docker image, `ghcr.io/shtian/inflation-station:latest`.
 
 On every start the container creates the database directory, backs up an existing database to `/data/backups`, runs `prisma migrate deploy`, and then starts the server.
 
+### How releases reach Coolify
+
+1. Merging the bumpy release PR tags `vX.Y.Z` and creates the GitHub release.
+2. The same workflow builds the image and pushes `ghcr.io/shtian/inflation-station:X.Y.Z` and moves `:latest` to it. Nothing else pushes images.
+3. Every 5 minutes a systemd timer on the VM runs [`scripts/coolify/deploy-poller.sh`](scripts/coolify/deploy-poller.sh). It reads the digest of `:latest` without pulling, and when it changed it asks Coolify's local API to deploy every configured app.
+
+Coolify can't be reached from GitHub Actions and doesn't watch registries, which is why the VM polls.
+
+The build reads the repository variables `VITE_SENTRY_DSN`, `SENTRY_ORG`, and `SENTRY_PROJECT` and the secret `SENTRY_AUTH_TOKEN`. All are optional. After the first release, make the `inflation-station` package public under the repo's **Packages** settings, so Coolify and the poller can pull it without credentials.
+
+### Installing the deploy poller
+
+On the VM, as root:
+
+```bash
+install -m 755 scripts/coolify/deploy-poller.sh /usr/local/bin/inflation-station-deploy-poller
+install -m 644 scripts/coolify/inflation-station-deploy-poller.{service,timer} /etc/systemd/system/
+install -d -m 700 /etc/inflation-station
+install -m 600 /dev/null /etc/inflation-station/deploy-poller.env
+```
+
+Fill in `/etc/inflation-station/deploy-poller.env`:
+
+```bash
+# A Coolify API token with the deploy permission (Keys & Tokens → API tokens).
+COOLIFY_TOKEN=...
+# Comma-separated UUIDs of every app that runs the image.
+COOLIFY_APP_UUIDS=uuid1,uuid2
+# Optional, defaults to http://localhost:8000.
+COOLIFY_URL=http://localhost:8000
+```
+
+Then start the timer and check a run:
+
+```bash
+systemctl daemon-reload
+systemctl enable --now inflation-station-deploy-poller.timer
+systemctl start inflation-station-deploy-poller.service
+journalctl -u inflation-station-deploy-poller.service
+```
+
+The first run only records the current digest. Later runs deploy when it changes, and save the new digest only after Coolify accepts the deploy, so a failed call is retried on the next run. A failed run exits non-zero and shows up in `systemctl status inflation-station-deploy-poller.service`.
+
+### Rolling back
+
+In Coolify, set the app's image tag to an older `X.Y.Z` and redeploy. The poller leaves the app alone until `:latest` moves again, and then deploys whatever image the app is set to, so set the tag back to `latest` once the fix is released.
+
 ### Differences from pm2
 
 - The Sentry DSN, org, and project are build args, so they are baked into the image, not set per instance. The build reads `SENTRY_AUTH_TOKEN` from a BuildKit secret, which keeps it out of the public image.

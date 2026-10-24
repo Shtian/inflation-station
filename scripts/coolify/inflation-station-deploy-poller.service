@@ -1,0 +1,11 @@
+[Unit]
+Description=Deploy Inflation Station to Coolify when a new image is released
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/inflation-station-deploy-poller
+EnvironmentFile=/etc/inflation-station/deploy-poller.env
+StateDirectory=inflation-station-deploy-poller
+DynamicUser=yes
