@@ -115,6 +115,8 @@ COOLIFY_APP_UUIDS=uuid1,uuid2
 COOLIFY_URL=http://localhost:8000
 ```
 
+The token only works once **API Access** is turned on in Coolify under Settings → Advanced. Until then, every run fails with `API is disabled`.
+
 Then start the timer and check a run:
 
 ```bash

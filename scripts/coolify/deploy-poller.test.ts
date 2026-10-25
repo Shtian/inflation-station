@@ -16,7 +16,7 @@ const SCRIPT = path.join(__dirname, "deploy-poller.sh");
 const DIGEST_A = `sha256:${"a".repeat(64)}`;
 const DIGEST_B = `sha256:${"b".repeat(64)}`;
 
-type DeployCall = { url: string; authorization?: string };
+type DeployCall = { method?: string; url: string; authorization?: string };
 
 let tmp: string;
 let server: Server;
@@ -52,6 +52,7 @@ beforeEach(async () => {
       res.end();
     } else if (url.pathname === "/api/v1/deploy") {
       deploys.push({
+        method: req.method,
         url: `${url.pathname}${url.search}`,
         authorization: req.headers.authorization,
       });
@@ -131,6 +132,7 @@ describe("deploy-poller.sh", () => {
     expect(run.code).toBe(0);
     expect(deploys).toEqual([
       {
+        method: "POST",
         url: "/api/v1/deploy?uuid=app1,app2",
         authorization: "Bearer coolify-secret",
       },
