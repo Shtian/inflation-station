@@ -58,4 +58,3 @@ The app's interface is Norwegian Bokmål only. There is no i18n layer and no Eng
 | Loading… | Laster inn… |
 | Something went wrong | Noe gikk galt |
 | Try again | Prøv igjen |
-| Update (self-update) | Oppdater |

@@ -10,7 +10,7 @@ Sentry.init({
     environment:
       document
         .querySelector('meta[name="sentry-environment"]')
-        ?.getAttribute("content") || ENV.VITE_SENTRY_ENVIRONMENT,
+        ?.getAttribute("content") ?? undefined,
   }),
   release: getSentryRelease(
     import.meta.env.VITE_APP_VERSION,

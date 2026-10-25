@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Starts the app in the Docker image: backs up and migrates the database
-# (as update.sh does under pm2), then hands the process over to the server.
+# Starts the app in the Docker image: backs up and migrates the database,
+# then hands the process over to the server.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

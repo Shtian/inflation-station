@@ -44,8 +44,6 @@ import { Route as ApiMonthlyReviewGenerateRouteImport } from './routes/api/month
 import { Route as ApiMonthlyReviewSystemPromptRouteImport } from './routes/api/monthly-review/system-prompt'
 import { Route as ApiMonthlyReviewTimelineRouteImport } from './routes/api/monthly-review/timeline'
 import { Route as ApiOnboardingChatRouteImport } from './routes/api/onboarding/chat'
-import { Route as ApiSelfUpdateAvailabilityRouteImport } from './routes/api/self-update/availability'
-import { Route as ApiSelfUpdateStatusRouteImport } from './routes/api/self-update/status'
 import { Route as ApiTransactionsTransactionIdRouteImport } from './routes/api/transactions/$transactionId'
 import { Route as ApiCategoriesCategoryIdHintGuessRouteImport } from './routes/api/categories/$categoryId/hint-guess'
 import { Route as ApiCategoriesCategoryIdMerchantsRouteImport } from './routes/api/categories/$categoryId/merchants'
@@ -230,17 +228,6 @@ const ApiOnboardingChatRoute = ApiOnboardingChatRouteImport.update({
   path: '/api/onboarding/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiSelfUpdateAvailabilityRoute =
-  ApiSelfUpdateAvailabilityRouteImport.update({
-    id: '/api/self-update/availability',
-    path: '/api/self-update/availability',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiSelfUpdateStatusRoute = ApiSelfUpdateStatusRouteImport.update({
-  id: '/api/self-update/status',
-  path: '/api/self-update/status',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiTransactionsTransactionIdRoute =
   ApiTransactionsTransactionIdRouteImport.update({
     id: '/$transactionId',
@@ -296,8 +283,6 @@ export interface FileRoutesByFullPath {
   '/api/monthly-review/system-prompt': typeof ApiMonthlyReviewSystemPromptRoute
   '/api/monthly-review/timeline': typeof ApiMonthlyReviewTimelineRoute
   '/api/onboarding/chat': typeof ApiOnboardingChatRoute
-  '/api/self-update/availability': typeof ApiSelfUpdateAvailabilityRoute
-  '/api/self-update/status': typeof ApiSelfUpdateStatusRoute
   '/api/transactions/$transactionId': typeof ApiTransactionsTransactionIdRoute
   '/api/categories/$categoryId/hint-guess': typeof ApiCategoriesCategoryIdHintGuessRoute
   '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
@@ -338,8 +323,6 @@ export interface FileRoutesByTo {
   '/api/monthly-review/system-prompt': typeof ApiMonthlyReviewSystemPromptRoute
   '/api/monthly-review/timeline': typeof ApiMonthlyReviewTimelineRoute
   '/api/onboarding/chat': typeof ApiOnboardingChatRoute
-  '/api/self-update/availability': typeof ApiSelfUpdateAvailabilityRoute
-  '/api/self-update/status': typeof ApiSelfUpdateStatusRoute
   '/api/transactions/$transactionId': typeof ApiTransactionsTransactionIdRoute
   '/api/categories/$categoryId/hint-guess': typeof ApiCategoriesCategoryIdHintGuessRoute
   '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
@@ -381,8 +364,6 @@ export interface FileRoutesById {
   '/api/monthly-review/system-prompt': typeof ApiMonthlyReviewSystemPromptRoute
   '/api/monthly-review/timeline': typeof ApiMonthlyReviewTimelineRoute
   '/api/onboarding/chat': typeof ApiOnboardingChatRoute
-  '/api/self-update/availability': typeof ApiSelfUpdateAvailabilityRoute
-  '/api/self-update/status': typeof ApiSelfUpdateStatusRoute
   '/api/transactions/$transactionId': typeof ApiTransactionsTransactionIdRoute
   '/api/categories/$categoryId/hint-guess': typeof ApiCategoriesCategoryIdHintGuessRoute
   '/api/categories/$categoryId/merchants': typeof ApiCategoriesCategoryIdMerchantsRoute
@@ -425,8 +406,6 @@ export interface FileRouteTypes {
     | '/api/monthly-review/system-prompt'
     | '/api/monthly-review/timeline'
     | '/api/onboarding/chat'
-    | '/api/self-update/availability'
-    | '/api/self-update/status'
     | '/api/transactions/$transactionId'
     | '/api/categories/$categoryId/hint-guess'
     | '/api/categories/$categoryId/merchants'
@@ -467,8 +446,6 @@ export interface FileRouteTypes {
     | '/api/monthly-review/system-prompt'
     | '/api/monthly-review/timeline'
     | '/api/onboarding/chat'
-    | '/api/self-update/availability'
-    | '/api/self-update/status'
     | '/api/transactions/$transactionId'
     | '/api/categories/$categoryId/hint-guess'
     | '/api/categories/$categoryId/merchants'
@@ -509,8 +486,6 @@ export interface FileRouteTypes {
     | '/api/monthly-review/system-prompt'
     | '/api/monthly-review/timeline'
     | '/api/onboarding/chat'
-    | '/api/self-update/availability'
-    | '/api/self-update/status'
     | '/api/transactions/$transactionId'
     | '/api/categories/$categoryId/hint-guess'
     | '/api/categories/$categoryId/merchants'
@@ -549,8 +524,6 @@ export interface RootRouteChildren {
   ApiMonthlyReviewSystemPromptRoute: typeof ApiMonthlyReviewSystemPromptRoute
   ApiMonthlyReviewTimelineRoute: typeof ApiMonthlyReviewTimelineRoute
   ApiOnboardingChatRoute: typeof ApiOnboardingChatRoute
-  ApiSelfUpdateAvailabilityRoute: typeof ApiSelfUpdateAvailabilityRoute
-  ApiSelfUpdateStatusRoute: typeof ApiSelfUpdateStatusRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -800,20 +773,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOnboardingChatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/self-update/availability': {
-      id: '/api/self-update/availability'
-      path: '/api/self-update/availability'
-      fullPath: '/api/self-update/availability'
-      preLoaderRoute: typeof ApiSelfUpdateAvailabilityRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/self-update/status': {
-      id: '/api/self-update/status'
-      path: '/api/self-update/status'
-      fullPath: '/api/self-update/status'
-      preLoaderRoute: typeof ApiSelfUpdateStatusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/transactions/$transactionId': {
       id: '/api/transactions/$transactionId'
       path: '/$transactionId'
@@ -936,8 +895,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMonthlyReviewSystemPromptRoute: ApiMonthlyReviewSystemPromptRoute,
   ApiMonthlyReviewTimelineRoute: ApiMonthlyReviewTimelineRoute,
   ApiOnboardingChatRoute: ApiOnboardingChatRoute,
-  ApiSelfUpdateAvailabilityRoute: ApiSelfUpdateAvailabilityRoute,
-  ApiSelfUpdateStatusRoute: ApiSelfUpdateStatusRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

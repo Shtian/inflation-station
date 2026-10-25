@@ -2,8 +2,6 @@ node_modules
 .output
 .nitro
 .tanstack
-.releases
-.update
 .env*
 !.env.schema
 env.d.ts

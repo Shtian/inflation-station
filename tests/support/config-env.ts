@@ -14,7 +14,6 @@ const BASELINE: ConfigEnv = {
   DATABASE_URL: "file:./prisma/unit-test-unused.db",
   OPENAI_MESSAGE_CLEANUP_ENABLED: true,
   OPENAI_HINT_SUGGESTIONS_ENABLED: true,
-  VITE_SENTRY_ENVIRONMENT: "production",
 };
 
 const config = vi.hoisted(() => ({}) as ConfigEnv);
