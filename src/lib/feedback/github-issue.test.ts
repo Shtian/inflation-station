@@ -1,66 +1,94 @@
 import { describe, expect, it, vi } from "vite-plus/test";
-import { type CommandRunner, createGithubIssue } from "./github-issue";
+import { createGithubIssue } from "./github-issue";
 
-const input = {
-  repo: "Shtian/inflation-station",
+const target = { repo: "Shtian/inflation-station", token: "github_pat_test" };
+
+const issue = {
   title: "Save button does nothing",
   body: "## What happened\nNothing.",
   labels: ["bug", "needs-triage"],
 };
 
-describe("createGithubIssue", () => {
-  it("runs gh without a shell, pipes the body on stdin and parses the URL", async () => {
-    const run = vi.fn<CommandRunner>().mockResolvedValue({
-      stdout: "https://github.com/Shtian/inflation-station/issues/171\n",
-      stderr: "",
-      error: null,
-    });
+function respond(status: number, body: string) {
+  return vi
+    .fn<typeof fetch>()
+    .mockResolvedValue(new Response(body, { status }));
+}
 
-    await expect(createGithubIssue(input, run)).resolves.toEqual({
+describe("createGithubIssue", () => {
+  it("posts the issue to the repo with the token and returns its number and URL", async () => {
+    const fetchFn = respond(
+      201,
+      JSON.stringify({
+        number: 171,
+        html_url: "https://github.com/Shtian/inflation-station/issues/171",
+      }),
+    );
+
+    await expect(createGithubIssue(target, issue, fetchFn)).resolves.toEqual({
       number: 171,
       url: "https://github.com/Shtian/inflation-station/issues/171",
     });
-    expect(run).toHaveBeenCalledWith(
-      "gh",
-      [
-        "issue",
-        "create",
-        "--repo",
-        "Shtian/inflation-station",
-        "--title",
-        "Save button does nothing",
-        "--body-file",
-        "-",
-        "--label",
-        "bug",
-        "--label",
-        "needs-triage",
-      ],
-      "## What happened\nNothing.",
+
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(
+      "https://api.github.com/repos/Shtian/inflation-station/issues",
+    );
+    expect(init?.method).toBe("POST");
+    expect(init?.headers).toMatchObject({
+      Authorization: "Bearer github_pat_test",
+      Accept: "application/vnd.github+json",
+    });
+    expect(JSON.parse(init?.body as string)).toEqual({
+      title: "Save button does nothing",
+      body: "## What happened\nNothing.",
+      labels: ["bug", "needs-triage"],
+    });
+  });
+
+  it("includes GitHub's status and message when it rejects the token", async () => {
+    const fetchFn = respond(
+      401,
+      JSON.stringify({
+        message: "Bad credentials",
+        documentation_url: "https://docs.github.com/rest",
+      }),
+    );
+
+    await expect(createGithubIssue(target, issue, fetchFn)).rejects.toThrow(
+      "Kunne ikke opprette GitHub-saken: 401 Bad credentials",
     );
   });
 
-  it("includes stderr in the error when gh fails", async () => {
-    const run = vi.fn<CommandRunner>().mockResolvedValue({
-      stdout: "",
-      stderr: "could not add label: 'needs-triage' not found\n",
-      error: new Error("Command failed: gh issue create"),
-    });
+  it("includes validation errors when GitHub rejects the issue", async () => {
+    const fetchFn = respond(
+      422,
+      JSON.stringify({
+        message: "Validation Failed",
+        errors: [{ resource: "Issue", field: "title", code: "missing_field" }],
+      }),
+    );
 
-    await expect(createGithubIssue(input, run)).rejects.toThrow(
-      "Kunne ikke opprette GitHub-saken: could not add label: 'needs-triage' not found",
+    await expect(createGithubIssue(target, issue, fetchFn)).rejects.toThrow(
+      'Kunne ikke opprette GitHub-saken: 422 Validation Failed [{"resource":"Issue","field":"title","code":"missing_field"}]',
     );
   });
 
-  it("fails when gh prints no issue URL", async () => {
-    const run = vi.fn<CommandRunner>().mockResolvedValue({
-      stdout: "Creating issue in Shtian/inflation-station\n",
-      stderr: "",
-      error: null,
-    });
+  it("reports a network failure as a GitHub error", async () => {
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockRejectedValue(new TypeError("fetch failed"));
 
-    await expect(createGithubIssue(input, run)).rejects.toThrow(
-      "gh oppga ingen URL til saken. Utdata: Creating issue in Shtian/inflation-station",
+    await expect(createGithubIssue(target, issue, fetchFn)).rejects.toThrow(
+      "Kunne ikke nå GitHub: fetch failed",
+    );
+  });
+
+  it("fails when GitHub answers without an issue URL", async () => {
+    const fetchFn = respond(201, JSON.stringify({ number: 171 }));
+
+    await expect(createGithubIssue(target, issue, fetchFn)).rejects.toThrow(
+      'GitHub oppga ingen URL til saken. Svar: {"number":171}',
     );
   });
 });

@@ -6,8 +6,7 @@ import {
   createFeedbackTools,
   FEEDBACK_AGENT_MODEL,
   FEEDBACK_SYSTEM_PROMPT,
-  resolveFeedbackDisabledReason,
-  resolveFeedbackRepo,
+  resolveFeedbackAvailability,
   toModelMessages,
 } from "@/lib/feedback/agent";
 import {
@@ -17,6 +16,7 @@ import {
 import {
   createGithubIssue,
   GithubIssueError,
+  type IssueInput,
 } from "@/lib/feedback/github-issue";
 import { setAiChatScope } from "@/lib/sentry/ai-chat";
 
@@ -31,17 +31,15 @@ export const Route = createFileRoute("/api/feedback/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const disabledReason = resolveFeedbackDisabledReason();
-        const repo = resolveFeedbackRepo();
-        if (disabledReason || !repo) {
+        const availability = resolveFeedbackAvailability();
+        if (!availability.enabled) {
           return Response.json(
-            {
-              error: "FEEDBACK_UNAVAILABLE",
-              reason: disabledReason ?? "repo_missing",
-            },
+            { error: "FEEDBACK_UNAVAILABLE", reason: availability.reason },
             { status: 503 },
           );
         }
+        const createIssue = (issue: IssueInput) =>
+          createGithubIssue(availability.github, issue);
 
         let payload: unknown;
         try {
@@ -52,9 +50,8 @@ export const Route = createFileRoute("/api/feedback/chat")({
 
         // Validation only reads the tool schemas, so the conversation is not needed yet.
         const schemaTools = createFeedbackTools({
-          repo,
           messages: [],
-          createIssue: createGithubIssue,
+          createIssue,
         });
         const validation = await safeValidateUIMessages<FeedbackUIMessage>({
           messages: (payload as { messages?: unknown } | null)?.messages,
@@ -72,9 +69,8 @@ export const Route = createFileRoute("/api/feedback/chat")({
           apiKey: ENV.OPENAI_API_KEY?.trim() ?? "",
         });
         const tools = createFeedbackTools({
-          repo,
           messages,
-          createIssue: createGithubIssue,
+          createIssue,
         });
         const result = streamText({
           model: openai.chat(FEEDBACK_AGENT_MODEL),
@@ -89,7 +85,7 @@ export const Route = createFileRoute("/api/feedback/chat")({
 
         return result.toUIMessageStreamResponse({
           originalMessages: messages,
-          // The SDK masks every error by default; gh failures are safe and actionable.
+          // The SDK masks every error by default; GitHub failures are safe and actionable.
           onError: (error) => {
             if (error instanceof GithubIssueError) {
               return error.message;

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import {
   createFeedbackTools,
   formatIssueBody,
-  resolveFeedbackDisabledReason,
+  resolveFeedbackAvailability,
   toModelMessages,
 } from "./agent";
 import type { FeedbackUIMessage, PickedElement } from "./contract";
@@ -27,26 +27,44 @@ function assistantMessage(id: string, text: string): FeedbackUIMessage {
   return { id, role: "assistant", parts: [{ type: "text", text }] };
 }
 
-describe("resolveFeedbackDisabledReason", () => {
-  it("is enabled with a key and an owner/name repo", () => {
+describe("resolveFeedbackAvailability", () => {
+  it("is enabled with a key, a repo and a token, trimmed", () => {
     expect(
-      resolveFeedbackDisabledReason({
+      resolveFeedbackAvailability({
         OPENAI_API_KEY: "sk-test",
         FEEDBACK_GITHUB_REPO: " Shtian/inflation-station ",
+        FEEDBACK_GITHUB_TOKEN: " github_pat_test ",
       }),
-    ).toBeNull();
+    ).toEqual({
+      enabled: true,
+      github: { repo: "Shtian/inflation-station", token: "github_pat_test" },
+    });
   });
 
-  it("reports key_missing before checking the repo", () => {
-    expect(resolveFeedbackDisabledReason({ OPENAI_API_KEY: "  " })).toBe(
-      "key_missing",
-    );
+  it("reports key_missing before checking GitHub", () => {
+    expect(resolveFeedbackAvailability({ OPENAI_API_KEY: "  " })).toEqual({
+      enabled: false,
+      reason: "key_missing",
+    });
   });
 
   it("reports repo_missing when the repo is unset", () => {
-    expect(resolveFeedbackDisabledReason({ OPENAI_API_KEY: "sk-test" })).toBe(
-      "repo_missing",
-    );
+    expect(
+      resolveFeedbackAvailability({
+        OPENAI_API_KEY: "sk-test",
+        FEEDBACK_GITHUB_TOKEN: "github_pat_test",
+      }),
+    ).toEqual({ enabled: false, reason: "repo_missing" });
+  });
+
+  it("reports token_missing when the token is blank", () => {
+    expect(
+      resolveFeedbackAvailability({
+        OPENAI_API_KEY: "sk-test",
+        FEEDBACK_GITHUB_REPO: "Shtian/inflation-station",
+        FEEDBACK_GITHUB_TOKEN: " ",
+      }),
+    ).toEqual({ enabled: false, reason: "token_missing" });
   });
 });
 
@@ -236,7 +254,6 @@ describe("createFeedbackTools", () => {
       url: "https://github.com/Shtian/inflation-station/issues/42",
     });
     const tools = createFeedbackTools({
-      repo: "Shtian/inflation-station",
       messages: [userMessage("u1", "Idea", { pathname: "/categories" })],
       createIssue,
     });
@@ -255,7 +272,6 @@ describe("createFeedbackTools", () => {
       url: "https://github.com/Shtian/inflation-station/issues/42",
     });
     expect(createIssue).toHaveBeenCalledWith({
-      repo: "Shtian/inflation-station",
       title: "Bulk recategorize",
       body: "## Proposed idea\nBulk.\n\n## Context\n\n**Pages**\n- `/categories`\n\n_Submitted via in-app feedback._",
       labels: ["enhancement", "needs-triage"],

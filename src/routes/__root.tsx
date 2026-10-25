@@ -11,7 +11,7 @@ import appCss from "@/app/globals.css?url";
 import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { resolveFeedbackDisabledReason } from "@/lib/feedback/agent";
+import { resolveFeedbackAvailability } from "@/lib/feedback/agent";
 import { getSentryEnvironment } from "@/lib/sentry/environment";
 import { SIDEBAR_BOOT_SCRIPT } from "@/lib/sidebar-state";
 import { PALETTE_BOOT_SCRIPT } from "@/lib/theme-palettes";
@@ -19,7 +19,7 @@ import { AppSidebar } from "./-shell/app-sidebar";
 import fontsCss from "./-shell/fonts.css?url";
 
 const getShellFlags = createServerFn({ method: "GET" }).handler(() => ({
-  feedbackEnabled: resolveFeedbackDisabledReason() === null,
+  feedbackEnabled: resolveFeedbackAvailability().enabled,
   sentryEnvironment: getSentryEnvironment(),
 }));
 
