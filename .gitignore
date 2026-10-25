@@ -52,12 +52,6 @@ yarn-error.log*
 # impeccable design-skill run artifacts (critique snapshots, live sessions)
 /.impeccable/
 
-# self-update run state (lock, log, exit code)
-/.update/
-
-# deployed standalone builds that pm2 runs (see update.sh)
-/.releases/
-
 # TanStack Start / Nitro build output
 /.output/
 /.nitro/

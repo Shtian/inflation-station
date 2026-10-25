@@ -3,7 +3,6 @@
 src/app/onboarding/use-setup-snapshot.ts	Could not load .
 src/lib/onboarding/agent.ts	Propose bank accounts to add. The user reviews the list and must approve it before anything is created. Names that already exist are skipped.
 src/lib/onboarding/agent.ts	Propose categories to add, each with a kind (EXPENSE, INCOME, or TRANSFER) and an optional short classifier hint for the AI categorizer. The user must approve the list before anything is created. Names that already exist are skipped.
-src/app/actions/start-self-update.ts	The self-update script did not start.
 src/components/ai-elements/confirmation.tsx	Confirmation components must be used within Confirmation
 src/components/ai-elements/message.tsx	MessageBranch components must be used within MessageBranch
 src/components/ai-elements/prompt-input.tsx	Wrap your component inside <PromptInputProvider> to use usePromptInputController().

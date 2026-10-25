@@ -18,7 +18,7 @@ Inflation Station puts a person's spending from several Norwegian banks and card
 - **AI insight:** a monthly review explains the month instead of only charting it.
 
 ## Operating Context
-- Self-hosted on a Raspberry Pi or Linux box under pm2, reached over the local network or through a reverse proxy. There is no login, so access control lives at the proxy.
+- Self-hosted as a Docker image on Coolify, reached over the local network or through a reverse proxy. There is no login, so access control lives at the proxy.
 - Data is Norwegian: amounts are in NOK with nb-NO formatting, and bank exports and invoices come from Norwegian providers. The UI copy is currently in English, and a Norwegian translation or localization is planned.
 - Core workflow: import (CSV column mapping or PDF provider) → review stage (rule match / AI suggestion, dedupe) → transactions → monthly review. Supporting surfaces are overview dashboard, accounts, categories with classifier hints, onboarding (guide + chat), and a feedback widget that files GitHub issues.
 - AI features need `OPENAI_API_KEY`. Everything else runs fully locally on SQLite.

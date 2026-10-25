@@ -20,7 +20,6 @@ import fontsCss from "./-shell/fonts.css?url";
 
 const getShellFlags = createServerFn({ method: "GET" }).handler(() => ({
   feedbackEnabled: resolveFeedbackDisabledReason() === null,
-  selfUpdateEnabled: Boolean(process.env.SELF_UPDATE_ROOT),
   sentryEnvironment: getSentryEnvironment(),
 }));
 

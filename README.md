@@ -46,87 +46,9 @@ Local-first personal economy dashboard built with TanStack Start on Vite+, TypeS
 - App code reads config through the typed `ENV` from `varlock/env`. Its types are generated into the gitignored `env.d.ts`; `pnpm dev` and `pnpm build` regenerate it, or run `pnpm exec varlock codegen` before `pnpm typecheck` in a fresh checkout.
 - The server reads `DATABASE_URL`, the OpenAI and TypeSafe keys and flags, and `FEEDBACK_GITHUB_REPO` when it boots, so restart it after a change. The Sentry values are baked into the build, so rebuild after a change.
 
-## Self-Hosting (Raspberry Pi / Linux)
-
-The app runs as a production build managed by pm2, served on port 3000 by default.
-
-### Prerequisites
-
-- Node.js 22.5+ (the database backup script uses `node:sqlite`)
-- pnpm 12 (pinned via `packageManager`)
-- pm2 (`npm install -g pm2`)
-- Git
-
-### First-time Setup
-
-1. Clone the repo and enter the directory.
-2. Create `.env` and set `DATABASE_URL` to a path **outside** the repo (so it survives pulls). [`.env.schema`](.env.schema) lists every other setting:
-   ```
-   DATABASE_URL=file:/path/to/data.db
-   ```
-   Optionally set `PM2_APP_NAME` (default `inflation-station`) and `PORT` (default `3000`).
-3. Run the update script to install, migrate, build, and start:
-   ```bash
-   bash update.sh
-   ```
-4. Optionally save the pm2 process list to auto-start on reboot:
-   ```bash
-   pm2 save
-   pm2 startup
-   ```
-
-The app will be reachable at `http://<host-ip>:<PORT>`.
-
-### Updating
-
-Pull the latest changes, then run the update script:
-
-```bash
-git pull origin main
-bash update.sh
-```
-
-The script installs dependencies, backs up the database (to `<database dir>/backups`), runs migrations, rebuilds, and restarts pm2 automatically. The currently running build is displayed in the app footer.
-
-pm2 runs the build from `.releases/current`, a link to the latest release. The script only switches that link after a build succeeds, so a failed build leaves the running site untouched. The previous release is kept until the next deploy.
-
-The footer also has an Update button that does the same from the browser. It runs `git pull --ff-only` and then `update.sh`, and skips the rebuild and restart when the pull brings nothing new. Output goes to `.update/update.log`. The button only appears under the pm2 process that `ecosystem.config.js` starts.
-
-To take a backup manually, run `scripts/backup-db.sh [output-dir]`. It is safe to run while the app is running.
-
-### Error Monitoring (Sentry)
-
-Sentry is optional and off unless `VITE_SENTRY_DSN` is set in `.env`. The DSN is baked into the build, so run `bash update.sh` after changing it. To get readable stack traces, also set `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN`; the build then uploads source maps. Errors, stack traces, a small sample of traces, and every AI chat are sent. AI calls include their prompts, answers, and tool results, which can contain transaction data, so Sentry's Agent Tracing shows full conversations. Request bodies, headers, cookies, and database values are not sent.
-
-`update.sh` also reports a failed deploy to Sentry as one event, such as "Deploy failed at build (exit 137)", with the last 50 lines of the failed step's output. A failed migration sends only the step and the exit code, because migration errors can contain database values.
-
-### Running Multiple Instances
-
-Each clone is a separate instance with its own database, so several people can run their own copy on the same machine. `ecosystem.config.js` runs the app from the folder it lives in and reads the pm2 name and port from that clone's `.env`.
-
-1. Clone the repo into a second folder.
-2. Give its `.env` a unique database path, pm2 name, and port:
-   ```
-   DATABASE_URL=file:/path/to/other-data/data.db
-   PM2_APP_NAME=inflation-station-other
-   PORT=3001
-   ```
-3. Run `bash update.sh` in that folder, then `pm2 save` so the new process starts on reboot.
-4. Point your reverse proxy at the new port. Use a separate hostname rather than a sub-path; the app is not configured with a `basePath`.
-
-Each clone's `update.sh` backs up, migrates, rebuilds, and restarts only its own instance, so update each clone separately.
-
-The app has no login. Anyone who can reach an instance's address can see its data, so add authentication at the reverse proxy (for example Caddy's `basic_auth`) if instances should be private from each other.
-
-The Spør chat (`/assistant`) also spends OpenAI tokens on the instance's `OPENAI_API_KEY` for anyone who can reach it, so authentication at the reverse proxy controls cost as well as privacy.
-
-### Feedback Widget
-
-Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) alongside `OPENAI_API_KEY` to show a floating Feedback button on every page. It chats with the user about a bug or idea and, once they approve the draft, files a GitHub issue with the `gh` CLI, so run `gh auth login` on the host as the user that runs the app. The `bug`, `enhancement`, and `needs-triage` labels must exist in the target repo. The server reads it at runtime, so restart the app after changing it (`bash update.sh`).
-
 ## Self-Hosting on Coolify
 
-The app also ships as a Docker image, `ghcr.io/shtian/inflation-station:latest`. Every instance runs the same image with its own volume and settings.
+The app ships as a Docker image, `ghcr.io/shtian/inflation-station:latest`. Every instance runs the same image with its own volume and settings.
 
 ### Adding an instance
 
@@ -142,7 +64,9 @@ The app also ships as a Docker image, `ghcr.io/shtian/inflation-station:latest`.
    ```
    Generate the hash with `htpasswd -nbB <user> <password>`, and double every `$` in it when the label goes through Docker Compose.
 
-On every start the container creates the database directory, backs up an existing database to `/data/backups`, runs `prisma migrate deploy`, and then starts the server.
+On every start the container creates the database directory, backs up an existing database to `/data/backups`, runs `prisma migrate deploy`, and then starts the server. To take a backup manually, run `scripts/backup-db.sh [output-dir]` in the container. It is safe to run while the app is running.
+
+Anyone who can reach an instance's address can see its data, so keep the basic auth in place. The Spør chat (`/assistant`) also spends OpenAI tokens on the instance's `OPENAI_API_KEY` for anyone who can reach it, so authentication controls cost as well as privacy.
 
 ### Health check
 
@@ -206,12 +130,16 @@ The first run only records the current digest. Later runs deploy when it changes
 
 In Coolify, set the app's image tag to an older `X.Y.Z` and redeploy. The poller leaves the app alone until `:latest` moves again, and then deploys whatever image the app is set to, so set the tag back to `latest` once the fix is released.
 
-### Differences from pm2
+### Image notes
 
-- The Sentry DSN, org, and project are build args, so they are baked into the image, not set per instance. The build reads `SENTRY_AUTH_TOKEN` from a BuildKit secret, which keeps it out of the public image.
-- The footer shows the commit from the `SOURCE_COMMIT` build arg, since the image has no `.git`.
-- The Update button is hidden, because `SELF_UPDATE_ROOT` is not set. Update by deploying a newer image.
+- The footer shows the version and the commit from the `SOURCE_COMMIT` build arg, since the image has no `.git`. Update an instance by deploying a newer image.
 - The Feedback widget is unavailable, because the image has no `gh`. Leave `FEEDBACK_GITHUB_REPO` empty.
+
+### Error Monitoring (Sentry)
+
+Sentry is optional and off unless the image is built with `VITE_SENTRY_DSN`. The DSN, org, and project are build args, so they are baked into the image, not set per instance. The build reads `SENTRY_AUTH_TOKEN` from a BuildKit secret, which keeps it out of the public image, and uploads source maps when it is set. Set `SENTRY_ENVIRONMENT` per instance to tell instances apart; it defaults to `production`.
+
+Errors, stack traces, a small sample of traces, and every AI chat are sent. AI calls include their prompts, answers, and tool results, which can contain transaction data, so Sentry's Agent Tracing shows full conversations. Request bodies, headers, cookies, and database values are not sent.
 
 ### Building the image locally
 
@@ -274,6 +202,10 @@ Jev suggests a category for each imported row and helps guess which CSV columns 
 - Each case runs through the production `categorizeRowsWithJev`, including the confidence floor, with the categories and their classifier hints from the same database.
 - Transactions do not store the import's name, title, sender or recipient. The eval sends `merchant` (or the normalized merchant) as the name and leaves the other three empty, so it is a little harder than a real import.
 - The report counts suggested (correct and wrong), uncategorized, below floor and each unavailable reason, with p50 and max latency, then lists every wrong or missed row.
+
+## Optional Feedback Widget
+
+Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) alongside `OPENAI_API_KEY` to show a floating Feedback button on every page. It chats with the user about a bug or idea and, once they approve the draft, files a GitHub issue with the `gh` CLI, so run `gh auth login` on the host as the user that runs the app. The `bug`, `enhancement`, and `needs-triage` labels must exist in the target repo. The server reads it at boot, so restart the app after changing it. The Docker image has no `gh`, so the widget is unavailable there.
 
 ## Useful Commands
 
