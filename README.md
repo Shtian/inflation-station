@@ -144,6 +144,21 @@ The app also ships as a Docker image, `ghcr.io/shtian/inflation-station:latest`.
 
 On every start the container creates the database directory, backs up an existing database to `/data/backups`, runs `prisma migrate deploy`, and then starts the server.
 
+### Health check
+
+`GET /api/health` runs `SELECT 1` against the database. It returns `200 {"status":"ok"}` when the query succeeds and `503 {"status":"error"}` when it fails. [`scripts/healthcheck.mjs`](scripts/healthcheck.mjs) calls it from inside the container, and the image's `HEALTHCHECK` runs that script.
+
+Coolify ignores the image's `HEALTHCHECK` for a Docker Image resource. With its own check disabled, it treats a new container as healthy as soon as it starts and removes the old one. Enable the check on every instance under **Configuration → Healthcheck**:
+
+- **Check type:** Container command
+- **Command:** `node /app/scripts/healthcheck.mjs`
+- **Interval:** 30, **Timeout:** 5, **Retries:** 3
+- **Start period:** 60, so the backup and migrations finish before the first check
+
+Don't use the **HTTP request** type. It runs `curl` or `wget` inside the container, and the image has neither.
+
+With this check, Coolify keeps the running container until the new one turns healthy. If the new one never does, Coolify removes it, marks the deploy failed, and the old version keeps serving. This relies on Coolify's rolling update, which it skips when the app maps ports to the host or has a consistent container name, so leave both off.
+
 ### How releases reach Coolify
 
 1. Merging the bumpy release PR tags `vX.Y.Z` and creates the GitHub release.

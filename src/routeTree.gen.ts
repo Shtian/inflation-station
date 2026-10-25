@@ -15,6 +15,7 @@ import { Route as AccountsIndexRouteImport } from './routes/accounts/index'
 import { Route as ApiAccountsRouteImport } from './routes/api/accounts'
 import { Route as ApiCategoriesRouteImport } from './routes/api/categories'
 import { Route as ApiCategoryRulesRouteImport } from './routes/api/category-rules'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiTransactionsRouteImport } from './routes/api/transactions'
 import { Route as AssistantIndexRouteImport } from './routes/assistant/index'
 import { Route as CategoriesIndexRouteImport } from './routes/categories/index'
@@ -77,6 +78,11 @@ const ApiCategoriesRoute = ApiCategoriesRouteImport.update({
 const ApiCategoryRulesRoute = ApiCategoryRulesRouteImport.update({
   id: '/api/category-rules',
   path: '/api/category-rules',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiTransactionsRoute = ApiTransactionsRouteImport.update({
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/api/accounts': typeof ApiAccountsRouteWithChildren
   '/api/categories': typeof ApiCategoriesRouteWithChildren
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
+  '/api/health': typeof ApiHealthRoute
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/monthly-review/$monthStart': typeof MonthlyReviewMonthStartRoute
   '/trips/$tripId': typeof TripsTripIdRoute
@@ -301,6 +308,7 @@ export interface FileRoutesByTo {
   '/api/accounts': typeof ApiAccountsRouteWithChildren
   '/api/categories': typeof ApiCategoriesRouteWithChildren
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
+  '/api/health': typeof ApiHealthRoute
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/monthly-review/$monthStart': typeof MonthlyReviewMonthStartRoute
   '/trips/$tripId': typeof TripsTripIdRoute
@@ -343,6 +351,7 @@ export interface FileRoutesById {
   '/api/accounts': typeof ApiAccountsRouteWithChildren
   '/api/categories': typeof ApiCategoriesRouteWithChildren
   '/api/category-rules': typeof ApiCategoryRulesRouteWithChildren
+  '/api/health': typeof ApiHealthRoute
   '/api/transactions': typeof ApiTransactionsRouteWithChildren
   '/monthly-review/$monthStart': typeof MonthlyReviewMonthStartRoute
   '/trips/$tripId': typeof TripsTripIdRoute
@@ -386,6 +395,7 @@ export interface FileRouteTypes {
     | '/api/accounts'
     | '/api/categories'
     | '/api/category-rules'
+    | '/api/health'
     | '/api/transactions'
     | '/monthly-review/$monthStart'
     | '/trips/$tripId'
@@ -427,6 +437,7 @@ export interface FileRouteTypes {
     | '/api/accounts'
     | '/api/categories'
     | '/api/category-rules'
+    | '/api/health'
     | '/api/transactions'
     | '/monthly-review/$monthStart'
     | '/trips/$tripId'
@@ -468,6 +479,7 @@ export interface FileRouteTypes {
     | '/api/accounts'
     | '/api/categories'
     | '/api/category-rules'
+    | '/api/health'
     | '/api/transactions'
     | '/monthly-review/$monthStart'
     | '/trips/$tripId'
@@ -510,6 +522,7 @@ export interface RootRouteChildren {
   ApiAccountsRoute: typeof ApiAccountsRouteWithChildren
   ApiCategoriesRoute: typeof ApiCategoriesRouteWithChildren
   ApiCategoryRulesRoute: typeof ApiCategoryRulesRouteWithChildren
+  ApiHealthRoute: typeof ApiHealthRoute
   ApiTransactionsRoute: typeof ApiTransactionsRouteWithChildren
   MonthlyReviewMonthStartRoute: typeof MonthlyReviewMonthStartRoute
   TripsTripIdRoute: typeof TripsTripIdRoute
@@ -582,6 +595,13 @@ declare module '@tanstack/react-router' {
       path: '/api/category-rules'
       fullPath: '/api/category-rules'
       preLoaderRoute: typeof ApiCategoryRulesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/transactions': {
@@ -889,6 +909,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAccountsRoute: ApiAccountsRouteWithChildren,
   ApiCategoriesRoute: ApiCategoriesRouteWithChildren,
   ApiCategoryRulesRoute: ApiCategoryRulesRouteWithChildren,
+  ApiHealthRoute: ApiHealthRoute,
   ApiTransactionsRoute: ApiTransactionsRouteWithChildren,
   MonthlyReviewMonthStartRoute: MonthlyReviewMonthStartRoute,
   TripsTripIdRoute: TripsTripIdRoute,
