@@ -49,10 +49,13 @@ COPY --from=build /app/.output ./.output
 COPY --from=build /app/env.d.ts ./
 COPY package.json .env.schema prisma.config.ts ./
 COPY prisma ./prisma
-COPY scripts/backup-db.sh scripts/docker-entrypoint.sh ./scripts/
+COPY scripts/backup-db.sh scripts/docker-entrypoint.sh scripts/healthcheck.mjs ./scripts/
 # A new volume mounted at /data takes this ownership, so the app can create
 # its database there.
 RUN mkdir /data && chown node:node /data
 USER node
 EXPOSE 3000
+# The start period covers the entrypoint's backup and `prisma migrate deploy`.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD ["node", "/app/scripts/healthcheck.mjs"]
 ENTRYPOINT ["scripts/docker-entrypoint.sh"]
