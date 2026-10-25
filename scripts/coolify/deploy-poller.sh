@@ -51,8 +51,9 @@ fi
 
 echo "$REPOSITORY:latest moved to $digest, deploying $COOLIFY_APP_UUIDS"
 # The token goes in through stdin so it stays out of the process list.
+# Coolify answers GET on this endpoint with 405 since it moved to POST.
 response="$(echo "Authorization: Bearer $COOLIFY_TOKEN" |
-  curl -sS -H @- -w '\n%{http_code}' \
+  curl -sS -X POST -H @- -w '\n%{http_code}' \
     "$COOLIFY_URL/api/v1/deploy?uuid=$COOLIFY_APP_UUIDS")" ||
   fail "Could not reach Coolify at $COOLIFY_URL"
 status="${response##*$'\n'}"
