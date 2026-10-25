@@ -41,10 +41,10 @@ Local-first personal economy dashboard built with TanStack Start on Vite+, TypeS
 [`.env.schema`](.env.schema) is the reference for every environment variable: its type, whether it is required, its default, and whether it is a secret. [Varlock](https://varlock.dev) loads it together with your gitignored `.env`, and values set in the process environment win over both. Secrets go in `.env` only.
 
 - `pnpm dev` and `pnpm build` validate the config first and stop with an error when a required value is missing or invalid. Only `DATABASE_URL` is required.
-- An empty or missing optional key turns its feature off: `OPENAI_API_KEY`, `TYPESAFE_API_KEY`, `FEEDBACK_GITHUB_REPO`, and `VITE_SENTRY_DSN`.
+- An empty or missing optional key turns its feature off: `OPENAI_API_KEY`, `TYPESAFE_API_KEY`, `FEEDBACK_GITHUB_REPO`, `FEEDBACK_GITHUB_TOKEN`, and `VITE_SENTRY_DSN`.
 - `pnpm exec varlock load` prints the resolved config with secrets masked.
 - App code reads config through the typed `ENV` from `varlock/env`. Its types are generated into the gitignored `env.d.ts`; `pnpm dev` and `pnpm build` regenerate it, or run `pnpm exec varlock codegen` before `pnpm typecheck` in a fresh checkout.
-- The server reads `DATABASE_URL`, the OpenAI and TypeSafe keys and flags, and `FEEDBACK_GITHUB_REPO` when it boots, so restart it after a change. The Sentry values are baked into the build, so rebuild after a change.
+- The server reads `DATABASE_URL`, the OpenAI and TypeSafe keys and flags, and the `FEEDBACK_GITHUB_*` values when it boots, so restart it after a change. The Sentry values are baked into the build, so rebuild after a change.
 
 ## Self-Hosting on Coolify
 
@@ -133,7 +133,6 @@ In Coolify, set the app's image tag to an older `X.Y.Z` and redeploy. The poller
 ### Image notes
 
 - The footer shows the version and the commit from the `SOURCE_COMMIT` build arg, since the image has no `.git`. Update an instance by deploying a newer image.
-- The Feedback widget is unavailable, because the image has no `gh`. Leave `FEEDBACK_GITHUB_REPO` empty.
 
 ### Error Monitoring (Sentry)
 
@@ -205,7 +204,7 @@ Jev suggests a category for each imported row and helps guess which CSV columns 
 
 ## Optional Feedback Widget
 
-Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) alongside `OPENAI_API_KEY` to show a floating Feedback button on every page. It chats with the user about a bug or idea and, once they approve the draft, files a GitHub issue with the `gh` CLI, so run `gh auth login` on the host as the user that runs the app. The `bug`, `enhancement`, and `needs-triage` labels must exist in the target repo. The server reads it at boot, so restart the app after changing it. The Docker image has no `gh`, so the widget is unavailable there.
+Set `FEEDBACK_GITHUB_REPO=owner/name` (for example `Shtian/inflation-station`) and `FEEDBACK_GITHUB_TOKEN` alongside `OPENAI_API_KEY` to show a floating Feedback button on every page. It chats with the user about a bug or idea and, once they approve the draft, files a GitHub issue through the GitHub REST API. Use a fine-grained personal access token limited to that repo with the Issues read and write permission. The `bug`, `enhancement`, and `needs-triage` labels must exist in the target repo. The server reads these at boot, so restart the app after changing them.
 
 ## Useful Commands
 

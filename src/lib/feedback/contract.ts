@@ -43,4 +43,7 @@ export type FeedbackUIMessage = UIMessage<
   FeedbackUITools
 >;
 
-export type FeedbackDisabledReason = "key_missing" | "repo_missing";
+export type FeedbackDisabledReason =
+  | "key_missing"
+  | "repo_missing"
+  | "token_missing";

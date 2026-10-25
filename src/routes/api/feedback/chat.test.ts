@@ -20,6 +20,7 @@ describe("POST /api/feedback/chat", () => {
     stubConfig({
       OPENAI_API_KEY: "test-key",
       FEEDBACK_GITHUB_REPO: "Shtian/inflation-station",
+      FEEDBACK_GITHUB_TOKEN: "github_pat_test",
     });
   });
 
@@ -44,6 +45,18 @@ describe("POST /api/feedback/chat", () => {
     await expect(response.json()).resolves.toEqual({
       error: "FEEDBACK_UNAVAILABLE",
       reason: "repo_missing",
+    });
+  });
+
+  it("answers 503 token_missing when the GitHub token is unset", async () => {
+    stubConfig({ FEEDBACK_GITHUB_TOKEN: undefined });
+
+    const response = await post(JSON.stringify({ messages: [] }));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "FEEDBACK_UNAVAILABLE",
+      reason: "token_missing",
     });
   });
 

@@ -8,22 +8,34 @@ import {
   issueDraftSchema,
   type PickedElement,
 } from "./contract";
+import type { FeedbackGithubTarget, IssueInput } from "./github-issue";
 
 export const FEEDBACK_AGENT_MODEL = "gpt-6-luna";
 
-export function resolveFeedbackDisabledReason(
-  env: Pick<TypedEnvSchema, "OPENAI_API_KEY" | "FEEDBACK_GITHUB_REPO"> = ENV,
-): FeedbackDisabledReason | null {
-  if (!env.OPENAI_API_KEY?.trim()) {
-    return "key_missing";
-  }
-  return resolveFeedbackRepo(env) ? null : "repo_missing";
-}
+type FeedbackEnv = Pick<
+  TypedEnvSchema,
+  "OPENAI_API_KEY" | "FEEDBACK_GITHUB_REPO" | "FEEDBACK_GITHUB_TOKEN"
+>;
 
-export function resolveFeedbackRepo(
-  env: Pick<TypedEnvSchema, "FEEDBACK_GITHUB_REPO"> = ENV,
-): string | null {
-  return env.FEEDBACK_GITHUB_REPO?.trim() || null;
+export type FeedbackAvailability =
+  | { enabled: true; github: FeedbackGithubTarget }
+  | { enabled: false; reason: FeedbackDisabledReason };
+
+export function resolveFeedbackAvailability(
+  env: FeedbackEnv = ENV,
+): FeedbackAvailability {
+  if (!env.OPENAI_API_KEY?.trim()) {
+    return { enabled: false, reason: "key_missing" };
+  }
+  const repo = env.FEEDBACK_GITHUB_REPO?.trim();
+  if (!repo) {
+    return { enabled: false, reason: "repo_missing" };
+  }
+  const token = env.FEEDBACK_GITHUB_TOKEN?.trim();
+  if (!token) {
+    return { enabled: false, reason: "token_missing" };
+  }
+  return { enabled: true, github: { repo, token } };
 }
 
 export const FEEDBACK_SYSTEM_PROMPT = `You are the feedback assistant inside Inflation Station, a personal-finance app (bank imports, transactions, categories, accounts, monthly reviews). Your only job is to turn a user's bug report or feature idea into a GitHub issue.
@@ -162,19 +174,12 @@ export function formatIssueBody(
   return sections.join("\n\n");
 }
 
-export type CreateIssueFn = (input: {
-  repo: string;
-  title: string;
-  body: string;
-  labels: string[];
-}) => Promise<CreatedIssue>;
+export type CreateIssueFn = (issue: IssueInput) => Promise<CreatedIssue>;
 
 export function createFeedbackTools({
-  repo,
   messages,
   createIssue,
 }: {
-  repo: string;
   messages: FeedbackUIMessage[];
   createIssue: CreateIssueFn;
 }) {
@@ -186,7 +191,6 @@ export function createFeedbackTools({
       needsApproval: true,
       execute: (draft): Promise<CreatedIssue> =>
         createIssue({
-          repo,
           title: draft.title,
           body: formatIssueBody(draft, messages),
           labels: [
