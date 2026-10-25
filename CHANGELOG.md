@@ -1,5 +1,12 @@
 # Changelog
 
+
+## 0.3.0
+<sub>2026-10-25</sub>
+
+- *(minor)*
+  Added a `/api/health` endpoint and an image health check, so Coolify keeps the running version when a new one can't reach its database.
+
 ## 0.2.0
 <sub>2026-10-24</sub>
 
