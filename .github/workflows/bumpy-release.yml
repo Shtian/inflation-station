@@ -117,6 +117,9 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Mark job start
+        run: echo "IMAGE_START_MS=$(date +%s%3N)" >> "$GITHUB_ENV"
+
       - name: Checkout
         uses: actions/checkout@v7.0.1
         with:
@@ -136,7 +139,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Build and push
+      - name: Mark build start
+        run: echo "IMAGE_BUILD_START_MS=$(date +%s%3N)" >> "$GITHUB_ENV"
+
+      - id: build
+        name: Build and push
         uses: docker/build-push-action@v7.4.0
         with:
           context: .
@@ -153,3 +160,14 @@ jobs:
             SENTRY_PROJECT=${{ vars.SENTRY_PROJECT }}
           secrets: |
             SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+
+      # Runs right after the build, so its start is the build's end.
+      - name: Report timings to Sentry
+        if: always()
+        run: node scripts/report-image-metrics.mjs
+        env:
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          IMAGE_VERSION: ${{ steps.version.outputs.version }}
+          SOURCE_COMMIT: ${{ github.sha }}
+          IMAGE_BUILD_OUTCOME: ${{ steps.build.outcome }}
+          IMAGE_JOB_STATUS: ${{ job.status }}
