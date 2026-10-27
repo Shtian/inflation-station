@@ -1,30 +1,64 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { trace } from "@opentelemetry/api";
+import {
+  chat,
+  chatParamsFromRequestBody,
+  EventType,
+  maxIterations,
+  type StreamChunk,
+  toServerSentEventsResponse,
+} from "@tanstack/ai";
+import { createOpenaiChat } from "@tanstack/ai-openai";
+import { otelMiddleware } from "@tanstack/ai/middlewares/otel";
 import { createFileRoute } from "@tanstack/react-router";
-import { safeValidateUIMessages, stepCountIs, streamText } from "ai";
 import { ENV } from "varlock/env";
 import {
   createFeedbackTools,
   FEEDBACK_AGENT_MODEL,
   FEEDBACK_SYSTEM_PROMPT,
+  feedbackContextMiddleware,
   resolveFeedbackAvailability,
-  toModelMessages,
 } from "@/lib/feedback/agent";
 import {
-  type FeedbackUIMessage,
+  type FeedbackMessageMetadata,
   feedbackMessageMetadataSchema,
 } from "@/lib/feedback/contract";
 import {
   createGithubIssue,
-  GithubIssueError,
   type IssueInput,
 } from "@/lib/feedback/github-issue";
 import { setAiChatScope } from "@/lib/sentry/ai-chat";
+
+const GENERIC_ERROR = "Tilbakemeldingsassistenten fikk et problem.";
 
 function invalidMessages(message: string) {
   return Response.json(
     { error: "INVALID_FEEDBACK_MESSAGES", message },
     { status: 400 },
   );
+}
+
+// TanStack AI sends provider errors to the client verbatim, both the ones a
+// provider reports in the stream and the ones it throws.
+async function* maskRunErrors(
+  stream: AsyncIterable<StreamChunk>,
+): AsyncIterable<StreamChunk> {
+  try {
+    for await (const chunk of stream) {
+      if (chunk.type !== EventType.RUN_ERROR) {
+        yield chunk;
+        continue;
+      }
+      console.error("Feedback chat failed", chunk.message);
+      yield {
+        ...chunk,
+        message: GENERIC_ERROR,
+        error: { message: GENERIC_ERROR },
+      };
+    }
+  } catch (error) {
+    console.error("Feedback chat failed", error);
+    throw new Error(GENERIC_ERROR);
+  }
 }
 
 export const Route = createFileRoute("/api/feedback/chat")({
@@ -41,59 +75,55 @@ export const Route = createFileRoute("/api/feedback/chat")({
         const createIssue = (issue: IssueInput) =>
           createGithubIssue(availability.github, issue);
 
-        let payload: unknown;
+        let params: Awaited<ReturnType<typeof chatParamsFromRequestBody>>;
         try {
-          payload = await request.json();
-        } catch {
-          return invalidMessages("Forespørselen må være JSON.");
+          params = await chatParamsFromRequestBody(await request.json());
+        } catch (error) {
+          return invalidMessages(
+            error instanceof SyntaxError
+              ? "Forespørselen må være JSON."
+              : String(error instanceof Error ? error.message : error),
+          );
         }
 
-        // Validation only reads the tool schemas, so the conversation is not needed yet.
-        const schemaTools = createFeedbackTools({
-          messages: [],
-          createIssue,
-        });
-        const validation = await safeValidateUIMessages<FeedbackUIMessage>({
-          messages: (payload as { messages?: unknown } | null)?.messages,
-          // Assistant messages carry no metadata; only user messages are stamped.
-          metadataSchema: feedbackMessageMetadataSchema.optional(),
-          tools: schemaTools,
-        });
-        if (!validation.success) {
-          return invalidMessages(validation.error.message);
+        const contexts: FeedbackMessageMetadata[] = [];
+        for (const message of params.messages) {
+          if (message.role !== "user" || message.metadata === undefined) {
+            continue;
+          }
+          const metadata = feedbackMessageMetadataSchema.safeParse(
+            message.metadata,
+          );
+          if (!metadata.success) {
+            return invalidMessages(metadata.error.message);
+          }
+          contexts.push(metadata.data);
         }
-        const messages = validation.data;
 
-        setAiChatScope("feedback", (payload as { id?: unknown } | null)?.id);
-        const openai = createOpenAI({
-          apiKey: ENV.OPENAI_API_KEY?.trim() ?? "",
-        });
-        const tools = createFeedbackTools({
-          messages,
-          createIssue,
-        });
-        const result = streamText({
-          model: openai.chat(FEEDBACK_AGENT_MODEL),
-          system: FEEDBACK_SYSTEM_PROMPT,
-          messages: await toModelMessages(messages),
-          tools,
-          stopWhen: stepCountIs(5),
-          maxRetries: 0,
-          // Chat Completions rejects function tools combined with reasoning for this model.
-          providerOptions: { openai: { reasoningEffort: "none" } },
+        setAiChatScope("feedback", params.threadId);
+        const stream = chat({
+          adapter: createOpenaiChat(
+            FEEDBACK_AGENT_MODEL,
+            ENV.OPENAI_API_KEY?.trim() ?? "",
+            { maxRetries: 0 },
+          ),
+          messages: params.messages,
+          threadId: params.threadId,
+          runId: params.runId,
+          parentRunId: params.parentRunId,
+          resume: params.resume,
+          systemPrompts: [FEEDBACK_SYSTEM_PROMPT],
+          tools: createFeedbackTools({ contexts, createIssue }),
+          reasoning: "off",
+          modelOptions: { store: false },
+          agentLoopStrategy: maxIterations(5),
+          middleware: [
+            feedbackContextMiddleware,
+            otelMiddleware({ tracer: trace.getTracer("feedback-chat") }),
+          ],
         });
 
-        return result.toUIMessageStreamResponse({
-          originalMessages: messages,
-          // The SDK masks every error by default; GitHub failures are safe and actionable.
-          onError: (error) => {
-            if (error instanceof GithubIssueError) {
-              return error.message;
-            }
-            console.error("Feedback chat failed", error);
-            return "Tilbakemeldingsassistenten fikk et problem.";
-          },
-        });
+        return toServerSentEventsResponse(maskRunErrors(stream));
       },
       ANY: async () => new Response(null, { status: 405 }),
     },

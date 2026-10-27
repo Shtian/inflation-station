@@ -1,6 +1,19 @@
-import { simulateReadableStream } from "ai";
-import { MockLanguageModelV3 } from "ai/test";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import type { ModelMessage } from "@tanstack/ai";
+import {
+  ChatClient,
+  fetchServerSentEvents,
+  type UIMessage,
+} from "@tanstack/ai-react";
+import { fakeText } from "@tanstack/ai/testing";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vite-plus/test";
+import { createGithubIssueTool } from "@/lib/feedback/agent";
 import { routeHandler } from "../-route-handler";
 import { stubConfig } from "../../../../tests/support/config-env";
 import { Route } from "./chat";
@@ -11,13 +24,15 @@ const { model } = vi.hoisted(() => ({
   model: { current: undefined as unknown },
 }));
 
-vi.mock("@ai-sdk/openai", () => ({
-  createOpenAI: () => ({ chat: () => model.current }),
+vi.mock("@tanstack/ai-openai", () => ({
+  createOpenaiChat: () => model.current,
 }));
+
+const ENDPOINT = "http://localhost/api/feedback/chat";
 
 function post(body: string) {
   return POST(
-    new Request("http://localhost/api/feedback/chat", {
+    new Request(ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
@@ -80,7 +95,7 @@ describe("POST /api/feedback/chat", () => {
     });
   });
 
-  it("answers 400 when messages are not UI messages", async () => {
+  it("answers 400 when the body is not a chat request", async () => {
     const response = await post(
       JSON.stringify({ messages: [{ role: "user", content: "hello" }] }),
     );
@@ -94,11 +109,15 @@ describe("POST /api/feedback/chat", () => {
   it("answers 400 when user metadata breaks the schema", async () => {
     const response = await post(
       JSON.stringify({
+        threadId: "thread-1",
+        runId: "run-1",
+        tools: [],
+        context: [],
         messages: [
           {
             id: "u1",
             role: "user",
-            parts: [{ type: "text", text: "Broken" }],
+            content: "Broken",
             metadata: { pathname: 42 },
           },
         ],
@@ -127,123 +146,81 @@ const DRAFT = {
 };
 
 const REPORT = {
-  id: "u1",
-  role: "user",
-  parts: [{ type: "text", text: "Knappen gjør ingenting" }],
+  content: "Knappen gjør ingenting",
   metadata: { pathname: "/transactions", element: SAVE_BUTTON },
 };
 
-const USAGE = {
-  inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
-  outputTokens: { total: 1, text: 1, reasoning: 0 },
-};
+type ModelStep =
+  | { text: string }
+  | { draft: typeof DRAFT }
+  | { fail: string }
+  | { throws: string };
 
-type ModelStep = { text: string } | { draft: typeof DRAFT } | { fail: string };
-
-function streamFor(step: ModelStep) {
-  if ("fail" in step) {
-    throw new Error(step.fail);
-  }
-  const body =
-    "text" in step
-      ? [
-          { type: "text-start", id: "t1" },
-          { type: "text-delta", id: "t1", delta: step.text },
-          { type: "text-end", id: "t1" },
-          {
-            type: "finish",
-            finishReason: { unified: "stop", raw: "stop" },
-            usage: USAGE,
-          },
-        ]
-      : [
-          {
-            type: "tool-call",
-            toolCallId: "call-1",
-            toolName: "createGithubIssue",
-            input: JSON.stringify(step.draft),
-          },
-          {
-            type: "finish",
-            finishReason: { unified: "tool-calls", raw: "tool_calls" },
-            usage: USAGE,
-          },
-        ];
-  return simulateReadableStream({
-    chunks: [{ type: "stream-start", warnings: [] }, ...body],
-  });
-}
-
-// Scripts one model reply per call and records the text each call was shown,
-// one string per message, so assertions stay independent of the SDK's prompt shape.
 function scriptModel(steps: ModelStep[]) {
   const seen: string[][] = [];
-  model.current = new MockLanguageModelV3({
-    doStream: async ({ prompt }) => {
-      seen.push(textOf(prompt));
-      const step = steps[seen.length - 1];
-      if (!step) {
-        throw new Error("No scripted model reply left");
+  const fake = fakeText();
+  fake.setResponses(
+    steps.map((step) => ({ request }) => {
+      seen.push(textOf(request.messages));
+      if ("fail" in step) {
+        return { error: step.fail };
       }
-      return { stream: streamFor(step) as never };
-    },
-  });
+      if ("throws" in step) {
+        throw new Error(step.throws);
+      }
+      return "text" in step
+        ? { text: step.text }
+        : {
+            toolCalls: [
+              { name: "createGithubIssue", input: step.draft, id: "call-1" },
+            ],
+          };
+    }),
+  );
+  model.current = fake;
   return seen;
 }
 
-function textOf(
-  prompt: ReadonlyArray<{ role: string; content: unknown }>,
-): string[] {
-  return prompt
-    .filter((message) => message.role !== "system")
-    .map((message) =>
-      (message.content as Array<Record<string, unknown>>)
-        .map((part) => {
-          if (part.type === "text") {
-            return part.text;
-          }
-          if (part.type === "tool-call") {
-            return `call ${part.toolName}`;
-          }
-          if (part.type === "tool-result") {
-            const output = part.output as { value?: unknown; reason?: string };
-            if (output.reason !== undefined) {
-              return output.reason;
-            }
-            return typeof output.value === "string"
-              ? output.value
-              : JSON.stringify(output.value);
-          }
-          return "";
-        })
-        .filter(Boolean)
-        .join("\n"),
-    )
+function textOf(messages: ReadonlyArray<ModelMessage>): string[] {
+  return messages
+    .map((message) => {
+      const content =
+        typeof message.content === "string"
+          ? [message.content]
+          : (message.content ?? []).flatMap((part) =>
+              part.type === "text" ? [part.content] : [],
+            );
+      const calls = (message.toolCalls ?? []).map(
+        (call) => `call ${call.function.name}`,
+      );
+      return [...content, ...calls].filter(Boolean).join("\n");
+    })
     .filter(Boolean);
 }
 
-function draftAwaitingApproval(approval?: { approved: boolean; reason?: string }) {
-  return {
-    id: "a1",
-    role: "assistant",
-    parts: [
-      approval
-        ? {
-            type: "tool-createGithubIssue",
-            toolCallId: "call-1",
-            state: "approval-responded",
-            input: DRAFT,
-            approval: { id: "approval-1", ...approval },
-          }
-        : {
-            type: "tool-createGithubIssue",
-            toolCallId: "call-1",
-            state: "approval-requested",
-            input: DRAFT,
-            approval: { id: "approval-1" },
-          },
-    ],
-  };
+function startChat() {
+  return new ChatClient({
+    threadId: "thread-1",
+    connection: fetchServerSentEvents(ENDPOINT, {
+      fetchClient: (input, init) =>
+        POST(new Request(input as string | URL, init)),
+    }),
+    tools: [createGithubIssueTool],
+  });
+}
+
+function pendingDraft(client: ReturnType<typeof startChat>) {
+  const approval = client
+    .getInterrupts()
+    .find((interrupt) => interrupt.kind === "tool-approval");
+  if (!approval) {
+    throw new Error("No draft awaits approval");
+  }
+  return approval;
+}
+
+function shown(messages: UIMessage[]): string {
+  return JSON.stringify(messages);
 }
 
 function stubGithub(response: Response) {
@@ -284,10 +261,11 @@ describe("POST /api/feedback/chat conversation", () => {
 
   it("shows the model the page and element the user reported from", async () => {
     const seen = scriptModel([{ text: "Hva forventet du?" }]);
+    const client = startChat();
 
-    const response = await post(JSON.stringify({ messages: [REPORT] }));
+    await client.sendMessage(REPORT);
 
-    expect(await response.text()).toContain("Hva forventet du?");
+    expect(shown(client.getMessages())).toContain("Hva forventet du?");
     expect(seen).toEqual([
       [
         '[Page: /transactions]\n[Selected element: [data-testid="save-transaction"] | <button> | label: save-transaction | text: "Lagre" | html: <button data-testid="save-transaction">Lagre</button>]\nKnappen gjør ingenting',
@@ -297,22 +275,20 @@ describe("POST /api/feedback/chat conversation", () => {
 
   it("creates the issue only after the user approves the draft", async () => {
     const github = stubGithub(CREATED);
-    scriptModel([{ draft: DRAFT }]);
+    scriptModel([{ draft: DRAFT }, { text: "Saken er opprettet." }]);
+    const client = startChat();
 
-    const proposal = await post(JSON.stringify({ messages: [REPORT] }));
+    await client.sendMessage(REPORT);
 
-    expect(await proposal.text()).toContain("Save button does nothing");
+    expect(shown(client.getMessages())).toContain("Save button does nothing");
     expect(github).toEqual([]);
 
-    scriptModel([{ text: "Saken er opprettet." }]);
-    const approval = await post(
-      JSON.stringify({
-        messages: [REPORT, draftAwaitingApproval({ approved: true })],
-      }),
-    );
+    pendingDraft(client).resolveInterrupt(true, {});
 
-    expect(await approval.text()).toContain(
-      "https://github.com/Shtian/inflation-station/issues/42",
+    await vi.waitFor(() =>
+      expect(shown(client.getMessages())).toContain(
+        "https://github.com/Shtian/inflation-station/issues/42",
+      ),
     );
     expect(github).toEqual([
       {
@@ -342,42 +318,34 @@ describe("POST /api/feedback/chat conversation", () => {
 
   it("tells the model why the user declined the draft", async () => {
     const github = stubGithub(CREATED);
-    const seen = scriptModel([{ text: "Hva vil du endre?" }]);
+    const seen = scriptModel([{ draft: DRAFT }, { text: "Hva vil du endre?" }]);
+    const client = startChat();
 
-    const response = await post(
-      JSON.stringify({
-        messages: [
-          REPORT,
-          draftAwaitingApproval({ approved: false, reason: "Not yet." }),
-        ],
-      }),
-    );
-    await response.text();
+    await client.sendMessage(REPORT);
+    pendingDraft(client).resolveInterrupt(false, {
+      payload: { reason: "Not yet." },
+    });
 
+    await vi.waitFor(() => expect(seen).toHaveLength(2));
     expect(github).toEqual([]);
-    expect(seen[0]?.at(-1)).toBe("Not yet.");
+    expect(seen[1]?.at(-1)).toContain("Not yet.");
   });
 
   it("treats a typed reply to a pending draft as a decline", async () => {
-    const seen = scriptModel([{ text: "Jeg legger til Excel." }]);
+    const seen = scriptModel([
+      { draft: DRAFT },
+      { text: "Jeg legger til Excel." },
+    ]);
+    const client = startChat();
 
-    const response = await post(
-      JSON.stringify({
-        messages: [
-          REPORT,
-          draftAwaitingApproval(),
-          {
-            id: "u2",
-            role: "user",
-            parts: [{ type: "text", text: "Nevn Excel også" }],
-            metadata: { pathname: "/transactions" },
-          },
-        ],
-      }),
-    );
-    await response.text();
+    await client.sendMessage(REPORT);
+    client.stop();
+    await client.sendMessage({
+      content: "Nevn Excel også",
+      metadata: { pathname: "/transactions" },
+    });
 
-    expect(seen[0]?.slice(1)).toEqual([
+    expect(seen[1]?.slice(1)).toEqual([
       "call createGithubIssue",
       "The user replied with more feedback instead of approving this draft.",
       "[Page: /transactions]\nNevn Excel også",
@@ -390,27 +358,37 @@ describe("POST /api/feedback/chat conversation", () => {
         status: 422,
       }),
     );
-    scriptModel([{ text: "Det feilet." }]);
+    scriptModel([{ draft: DRAFT }, { text: "Det feilet." }]);
+    const client = startChat();
 
-    const response = await post(
-      JSON.stringify({
-        messages: [REPORT, draftAwaitingApproval({ approved: true })],
-      }),
-    );
+    await client.sendMessage(REPORT);
+    pendingDraft(client).resolveInterrupt(true, {});
 
-    expect(await response.text()).toContain(
-      "Kunne ikke opprette GitHub-saken: 422 Validation Failed",
+    await vi.waitFor(() =>
+      expect(shown(client.getMessages())).toContain(
+        "Kunne ikke opprette GitHub-saken: 422 Validation Failed",
+      ),
     );
   });
 
-  it("hides provider errors behind a generic message", async () => {
-    scriptModel([{ fail: "upstream secret detail" }]);
-    vi.spyOn(console, "error").mockImplementation(() => {});
+  it.each([
+    ["reports", { fail: "upstream secret detail" }],
+    ["throws", { throws: "upstream secret detail" }],
+  ] as const)(
+    "hides an error the provider %s behind a generic message",
+    async (_label, step) => {
+      scriptModel([step]);
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const client = startChat();
 
-    const response = await post(JSON.stringify({ messages: [REPORT] }));
-    const text = await response.text();
+      await client.sendMessage(REPORT);
 
-    expect(text).toContain("Tilbakemeldingsassistenten fikk et problem.");
-    expect(text).not.toContain("upstream secret detail");
-  });
+      expect(client.getError()?.message).toBe(
+        "Tilbakemeldingsassistenten fikk et problem.",
+      );
+      expect(shown(client.getMessages())).not.toContain(
+        "upstream secret detail",
+      );
+    },
+  );
 });

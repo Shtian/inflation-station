@@ -1,12 +1,19 @@
-import { convertToModelMessages, type ModelMessage, tool } from "ai";
+import {
+  type ChatMiddleware,
+  type ModelMessage,
+  toolDefinition,
+} from "@tanstack/ai";
 import { ENV, type TypedEnvSchema } from "varlock/env";
 import {
   type CreatedIssue,
+  createdIssueSchema,
+  draftDeclineSchema,
   type FeedbackDisabledReason,
-  type FeedbackUIMessage,
+  type FeedbackMessageMetadata,
   type IssueDraft,
   issueDraftSchema,
   type PickedElement,
+  readFeedbackMetadata,
 } from "./contract";
 import type { FeedbackGithubTarget, IssueInput } from "./github-issue";
 
@@ -69,57 +76,62 @@ function describeElementForModel(element: PickedElement): string {
   return `[Selected element: ${fields.join(" | ")}]`;
 }
 
+function withContext(message: ModelMessage): ModelMessage {
+  const metadata = readFeedbackMetadata(message);
+  if (message.role !== "user" || !metadata) {
+    return message;
+  }
+  const context = [`[Page: ${metadata.pathname}]`];
+  if (metadata.element) {
+    context.push(describeElementForModel(metadata.element));
+  }
+  const prefix = context.join("\n");
+  return {
+    ...message,
+    content:
+      typeof message.content === "string"
+        ? `${prefix}\n${message.content}`
+        : [{ type: "text", content: prefix }, ...(message.content ?? [])],
+  };
+}
+
 const STALE_DRAFT_REASON =
   "The user replied with more feedback instead of approving this draft.";
 
-function withContextParts(message: FeedbackUIMessage): FeedbackUIMessage {
-  if (message.role !== "user" || !message.metadata) {
-    return message;
-  }
-  const { pathname, element } = message.metadata;
-  const context = [`[Page: ${pathname}]`];
-  if (element) {
-    context.push(describeElementForModel(element));
-  }
-  return {
-    ...message,
-    parts: [{ type: "text", text: context.join("\n") }, ...message.parts],
-  };
-}
-
-// A draft left in approval-requested means the user typed a reply instead of
-// using the buttons. Sending it as denied keeps the draft in the model's
-// context; an unanswered tool call would otherwise be rejected by the provider.
-function withStaleDraftsDenied(message: FeedbackUIMessage): FeedbackUIMessage {
-  return {
-    ...message,
-    parts: message.parts.map((part) =>
-      part.type === "tool-createGithubIssue" &&
-      part.state === "approval-requested"
-        ? {
-            ...part,
-            state: "output-denied",
-            approval: {
-              id: part.approval.id,
-              approved: false,
-              reason: STALE_DRAFT_REASON,
-            },
-          }
-        : part,
+function withStaleDraftsDeclined(messages: ModelMessage[]): ModelMessage[] {
+  const answered = new Set(
+    messages.flatMap((message) =>
+      message.role === "tool" && message.toolCallId ? [message.toolCallId] : [],
     ),
-  };
+  );
+  const lastUserIndex = messages.findLastIndex(
+    (message) => message.role === "user",
+  );
+  return messages.flatMap((message, index) => {
+    const stale =
+      index < lastUserIndex
+        ? (message.toolCalls ?? []).filter((call) => !answered.has(call.id))
+        : [];
+    return [
+      message,
+      ...stale.map((call): ModelMessage => ({
+        role: "tool",
+        toolCallId: call.id,
+        name: call.function.name,
+        content: STALE_DRAFT_REASON,
+      })),
+    ];
+  });
 }
 
-export function toModelMessages(
-  messages: FeedbackUIMessage[],
-): Promise<ModelMessage[]> {
-  const lastIndex = messages.length - 1;
-  const prepared = messages.map((message, index) => {
-    const withContext = withContextParts(message);
-    return index < lastIndex ? withStaleDraftsDenied(withContext) : withContext;
-  });
-  return convertToModelMessages(prepared, { ignoreIncompleteToolCalls: true });
-}
+export const feedbackContextMiddleware: ChatMiddleware = {
+  name: "feedback-context",
+  onConfig: (_ctx, config) => ({
+    providerMessages: withStaleDraftsDeclined(
+      (config.providerMessages ?? config.messages).map(withContext),
+    ),
+  }),
+};
 
 function fenceFor(content: string): string {
   const longestRun = Math.max(
@@ -131,15 +143,11 @@ function fenceFor(content: string): string {
 
 export function formatIssueBody(
   draft: IssueDraft,
-  messages: FeedbackUIMessage[],
+  contexts: FeedbackMessageMetadata[],
 ): string {
   const pages: string[] = [];
   const elements = new Map<string, PickedElement>();
-  for (const message of messages) {
-    if (message.role !== "user" || !message.metadata) {
-      continue;
-    }
-    const { pathname, element } = message.metadata;
+  for (const { pathname, element } of contexts) {
     if (!pages.includes(pathname)) {
       pages.push(pathname);
     }
@@ -176,28 +184,30 @@ export function formatIssueBody(
 
 export type CreateIssueFn = (issue: IssueInput) => Promise<CreatedIssue>;
 
+export const createGithubIssueTool = toolDefinition({
+  name: "createGithubIssue",
+  description:
+    "Propose a GitHub issue for the user's bug report or feature idea. The user reviews the draft and must approve it before it is created.",
+  inputSchema: issueDraftSchema,
+  outputSchema: createdIssueSchema,
+  needsApproval: true,
+  approvalSchema: { reject: draftDeclineSchema },
+});
+
 export function createFeedbackTools({
-  messages,
+  contexts,
   createIssue,
 }: {
-  messages: FeedbackUIMessage[];
+  contexts: FeedbackMessageMetadata[];
   createIssue: CreateIssueFn;
 }) {
-  return {
-    createGithubIssue: tool({
-      description:
-        "Propose a GitHub issue for the user's bug report or feature idea. The user reviews the draft and must approve it before it is created.",
-      inputSchema: issueDraftSchema,
-      needsApproval: true,
-      execute: (draft): Promise<CreatedIssue> =>
-        createIssue({
-          title: draft.title,
-          body: formatIssueBody(draft, messages),
-          labels: [
-            draft.kind === "bug" ? "bug" : "enhancement",
-            "needs-triage",
-          ],
-        }),
-    }),
-  };
+  return [
+    createGithubIssueTool.server((draft) =>
+      createIssue({
+        title: draft.title,
+        body: formatIssueBody(draft, contexts),
+        labels: [draft.kind === "bug" ? "bug" : "enhancement", "needs-triage"],
+      }),
+    ),
+  ];
 }
