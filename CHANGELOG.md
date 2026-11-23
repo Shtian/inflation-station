@@ -3,6 +3,12 @@
 
 
 
+
+## 0.4.2
+<sub>2026-11-23</sub>
+
+- *(patch)* Moved the in-app feedback chat to TanStack AI.
+
 ## 0.4.1
 <sub>2026-10-25</sub>
 
