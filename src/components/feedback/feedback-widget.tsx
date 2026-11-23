@@ -1,10 +1,10 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
 import {
-  DefaultChatTransport,
-  lastAssistantMessageIsCompleteWithApprovalResponses,
-} from "ai";
+  createChatClientOptions,
+  fetchServerSentEvents,
+  useChat,
+} from "@tanstack/ai-react";
 import {
   MessageSquarePlus,
   RotateCcw,
@@ -14,14 +14,6 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  Confirmation,
-  ConfirmationAccepted,
-  ConfirmationAction,
-  ConfirmationActions,
-  ConfirmationRejected,
-  ConfirmationRequest,
-} from "@/components/ai-elements/confirmation";
 import {
   Conversation,
   ConversationContent,
@@ -43,13 +35,16 @@ import {
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
 import { ElementPickerOverlay } from "@/components/feedback/element-picker";
+import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { createGithubIssueTool } from "@/lib/feedback/agent";
 import {
   FEEDBACK_CHAT_ENDPOINT,
-  type FeedbackUIMessage,
   type PickedElement,
+  readFeedbackMetadata,
 } from "@/lib/feedback/contract";
+import { type DraftView, draftView } from "@/lib/feedback/draft-view";
 import { cn } from "@/lib/utils";
 
 const DRAFT_DECLINED_REASON =
@@ -57,14 +52,26 @@ const DRAFT_DECLINED_REASON =
 
 type WidgetView = "closed" | "chat" | "picking";
 
-type IssueToolPart = Extract<
-  FeedbackUIMessage["parts"][number],
-  { type: "tool-createGithubIssue" }
->;
+function chatOptions(threadId: string) {
+  return createChatClientOptions({
+    connection: fetchServerSentEvents(FEEDBACK_CHAT_ENDPOINT),
+    threadId,
+    tools: [createGithubIssueTool],
+  });
+}
 
-const transport = new DefaultChatTransport<FeedbackUIMessage>({
-  api: FEEDBACK_CHAT_ENDPOINT,
-});
+function useFeedbackChat(threadId: string) {
+  return useChat(chatOptions(threadId));
+}
+
+type FeedbackChat = ReturnType<typeof useFeedbackChat>;
+
+type FeedbackMessage = FeedbackChat["messages"][number];
+
+type DraftApproval = Extract<
+  FeedbackChat["interrupts"][number],
+  { kind: "tool-approval" }
+>;
 
 const EXAMPLE_PROMPTS = [
   "Noe på denne siden ser feil ut",
@@ -73,10 +80,11 @@ const EXAMPLE_PROMPTS = [
 ];
 
 function describeChatError(error: Error): string {
-  if (error.message.includes("FEEDBACK_UNAVAILABLE")) {
+  const status = "status" in error ? error.status : undefined;
+  if (status === 503) {
     return "Tilbakemelding er ikke satt opp på denne serveren akkurat nå.";
   }
-  if (error.message.includes("INVALID_FEEDBACK_MESSAGES")) {
+  if (status === 400) {
     return "Samtalen kunne ikke leses. Start en ny samtale.";
   }
   return "Fikk ikke kontakt med tilbakemeldingsassistenten.";
@@ -121,108 +129,95 @@ function ElementChip({
   );
 }
 
-function IssueDraftPart({
-  part,
-  isLatest,
-  onRespond,
-}: {
-  part: IssueToolPart;
-  isLatest: boolean;
-  onRespond: (approvalId: string, approved: boolean) => void;
-}) {
-  switch (part.state) {
-    case "input-streaming":
-    case "input-available":
+function IssueDraftPart({ view }: { view: DraftView<DraftApproval> }) {
+  switch (view.kind) {
+    case "writing":
       return (
         <p className="text-xs text-muted-foreground">Skriver utkast til sak…</p>
       );
-    case "approval-requested":
-    case "approval-responded":
-    case "output-denied":
-      // A reply typed instead of a button press supersedes the draft (the
-      // server sends it to the model as denied).
-      if (part.state === "approval-requested" && !isLatest) {
-        return (
-          <p className="text-xs text-muted-foreground">
-            Utkastet ble forkastet
-          </p>
-        );
-      }
+    case "awaiting": {
+      const { approval } = view;
+      const draft = approval.originalArgs;
       return (
-        <Confirmation approval={part.approval} state={part.state}>
-          <ConfirmationRequest>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={
-                  part.input.kind === "bug" ? "destructive" : "secondary"
-                }
-              >
-                {part.input.kind === "bug" ? "Feil" : "Funksjon"}
-              </Badge>
-              <span className="text-sm font-medium">{part.input.title}</span>
-            </div>
-            <div className="max-h-48 overflow-y-auto rounded-md bg-muted/50 p-2 text-xs [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs">
-              <MessageResponse>{part.input.body}</MessageResponse>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Sidekontekst og valgte elementer legges ved.
-            </p>
-          </ConfirmationRequest>
-          <ConfirmationAccepted>
-            <p className="text-xs text-muted-foreground">Oppretter sak…</p>
-          </ConfirmationAccepted>
-          <ConfirmationRejected>
-            <p className="text-xs text-muted-foreground">
-              Utkastet ble forkastet
-            </p>
-          </ConfirmationRejected>
-          <ConfirmationActions>
-            <ConfirmationAction
+        <Alert className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Badge variant={draft.kind === "bug" ? "destructive" : "secondary"}>
+              {draft.kind === "bug" ? "Feil" : "Funksjon"}
+            </Badge>
+            <span className="text-sm font-medium">{draft.title}</span>
+          </div>
+          <div className="max-h-48 overflow-y-auto rounded-md bg-muted/50 p-2 text-xs [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-xs">
+            <MessageResponse>{draft.body}</MessageResponse>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Sidekontekst og valgte elementer legges ved.
+          </p>
+          <div className="flex items-center justify-end gap-2 self-end">
+            <Button
+              type="button"
               variant="outline"
-              onClick={() => onRespond(part.approval.id, false)}
+              className="h-8 px-3 text-sm"
+              onClick={() =>
+                approval.resolveInterrupt(false, {
+                  payload: { reason: DRAFT_DECLINED_REASON },
+                })
+              }
             >
               Ikke ennå
-            </ConfirmationAction>
-            <ConfirmationAction
-              onClick={() => onRespond(part.approval.id, true)}
+            </Button>
+            <Button
+              type="button"
+              className="h-8 px-3 text-sm"
+              onClick={() => approval.resolveInterrupt(true, {})}
             >
               Opprett sak
-            </ConfirmationAction>
-          </ConfirmationActions>
-        </Confirmation>
+            </Button>
+          </div>
+        </Alert>
       );
-    case "output-available":
+    }
+    case "creating":
+      return <p className="text-xs text-muted-foreground">Oppretter sak…</p>;
+    case "declined":
+    case "superseded":
+      return (
+        <p className="text-xs text-muted-foreground">Utkastet ble forkastet</p>
+      );
+    case "created":
       return (
         <p className="text-sm">
           Opprettet sak{" "}
           <a
-            href={part.output.url}
+            href={view.issue.url}
             target="_blank"
             rel="noreferrer"
             className="font-medium text-brand underline underline-offset-2"
           >
-            #{part.output.number}
+            #{view.issue.number}
           </a>
         </p>
       );
-    case "output-error":
-      return <p className="text-xs text-destructive">{part.errorText}</p>;
+    case "failed":
+      return <p className="text-xs text-destructive">{view.error}</p>;
   }
 }
 
-function FeedbackMessage({
+function FeedbackMessageView({
   message,
   isLatest,
   isStreaming,
-  onRespond,
+  approvals,
 }: {
-  message: FeedbackUIMessage;
+  message: FeedbackMessage;
   isLatest: boolean;
   isStreaming: boolean;
-  onRespond: (approvalId: string, approved: boolean) => void;
+  approvals: DraftApproval[];
 }) {
+  if (message.role !== "user" && message.role !== "assistant") {
+    return null;
+  }
   const isUser = message.role === "user";
-  const element = message.metadata?.element;
+  const element = readFeedbackMetadata(message)?.element;
   return (
     <Message from={message.role}>
       {isUser && element ? (
@@ -231,34 +226,52 @@ function FeedbackMessage({
       {message.parts.map((part, index) => {
         const key = `${message.id}-${index}`;
         if (part.type === "text") {
-          if (!part.text) {
+          if (!part.content) {
             return null;
           }
           return (
             <MessageContent key={key}>
               {isUser ? (
-                <p className="whitespace-pre-wrap">{part.text}</p>
+                <p className="whitespace-pre-wrap">{part.content}</p>
               ) : (
                 <MessageResponse isAnimating={isLatest && isStreaming}>
-                  {part.text}
+                  {part.content}
                 </MessageResponse>
               )}
             </MessageContent>
           );
         }
-        if (part.type === "tool-createGithubIssue") {
-          return (
-            <IssueDraftPart
-              key={key}
-              part={part}
-              isLatest={isLatest}
-              onRespond={onRespond}
-            />
-          );
+        if (part.type === "tool-call" && part.name === "createGithubIssue") {
+          const view = draftView({
+            call: part,
+            result: message.parts.find(
+              (
+                other,
+              ): other is Extract<typeof other, { type: "tool-result" }> =>
+                other.type === "tool-result" && other.toolCallId === part.id,
+            ),
+            pending: approvals.find(
+              (approval) => approval.toolCallId === part.id,
+            ),
+            streaming: isLatest && isStreaming,
+          });
+          return <IssueDraftPart key={key} view={view} />;
         }
         return null;
       })}
     </Message>
+  );
+}
+
+function createdIssues(messages: readonly FeedbackMessage[]) {
+  return messages.flatMap((message) =>
+    message.parts.flatMap((part) =>
+      part.type === "tool-call" &&
+      part.name === "createGithubIssue" &&
+      part.output
+        ? [{ toolCallId: part.id, issue: part.output }]
+        : [],
+    ),
   );
 }
 
@@ -268,37 +281,27 @@ export function FeedbackWidget() {
   const [pendingElement, setPendingElement] = useState<PickedElement | null>(
     null,
   );
+  const [threadId, setThreadId] = useState(() => crypto.randomUUID());
   const announcedIssues = useRef(new Set<string>());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const {
-    messages,
-    sendMessage,
-    status,
-    error,
-    stop,
-    regenerate,
-    setMessages,
-    clearError,
-    addToolApprovalResponse,
-  } = useChat<FeedbackUIMessage>({
-    transport,
-    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
-    onFinish: ({ message }) => {
-      for (const part of message.parts) {
-        if (
-          part.type === "tool-createGithubIssue" &&
-          part.state === "output-available" &&
-          !announcedIssues.current.has(part.toolCallId)
-        ) {
-          announcedIssues.current.add(part.toolCallId);
-          toast.success(`Sak #${part.output.number} opprettet`);
-        }
-      }
-    },
-  });
+  const { messages, sendMessage, status, error, stop, reload, interrupts } =
+    useFeedbackChat(threadId);
+  const approvals = interrupts.filter(
+    (interrupt): interrupt is DraftApproval =>
+      interrupt.kind === "tool-approval",
+  );
 
   const busy = status === "submitted" || status === "streaming";
+
+  useEffect(() => {
+    for (const { toolCallId, issue } of createdIssues(messages)) {
+      if (!announcedIssues.current.has(toolCallId)) {
+        announcedIssues.current.add(toolCallId);
+        toast.success(`Sak #${issue.number} opprettet`);
+      }
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (view === "chat") {
@@ -311,8 +314,12 @@ export function FeedbackWidget() {
     if (!text || busy) {
       return;
     }
+    const supersedesDraft = approvals.length > 0;
+    if (supersedesDraft) {
+      stop();
+    }
     void sendMessage({
-      text,
+      content: text,
       metadata: {
         pathname: `${window.location.pathname}${window.location.search}`,
         ...(pendingElement ? { element: pendingElement } : {}),
@@ -323,20 +330,10 @@ export function FeedbackWidget() {
   }
 
   function startNewConversation() {
-    void stop();
-    clearError();
-    setMessages([]);
+    setThreadId(crypto.randomUUID());
     setInput("");
     setPendingElement(null);
     textareaRef.current?.focus();
-  }
-
-  function respondToDraft(approvalId: string, approved: boolean) {
-    void addToolApprovalResponse({
-      id: approvalId,
-      approved,
-      reason: approved ? undefined : DRAFT_DECLINED_REASON,
-    });
   }
 
   function onPick(element: PickedElement) {
@@ -425,12 +422,12 @@ export function FeedbackWidget() {
                 </ConversationEmptyState>
               ) : (
                 messages.map((message, index) => (
-                  <FeedbackMessage
+                  <FeedbackMessageView
                     key={message.id}
                     message={message}
                     isLatest={index === messages.length - 1}
                     isStreaming={status === "streaming"}
-                    onRespond={respondToDraft}
+                    approvals={approvals}
                   />
                 ))
               )}
@@ -443,7 +440,7 @@ export function FeedbackWidget() {
                   <Button
                     size="xs"
                     variant="outline"
-                    onClick={() => void regenerate()}
+                    onClick={() => void reload()}
                   >
                     <RotateCcw />
                     Prøv igjen
@@ -495,7 +492,7 @@ export function FeedbackWidget() {
                   // "error" would swap the send arrow for an X; the error
                   // row below already offers Retry.
                   status={busy ? status : undefined}
-                  onStop={() => void stop()}
+                  onStop={() => stop()}
                   aria-label={busy ? "Stopp svaret" : "Send tilbakemelding"}
                   disabled={!busy && !input.trim()}
                 />

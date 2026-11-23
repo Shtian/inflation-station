@@ -1,6 +1,4 @@
-import type { InferUITools, UIMessage } from "ai";
 import { z } from "zod";
-import type { createFeedbackTools } from "./agent";
 
 export const FEEDBACK_CHAT_ENDPOINT = "/api/feedback/chat";
 
@@ -23,6 +21,13 @@ export type FeedbackMessageMetadata = z.infer<
   typeof feedbackMessageMetadataSchema
 >;
 
+export function readFeedbackMetadata(message: {
+  metadata?: Record<string, unknown>;
+}): FeedbackMessageMetadata | undefined {
+  const parsed = feedbackMessageMetadataSchema.safeParse(message.metadata);
+  return parsed.success ? parsed.data : undefined;
+}
+
 export const issueDraftSchema = z.object({
   kind: z.enum(["bug", "feature"]),
   title: z.string().min(5).max(120),
@@ -31,17 +36,14 @@ export const issueDraftSchema = z.object({
 
 export type IssueDraft = z.infer<typeof issueDraftSchema>;
 
-export type CreatedIssue = { number: number; url: string };
+export const createdIssueSchema = z.object({
+  number: z.number().int(),
+  url: z.string(),
+});
 
-export type FeedbackUITools = InferUITools<
-  ReturnType<typeof createFeedbackTools>
->;
+export type CreatedIssue = z.infer<typeof createdIssueSchema>;
 
-export type FeedbackUIMessage = UIMessage<
-  FeedbackMessageMetadata,
-  never,
-  FeedbackUITools
->;
+export const draftDeclineSchema = z.object({ reason: z.string() });
 
 export type FeedbackDisabledReason =
   | "key_missing"
