@@ -2,6 +2,13 @@
 
 
 
+
+## 0.4.1
+<sub>2026-10-25</sub>
+
+- *(patch)*
+  The release workflow sends Docker image build timings to Sentry again: `image.build.duration`, `image.duration` and an `image.completed` counter, each tagged with the release and an `outcome`. They replace the deploy metrics that went away with `update.sh`.
+
 ## 0.4.0
 <sub>2026-10-25</sub>
 
